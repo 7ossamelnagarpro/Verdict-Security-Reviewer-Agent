@@ -5,7 +5,7 @@
 <p align="center">
   <img alt="stage" src="https://img.shields.io/badge/stage-in%20development-2F6BFF?style=for-the-badge">
   <img alt="agents" src="https://img.shields.io/badge/AI%20agents-2-7A4DFF?style=for-the-badge">
-  <img alt="tracking" src="https://img.shields.io/badge/tracking-MLflow-FFB020?style=for-the-badge">
+  <img alt="artifacts" src="https://img.shields.io/badge/artifacts-JSON%20%2B%20Markdown-FFB020?style=for-the-badge">
   <img alt="track" src="https://img.shields.io/badge/track-Data%20Science%20%26%20AI%20Agents-1E9E5A?style=for-the-badge">
 </p>
 
@@ -22,24 +22,24 @@
 
 ## 🛡️ Overview
 
-**Verdict** is a pre-deployment security review pipeline. It runs proven scanners and runtime checks, then puts **two AI agents** on top to find what the scanners missed and to judge what they found.
+**Verdict** is a pre-deployment security review pipeline. For its trusted Security Lab Web fixture, it runs bounded DAST in a temporary Docker Compose stack, removes the stack, then runs four scanners and **two AI agents** for discovery and evidence-based review. A separate fixed-target Hyper-V path remains available; automatic DAST for arbitrary repositories is not implemented.
 
 | | Role | In one line |
 |---|---|---|
-| 🔎 **Scanners** | Semgrep · CodeQL · Gitleaks · Trivy + runtime (DAST) probes | Produce raw findings and runtime evidence |
-| 🟣 **Agent 1: AI Discovery** | Step 9 | Hunts coverage gaps the scanners did not flag. Every candidate must pass independent verification. |
-| 🟢 **Agent 2: Security Review** | Steps 13 and 15 | Reviews scanner findings and verified candidates, gives each a verdict, writes the final report |
-| 📈 **MLflow** | Tracking | Logs every run so results are reproducible and comparable |
+| 🔎 **Scanners** | Semgrep CE · CodeQL CLI · Gitleaks · Trivy + bounded DAST probes | Produce findings and saved runtime evidence |
+| 🟣 **Agent 1: AI Discovery** | Step 9 | Inspects planned gaps and proposes candidates; separate source verification does not prove exploitability. |
+| 🟢 **Agent 2: Security Review** | Step 13 | Reviews eligible issue groups and records verdicts; reporting code generates the final report. |
+| 📈 **Saved artifacts** | Per-run JSON and Markdown | Preserve evidence, review status, policy decisions and coverage gaps; MLflow is not integrated. |
 
 **Team:** Hossam Elnagar · Safaa Abu Alsoud, internship / academic security research project.
 
 ## 🔴 The problem
 
-Static scanners (SAST) detect suspicious code patterns, but they have three chronic weaknesses:
+Static scanners (SAST) find important source-level risks, but a scanner-only workflow can leave three problems:
 
-- **False-positive floods.** Engineers get buried in alerts and start ignoring the tool.
-- **No context.** A scanner cannot tell if the input was sanitized, if the path is reachable from outside, or if the flaw only exists at runtime (for example broken access control).
-- **Narrow scope.** Real risk also lives in dependencies, Dockerfiles, CI/CD configuration, and the running application.
+- **Noisy alerts.** Similar or weakly supported findings need grouping and human-checkable evidence.
+- **Limited context.** Static evidence alone may not establish reachability or runtime authorization behavior.
+- **Coverage gaps.** Dependencies, configuration and the running application need different checks; no single tool covers them all.
 
 > ### The research question
 > **Does an AI agent on top of existing scanners add *measurable* value, or does it just repeat the scanner's output in nicer language?**
@@ -47,34 +47,34 @@ Static scanners (SAST) detect suspicious code patterns, but they have three chro
 
 ## ✨ What's different
 
-"Scanner + LLM" is not new: **IRIS**, **LLM4SA**, **Vul-RAG** and **LATTE** in research, and Semgrep Assistant, Snyk DeepCode AI and GitHub Copilot Autofix in industry. Verdict targets what is still missing:
+Combining scanners with an LLM is not new. This prototype focuses on bounded tool execution, traceable evidence, conservative candidate triage and a separate educational-target evaluation:
 
 | | |
 |---|---|
-| 🌐 **One scope** | Code, dependencies, secrets, Dockerfiles/CI and the running app in a single pipeline |
-| 🧪 **Real runtime proof** | Verification against a running test app, not static reasoning alone |
-| 🔒 **Evidence-gated AI** | AI-discovered candidates are held to a stricter, independent check before they are trusted |
-| 📊 **Transparent benchmark** | Scanner-only vs LLM-only vs Hybrid, same code, same ground truth |
+| 🌐 **One fixed full-scan target** | Source, supported dependencies and configuration, secrets, and bounded runtime checks for Security Lab Web |
+| 🧪 **Saved runtime evidence** | Fixed HTTP and two-user authorization probes against the local Docker test app; not exhaustive DAST |
+| 🔒 **Evidence-gated AI** | AI citations are checked against source; source-grounded does not mean exploitable or confirmed vulnerable |
+| 📊 **Post-scan evaluation** | A 15-positive-case fixture audit exists; a rigorous three-mode comparison remains experimental |
 
 <details>
 <summary><b>Scanner only vs Scanner + Agents</b></summary>
 
 | | Scanner only | Scanner + Agents (Verdict) |
 |---|---|---|
-| Detects | Pattern matches | Patterns, cross-function issues, discovered gaps |
-| Context | None | Surrounding code, data flow, runtime responses |
-| Runtime issues (IDOR, headers, ...) | Cannot detect | Verified by runtime / authorization tests |
-| Verdict | Flags everything | Confirmed / Likely / False Positive / Needs More Evidence |
-| Output | Raw, noisy list | Ranked, evidence-backed, policy-gated report |
+| Detects | Static rules, data flow, secrets and supported dependencies/configuration | Those findings plus AI candidates and bounded runtime observations |
+| Context | Tool locations and traces vary by scanner | Collected source context and linked runtime evidence where available |
+| Runtime issues (IDOR, headers, ...) | No active HTTP probing | Fixed Security Lab Web web and two-user authorization probes |
+| Verdict | Raw scanner findings need interpretation | Confirmed / Likely / False Positive / Needs More Evidence from Agent 2 |
+| Output | Tool-specific results | Merged observations, verdicts, policy decisions and explicit gaps |
 
 </details>
 
 ## 🧭 Pipeline
 
-17 steps (0 to 16) in three phases. Purple is Agent 1, green is Agent 2, blue is every tool or rule-based step.
+17 reference steps (0 to 16) in three phases. The current automatic route uses Docker at step 1; the table below describes its implementation. The linked graphic is unchanged and should be checked separately for outdated VM or MLflow labels. Purple is Agent 1, green is Agent 2, blue is every tool or rule-based step.
 
 <p align="center">
-  <img src="assets/pipeline.svg" alt="Verdict pipeline: 17 steps in 3 phases with two AI agents and MLflow tracking" width="100%">
+  <img src="assets/pipeline.svg" alt="Verdict conceptual pipeline: 17 steps in 3 phases with two AI agents" width="100%">
 </p>
 
 <details>
@@ -82,23 +82,23 @@ Static scanners (SAST) detect suspicious code patterns, but they have three chro
 
 | # | Step | Type | What it does |
 |---|---|---|---|
-| 0 | Readiness check | Rule-based | Checks permissions, paths, results folder, CodeQL and AI provider. A failure blocks the start and says why. |
-| 1 | Temporary VM + DAST first | Rule-based | Isolated worker with no network switch. Bounded HTTP and authorization probes. Evidence saved, VM powered off. |
-| 2 | Profiler + Scan Planner | Rule-based | Maps files, languages and dependencies, then plans the tools. If the source changes mid-run, the scan stops. |
-| 3 | Static scan | Tools | Semgrep CE, CodeQL CLI, Gitleaks, Trivy. A tool counts only if its output is read successfully. |
-| 4 | Import DAST evidence | Rule-based | Validates `runtime.json` and `authorization.json` from the VM. Original evidence is never changed. |
-| 5 | Normalize | Rule-based | One Finding format for all tool and DAST output. |
-| 6 | Merge & Dedup | Rule-based | Careful merging, original records kept. "40 merged observations" is not "40 confirmed vulnerabilities". |
-| 7 | Initial Context Collector | Rule-based | Code around each alert and its linked evidence. |
-| 8 | Risk Prioritization | Rule-based | Orders work groups by risk and evidence. Never drops findings and never proves a flaw. |
-| 9 | **AI Discovery** | 🟣 **Agent 1** | Searches planned areas the scanners may have missed. Outputs candidates that need verification. Not free-form DAST. |
-| 10 | Candidate Context Collector | Rule-based | Text and lines behind each AI suggestion. |
-| 11 | Verification | Rule-based | Citations must match the real file and line. "Confirmed" here means the text evidence is verified in source, not that the flaw is exploitable. |
-| 12 | Candidate Triage | Rule-based | Merges only clear matches; ambiguous items stay visible. |
-| 13 | **Security Review** | 🟢 **Agent 2** | Reviews eligible groups in batches: Confirmed / Likely / False Positive / Needs More Evidence. |
-| 14 | Policy Gate | Rule-based | Block, warn or allow. A failed gate means release blocked, not a scan error. |
-| 15 | **Final Report** | 🟢 **Agent 2** | Keeps tool findings, AI suggestions, source evidence, verdicts, policy decisions and uncovered gaps clearly separated. |
-| 16 | Educational-app evaluation | Separate command | Compares the report with the 15 known scenarios. Answers never reach the scanners or the AI. |
+| 0 | Readiness check | Rule-based | Checks the output path, CodeQL, AI provider, all four scanner adapters, and the trusted Compose plan before starting the app. |
+| 1 | Temporary Docker stack + DAST first | Rule-based | Starts the fixed trusted app on host loopback, runs bounded web and two-user authorization probes, saves evidence, and verifies stack cleanup. |
+| 2 | Profiler + Scan Planner | Rule-based | Maps files, languages and dependencies, then plans tools; an early profile also supports preflight. Source changes stop later evidence collection. |
+| 3 | Static scan | Tools | Semgrep CE, CodeQL CLI, Gitleaks and Trivy. Each required adapter must complete and produce readable output. |
+| 4 | Import DAST evidence | Rule-based | Validates the Docker run manifest, source/output hashes, `runtime.json` and `authorization.json` before normalization. |
+| 5 | Normalize | Rule-based | Converts supported scanner and DAST output to one Finding format while retaining source IDs and evidence. |
+| 6 | Merge & Dedup | Rule-based | Conservatively groups related observations and keeps originals; merged counts are not confirmed-vulnerability counts. |
+| 7 | Initial Context Collector | Rule-based | Collects bounded source context where locations exist and preserves linked runtime evidence. |
+| 8 | Risk Prioritization | Rule-based | Orders review work by risk and evidence; no finding is dropped or proved by its score. |
+| 9 | **AI Discovery** | 🟣 **Agent 1** | Inspects planned areas the scanners may have missed. Required for a complete scan; outputs candidates, not free-form DAST. |
+| 10 | Candidate Context Collector | Rule-based | Collects bounded source text and line anchors behind each AI suggestion. |
+| 11 | Verification | Rule-based | Checks AI citations against the source snapshot. "Confirmed" here means source-grounded, not exploitable. |
+| 12 | Candidate Triage | Rule-based | Groups only grounded overlaps; uncertain and insufficiently evidenced candidates remain visible. |
+| 13 | **Security Review** | 🟢 **Agent 2** | Reviews all eligible groups in bounded calls and records Confirmed / Likely / False Positive / Needs More Evidence; pending groups make the scan partial. |
+| 14 | Policy Gate | Rule-based | Applies block, warn or allow decisions. A failed release gate can coexist with a completed scan. |
+| 15 | **Final Report** | Rule-based | Generates a report from tool evidence, AI candidates, Agent 2 verdicts, policy decisions and coverage gaps. |
+| 16 | Educational-app evaluation | Separate command | Compares saved results with 15 known positive cases after the scan; ground truth never enters scanners or AI. |
 
 </details>
 
@@ -106,51 +106,54 @@ Static scanners (SAST) detect suspicious code patterns, but they have three chro
 
 | Verdict + severity | Decision |
 |---|---|
-| 🔴 Critical / High, confirmed | **Block** |
-| 🟠 Medium | **Warn** |
-| 🔵 Low | **Record** |
-| ⚪ Unconfirmed | Not treated as a confirmed risk |
+| 🔴 Confirmed Critical / High | **Block** |
+| 🟠 Likely Critical / High | **Warn**; manual review is needed |
+| 🔵 Other unresolved or non-blocking verdicts | **Warn** |
+| ⚪ False Positive | **Allow** for that finding |
+
+Unreviewed groups or unresolved candidates can leave the overall gate **incomplete**; scan completion and release approval are separate states.
 
 ### Safety rules
 
-- Mutating and cross-account runtime tests run **only** behind explicit flags: `--runtime-mutating` and `--authorization-checks`.
-- AI Discovery has request and context limits and may not run arbitrary attacks inside the VM.
-- A run is only "completed" if all four tools, AI Discovery and group review succeeded.
+- The fixed trusted Docker lab enables bounded mutating and two-account checks for its disposable fixture; other runtime paths require explicit authorization and flags.
+- AI Discovery has request and context limits and does not run arbitrary attacks against the target.
+- An automatic run is "completed" only when required DAST, all four scanners, AI Discovery and group review succeed. This does not mean the Policy Gate passed or the app is safe.
 
 ## 🗺️ Coverage map
 
 | Vulnerability | Detected by |
 |---|---|
-| SQL Injection | Semgrep + OWASP ZAP |
-| XSS (Reflected / Stored) | Semgrep + OWASP ZAP |
-| Command Injection | Semgrep + custom Python tests |
-| Path Traversal | Semgrep + ZAP or Python tests |
-| Hardcoded Secrets | Gitleaks |
-| IDOR | Python tests with two test accounts |
-| CORS Misconfiguration | OWASP ZAP + custom HTTP check |
-| Vulnerable Dependencies | Trivy |
-| Insecure Docker settings | Trivy |
+| SQL Injection | Semgrep / CodeQL source analysis; no generic SQL-injection DAST probe |
+| XSS (Reflected / Stored) | Static analysis plus fixed local HTTP reflection and write/read probes |
+| Command Injection | Static scanner evidence; no fixed runtime exploitation probe |
+| Path Traversal | Static scanner evidence; no fixed runtime exploitation probe |
+| Hardcoded Secrets | Gitleaks and applicable Trivy filesystem secret checks |
+| IDOR | Fixed two-user order and profile HTTP probes in Security Lab Web |
+| CORS Misconfiguration | Fixed HTTP check for reflected origin with credentials |
+| Vulnerable Dependencies | Trivy filesystem scan where supported manifests and vulnerability data exist |
+| Insecure Docker settings | Trivy filesystem misconfiguration scan; built-image scanning is not implemented |
 
 CodeQL runs alongside Semgrep for source flow analysis.
 
 ## 📈 Experiment tracking
 
-Each run is logged with **MLflow** so the three evaluation conditions can be compared reproducibly. The exact parameters, metrics and artifacts to log are still to be decided by the team.
+The current pipeline writes per-run JSON evidence and a Markdown report to the selected output directory (typically `reports/`), including tool execution, AI usage, verdicts, policy decisions and coverage gaps. **MLflow is not integrated**; any future experiment-tracking schema and comparison protocol still need to be defined.
 
 ## 🧪 Evaluation plan
 
-> **No results yet.** This section describes the plan.
+> **Current status:** post-scan checks against 15 known positive cases exist. A rigorous, controlled three-mode study has not been completed.
 
-Three conditions on the same code, the same ground truth and the same metrics:
+The comparison script has three modes, but they still need a controlled protocol and clearly separated inputs before its numbers can support a broad research claim:
 
 | Condition | What it isolates |
 |---|---|
-| **Scanner-only** | The baseline |
-| **LLM-only** | No scanner, no tools: does the LLM's own reasoning help at all? |
-| **Hybrid** | The full pipeline above |
+| **Scanner-only** | Planned baseline without AI; saved merged evidence may also include DAST and must be separated carefully |
+| **LLM-only** | Optional source-only experiment; not part of the automatic Docker command |
+| **Hybrid** | The implemented full scan: fixed Docker DAST, four scanners, AI Discovery and Security Review |
 
-**Metrics:** Precision · Recall · F1 · False Positive Rate · remediation correctness · severity / prioritization quality · latency and token cost.
+**Metrics:** positive-case recall is available for the 15-case educational fixture. Precision, F1 and False Positive Rate need labeled negative cases and a validated comparison protocol; latency, token usage, severity quality and remediation correctness remain separate evaluation work.
 
-**Also planned:** a held-out secondary test set (so results are not memorized from one benchmark such as OWASP Benchmark) and failure analysis by error type: false positive, false negative, wrong classification, wrong reasoning.
+**Also planned:** a held-out secondary test set and failure analysis by error type: false positive, false negative, wrong classification and wrong reasoning. Neither is implied by one completed educational-target scan.
 
-> **How to read 15/15.** Finding all 15 known scenarios means the known cases were found *in this educational app*. It does not prove detection of every vulnerability in any project, and it does not measure precision from a positive-only sample.
+> **How to read 15/15.** If a saved run matches all 15 known scenarios, that is positive-case coverage *for this educational app and that report*. It does not prove detection of every vulnerability in another project or measure precision from a positive-only sample.
+
