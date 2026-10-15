@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "target": "targets/target_app",
+  "examples": [
+    {
+      "example_id": "SQLI-001-VULN",
+      "file": "targets/target_app/vulnerable_examples/sql_injection.py",
+      "function": "find_users_vulnerable",
+      "label": "vulnerable",
+      "cwe": "CWE-89",
+      "vulnerability": "SQL Injection",
+      "expected_finding": true,
+      "reason": "User-controlled input is concatenated into a SQL query before execution."
+    },
+    {
+      "example_id": "SQLI-001-SAFE",
+      "file": "targets/target_app/safe_examples/sql_injection.py",
+      "function": "find_users_safe",
+      "label": "safe",
+      "cwe": "CWE-89",
+      "vulnerability": "SQL Injection",
+      "expected_finding": false,
+      "reason": "The query uses a parameter placeholder and passes the user value separately."
+    }
+  ]
+}

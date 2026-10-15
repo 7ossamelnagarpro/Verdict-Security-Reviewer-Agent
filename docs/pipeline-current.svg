@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="4300" viewBox="0 0 1800 4300">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#07111f"/><stop offset="1" stop-color="#102a43"/></linearGradient>
+    <linearGradient id="main" x1="0" x2="1"><stop stop-color="#153b5c"/><stop offset="1" stop-color="#1c5877"/></linearGradient>
+    <linearGradient id="ai" x1="0" x2="1"><stop stop-color="#493b73"/><stop offset="1" stop-color="#72518b"/></linearGradient>
+    <linearGradient id="runtime" x1="0" x2="1"><stop stop-color="#624b1f"/><stop offset="1" stop-color="#8a6723"/></linearGradient>
+    <linearGradient id="report" x1="0" x2="1"><stop stop-color="#19543e"/><stop offset="1" stop-color="#277657"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-opacity=".35"/></filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 z" fill="#84c7e8"/></marker>
+    <style>
+      .title{font:700 40px Segoe UI,Arial,sans-serif;fill:#f7fbff}.subtitle{font:400 22px Segoe UI,Arial,sans-serif;fill:#c9e4f2}.box{stroke:#8ecfe9;stroke-width:2;rx:22;filter:url(#shadow)}.head{font:700 27px Segoe UI,Arial,sans-serif;fill:#fff}.body{font:400 21px Segoe UI,Arial,sans-serif;fill:#e7f5fb}.small{font:400 19px Segoe UI,Arial,sans-serif;fill:#d4ecf5}.rtl{direction:rtl;unicode-bidi:plaintext}.arrow{stroke:#84c7e8;stroke-width:4;fill:none;marker-end:url(#arrow)}.branch{stroke:#e8c777;stroke-width:3;fill:none;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="1800" height="4300" fill="url(#bg)"/>
+  <text x="900" y="70" text-anchor="middle" class="title">Current Agentic Security Review Pipeline</text>
+  <text x="900" y="108" text-anchor="middle" class="subtitle">الـPipeline الحالية للمشروع — Static + Runtime + AI Review</text>
+
+  <!-- main spine -->
+  <path class="arrow" d="M900 245 L900 290"/><path class="arrow" d="M900 455 L900 500"/><path class="arrow" d="M900 665 L900 710"/><path class="arrow" d="M900 875 L900 920"/><path class="arrow" d="M900 1085 L900 1130"/><path class="arrow" d="M900 1295 L900 1340"/><path class="arrow" d="M900 1505 L900 1550"/><path class="arrow" d="M900 1715 L900 1760"/><path class="arrow" d="M900 1925 L900 1970"/><path class="arrow" d="M900 2135 L900 2180"/><path class="arrow" d="M900 2345 L900 2390"/><path class="arrow" d="M900 2555 L900 2600"/><path class="arrow" d="M900 2765 L900 2810"/><path class="arrow" d="M900 2975 L900 3020"/><path class="arrow" d="M900 3185 L900 3230"/><path class="arrow" d="M900 3395 L900 3440"/><path class="arrow" d="M900 3605 L900 3650"/><path class="arrow" d="M900 3815 L900 3860"/>
+
+  <g transform="translate(250,140)"><rect width="1300" height="105" class="box" fill="url(#main)"/><text x="35" y="43" class="head">1. استقبال مشروع المستخدم</text><text x="1265" y="43" text-anchor="end" class="body rtl">استلام مسار المشروع وإعدادات الفحص</text></g>
+  <g transform="translate(250,350)"><rect width="1300" height="105" class="box" fill="url(#main)"/><text x="35" y="38" class="head">2. Project Profiler</text><text x="35" y="75" class="body">Files • Languages • Frameworks • Dependencies • Git / Docker / CI • Coverage gaps</text></g>
+  <g transform="translate(250,560)"><rect width="1300" height="105" class="box" fill="url(#main)"/><text x="35" y="38" class="head">3. Scan Planner</text><text x="35" y="75" class="body">Select tools, components, prerequisites, exclusions, and unsupported tasks</text></g>
+  <g transform="translate(250,770)"><rect width="1300" height="105" class="box" fill="url(#main)"/><text x="35" y="38" class="head">4. Scanner Orchestrator</text><text x="35" y="75" class="body">Semgrep • CodeQL • Gitleaks • Trivy</text></g>
+  <g transform="translate(250,980)"><rect width="1300" height="105" class="box" fill="url(#runtime)"/><text x="35" y="38" class="head">5. Test Environment / Runtime Testing</text><text x="35" y="75" class="body">Health • Reflected XSS • Token • Debug exposure • Errors • Rate limit • optional Stored XSS / Upload</text></g>
+  <g transform="translate(250,1190)"><rect width="1300" height="105" class="box" fill="url(#runtime)"/><text x="35" y="38" class="head">6. Authorization Testing</text><text x="35" y="75" class="body">Alice/Bob sessions • IDOR • /admin access • CORS (when authorization checks are enabled)</text></g>
+  <g transform="translate(250,1400)"><rect width="1300" height="105" class="box" fill="url(#main)"/><text x="35" y="38" class="head">7. Normalize</text><text x="35" y="75" class="body">Convert every scanner output into the Unified Finding Schema</text></g>
+  <g transform="translate(250,1610)"><rect width="1300" height="105" class="box" fill="url(#main)"/><text x="35" y="38" class="head">8. Merge &amp; Deduplication</text><text x="35" y="75" class="body">Combine static, runtime, and authorization findings; collapse duplicates</text></g>
+  <g transform="translate(250,1820)"><rect width="1300" height="105" class="box" fill="url(#main)"/><text x="35" y="38" class="head">9. Initial Context Collector</text><text x="35" y="75" class="body">Files, surrounding lines, evidence, code flow, and unavailable-context warnings</text></g>
+  <g transform="translate(250,2030)"><rect width="1300" height="105" class="box" fill="url(#main)"/><text x="35" y="38" class="head">10. Risk Prioritization</text><text x="35" y="75" class="body">Severity • confidence • sinks • input proximity • runtime evidence • context availability</text></g>
+  <g transform="translate(250,2240)"><rect width="1300" height="105" class="box" fill="url(#ai)"/><text x="35" y="38" class="head">11. AI Discovery Agent</text><text x="35" y="75" class="body">Review priority zones, gaps, inputs/sinks, unclear authorization, and business logic</text></g>
+  <g transform="translate(250,2450)"><rect width="1300" height="105" class="box" fill="url(#ai)"/><text x="35" y="38" class="head">12. Verification Layer</text><text x="35" y="75" class="body">Validate AI candidates: path, lines, evidence → Confirmed / Rejected / Needs evidence</text></g>
+  <g transform="translate(250,2660)"><rect width="1300" height="105" class="box" fill="url(#ai)"/><text x="35" y="38" class="head">13. Security Review Agent</text><text x="35" y="75" class="body">Final review of selected scanner, runtime, authorization, and AI findings</text></g>
+  <g transform="translate(250,2870)"><rect width="1300" height="105" class="box" fill="url(#report)"/><text x="35" y="38" class="head">14. Policy Gate</text><text x="35" y="75" class="body">Critical/High → Block • Medium → Warn • Low → Record • Unconfirmed → not accepted as confirmed risk</text></g>
+  <g transform="translate(250,3080)"><rect width="1300" height="105" class="box" fill="url(#report)"/><text x="35" y="38" class="head">15. Final Security Report</text><text x="35" y="75" class="body">Executive summary • findings • evidence • reproduction • policy • endpoint coverage • gaps</text></g>
+  <g transform="translate(250,3290)"><rect width="1300" height="105" class="box" fill="url(#report)"/><text x="35" y="38" class="head">16. Feedback &amp; Continuous Improvement</text><text x="35" y="75" class="body">Improve rules, prompts, prioritization, workflows, and detection coverage</text></g>
+
+  <!-- optional branches -->
+  <path class="branch" d="M250 1032 L95 1032 L95 1235 L250 1235"/><text x="105" y="1018" class="small">Runtime URL</text>
+  <path class="branch" d="M1550 1235 L1705 1235 L1705 1032 L1550 1032"/><text x="1510" y="1018" class="small">--authorization-checks</text>
+  <path class="branch" d="M1550 3132 L1705 3132 L1705 3440 L1550 3440"/><text x="1460" y="3510" class="small">Report + policy artifacts</text>
+
+  <rect x="250" y="3510" width="1300" height="210" rx="22" fill="#0d1b2b" stroke="#e8c777" stroke-width="2"/>
+  <text x="285" y="3555" class="head">ملاحظات الحالة الحالية</text>
+  <text x="285" y="3595" class="body">• Runtime وAuthorization يدخلان فعليًا في Normalize وMerge وRisk.</text>
+  <text x="285" y="3632" class="body">• AI Discovery يستخدم Context أولي؛ On-demand enrichment الكامل ما زال تحسينًا لاحقًا.</text>
+  <text x="285" y="3669" class="body">• Draft Rule Generator وPlaywright العام وEndpoint Discovery العام ليست مفعّلة تلقائيًا لكل مشروع.</text>
+</svg>

@@ -1,0 +1,115 @@
+{
+  "schema_version": "1.0",
+  "fixture": "security-lab-web",
+  "scope": "Manual, post-scan correlation for the saved Groq review only. This file must never be supplied to scanners or agents.",
+  "issues": [
+    {
+      "issue_id": "GT-LOGIN-SQLI",
+      "ground_truth_id": "TT-SQLI-001",
+      "review_ids": ["merged-408350ad38a4e71f9dc8", "merged-57fc9dfb76bc6f2dfb68", "merged-cbbdae26caa901a999c7", "merged-c72dd6bc5b84ce4d23ec"],
+      "note": "Four scanner-origin reviews describe the same unparameterized login query at app.py:148-150. Django-specific advice is wrong for this Flask app."
+    },
+    {
+      "issue_id": "GT-SEARCH-SQLI",
+      "ground_truth_id": "TT-SQLI-002",
+      "review_ids": ["merged-d336261aa6834a8d7a4b", "merged-56a76d9bc2c410a1a59f", "merged-00c3ef613187b77ed9e6"],
+      "note": "Three reviews describe the same unparameterized search query at app.py:170-172."
+    },
+    {
+      "issue_id": "GT-SEARCH-REFLECTED-XSS",
+      "ground_truth_id": "TT-XSS-001",
+      "review_ids": ["merged-bd00ac62aa194898076d", "merged-4890f3a293fb8c6c9722", "merged-c08737ec905d3adfd312", "merged-30df54a908a8ef2b2174"],
+      "note": "These reviews concern request q reaching HTML in /search. The error response and normal response are distinct paths, but one declared benchmark case; a Django-specific label is inapplicable."
+    },
+    {
+      "issue_id": "GT-LOGIN-SEARCH-ERRORS",
+      "ground_truth_id": "TT-ERROR-001",
+      "review_ids": ["merged-3f43ef4aa5bccc5eab46", "merged-38162fc20ad34e340aee", "ai-4c1091d6331a212b"],
+      "note": "The declared benchmark combines /login and /search error disclosures. The source returns database error messages and query text, not a Python stack trace."
+    },
+    {
+      "issue_id": "GT-FILE-PATH-TRAVERSAL",
+      "ground_truth_id": "TT-PATH-001",
+      "review_ids": ["merged-553fc2269771ce1811f3"],
+      "note": "The file route joins an untrusted path and opens it without a containment check."
+    },
+    {
+      "issue_id": "GT-PING-COMMAND-INJECTION",
+      "ground_truth_id": "TT-CMD-001",
+      "review_ids": ["merged-4b5174afaee446da8f47", "merged-0841a4f46e1edc40db32", "merged-983cca6f9bc4241446ed", "merged-b9db99655c4f395a7b1b"],
+      "note": "All four reviews cite the same shell=True call. The additional XSS claims in three reviews are not independently established by their cited evidence."
+    },
+    {
+      "issue_id": "GT-ORDERS-IDOR",
+      "ground_truth_id": "TT-IDOR-001",
+      "review_ids": ["ai-6fb1063526db509e"],
+      "note": "The order lookup uses order_id without comparing row.user_id with the logged-in user."
+    },
+    {
+      "issue_id": "GT-ADMIN-ACCESS-CONTROL",
+      "ground_truth_id": "TT-AUTH-001",
+      "review_ids": ["ai-26ff1a538d0120e9", "ai-3a4933016d032af7"],
+      "note": "Both reviews describe the ineffective admin check. SSN exposure here is a consequence of /admin, not evidence that the separate /debug benchmark case was detected."
+    },
+    {
+      "issue_id": "OTHER-LOGIN-ERROR-XSS",
+      "ground_truth_id": null,
+      "review_ids": ["merged-1bbd9b9606120e6d9073"],
+      "note": "Possible XSS in the login error response is outside the declared positive cases and needs separate validation."
+    },
+    {
+      "issue_id": "OTHER-COOKIE-ATTRIBUTES",
+      "ground_truth_id": null,
+      "review_ids": ["merged-0497e9543fadbc524b03"],
+      "note": "Missing cookie attributes is not the benchmark's predictable token format at app.py:108-109."
+    },
+    {
+      "issue_id": "OTHER-SEARCH-ROW-XSS",
+      "ground_truth_id": null,
+      "review_ids": ["merged-1eceeef2ae5f17594bed", "merged-37e0f24c737e1382ea84"],
+      "note": "The findings point at database row fields at app.py:177; the cited evidence does not establish attacker control of those fields. Do not count as extra confirmed XSS."
+    },
+    {
+      "issue_id": "OTHER-FILE-CONTENT-XSS",
+      "ground_truth_id": null,
+      "review_ids": ["merged-1c819ec49a2a1311cf7c", "merged-8901b16295cbe9d72a87"],
+      "note": "Rendering file contents as HTML may be risky, but the cited evidence alone does not establish an attacker-controlled file."
+    },
+    {
+      "issue_id": "OTHER-FILE-ERROR-DISCLOSURE",
+      "ground_truth_id": null,
+      "review_ids": ["merged-22b91784ed0a4c4c0e8d"],
+      "note": "The file route returns an exception message; it does not return a Python stack trace as claimed. Outside the declared /login and /search error case."
+    },
+    {
+      "issue_id": "OTHER-PING-ERROR-DISCLOSURE",
+      "ground_truth_id": null,
+      "review_ids": ["merged-ec51e3b63c20f593bdbb", "ai-ec34d920be261ec4"],
+      "note": "Both reviews point to the ping exception response. Outside the declared /login and /search error case."
+    },
+    {
+      "issue_id": "OTHER-UPLOAD-PATH-TRAVERSAL",
+      "ground_truth_id": null,
+      "review_ids": ["merged-6f060dba31974b8f9989"],
+      "note": "An unsafe upload filename path is distinct from the benchmark's HTML upload-and-serve case; validate filename handling separately."
+    },
+    {
+      "issue_id": "OTHER-UPLOAD-RESPONSE-XSS",
+      "ground_truth_id": null,
+      "review_ids": ["merged-2a17da6090ebfaf2d79f"],
+      "note": "The upload response interpolates the filename; this is distinct from serving uploaded HTML and needs separate validation."
+    },
+    {
+      "issue_id": "OTHER-FLASK-DEBUG-MODE",
+      "ground_truth_id": null,
+      "review_ids": ["merged-e2fe7ca6edb9e6bd028f"],
+      "note": "Flask debug mode is separate from the /debug endpoint exposing the key and environment."
+    },
+    {
+      "issue_id": "OTHER-UPLOAD-AUTHORIZATION",
+      "ground_truth_id": null,
+      "review_ids": ["ai-8abc069533a4141f"],
+      "note": "A public upload endpoint is not automatically an authorization flaw. The review did not prove a required authorization policy or the benchmark's HTML upload-and-serve case."
+    }
+  ]
+}

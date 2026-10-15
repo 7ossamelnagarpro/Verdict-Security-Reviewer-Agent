@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "fixture": "security-lab-web",
+  "source": "benchmark/security_lab_web_fixture_notes.md",
+  "scope": "The intentionally vulnerable local VulnShop educational application.",
+  "test_accounts": [
+    {"username": "alice", "password": "alice123", "role": "user"},
+    {"username": "bob", "password": "bob123", "role": "user"},
+    {"username": "admin", "password": "admin123", "role": "admin"}
+  ],
+  "findings": [
+    {"id": "TT-IDOR-001", "category": "idor", "title": "IDOR on orders", "endpoint": "GET /orders/<id>", "expected_status": "vulnerable", "aliases": ["idor", "cross-user order"]},
+    {"id": "TT-IDOR-002", "category": "idor", "title": "IDOR on profiles", "endpoint": "GET /profile/<id>", "expected_status": "vulnerable", "aliases": ["idor", "cross-user profile"]},
+    {"id": "TT-SQLI-001", "category": "sql_injection", "title": "SQL injection authentication bypass", "endpoint": "POST /login", "expected_status": "vulnerable", "aliases": ["sql injection", "sql"]},
+    {"id": "TT-SQLI-002", "category": "sql_injection", "title": "SQL injection search", "endpoint": "GET /search?q=", "expected_status": "vulnerable", "aliases": ["sql injection", "sql"]},
+    {"id": "TT-XSS-001", "category": "reflected_xss", "title": "Reflected XSS", "endpoint": "GET /search?q=", "expected_status": "vulnerable", "aliases": ["reflected xss", "reflected server-side cross-site scripting"]},
+    {"id": "TT-XSS-002", "category": "stored_xss", "title": "Stored XSS", "endpoint": "POST /comments", "expected_status": "vulnerable", "aliases": ["stored xss"]},
+    {"id": "TT-AUTH-001", "category": "broken_access_control", "title": "Broken access control", "endpoint": "GET /admin", "expected_status": "vulnerable", "aliases": ["broken access", "admin panel"]},
+    {"id": "TT-PATH-001", "category": "path_traversal", "title": "Path traversal", "endpoint": "GET /files/<path>", "expected_status": "vulnerable", "aliases": ["path traversal", "uncontrolled data used in path"]},
+    {"id": "TT-CMD-001", "category": "command_injection", "title": "Command injection", "endpoint": "GET /ping?host=", "expected_status": "vulnerable", "aliases": ["command injection", "uncontrolled command line"]},
+    {"id": "TT-SESSION-001", "category": "weak_session_token", "title": "Weak predictable session token", "endpoint": "token cookie", "expected_status": "vulnerable", "aliases": ["predictable session token", "weak session"]},
+    {"id": "TT-EXPOSURE-001", "category": "sensitive_data_exposure", "title": "Sensitive data exposure", "endpoint": "GET /debug", "expected_status": "vulnerable", "aliases": ["sensitive data", "debug endpoint"]},
+    {"id": "TT-ERROR-001", "category": "verbose_errors", "title": "Verbose errors", "endpoint": "/login and /search", "expected_status": "vulnerable", "aliases": ["verbose", "database error"]},
+    {"id": "TT-BRUTE-001", "category": "missing_brute_force_protection", "title": "No brute-force protection", "endpoint": "POST /login", "expected_status": "vulnerable", "aliases": ["brute-force", "rate-limit"]},
+    {"id": "TT-CORS-001", "category": "cors_misconfiguration", "title": "CORS misconfiguration", "endpoint": "any endpoint", "expected_status": "vulnerable", "aliases": ["cors"]},
+    {"id": "TT-UPLOAD-001", "category": "insecure_file_upload", "title": "Insecure file upload", "endpoint": "POST /upload", "expected_status": "vulnerable", "aliases": ["file upload", "uploaded html"]}
+  ]
+}
