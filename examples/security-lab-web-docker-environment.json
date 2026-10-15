@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "mode": "docker_compose",
+  "trust_level": "trusted_lab",
+  "authorized_for_testing": true,
+  "target": {
+    "base_url": "http://127.0.0.1:5055",
+    "health_path": "/",
+    "expected_status": 200
+  },
+  "compose": {
+    "file": "compose.yaml",
+    "app_service": "web"
+  },
+  "accounts": [],
+  "checks": {
+    "authorization": false,
+    "mutating": true
+  }
+}
