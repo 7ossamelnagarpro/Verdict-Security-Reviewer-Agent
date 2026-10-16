@@ -11,6 +11,7 @@
 
 <p align="center">
   <a href="#-overview">Overview</a> ·
+  <a href="#-run-the-current-docker-prototype">Run</a> ·
   <a href="#-the-problem">Problem</a> ·
   <a href="#-whats-different">What's different</a> ·
   <a href="#-pipeline">Pipeline</a> ·
@@ -32,6 +33,76 @@
 | 📈 **Saved artifacts** | Per-run JSON and Markdown | Preserve evidence, review status, policy decisions and coverage gaps; MLflow is not integrated. |
 
 **Team:** Hossam Elnagar · Safaa Abu Alsoud, internship / academic security research project.
+
+## ▶️ Run the current Docker prototype
+
+The supported automatic end-to-end command currently targets the trusted
+`targets/security-lab-web` fixture included in this repository. Run it from
+the repository root in an **Administrator PowerShell** with Docker Desktop
+already running:
+
+```powershell
+# Run once after cloning, if the local environment does not exist yet.
+py -3.11 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+
+$repo = (Get-Location).Path
+$scanOutput = Join-Path $repo ('reports\automatic-security-lab-docker-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+
+& "$repo\.venv\Scripts\python.exe" "$repo\scripts\run_docker_automatic_pipeline.py" `
+  --output $scanOutput `
+  --codeql-bundle 'C:\path\to\codeql-2.27.1\codeql'
+```
+
+The CodeQL directory must contain the Windows `codeql.exe` executable. Semgrep
+CE, Gitleaks and Trivy must be installed and available to the process. The
+readiness stage checks all four adapters before Docker starts and stops the run
+if a required adapter, the CodeQL bundle, the AI provider or the output path
+is not ready.
+
+The automatic command uses Groq by default. Set `GROQ_API_KEY` only in the
+PowerShell session that runs the scan; never commit an API key to this
+repository. A local Ollama provider can be selected instead when its service
+and model are already available:
+
+```powershell
+& "$repo\.venv\Scripts\python.exe" "$repo\scripts\run_docker_automatic_pipeline.py" `
+  --output $scanOutput `
+  --codeql-bundle 'C:\path\to\codeql-2.27.1\codeql' `
+  --ai-provider ollama `
+  --ai-model 'qwen2.5-coder:7b'
+```
+
+During a run, the pipeline validates the trusted Compose file, starts a
+disposable loopback-only stack, performs the bounded DAST and two-user
+authorization probes, saves and validates the runtime evidence, removes the
+stack, then runs the four static scanners, AI Discovery and Security Review.
+The final JSON and Markdown artifacts are written to `$scanOutput`; the
+temporary runtime evidence is also retained under `reports/docker-autoscan/`
+for that run. A new output directory is required for every run, so previous
+reports are not overwritten.
+
+### Current scope and boundaries
+
+- The automatic Docker route runs **only** `targets/security-lab-web`; it does
+  not automatically build or run an arbitrary user's Dockerfile, Compose file
+  or runtime URL.
+- Its DAST is intentionally bounded HTTP and two-account authorization testing,
+  not a full browser crawl and not an OWASP ZAP scan.
+- Docker is used here for the trusted educational fixture. A Docker container
+  is not an equivalent isolation boundary to the separate Hyper-V worker for
+  arbitrary untrusted projects.
+- A run can be marked completed only when required DAST, all four scanners, AI
+  Discovery and Security Review finish. Completion does not mean the Policy
+  Gate allowed release or that the application is safe.
+- AI candidates remain evidence-gated and may be reported as needing more
+  evidence. Groq token/rate limits can make the AI stage partial; Ollama is the
+  local alternative.
+- Trivy currently performs the supported filesystem/dependency/configuration
+  checks; built-image scanning and MLflow integration are not implemented.
+
+The fixed educational fixture is intentionally vulnerable and should not be
+exposed on a public or shared network.
 
 ## 🔴 The problem
 
