@@ -87,6 +87,7 @@ def render_final_report(*, project: str, review: dict[str, Any], policy: dict[st
                         isolated_pilot: dict[str, Any] | None = None,
                         isolated_runtime: dict[str, Any] | None = None,
                         docker_runtime: dict[str, Any] | None = None,
+                        runtime_evidence: dict[str, Any] | None = None,
                         merged: dict[str, Any] | None = None,
                         risk: dict[str, Any] | None = None,
                         execution: dict[str, Any] | None = None,
@@ -175,6 +176,13 @@ def render_final_report(*, project: str, review: dict[str, Any], policy: dict[st
             configured = "enabled" if deployment["flask_debug"] else "disabled"
             lines.append(f"- Hash-matched Docker startup recipe: Flask debug **{configured}**. "
                          "This describes this Compose deployment only, not alternate entrypoints.")
+    if runtime_evidence is not None:
+        lines += ["", "## Generic Runtime DAST", "",
+                  f"- Source: `{runtime_evidence.get('source', 'unknown')}`",
+                  f"- Target: `{runtime_evidence.get('target', 'redacted')}`",
+                  f"- Bounded probe records: **{len(runtime_evidence.get('results', []))}**",
+                  "- This evidence came from an explicit Runtime Contract and contains non-mutating baseline checks.",
+                  "- No browser crawl, credentialed authorization workflow, or exploit confirmation was performed."]
     if execution is not None:
         lines += ["", "## Scanner Execution", ""]
         tasks = execution.get("tasks", [])
@@ -234,6 +242,7 @@ def write_final_report(path: str | Path, *, project: str, review: dict[str, Any]
                        isolated_pilot: dict[str, Any] | None = None,
                        isolated_runtime: dict[str, Any] | None = None,
                        docker_runtime: dict[str, Any] | None = None,
+                       runtime_evidence: dict[str, Any] | None = None,
                        merged: dict[str, Any] | None = None,
                        risk: dict[str, Any] | None = None,
                        execution: dict[str, Any] | None = None,
@@ -245,6 +254,7 @@ def write_final_report(path: str | Path, *, project: str, review: dict[str, Any]
                                               isolated_pilot=isolated_pilot,
                                               isolated_runtime=isolated_runtime,
                                               docker_runtime=docker_runtime,
+                                              runtime_evidence=runtime_evidence,
                                               merged=merged, risk=risk, execution=execution,
                                               scanner_requirement=scanner_requirement,
                                               coverage_gaps=coverage_gaps), encoding="utf-8")

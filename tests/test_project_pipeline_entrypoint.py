@@ -12,6 +12,8 @@ def _args(tmp_path: Path, project: Path, *, provider: str = "ollama") -> argpars
     return argparse.Namespace(
         project=project,
         output=tmp_path / "reports",
+        runtime_contract=None,
+        static_only=True,
         codeql_bundle=None,
         ai_provider=provider,
         ai_model=None,
@@ -47,6 +49,16 @@ def test_generic_entrypoint_rejects_output_inside_project(tmp_path: Path) -> Non
     args.output = project / "reports"
 
     with pytest.raises(ValueError, match="outside the scanned project"):
+        _validate(args)
+
+
+def test_full_scan_requires_runtime_contract(tmp_path: Path) -> None:
+    project = tmp_path / "customer-app"
+    project.mkdir()
+    args = _args(tmp_path, project)
+    args.static_only = False
+
+    with pytest.raises(ValueError, match="runtime-contract"):
         _validate(args)
 
 
