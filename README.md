@@ -23,7 +23,7 @@
 
 ## 🛡️ Overview
 
-**Verdict** is a pre-deployment security review pipeline. For its trusted Security Lab Web fixture, it runs bounded DAST in a temporary Docker Compose stack, removes the stack, then runs four scanners and **two AI agents** for discovery and evidence-based review. A separate fixed-target Hyper-V path remains available; automatic DAST for arbitrary repositories is not implemented.
+**Verdict** is a pre-deployment security review pipeline. For its trusted Security Lab Web fixture, it runs bounded DAST in a temporary Docker Compose stack, removes the stack, then runs four scanners and **two AI agents** for discovery and evidence-based review. Other local projects can use the explicit Runtime Contract path for bounded non-mutating DAST; arbitrary project Docker execution is not enabled.
 
 | | Role | In one line |
 |---|---|---|
@@ -103,6 +103,50 @@ reports are not overwritten.
 
 The fixed educational fixture is intentionally vulnerable and should not be
 exposed on a public or shared network.
+
+## 🧰 Review another local project (source-only)
+
+The project-agnostic entry point accepts any local source tree and runs the
+static, AI Discovery and evidence-based review stages without starting the
+project or executing its Docker files:
+
+```powershell
+$project = (Resolve-Path 'C:\Projects\my-app').Path
+$output = Join-Path (Resolve-Path '.').Path ('reports\my-app-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+
+& ".\.venv\Scripts\python.exe" ".\scripts\run_project_pipeline.py" `
+  $project `
+  --output $output `
+  --static-only `
+  --codeql-bundle 'C:\path\to\codeql-2.27.1\codeql' `
+  --ai-provider ollama `
+  --ai-model 'qwen2.5-coder:7b'
+```
+
+This mode is the safe default for arbitrary projects. It runs the Project
+Profiler, Scan Planner, applicable scanners, AI Discovery, verification,
+triage, Security Review and final reporting. The output directory must be
+new and outside the scanned project. Use `--require-all-scanners` when the
+project contract requires every scanner adapter; otherwise the planner keeps
+unsupported or not-applicable tools visible as coverage gaps.
+
+For a complete scan, omit `--static-only` and provide a Runtime Contract:
+
+```powershell
+& ".\\.venv\\Scripts\\python.exe" ".\\scripts\\run_project_pipeline.py" `
+  $project `
+  --output $output `
+  --runtime-contract 'C:\path\to\runtime-contract.json' `
+  --codeql-bundle 'C:\path\to\codeql-2.27.1\codeql' `
+  --ai-provider ollama `
+  --ai-model 'qwen2.5-coder:7b'
+```
+
+The full mode runs bounded generic DAST against the explicitly authorized
+runtime before the static and AI stages. It does not infer a start command or
+run a project's Docker files. Project-specific authorization and mutating
+workflows require a separate adapter; the current HTTP probes tailored to the
+trusted educational fixture remain on its dedicated Docker route.
 
 ## 🔴 The problem
 

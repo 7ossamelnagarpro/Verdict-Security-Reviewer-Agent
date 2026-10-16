@@ -152,6 +152,8 @@ def main() -> int:
                         help="import completed, source-matched DAST results from the automatic networkless VM worker")
     parser.add_argument("--docker-runtime-run-id", default=None,
                         help="import completed, source-matched DAST results from the trusted educational Docker stack")
+    parser.add_argument("--runtime-evidence", type=Path,
+                        help="import completed generic DAST evidence produced by an explicit Runtime Contract")
     args = parser.parse_args()
     if args.scanner_preflight_only:
         if not args.require_all_scanners:
@@ -178,14 +180,15 @@ def main() -> int:
     if args.isolated_pilot_run_id and runtime_url:
         parser.error("An isolated pilot result has no host runtime URL; run live DAST separately without --isolated-pilot-run-id")
     if sum(bool(item) for item in (runtime_url, args.isolated_pilot_run_id,
-                                  args.isolated_runtime_run_id, args.docker_runtime_run_id)) > 1:
+                                  args.isolated_runtime_run_id, args.docker_runtime_run_id,
+                                  args.runtime_evidence)) > 1:
         parser.error("Import one runtime source at a time: VM DAST, Docker DAST, live URL, or historical health pilot")
-    if (args.isolated_runtime_run_id or args.docker_runtime_run_id) and (
+    if (args.isolated_runtime_run_id or args.docker_runtime_run_id or args.runtime_evidence) and (
         args.runtime_mutating or args.runtime_auth or args.authorization_checks or
         args.endpoint_coverage or args.workflow_checks
     ):
         parser.error("Select runtime checks when creating the worker; host URL check flags do not apply to saved DAST")
-    if args.require_dast and not (runtime_url or args.isolated_runtime_run_id or args.docker_runtime_run_id):
+    if args.require_dast and not (runtime_url or args.isolated_runtime_run_id or args.docker_runtime_run_id or args.runtime_evidence):
         parser.error("DAST is required but no live URL or completed runtime run was supplied; a health check is not DAST")
     try:
         provider = provider_from_environment(args.ai_provider, args.ai_model)
@@ -220,6 +223,20 @@ def main() -> int:
             )
         except (OSError, ValueError) as error:
             parser.error(f"Invalid trusted Docker DAST evidence: {error}")
+    generic_runtime_payload = None
+    if args.runtime_evidence:
+        evidence_path = args.runtime_evidence.resolve()
+        if evidence_path.is_relative_to(project):
+            parser.error("Generic runtime evidence must be outside the scanned project")
+        try:
+            generic_runtime_payload = json.loads(evidence_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as error:
+            parser.error(f"Invalid generic DAST evidence: {error}")
+        if (not isinstance(generic_runtime_payload, dict)
+                or generic_runtime_payload.get("schema_version") != "1.0"
+                or generic_runtime_payload.get("status") != "completed"
+                or not isinstance(generic_runtime_payload.get("results"), list)):
+            parser.error("Invalid generic DAST evidence: expected completed schema 1.0 results")
     saved_runtime_payload = isolated_runtime_payload or docker_runtime_payload
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -304,6 +321,14 @@ def main() -> int:
                 normalized = _enrich_login_runtime_batch(normalized, source_facts)
             batches.append(normalized)
             _write(output / normalized_name, normalized.to_dict())
+    if generic_runtime_payload is not None:
+        staged_output = output / "runtime.json"
+        evidence_path = args.runtime_evidence.resolve()
+        if evidence_path != staged_output.resolve():
+            shutil.copy2(evidence_path, staged_output)
+        normalized = normalize_runtime_json_file(staged_output)
+        batches.append(normalized)
+        _write(output / "runtime-normalized.json", normalized.to_dict())
     if runtime_url:
         runtime_path = output / "runtime.json"
         runtime_result = run_checks(RuntimeConfig(runtime_url, runtime_path, mutating=args.runtime_mutating))
@@ -361,6 +386,10 @@ def main() -> int:
         coverage_payload = {"status": "isolated_completed" if isolated_runtime_payload else "docker_completed",
                             "probe_count": sum(saved_runtime_payload["probe_counts"].values()),
                             "coverage_gaps": saved_runtime_payload["limitations"]}
+    elif generic_runtime_payload is not None:
+        coverage_payload = {"status": "generic_completed",
+                            "probe_count": len(generic_runtime_payload.get("results", [])),
+                            "coverage_gaps": generic_runtime_payload.get("coverage_notes", [])}
     else:
         coverage_payload = {"status": "not_run", "reason": "No runtime URL supplied; set SECURITY_REVIEWER_RUNTIME_URL or pass --runtime-url."}
     merged = merge_normalized_findings(tuple(batches))
@@ -436,7 +465,9 @@ def main() -> int:
                                merged.coverage_gaps + risk.coverage_gaps + pilot_coverage_gap +
                                scanner_failures +
                                (tuple(saved_runtime_payload["limitations"])
-                                if saved_runtime_payload is not None else ())))
+                                if saved_runtime_payload is not None else ()) +
+                               (tuple(generic_runtime_payload.get("coverage_notes", []))
+                                if generic_runtime_payload is not None else ())))
     scanner_requirement = {"requested": args.require_all_scanners,
                            "required": list(AUTOMATIC_REQUIRED_SCANNERS) if args.require_all_scanners else [],
                            "satisfied": scanners_satisfied,
@@ -447,6 +478,7 @@ def main() -> int:
                        isolated_pilot=isolated_pilot_payload,
                        isolated_runtime=isolated_runtime_payload,
                        docker_runtime=docker_runtime_payload,
+                       runtime_evidence=generic_runtime_payload,
                        merged=merged.to_dict(), risk=risk.to_dict(),
                        execution=execution.to_dict(), scanner_requirement=scanner_requirement,
                        coverage_gaps=coverage_gaps)
@@ -455,7 +487,8 @@ def main() -> int:
               "project": str(project), "adapter_ids": registry.scanner_ids(),
               "test_environment": environment_plan_payload or {"status": "not_requested"},
               "dast_requirement": {"requested": args.require_dast,
-                                   "satisfied": (bool(runtime_url) or saved_runtime_payload is not None)
+                                   "satisfied": (bool(runtime_url) or saved_runtime_payload is not None or
+                                                  generic_runtime_payload is not None)
                                                 and coverage_payload.get("status") != "failed"},
               "sast_requirement": {"requested": args.require_sast,
                                    "satisfied": any(task.scanner_id in {"semgrep-ce", "codeql-cli"}
@@ -465,6 +498,7 @@ def main() -> int:
               "isolated_pilot": isolated_pilot_payload or {"status": "not_requested"},
               "isolated_runtime": isolated_runtime_payload or {"status": "not_requested"},
               "docker_runtime": docker_runtime_payload or {"status": "not_requested"},
+              "runtime_evidence": generic_runtime_payload or {"status": "not_requested"},
               "execution": execution.to_dict(), "merge_summary": asdict(merged.summary),
               "endpoint_coverage": {"status": coverage_payload.get("status"),
                                      "endpoint_count": coverage_payload.get("endpoint_count"),
@@ -518,8 +552,8 @@ def main() -> int:
                              + (["Security review is incomplete; pending issue groups are not cleared."]
                               if review_payload.get("status") != "completed" else [])
                              + ["Scanner silence is not proof of safety."]
-                             + (["Runtime checks require an authorized target URL."]
-                                if saved_runtime_payload is None else [])
+                             + (["Runtime checks require an authorized target URL or completed Runtime Contract evidence."]
+                                if saved_runtime_payload is None and generic_runtime_payload is None else [])
                              + (["Mutating workflows remain opt-in and are not executed by this run."]
                                 if saved_runtime_payload is None or
                                 not saved_runtime_payload["mutating_checks_enabled"] else

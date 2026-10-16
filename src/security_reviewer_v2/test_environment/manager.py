@@ -51,6 +51,7 @@ class EnvironmentSpec:
     authorization_checks: bool
     mutating_checks: bool
     authorized_for_testing: bool
+    endpoint_paths: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -87,7 +88,7 @@ def load_environment_spec(path: str | Path, *, project_root: str | Path) -> Envi
     if not config.is_file() or config.stat().st_size > 32 * 1024:
         raise ValueError("Test-environment configuration must be a JSON file of at most 32 KiB")
     payload = json.loads(config.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict) or set(payload) - {"schema_version", "mode", "trust_level", "target", "compose", "accounts", "checks", "required_env", "authorized_for_testing"}:
+    if not isinstance(payload, dict) or set(payload) - {"schema_version", "mode", "trust_level", "target", "compose", "accounts", "checks", "required_env", "authorized_for_testing", "endpoints"}:
         raise ValueError("Unknown or invalid test-environment configuration fields")
     if payload.get("schema_version") != SCHEMA_VERSION:
         raise ValueError("Unsupported test-environment schema version")
@@ -145,9 +146,10 @@ def load_environment_spec(path: str | Path, *, project_root: str | Path) -> Envi
             raise ValueError("compose.app_service must be a service name")
     elif compose is not None:
         raise ValueError("compose is only valid for docker_compose mode")
+    endpoint_paths = _endpoint_paths(payload.get("endpoints", []))
     return EnvironmentSpec(mode, trust_level, base_url, health_path, expected_status, compose_file,
                            app_service, tuple(sorted(set(required_env))), tuple(sorted(set(account_names))), authorization,
-                           mutating, True)
+                           mutating, True, endpoint_paths)
 
 
 def plan_environment(
@@ -169,6 +171,8 @@ def plan_environment(
         warnings.append("Profiler inventory is partial; startup evidence may be incomplete.")
     if spec.mode == "existing_url":
         evidence.append("A loopback runtime URL was supplied; no application build is needed.")
+        if spec.endpoint_paths:
+            evidence.append(f"Runtime contract supplied {len(spec.endpoint_paths)} bounded endpoint path(s).")
     else:
         if spec.trust_level != "trusted_lab":
             missing.append("Untrusted project execution requires a VM worker; host Docker Compose is forbidden")
@@ -361,6 +365,22 @@ def _relative_compose_path(value: object) -> str:
     if path.is_absolute() or any(part in {".", ".."} for part in value.split("/")) or path.suffix not in {".yaml", ".yml"}:
         raise ValueError("Compose file must be a relative .yml or .yaml path inside the project")
     return path.as_posix()
+
+
+def _endpoint_paths(value: object) -> tuple[str, ...]:
+    if not isinstance(value, list) or len(value) > 64:
+        raise ValueError("endpoints must be a list of at most 64 relative URL paths")
+    paths: list[str] = []
+    for item in value:
+        if (not isinstance(item, str) or not item.startswith("/") or item.startswith("//")
+                or len(item) > 300 or "#" in item or "\\" in item
+                or ".." in item.split("/")):
+            raise ValueError("each endpoint must be a bounded absolute URL path")
+        parsed = urllib.parse.urlsplit(item)
+        if parsed.scheme or parsed.netloc:
+            raise ValueError("endpoints must contain paths, not full URLs")
+        paths.append(item)
+    return tuple(dict.fromkeys(paths))
 
 
 def _loopback_url(value: object) -> str:
