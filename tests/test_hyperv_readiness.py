@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import json
 import subprocess
+from types import SimpleNamespace
 from pathlib import Path
+
+import pytest
 
 from security_reviewer_v2.test_environment.hyperv import inspect_hyperv_host
 
@@ -18,7 +21,15 @@ def test_non_windows_host_is_blocked_without_running_commands(tmp_path: Path) ->
     assert any("Windows Hyper-V" in reason for reason in result.missing)
 
 
-def test_windows_host_readiness_uses_only_a_fixed_read_only_query(tmp_path: Path) -> None:
+def test_windows_host_readiness_uses_only_a_fixed_read_only_query(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Keep this unit test independent of the runner's actual free disk space.
+    # The production readiness check must still enforce its real storage limit.
+    monkeypatch.setattr(
+        "security_reviewer_v2.test_environment.hyperv.shutil.disk_usage",
+        lambda _root: SimpleNamespace(free=80 * 1024**3),
+    )
     calls = []
 
     def runner(argv, **kwargs):
