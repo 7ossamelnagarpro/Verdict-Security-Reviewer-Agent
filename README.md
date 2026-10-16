@@ -104,6 +104,37 @@ reports are not overwritten.
 The fixed educational fixture is intentionally vulnerable and should not be
 exposed on a public or shared network.
 
+## 🧰 Review another local project (source-only)
+
+The project-agnostic entry point accepts any local source tree and runs the
+static, AI Discovery and evidence-based review stages without starting the
+project or executing its Docker files:
+
+```powershell
+$project = (Resolve-Path 'C:\Projects\my-app').Path
+$output = Join-Path (Resolve-Path '.').Path ('reports\my-app-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+
+& ".\.venv\Scripts\python.exe" ".\scripts\run_project_pipeline.py" `
+  $project `
+  --output $output `
+  --codeql-bundle 'C:\path\to\codeql-2.27.1\codeql' `
+  --ai-provider ollama `
+  --ai-model 'qwen2.5-coder:7b'
+```
+
+This mode is the safe default for arbitrary projects. It runs the Project
+Profiler, Scan Planner, applicable scanners, AI Discovery, verification,
+triage, Security Review and final reporting. The output directory must be
+new and outside the scanned project. Use `--require-all-scanners` when the
+project contract requires every scanner adapter; otherwise the planner keeps
+unsupported or not-applicable tools visible as coverage gaps.
+
+This command intentionally does **not** infer a start command, run a project,
+or perform generic DAST. The current HTTP probes are tailored to the trusted
+educational fixture. Runtime testing for another project will require an
+explicit project-specific runtime contract and authorization before it is
+enabled.
+
 ## 🔴 The problem
 
 Static scanners (SAST) find important source-level risks, but a scanner-only workflow can leave three problems:
