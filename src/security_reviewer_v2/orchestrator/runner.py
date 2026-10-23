@@ -9,6 +9,7 @@ import threading
 import time
 from pathlib import Path
 
+from security_reviewer_v2.scanners.hostpaths import translate_arguments
 from security_reviewer_v2.scanners.models import (
     CommandResult,
     CommandSpec,
@@ -74,7 +75,7 @@ class ProcessRunner:
 
         started = time.monotonic()
         process = subprocess.Popen(
-            [str(executable), *spec.arguments],
+            [str(executable), *translate_arguments(executable, spec.arguments)],
             cwd=str(working_directory),
             env=environment,
             stdin=subprocess.DEVNULL,

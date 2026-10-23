@@ -17,6 +17,7 @@ from pathlib import Path
 
 from security_reviewer_v2.discovery.provider import provider_from_environment
 from security_reviewer_v2.profiler import profile_project
+from security_reviewer_v2.scanners.hostpaths import find_codeql
 from security_reviewer_v2.scanners.web_runtime import RuntimeConfig, run_checks
 from security_reviewer_v2.test_environment import (
     load_environment_spec, plan_environment, provision_environment,
@@ -63,7 +64,7 @@ def main(argv: list[str] | None = None) -> int:
     if os.environ.get("SECURITY_REVIEWER_RUNTIME_URL"):
         parser.error("Clear SECURITY_REVIEWER_RUNTIME_URL; this run imports only its own Docker DAST evidence")
     bundle = (args.codeql_bundle or repository.parent / "tools" / "codeql-2.27.1" / "codeql").resolve()
-    if not (bundle / "codeql.exe").is_file():
+    if find_codeql(bundle) is None:
         parser.error(f"Required CodeQL executable is missing from {bundle}")
     model = args.ai_model or ("openai/gpt-oss-120b" if args.ai_provider == "groq" else "qwen2.5-coder:7b")
     try:

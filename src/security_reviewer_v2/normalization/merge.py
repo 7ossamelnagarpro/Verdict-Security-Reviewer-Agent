@@ -76,8 +76,13 @@ def merge_normalized_findings(
                 f"{scanner_id}:{warning.code}: {warning.message}"
             )
         if batch.status != NormalizationStatus.COMPLETE:
+            reasons = []
+            for warning in batch.warnings[:2]:
+                first_line = " ".join(str(warning.message).splitlines()[:1]).strip()
+                reasons.append(f"{warning.code}: {first_line[:140]}")
             coverage_gaps.append(
                 f"{scanner_id} normalization was {batch.status.value}; some scanner results may be unavailable."
+                + (f" Scanner reported: {'; '.join(reasons)}." if reasons else "")
             )
 
     groups = _cluster(all_findings, selected_policy)

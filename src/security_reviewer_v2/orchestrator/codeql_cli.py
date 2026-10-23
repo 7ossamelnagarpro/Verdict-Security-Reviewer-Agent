@@ -11,6 +11,7 @@ from security_reviewer_v2.profiler import profile_project
 from security_reviewer_v2.profiler.models import _to_primitive
 from security_reviewer_v2.scanners import AdapterRegistry
 from security_reviewer_v2.scanners.codeql import CodeQLAdapter, CodeQLConfig
+from security_reviewer_v2.scanners.hostpaths import find_codeql
 from .service import ScannerOrchestrator, OrchestratorPolicy
 
 
@@ -34,7 +35,7 @@ def main(argv=None):
         if matches:
             suites[language] = str(matches[0])
     adapter = CodeQLAdapter(CodeQLConfig(
-        executable=str(bundle / ("codeql.exe" if os.name == "nt" else "codeql")),
+        executable=str(find_codeql(bundle) or bundle / ("codeql.exe" if os.name == "nt" else "codeql")),
         query_suites=suites, search_path=str(bundle / "qlpacks"),
         threads=args.threads, ram_mb=args.ram_mb,
         extraction_timeout_seconds=args.extract_timeout,

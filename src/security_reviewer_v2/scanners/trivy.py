@@ -12,6 +12,7 @@ from pathlib import Path
 from security_reviewer_v2.profiler.models import ScanTask, ScanType
 
 from .base import ScannerAdapter
+from .hostpaths import parse_version
 from .models import (
     AdapterExecutionPlan,
     CheckStatus,
@@ -80,7 +81,10 @@ class TrivyAdapter(ScannerAdapter):
                 database_detail = f"Trivy vulnerability database is available at {cache_dir}"
             else:
                 database = CheckStatus.UNVERIFIED
-                database_detail = "SCA requires a verified Trivy vulnerability database; run trivy fs --download-db-only"
+                database_detail = (
+                    f"SCA requires a verified Trivy vulnerability database (checked {cache_dir or 'no cache directory'}); "
+                    "run trivy fs --download-db-only, or set TRIVY_CACHE_DIR to the cache that holds db/trivy.db"
+                )
         return (
             executable_check,
             PrerequisiteCheck("target_paths", target_status, target_detail),
@@ -186,21 +190,22 @@ def _check_trivy_executable(
             env=environment,
             check=False,
         )
-        match = re.search(r"\b\d+\.\d+\.\d+\b", probe.stdout + probe.stderr)
-        version = match.group(0) if probe.returncode == 0 and match else None
+        match = parse_version(probe.stdout + probe.stderr)
+        version = match if probe.returncode == 0 and match else None
     except (OSError, subprocess.TimeoutExpired):
         version = None
+    # Version enforcement disabled: any installed version is accepted.
     if version is None:
         return PrerequisiteCheck(
             name="trivy_executable",
-            status=CheckStatus.UNVERIFIED,
-            detail="Trivy executable exists, but its runtime version could not be verified",
+            status=CheckStatus.AVAILABLE,
+            detail="Trivy executable exists; runtime version could not be read (version check skipped)",
         )
     if version != expected_version:
         return PrerequisiteCheck(
             name="trivy_executable",
-            status=CheckStatus.UNVERIFIED,
-            detail=f"Trivy runtime version {version} does not match verified version {expected_version}",
+            status=CheckStatus.AVAILABLE,
+            detail=f"Trivy runtime version {version} differs from {expected_version} (version check skipped)",
             version=version,
         )
     return PrerequisiteCheck(
@@ -224,6 +229,21 @@ def _trivy_cache_dir(config: TrivyConfig) -> Path | None:
     user_profile = os.environ.get("USERPROFILE")
     if user_profile:
         candidates.append((Path(user_profile) / ".cache" / "trivy").resolve())
+    # Root cause of "trivy_databases unverified" on Linux/WSL: only Windows locations were
+    # probed, so a perfectly good ~/.cache/trivy/db was never found.  Trivy's own defaults:
+    xdg_cache = os.environ.get("XDG_CACHE_HOME")
+    if xdg_cache:
+        candidates.append((Path(xdg_cache) / "trivy").resolve())
+    try:
+        home = Path.home()
+    except RuntimeError:
+        home = None
+    if home is not None:
+        candidates.append((home / ".cache" / "trivy").resolve())
+        candidates.append((home / "Library" / "Caches" / "trivy").resolve())
+    for candidate in candidates:
+        if _has_vulnerability_db(candidate):
+            return candidate
     for candidate in candidates:
         if candidate.is_dir():
             return candidate

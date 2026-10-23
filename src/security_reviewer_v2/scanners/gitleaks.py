@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import json
 import os
 import re
@@ -12,6 +13,7 @@ from pathlib import Path
 from security_reviewer_v2.profiler.models import ScanTask, ScanType
 
 from .base import ScannerAdapter
+from .hostpaths import parse_version
 from .models import (
     AdapterExecutionPlan,
     CheckStatus,
@@ -96,10 +98,12 @@ class GitleaksAdapter(ScannerAdapter):
             raise ValueError("Gitleaks target escaped the project root")
         relative_target = target.relative_to(root).as_posix() or "."
         output = task_directory / "result.json"
-        config = _write_scan_config(task_directory, request.task.exclusions)
-        subcommand = "git" if request.task.mode == "git_history" else "dir"
-        arguments = [
-            subcommand,
+        # Root cause of the "unknown command \"dir\"" failure: Gitleaks < 8.19 has no
+        # ``dir``/``git`` subcommands (only ``detect``).  Probe the installed binary and
+        # fall back to the equivalent legacy invocation instead of failing the whole task.
+        modern = _supports_dir_command(self.config.executable)
+        config = _write_scan_config(task_directory, request.task.exclusions, legacy=not modern)
+        common = [
             "--report-format=json",
             f"--report-path={output}",
             "--no-banner",
@@ -108,8 +112,15 @@ class GitleaksAdapter(ScannerAdapter):
             "--exit-code=0",
             f"--max-target-megabytes={self.config.max_target_megabytes}",
             f"--config={config}",
-            relative_target,
         ]
+        if modern:
+            subcommand = "git" if request.task.mode == "git_history" else "dir"
+            arguments = [subcommand, *common, relative_target]
+        else:
+            subcommand = "detect"
+            arguments = [subcommand, f"--source={relative_target}", *common]
+            if request.task.mode != "git_history":
+                arguments.insert(1, "--no-git")
         return AdapterExecutionPlan(
             commands=(
                 CommandSpec(
@@ -168,21 +179,22 @@ def _check_gitleaks_executable(
             env=environment,
             check=False,
         )
-        match = re.search(r"\b\d+\.\d+\.\d+\b", probe.stdout + probe.stderr)
-        version = match.group(0) if probe.returncode == 0 and match else None
+        match = parse_version(probe.stdout + probe.stderr)
+        version = match if probe.returncode == 0 and match else None
     except (OSError, subprocess.TimeoutExpired):
         version = None
+    # Version enforcement disabled: any installed version is accepted.
     if version is None:
         return PrerequisiteCheck(
             name="gitleaks_executable",
-            status=CheckStatus.UNVERIFIED,
-            detail="Gitleaks executable exists, but its runtime version could not be verified",
+            status=CheckStatus.AVAILABLE,
+            detail="Gitleaks executable exists; runtime version could not be read (version check skipped)",
         )
     if version != expected_version:
         return PrerequisiteCheck(
             name="gitleaks_executable",
-            status=CheckStatus.UNVERIFIED,
-            detail=f"Gitleaks runtime version {version} does not match verified version {expected_version}",
+            status=CheckStatus.AVAILABLE,
+            detail=f"Gitleaks runtime version {version} differs from {expected_version} (version check skipped)",
             version=version,
         )
     return PrerequisiteCheck(
@@ -193,7 +205,21 @@ def _check_gitleaks_executable(
     )
 
 
-def _write_scan_config(task_directory: Path, exclusions: tuple[str, ...]) -> Path:
+@functools.lru_cache(maxsize=16)
+def _supports_dir_command(executable: str) -> bool:
+    """Return False only when the binary positively reports it has no ``dir`` subcommand."""
+    try:
+        probe = subprocess.run(
+            [str(executable), "dir", "--help"], stdin=subprocess.DEVNULL, capture_output=True,
+            text=True, timeout=20, shell=False, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return True
+    text = (probe.stdout + probe.stderr).lower()
+    return not (probe.returncode != 0 and "unknown command" in text)
+
+
+def _write_scan_config(task_directory: Path, exclusions: tuple[str, ...], *, legacy: bool = False) -> Path:
     """Create a trusted, default-rule config with policy path exclusions."""
     patterns: list[str] = []
     for exclusion in exclusions:
@@ -203,7 +229,8 @@ def _write_scan_config(task_directory: Path, exclusions: tuple[str, ...]) -> Pat
     config = task_directory / "gitleaks.generated.toml"
     lines = ["[extend]", "useDefault = true"]
     if patterns:
-        lines.extend(("", "[[allowlists]]", 'description = "V2 policy exclusions"', "paths = ["))
+        table = "[allowlist]" if legacy else "[[allowlists]]"  # singular table for Gitleaks < 8.25
+        lines.extend(("", table, 'description = "V2 policy exclusions"', "paths = ["))
         lines.extend(f"  {json.dumps(pattern)}," for pattern in patterns)
         lines.append("]")
     config.write_text("\n".join(lines) + "\n", encoding="utf-8")

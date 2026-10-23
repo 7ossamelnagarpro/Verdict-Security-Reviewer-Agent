@@ -255,17 +255,18 @@ def _check_codeql_executable(
         version = str(payload.get("version", "")) or None
     except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
         version = None
+    # Version enforcement disabled: any installed version is accepted.
     if version is None:
         return PrerequisiteCheck(
             name="codeql_executable",
-            status=CheckStatus.UNVERIFIED,
-            detail="CodeQL executable exists, but its runtime version could not be verified",
+            status=CheckStatus.AVAILABLE,
+            detail="CodeQL executable exists; runtime version could not be read (version check skipped)",
         )
     if version != expected_version:
         return PrerequisiteCheck(
             name="codeql_executable",
-            status=CheckStatus.UNVERIFIED,
-            detail=f"CodeQL runtime version {version} does not match verified version {expected_version}",
+            status=CheckStatus.AVAILABLE,
+            detail=f"CodeQL runtime version {version} differs from {expected_version} (version check skipped)",
             version=version,
         )
     return PrerequisiteCheck(

@@ -218,34 +218,86 @@ class _GroqHTTPFailure(RuntimeError):
         self.waited = waited
 
 
-def _groq_json_request(request: urllib.request.Request, timeout_seconds: int | None) -> tuple[dict[str, Any], int, float]:
-    """Retry transient rate limits and one model formatting failure, never daily quotas indefinitely."""
+def _groq_json_request(
+    request: urllib.request.Request,
+    timeout_seconds: int | None,
+) -> tuple[dict[str, Any], int, float]:
+    """Retry transient network failures and selected provider errors."""
     retries = 0
     waited = 0.0
+    network_retries = 0
     format_retry_used = False
+    max_network_retries = 3
+
     while True:
         try:
             with _urlopen(request, timeout_seconds) as response:
-                return json.loads(response.read(2_000_000).decode("utf-8", errors="replace")), retries, waited
+                raw = response.read(2_000_000)
+                payload = json.loads(
+                    raw.decode("utf-8", errors="replace")
+                )
+                return payload, retries, waited
+
         except urllib.error.HTTPError as error:
             message = _provider_http_error(error)
-            if error.code == 400 and not format_retry_used and any(
-                marker in message for marker in ("(json_validate_failed)", "(tool_use_failed)")
+
+            if (
+                error.code == 400
+                and not format_retry_used
+                and any(
+                    marker in message
+                    for marker in (
+                        "(json_validate_failed)",
+                        "(tool_use_failed)",
+                    )
+                )
             ):
                 format_retry_used = True
                 retries += 1
                 continue
+
             if error.code == 429 and retries < 10:
                 try:
-                    delay = max(1.0, float(error.headers.get("Retry-After", "")))
+                    delay = max(
+                        1.0,
+                        float(error.headers.get("Retry-After", "")),
+                    )
                 except (TypeError, ValueError):
                     delay = None
-                if delay is not None and delay <= 90 and waited + delay <= 600:
+
+                if (
+                    delay is not None
+                    and delay <= 90
+                    and waited + delay <= 600
+                ):
                     time.sleep(delay)
                     waited += delay
                     retries += 1
                     continue
-            raise _GroqHTTPFailure(message, error.code, retries, waited) from error
+
+            raise _GroqHTTPFailure(
+                message, error.code, retries, waited
+            ) from error
+
+        except (
+            ConnectionResetError,
+            ConnectionAbortedError,
+            BrokenPipeError,
+            TimeoutError,
+            urllib.error.URLError,
+        ) as error:
+            if network_retries >= max_network_retries:
+                raise RuntimeError(
+                    "AI provider connection failed after "
+                    f"{network_retries + 1} attempts: "
+                    f"{type(error).__name__}"
+                ) from error
+
+            delay = min(2 ** network_retries, 8)
+            time.sleep(delay)
+            waited += delay
+            network_retries += 1
+            retries += 1
 
 
 def _matches_discovery_schema(value: Any, schema: dict[str, Any]) -> bool:

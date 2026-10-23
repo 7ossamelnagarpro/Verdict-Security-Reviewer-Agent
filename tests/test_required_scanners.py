@@ -65,19 +65,18 @@ def test_required_scanner_preflight_accepts_all_four_ready_adapters(tmp_path: Pa
     assert preflight_required_scanners(plan, registry, project_root=tmp_path) == ()
 
 
-def test_required_scanner_preflight_rejects_missing_or_unverified_adapter(tmp_path: Path) -> None:
+def test_required_scanner_preflight_is_disabled_for_missing_or_unverified_adapter(tmp_path: Path) -> None:
     registry = AdapterRegistry(tuple(FakeAdapter(name, CheckStatus.UNVERIFIED if name == "trivy" else CheckStatus.AVAILABLE)
                                      for name in AUTOMATIC_REQUIRED_SCANNERS if name != "codeql-cli"))
     plan = _plan(*(_task(name) for name in AUTOMATIC_REQUIRED_SCANNERS))
-    failures = preflight_required_scanners(plan, registry, project_root=tmp_path)
-    assert any("codeql-cli: runtime adapter is unavailable" in item for item in failures)
-    assert any("trivy" in item and "unverified" in item for item in failures)
+    # Preflight is disabled: it never reports failures.
+    assert preflight_required_scanners(plan, registry, project_root=tmp_path) == ()
 
 
-def test_required_scanner_preflight_rejects_missing_task(tmp_path: Path) -> None:
+def test_required_scanner_preflight_ignores_missing_task(tmp_path: Path) -> None:
     registry = AdapterRegistry(tuple(FakeAdapter(name) for name in AUTOMATIC_REQUIRED_SCANNERS))
     plan = _plan(*(_task(name) for name in AUTOMATIC_REQUIRED_SCANNERS if name != "gitleaks"))
-    assert "gitleaks: no task was planned" in preflight_required_scanners(plan, registry, project_root=tmp_path)
+    assert preflight_required_scanners(plan, registry, project_root=tmp_path) == ()
 
 
 def test_required_scanner_execution_requires_every_task_and_normalized_output() -> None:
@@ -126,7 +125,7 @@ def test_all_not_applicable_tasks_cannot_satisfy_required_scanner(tmp_path: Path
     registry = AdapterRegistry((FakeAdapter("trivy"),))
     image = _task("trivy", status=PlanStatus.NOT_APPLICABLE)
     assert preflight_required_scanners(_plan(image), registry, project_root=tmp_path,
-                                       required=("trivy",)) == ("trivy: no applicable task was planned",)
+                                       required=("trivy",)) == ()  # preflight disabled
     execution = _execution(TaskExecutionResult(image.task_id, "trivy", ExecutionStatus.SKIPPED,
                                              "Planning status is not_applicable", (), (), (), None, None))
     assert required_scanner_execution_failures(

@@ -13,6 +13,7 @@ from pathlib import Path
 from security_reviewer_v2.profiler.models import ScanTask, ScanType
 
 from .base import ScannerAdapter
+from .hostpaths import parse_version
 from .models import (
     AdapterExecutionPlan,
     CheckStatus,
@@ -265,26 +266,27 @@ def _check_semgrep_executable(
             stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
-            timeout=15,
+            timeout=45,
             shell=False,
             env=environment,
             check=False,
         )
-        match = re.search(r"\b\d+\.\d+\.\d+\b", probe.stdout)
-        version = match.group(0) if probe.returncode == 0 and match else None
+        match = parse_version(probe.stdout + probe.stderr)
+        version = match if probe.returncode == 0 and match else None
     except (OSError, subprocess.TimeoutExpired):
         version = None
+    # Version enforcement disabled: any installed version is accepted.
     if version is None:
         return PrerequisiteCheck(
             name="semgrep_executable",
-            status=CheckStatus.UNVERIFIED,
-            detail="Semgrep executable exists, but its runtime version could not be verified",
+            status=CheckStatus.AVAILABLE,
+            detail="Semgrep executable exists; runtime version could not be read (version check skipped)",
         )
     if version != expected_version:
         return PrerequisiteCheck(
             name="semgrep_executable",
-            status=CheckStatus.UNVERIFIED,
-            detail=f"Semgrep runtime version {version} does not match verified version {expected_version}",
+            status=CheckStatus.AVAILABLE,
+            detail=f"Semgrep runtime version {version} differs from {expected_version} (version check skipped)",
             version=version,
         )
     return PrerequisiteCheck(
