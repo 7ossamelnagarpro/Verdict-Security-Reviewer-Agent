@@ -71,8 +71,8 @@ def test_gitleaks_falls_back_to_detect_when_dir_command_is_missing(tmp_path: Pat
     arguments = plan.commands[0].arguments
     assert arguments[0] == "detect" and "--no-git" in arguments
     assert "--source=." in arguments and "--redact" in arguments and "--exit-code=0" in arguments
-    generated = next(Path(a.split("=", 1)[1]) for a in arguments if a.startswith("--config="))
-    assert "[allowlist]" in generated.read_text() and "[[allowlists]]" not in generated.read_text()
+    # Legacy binaries must run on their built-in rules: a generated --config would replace them.
+    assert not any(a.startswith("--config") for a in arguments)
 
 
 @pytest.mark.skipif(os.name == "nt", reason="uses a POSIX shell stub")
@@ -148,3 +148,94 @@ def test_tool_lookup_accepts_native_and_exe_spellings(tmp_path: Path, monkeypatc
     (tools / "trivy.exe").write_text("")
     assert resolve_tool("trivy", tools).name == "trivy.exe"
     assert resolve_tool("gitleaks", tools) is None
+
+
+# ---------------------------------------------------------------- release gate (explicit rules)
+from security_reviewer_v2.policy import RULES, evaluate_policy
+from security_reviewer_v2.policy.rules import RuleInput, decide
+
+BLOCK = frozenset({"critical", "high"})
+
+
+@pytest.mark.parametrize("verdict,severity,basis,scanner,rule,action", [
+    ("confirmed_vulnerability", "high", "scanner_corroborated", "high", "RG-001", "block"),
+    ("confirmed_vulnerability", "critical", "source_verified", "unknown", "RG-001", "block"),
+    ("confirmed_vulnerability", "high", "ai_assertion_only", "unknown", "RG-002", "warn"),   # AI alone never blocks
+    ("confirmed_vulnerability", "medium", "scanner_corroborated", "high", "RG-007", "block"),  # AI downgrade vs scanner high
+    ("confirmed_vulnerability", "medium", "scanner_corroborated", "medium", "RG-006", "warn"),
+    ("likely_vulnerability", "high", "scanner_corroborated", "high", "RG-003", "warn"),
+    ("false_positive", "low", "ai_assertion_only", "unknown", "RG-004", "allow"),
+    ("false_positive", "low", "scanner_corroborated", "high", "RG-005", "warn"),             # AI cannot wave away scanner high
+    ("needs_more_evidence", "high", "ai_assertion_only", "unknown", "RG-006", "warn"),
+])
+def test_release_gate_rules_are_explicit_and_testable(verdict, severity, basis, scanner, rule, action) -> None:
+    assert decide(RuleInput(verdict, severity, basis, scanner, BLOCK)) == (rule, action)
+    assert RULES[rule].action == action
+
+
+def _gate_inputs(ai_severity: str = "high", scanner_severity: str = "high", verified: bool = False):
+    review = {"status": "completed", "reviews": [{"candidate_id": "grp", "severity": ai_severity,
+                                                  "verdict": "confirmed_vulnerability"}]}
+    triage = {"groups": [{"group_id": "grp", "scanner_finding_ids": ["merged-1"] if scanner_severity else [],
+                          "candidate_ids": ["ai-1"] if verified else []}], "records": []}
+    merged = {"findings": [{"merged_finding_id": "merged-1", "severity": scanner_severity, "scanners": ["semgrep-ce"],
+                            "rule_ids": ["a.b.sql-injection"], "primary_location": {"path": "app.py", "start_line": 9}}]
+              if scanner_severity else []}
+    verification = {"records": [{"candidate_id": "ai-1", "disposition": "confirmed", "path": "app.py",
+                                 "start_line": 9, "checks": ["file_exists"]}] if verified else []}
+    return review, triage, merged, verification
+
+
+def test_gate_records_rule_basis_evidence_and_blocking_reason() -> None:
+    review, triage, merged, verification = _gate_inputs()
+    result = evaluate_policy(review, triage_payload=triage, merged_payload=merged, verification_payload=verification)
+    decision = result.decisions[0]
+    assert (decision.action, decision.rule_id, decision.evidence_basis) == ("block", "RG-001", "scanner_corroborated")
+    assert "RG-001" in decision.blocking_reason and "high scanner finding" in decision.blocking_reason
+    assert decision.evidence and "semgrep-ce high at app.py:9" in decision.evidence[0]
+    assert result.blocking and result.status == "failed" and result.rule_set.startswith("release-gate-rules/")
+
+
+def test_gate_does_not_block_on_ai_assertion_alone() -> None:
+    review, triage, merged, verification = _gate_inputs(scanner_severity="")
+    result = evaluate_policy(review, triage_payload=triage, merged_payload=merged, verification_payload=verification)
+    decision = result.decisions[0]
+    assert (decision.action, decision.rule_id, decision.evidence_basis) == ("warn", "RG-002", "ai_assertion_only")
+    assert not result.blocking and decision.blocking_reason == ""
+
+
+def test_gate_accepts_source_verified_ai_finding() -> None:
+    review, triage, merged, verification = _gate_inputs(ai_severity="critical", scanner_severity="", verified=True)
+    decision = evaluate_policy(review, triage_payload=triage, merged_payload=merged,
+                               verification_payload=verification).decisions[0]
+    assert (decision.action, decision.evidence_basis) == ("block", "source_verified")
+
+
+def test_legacy_call_without_evidence_keeps_previous_behaviour() -> None:
+    review = {"status": "completed", "reviews": [{"candidate_id": "g", "severity": "high",
+                                                  "verdict": "confirmed_vulnerability"}]}
+    decision = evaluate_policy(review).decisions[0]
+    assert decision.action == "block" and decision.evidence_basis == "not_assessed"
+
+
+def test_report_has_professional_summary_section() -> None:
+    review = {"status": "completed", "reviews": [
+        _review("g1", "SQL Injection", "high", "confirmed_vulnerability"),
+        _review("g2", "Debug Enabled", "medium", "likely_vulnerability"),
+        _review("g3", "Cookie Flag", "low", "false_positive")]}
+    policy = {"status": "failed", "blocking": True, "rule_set": "release-gate-rules/2", "decisions": [
+        {"candidate_id": "g1", "action": "block", "severity": "high", "verdict": "confirmed_vulnerability",
+         "reason": "r", "rule_id": "RG-001"},
+        {"candidate_id": "g2", "action": "warn", "severity": "medium", "verdict": "likely_vulnerability", "reason": "r"},
+        {"candidate_id": "g3", "action": "allow", "severity": "low", "verdict": "false_positive", "reason": "r"}]}
+    execution = {"tasks": [{"scanner_id": "semgrep-ce", "status": "completed", "prerequisite_checks": []},
+                           {"scanner_id": "gitleaks", "status": "failed", "prerequisite_checks": []}]}
+    merged = {"findings": [], "summary": {"input_findings": 26, "merged_findings": 14, "duplicates_collapsed": 12}}
+    text = render_final_report(project="p", review=review, policy=policy, execution=execution, merged=merged)
+    summary = text.split("## Summary")[1].split("## Executive Summary")[0]
+    assert text.index("## Summary") < text.index("## Executive Summary")
+    assert "This release is **blocked**" in summary and "SQL Injection" in summary
+    assert "| Release-blocking | **1** |" in summary and "| Need manual review (warn) | **1** |" in summary
+    assert "**26** → **14**" in summary and "1 of 2" in summary
+    assert "█" in summary and "Top priorities" in summary and "RG-001" in summary
+    assert "partial" in summary and "not performed" in summary

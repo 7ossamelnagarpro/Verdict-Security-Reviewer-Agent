@@ -20,6 +20,7 @@ if str(_SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(_SOURCE_ROOT))
 
 from security_reviewer_v2.profiler import profile_project
+from security_reviewer_v2.scanners.hostpaths import find_codeql
 from security_reviewer_v2.scanners.generic_runtime import (
     GenericRuntimeConfig,
     run_generic_checks,
@@ -47,7 +48,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--allow-trusted-local-compose", action="store_true",
                         help="opt in to running a trusted local project's reviewed Compose recipe")
     parser.add_argument("--codeql-bundle", type=Path,
-                        help="CodeQL bundle directory containing codeql.exe")
+                        help="CodeQL bundle directory containing codeql (Linux/macOS) or codeql.exe (Windows/WSL)")
     parser.add_argument("--ai-provider", choices=("groq", "ollama"), default="groq")
     parser.add_argument("--ai-model", default=None)
     parser.add_argument("--ai-max-targets", type=int, default=10)
@@ -98,7 +99,7 @@ def _validate(args: argparse.Namespace) -> tuple[Path, Path]:
             raise ValueError(f"Runtime Contract is unavailable: {contract}")
     if args.codeql_bundle is not None:
         bundle = args.codeql_bundle.resolve()
-        if not (bundle / "codeql.exe").is_file():
+        if find_codeql(bundle) is None:
             raise ValueError(f"Required CodeQL executable is missing from {bundle}")
     if args.ai_provider == "groq" and not os.environ.get("GROQ_API_KEY"):
         raise ValueError("GROQ_API_KEY is required for Groq; set it only in the current shell")

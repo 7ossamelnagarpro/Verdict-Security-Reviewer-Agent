@@ -21,11 +21,12 @@ def main() -> int:
     review = bundle.get("review", bundle)
     triage = json.loads(args.triage.read_text(encoding="utf-8")) if args.triage else None
     verification = json.loads(args.verification.read_text(encoding="utf-8")) if args.verification else None
-    policy = evaluate_policy(review, triage_payload=triage).to_dict()
     args.output.mkdir(parents=True, exist_ok=True)
     def saved(name: str) -> dict | None:
         path = args.output / name
         return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
+    policy = evaluate_policy(review, triage_payload=triage, merged_payload=saved("merged.json"),
+                             verification_payload=verification).to_dict()
 
     summary = saved("pre-review-summary.json") or {}
     (args.output / "policy-gate.json").write_text(json.dumps(policy, indent=2) + "\n", encoding="utf-8")

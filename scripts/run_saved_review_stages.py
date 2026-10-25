@@ -132,7 +132,8 @@ def main(argv: list[str] | None = None) -> int:
         if profile is not None:
             validate_saved_profile_artifact(profile, args.project)
         _write(args.output / "security-review.json", review_payload)
-        policy = evaluate_policy(review_payload, triage_payload=triage.to_dict())
+        policy = evaluate_policy(review_payload, triage_payload=triage.to_dict(),
+                                 merged_payload=merged.to_dict(), verification_payload=verification.to_dict())
         _write(args.output / "policy-gate.json", policy.to_dict())
         write_final_report(args.output / "security-review-report.md", project=str(args.project),
                            review=review_payload, policy=policy.to_dict(), triage=triage.to_dict(),

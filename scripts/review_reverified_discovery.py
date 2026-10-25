@@ -90,7 +90,8 @@ def review_reverified(
     _attest_snapshot(project, profile)
     review_payload = review.to_dict()
     _write(derivative_dir / "security-review.json", review_payload)
-    policy = evaluate_policy(review_payload, triage_payload=triage.to_dict())
+    policy = evaluate_policy(review_payload, triage_payload=triage.to_dict(),
+                             merged_payload=merged.to_dict(), verification_payload=verification.to_dict())
     _write(derivative_dir / "policy-gate.json", policy.to_dict())
     write_final_report(
         derivative_dir / "security-review-report.md", project=str(project),

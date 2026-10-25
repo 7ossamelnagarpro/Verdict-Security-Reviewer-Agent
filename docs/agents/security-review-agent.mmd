@@ -1,0 +1,29 @@
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	prepare(prepare)
+	plan_batches(plan_batches)
+	review_batch(review_batch)
+	retry_missing(retry_missing)
+	checkpoint(checkpoint)
+	finalize(finalize)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> prepare;
+	checkpoint -.-> finalize;
+	checkpoint -.-> review_batch;
+	plan_batches -.-> finalize;
+	plan_batches -.-> review_batch;
+	prepare -.-> __end__;
+	prepare -.-> plan_batches;
+	retry_missing --> checkpoint;
+	review_batch -.-> checkpoint;
+	review_batch -.-> finalize;
+	review_batch -.-> retry_missing;
+	finalize --> __end__;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc

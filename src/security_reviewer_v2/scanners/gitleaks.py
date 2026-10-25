@@ -102,7 +102,6 @@ class GitleaksAdapter(ScannerAdapter):
         # ``dir``/``git`` subcommands (only ``detect``).  Probe the installed binary and
         # fall back to the equivalent legacy invocation instead of failing the whole task.
         modern = _supports_dir_command(self.config.executable)
-        config = _write_scan_config(task_directory, request.task.exclusions, legacy=not modern)
         common = [
             "--report-format=json",
             f"--report-path={output}",
@@ -111,8 +110,14 @@ class GitleaksAdapter(ScannerAdapter):
             "--redact",
             "--exit-code=0",
             f"--max-target-megabytes={self.config.max_target_megabytes}",
-            f"--config={config}",
         ]
+        if modern:
+            config = _write_scan_config(task_directory, request.task.exclusions)
+            common.append(f"--config={config}")
+        # Legacy binaries: NO generated config.  A custom --config *replaces* the built-in rules on
+        # old Gitleaks (``[extend] useDefault`` is not honoured), which would silently scan with zero
+        # rules.  Scanning with the default ruleset and no path exclusions can only report more,
+        # never less, so it is the safe direction.
         if modern:
             subcommand = "git" if request.task.mode == "git_history" else "dir"
             arguments = [subcommand, *common, relative_target]

@@ -11,6 +11,11 @@ class PolicyDecision:
     severity: str
     verdict: str
     reason: str
+    # Auditability: which explicit rule fired, on what evidence, and (for blocks) why.
+    rule_id: str = ""
+    evidence_basis: str = ""
+    evidence: tuple[str, ...] = ()
+    blocking_reason: str = ""
 
 
 @dataclass(frozen=True)
@@ -20,6 +25,7 @@ class PolicyResult:
     blocking: bool
     decisions: tuple[PolicyDecision, ...]
     warnings: tuple[str, ...]
+    rule_set: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return _primitive(self)

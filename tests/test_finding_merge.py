@@ -210,14 +210,51 @@ def test_different_security_families_at_same_line_remain_separate() -> None:
     assert result.summary.merged_findings == 2
 
 
-def test_separate_findings_at_same_location_have_distinct_merged_ids() -> None:
+def test_same_family_same_line_different_rules_are_one_root_cause_with_all_evidence() -> None:
+    # Root-cause deduplication: two Semgrep rules flagging the same XSS sink are one issue,
+    # but both rule ids and both source findings stay in the merged record.
     first = finding("semgrep-ce", finding_id="one", line=20, rule_id="xss-rule-a", cwes=("CWE-79",))
     second = finding("semgrep-ce", finding_id="two", line=20, rule_id="xss-rule-b", cwes=("CWE-79",))
 
     result = merge_normalized_findings((batch("semgrep-ce", first, second),))
 
+    assert result.summary.merged_findings == 1 and result.summary.duplicates_collapsed == 1
+    merged = result.findings[0]
+    assert {item.finding_id for item in merged.source_findings} == {"one", "two"}
+    assert merged.rule_ids == ("xss-rule-a", "xss-rule-b")
+    assert "root_cause:xss" in merged.merge_reasons and "same_scanner_multiple_rules" in merged.merge_reasons
+
+
+def test_root_cause_dedup_can_be_disabled_and_other_families_stay_separate() -> None:
+    first = finding("semgrep-ce", finding_id="one", line=20, rule_id="xss-rule-a", cwes=("CWE-79",))
+    second = finding("semgrep-ce", finding_id="two", line=20, rule_id="xss-rule-b", cwes=("CWE-79",))
+    other = finding("semgrep-ce", finding_id="three", line=20, rule_id="sql-injection", cwes=("CWE-89",))
+
+    off = merge_normalized_findings((batch("semgrep-ce", first, second),),
+                                    policy=DeduplicationPolicy(root_cause_dedup=False))
+    assert off.summary.merged_findings == 2
+    mixed = merge_normalized_findings((batch("semgrep-ce", first, second, other),))
+    assert mixed.summary.merged_findings == 2  # XSS pair merged; SQLi on the same line is a different issue
+
+
+def test_overlapping_ranges_and_cwe_aliases_merge_by_root_cause() -> None:
+    # Real run_v27 pattern: the same cursor.execute statement reported at 145-152, 146-152 and as
+    # "tainted-sql-string" (CWE-704) at line 148.
+    def ranged(fid: str, start: int, end: int, rule: str, cwes: tuple[str, ...]):
+        base = finding("semgrep-ce", finding_id=fid, line=start, rule_id=rule, cwes=cwes)
+        return replace(base, primary_location=FindingLocation("src/db.py", start, 1, end, 5),
+                       title=rule)
+
+    a = ranged("a", 145, 152, "sql-injection-db-cursor-execute", ("CWE-89",))
+    b = ranged("b", 146, 152, "sql-injection-db-cursor-execute", ("CWE-89",))
+    c = ranged("c", 148, 148, "tainted-sql-string", ("CWE-704",))
+    far = ranged("far", 168, 174, "sql-injection-db-cursor-execute", ("CWE-89",))
+
+    result = merge_normalized_findings((batch("semgrep-ce", a, b, c, far),))
+
     assert result.summary.merged_findings == 2
-    assert len({item.merged_finding_id for item in result.findings}) == 2
+    sizes = sorted(len(item.source_findings) for item in result.findings)
+    assert sizes == [1, 3]
 
 
 def test_merged_fields_use_strongest_severity_confidence_and_union_metadata() -> None:

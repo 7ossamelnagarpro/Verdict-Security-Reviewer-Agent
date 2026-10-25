@@ -6,6 +6,7 @@ import hashlib
 import re
 from collections import defaultdict
 
+from .families import vulnerability_family
 from .merge_models import (
     MERGE_SCHEMA_VERSION,
     DeduplicationPolicy,
@@ -86,6 +87,8 @@ def merge_normalized_findings(
             )
 
     groups = _cluster(all_findings, selected_policy)
+    if selected_policy.root_cause_dedup:
+        groups = _merge_by_root_cause(groups, selected_policy)
     merged = tuple(
         sorted(
             (_merge_group(group, selected_policy) for group in groups),
@@ -169,6 +172,88 @@ def _cluster(
         tuple(sorted(group, key=_source_sort_key))
         for _, group in sorted(grouped.items(), key=lambda item: item[0])
     ]
+
+
+def finding_family(finding: UnifiedFinding) -> str:
+    return vulnerability_family(finding.cwes, f"{finding.rule_id} {finding.title}")
+
+
+def _span(finding: UnifiedFinding, policy: DeduplicationPolicy) -> tuple[int, int] | None:
+    start = finding.primary_location.start_line
+    if start is None:
+        return None
+    end = finding.primary_location.end_line
+    if isinstance(end, int) and start <= end and end - start <= policy.max_range_lines:
+        return start, end
+    return start, start
+
+
+def _group_family(group: tuple[UnifiedFinding, ...]) -> str | None:
+    """The shared family of a group, or None when members disagree or the family is unknown."""
+    families = {finding_family(item) for item in group}
+    if len(families) != 1:
+        return None
+    family = next(iter(families))
+    return None if family == "unknown" else family
+
+
+def _mergeable_for_root_cause(group: tuple[UnifiedFinding, ...]) -> bool:
+    # Secrets keep their stricter identity (two different secrets can share a line); SCA/config
+    # findings have no source line and are handled by their own identity.
+    return not any(item.scanner.scanner_id == "gitleaks" or item.package is not None
+                   or item.finding_kind in {"package", "misconfiguration"} for item in group)
+
+
+def _merge_by_root_cause(
+    groups: list[tuple[UnifiedFinding, ...]], policy: DeduplicationPolicy
+) -> list[tuple[UnifiedFinding, ...]]:
+    """Merge groups sharing vulnerability family + file + overlapping source range (same root cause)."""
+    candidates = [index for index, group in enumerate(groups)
+                  if _mergeable_for_root_cause(group) and _group_family(group)
+                  and all(_span(item, policy) for item in group)]
+    parent = {index: index for index in candidates}
+
+    def find(index: int) -> int:
+        while parent[index] != index:
+            parent[index] = parent[parent[index]]
+            index = parent[index]
+        return index
+
+    def bounds(root: int) -> tuple[int, int, int]:
+        spans = [_span(item, policy) for index in parent if find(index) == root for item in groups[index]]
+        widest = max(span[1] - span[0] for span in spans)
+        return min(span[0] for span in spans), max(span[1] for span in spans), widest
+
+    ordered = sorted(candidates, key=lambda i: (groups[i][0].primary_location.path.casefold(),
+                                                _span(groups[i][0], policy), i))
+    for position, left in enumerate(ordered):
+        for right in ordered[position + 1:]:
+            lf, rf = groups[left][0], groups[right][0]
+            if lf.primary_location.path.casefold() != rf.primary_location.path.casefold():
+                break  # sorted by path: no later entry can match
+            if _group_family(groups[left]) != _group_family(groups[right]):
+                continue
+            left_root, right_root = find(left), find(right)
+            if left_root == right_root:
+                continue
+            (ls, le, lw), (rs, re_, rw) = bounds(left_root), bounds(right_root)
+            if rs > le + policy.line_tolerance or ls > re_ + policy.line_tolerance:
+                continue  # ranges do not overlap
+            # A merged issue may not span more than the widest range one scanner reported for it
+            # (or the configured tolerance): overlap never chains distinct statements together.
+            allowed = min(policy.max_group_span, max(policy.line_tolerance, lw, rw))
+            if max(le, re_) - min(ls, rs) > allowed:
+                continue
+            parent[max(left_root, right_root)] = min(left_root, right_root)
+    merged: dict[int, list[UnifiedFinding]] = defaultdict(list)
+    untouched: list[tuple[UnifiedFinding, ...]] = []
+    for index, group in enumerate(groups):
+        if index in parent:
+            merged[find(index)].extend(group)
+        else:
+            untouched.append(group)
+    combined = [tuple(sorted(items, key=_source_sort_key)) for _, items in sorted(merged.items())]
+    return untouched + combined
 
 
 def _same_vulnerability(
@@ -293,6 +378,11 @@ def _merge_reasons(
     if len(group) == 1:
         return ("single_source_finding",)
     reasons = {"same_primary_file", f"line_distance_at_most_{policy.line_tolerance}"}
+    family = _group_family(group)
+    if family:
+        reasons.add(f"root_cause:{family}")
+    if len({item.rule_id for item in group}) > 1 and len({item.scanner.scanner_id for item in group}) == 1:
+        reasons.add("same_scanner_multiple_rules")
     common_keys = set.intersection(*(_security_keys(item) for item in group))
     if common_keys:
         reasons.add("shared_security_identity:" + ",".join(sorted(common_keys)))

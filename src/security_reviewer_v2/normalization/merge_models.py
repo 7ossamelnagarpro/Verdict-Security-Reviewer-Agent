@@ -30,10 +30,18 @@ class MergeStatus(StringEnum):
 @dataclass(frozen=True)
 class DeduplicationPolicy:
     line_tolerance: int = 0
+    # Root-cause deduplication: findings with the same vulnerability family in the same file whose
+    # source line ranges overlap are one issue, even across rules or scanners.  Every source finding
+    # is kept inside the merged record; nothing is discarded.
+    root_cause_dedup: bool = True
+    max_range_lines: int = 20  # longer ranges are anchored at their start line only
+    max_group_span: int = 30   # hard cap against chaining distinct issues through overlapping ranges
 
     def validate(self) -> None:
         if self.line_tolerance < 0 or self.line_tolerance > 100:
             raise ValueError("line_tolerance must be between 0 and 100")
+        if self.max_range_lines < 0 or self.max_group_span < self.max_range_lines:
+            raise ValueError("max_group_span must be >= max_range_lines >= 0")
 
 
 @dataclass(frozen=True)
