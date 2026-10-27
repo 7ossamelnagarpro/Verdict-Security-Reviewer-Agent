@@ -1,9 +1,9 @@
 # CodeQL execution and performance
 
-Run the isolated CodeQL stage from the V2 directory:
+Run the standalone CodeQL stage from the repository root:
 
 ```powershell
-.venv\Scripts\python.exe -m security_reviewer_v2.orchestrator.codeql_cli targets/juice-shop --bundle "F:\(1) projects\SEC\tools\codeql-2.27.1\codeql" --output scans/runs/my-new-codeql-run
+.venv\Scripts\python.exe -m security_reviewer_v2.orchestrator.codeql_cli targets/security-lab-web --bundle "C:\path\to\codeql" --output scans/runs/my-new-codeql-run
 ```
 
 The output directory must be new. The CLI uses only locally installed query

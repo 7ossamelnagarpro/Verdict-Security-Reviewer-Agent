@@ -17,9 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from security_reviewer_v2.context.collector import collect_context
-from security_reviewer_v2.context.candidate_collector import collect_candidate_context
-from security_reviewer_v2.discovery.agent import DiscoveryAgent
-from security_reviewer_v2.discovery.completion import required_discovery_satisfied
+from security_reviewer_v2.agent_graph import run_agent_review_graph
 from security_reviewer_v2.discovery.models import DiscoveryConfig
 from security_reviewer_v2.discovery.provider import provider_from_environment
 from security_reviewer_v2.normalization.codeql import normalize_codeql_sarif_file
@@ -41,10 +39,7 @@ from security_reviewer_v2.profiler.artifact import create_saved_profile_artifact
 from security_reviewer_v2.profiler.reporting import render_markdown
 from security_reviewer_v2.scanners import AdapterRegistry
 from security_reviewer_v2.scanners.models import ExecutionStatus
-from security_reviewer_v2.verification import verify_discovery
-from security_reviewer_v2.triage import triage_candidates
 from security_reviewer_v2.reviewers import run_security_review
-from security_reviewer_v2.policy import evaluate_policy
 from security_reviewer_v2.reporting import write_final_report
 from security_reviewer_v2.scanners.codeql import CodeQLAdapter, CodeQLConfig
 from security_reviewer_v2.scanners.gitleaks import GitleaksAdapter, GitleaksConfig
@@ -53,8 +48,6 @@ from security_reviewer_v2.scanners.trivy import TrivyAdapter, TrivyConfig
 from security_reviewer_v2.scanners.web_runtime import RuntimeConfig, run_checks
 from security_reviewer_v2.scanners.fixture_login_corroboration import corroborate_fixture_login
 from security_reviewer_v2.test_environment import load_environment_spec, plan_environment
-from security_reviewer_v2.test_environment.pilot_evidence import load_completed_pilot
-from security_reviewer_v2.test_environment.isolated_runtime import load_isolated_runtime
 from security_reviewer_v2.test_environment.docker_runtime import load_docker_runtime
 
 
@@ -68,6 +61,29 @@ def _which(*names: str) -> str | None:
 
 def _write(path: Path, value: object) -> None:
     path.write_text(json.dumps(value, indent=2, default=str) + "\n", encoding="utf-8")
+
+
+def _runtime_coverage_summary(runtime_payload: dict | None, coverage_payload: dict) -> dict:
+    """Create one compact, honest runtime coverage view for the report/UI."""
+    runtime = runtime_payload if isinstance(runtime_payload, dict) else {}
+    browser = runtime.get("browser") if isinstance(runtime.get("browser"), dict) else {}
+    zap = runtime.get("zap") if isinstance(runtime.get("zap"), dict) else {}
+    workflow = runtime.get("workflow_evidence") if isinstance(runtime.get("workflow_evidence"), dict) else {}
+    gaps = list(coverage_payload.get("coverage_gaps", [])) if isinstance(coverage_payload, dict) else []
+    gaps.extend(runtime.get("coverage_notes", []) if isinstance(runtime.get("coverage_notes"), list) else [])
+    gaps.extend(browser.get("coverage_gaps", []) if isinstance(browser.get("coverage_gaps"), list) else [])
+    return {
+        "schema_version": "1.0", "status": coverage_payload.get("status", runtime.get("status", "not_run")),
+        "target": runtime.get("target"), "probe_count": len(runtime.get("results", [])) if isinstance(runtime.get("results"), list) else 0,
+        "browser": {"status": browser.get("status", "not_requested"), "pages_visited": browser.get("pages_visited", 0),
+                    "discovered_links": browser.get("discovered_links", 0)},
+        "zap": {"status": zap.get("status", "not_requested"), "engine": zap.get("engine"), "alerts": zap.get("alerts", 0)},
+        "workflows": {"status": workflow.get("status", "not_requested"), "declared": workflow.get("coverage", {}).get("declared", 0),
+                      "executed": workflow.get("coverage", {}).get("executed", 0), "violations": workflow.get("coverage", {}).get("violations", 0)},
+        "endpoint_coverage": {key: coverage_payload.get(key) for key in ("endpoint_count", "probe_count", "probed_count", "authentication") if key in coverage_payload},
+        "coverage_gaps": sorted({str(gap) for gap in gaps if gap}),
+        "interpretation": "Coverage describes executed probes, not proof that untested vulnerabilities are absent.",
+    }
 
 
 def _enrich_login_runtime_batch(normalized, source_facts):
@@ -126,7 +142,7 @@ def main() -> int:
     parser.add_argument("--require-all-scanners", action="store_true",
                         help="require Semgrep, CodeQL, Gitleaks, and Trivy to complete and normalize")
     parser.add_argument("--scanner-preflight-only", action="store_true",
-                        help="check all four required scanner adapters without creating a report or running a VM")
+                        help="check all four required scanner adapters without creating a report or starting a target")
     parser.add_argument("--runtime-auth", action="store_true", help="run two-account authorization probes; local lab only")
     parser.add_argument("--runtime-mutating", action="store_true", help="enable bounded stored-XSS and upload checks against an isolated test target")
     parser.add_argument("--authorization-checks", action="store_true", help="run the educational tt two-account authorization probe")
@@ -146,10 +162,6 @@ def main() -> int:
     parser.add_argument("--codeql-bundle", type=Path)
     parser.add_argument("--test-environment-config", type=Path,
                         help="user-supplied environment configuration outside the target project; preflight only")
-    parser.add_argument("--isolated-pilot-run-id", default=None,
-                        help="attach a completed Security Lab Web VM health-smoke result; does not start a VM or run DAST")
-    parser.add_argument("--isolated-runtime-run-id", default=None,
-                        help="import completed, source-matched DAST results from the automatic networkless VM worker")
     parser.add_argument("--docker-runtime-run-id", default=None,
                         help="import completed, source-matched DAST results from the trusted educational Docker stack")
     parser.add_argument("--runtime-evidence", type=Path,
@@ -177,18 +189,15 @@ def main() -> int:
     # an authorized target.  We still require an explicit URL (or environment
     # variable) so a source-only project is never probed accidentally.
     runtime_url = args.runtime_url or __import__("os").environ.get("SECURITY_REVIEWER_RUNTIME_URL")
-    if args.isolated_pilot_run_id and runtime_url:
-        parser.error("An isolated pilot result has no host runtime URL; run live DAST separately without --isolated-pilot-run-id")
-    if sum(bool(item) for item in (runtime_url, args.isolated_pilot_run_id,
-                                  args.isolated_runtime_run_id, args.docker_runtime_run_id,
+    if sum(bool(item) for item in (runtime_url, args.docker_runtime_run_id,
                                   args.runtime_evidence)) > 1:
-        parser.error("Import one runtime source at a time: VM DAST, Docker DAST, live URL, or historical health pilot")
-    if (args.isolated_runtime_run_id or args.docker_runtime_run_id or args.runtime_evidence) and (
+        parser.error("Import one runtime source at a time: Docker DAST, live URL, or Runtime Contract evidence")
+    if (args.docker_runtime_run_id or args.runtime_evidence) and (
         args.runtime_mutating or args.runtime_auth or args.authorization_checks or
         args.endpoint_coverage or args.workflow_checks
     ):
         parser.error("Select runtime checks when creating the worker; host URL check flags do not apply to saved DAST")
-    if args.require_dast and not (runtime_url or args.isolated_runtime_run_id or args.docker_runtime_run_id or args.runtime_evidence):
+    if args.require_dast and not (runtime_url or args.docker_runtime_run_id or args.runtime_evidence):
         parser.error("DAST is required but no live URL or completed runtime run was supplied; a health check is not DAST")
     try:
         provider = provider_from_environment(args.ai_provider, args.ai_model)
@@ -196,25 +205,7 @@ def main() -> int:
         parser.error(f"AI Discovery is required for every full scan: {error}")
     project = args.project.resolve()
     repository_root = Path(__file__).resolve().parents[1]
-    isolated_pilot_payload = None
-    isolated_runtime_payload = None
     docker_runtime_payload = None
-    if args.isolated_pilot_run_id:
-        try:
-            isolated_pilot_payload = load_completed_pilot(
-                args.isolated_pilot_run_id, project_root=project,
-                repository_root=repository_root,
-            )
-        except (OSError, ValueError) as error:
-            parser.error(f"Invalid isolated pilot evidence: {error}")
-    if args.isolated_runtime_run_id:
-        try:
-            isolated_runtime_payload = load_isolated_runtime(
-                args.isolated_runtime_run_id, project_root=project,
-                repository_root=repository_root,
-            )
-        except (OSError, ValueError) as error:
-            parser.error(f"Invalid isolated VM DAST evidence: {error}")
     if args.docker_runtime_run_id:
         try:
             docker_runtime_payload = load_docker_runtime(
@@ -234,16 +225,12 @@ def main() -> int:
             parser.error(f"Invalid generic DAST evidence: {error}")
         if (not isinstance(generic_runtime_payload, dict)
                 or generic_runtime_payload.get("schema_version") != "1.0"
-                or generic_runtime_payload.get("status") != "completed"
+                or generic_runtime_payload.get("status") not in {"completed", "partial"}
                 or not isinstance(generic_runtime_payload.get("results"), list)):
-            parser.error("Invalid generic DAST evidence: expected completed schema 1.0 results")
-    saved_runtime_payload = isolated_runtime_payload or docker_runtime_payload
+            parser.error("Invalid generic DAST evidence: expected schema 1.0 results with explicit completion status")
+    saved_runtime_payload = docker_runtime_payload
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
-    if isolated_pilot_payload is not None:
-        _write(output / "isolated-pilot-evidence.json", isolated_pilot_payload)
-    if isolated_runtime_payload is not None:
-        _write(output / "isolated-runtime-evidence.json", isolated_runtime_payload)
     if docker_runtime_payload is not None:
         _write(output / "docker-runtime-evidence.json", docker_runtime_payload)
     profile_result = profile_project(project)
@@ -383,15 +370,27 @@ def main() -> int:
         else:
             coverage_payload = {"status": "not_run", "reason": "Pass --endpoint-coverage to collect endpoint coverage."}
     elif saved_runtime_payload is not None:
-        coverage_payload = {"status": "isolated_completed" if isolated_runtime_payload else "docker_completed",
+        coverage_payload = {"status": "docker_completed",
                             "probe_count": sum(saved_runtime_payload["probe_counts"].values()),
                             "coverage_gaps": saved_runtime_payload["limitations"]}
     elif generic_runtime_payload is not None:
-        coverage_payload = {"status": "generic_completed",
+        coverage_payload = {"status": "generic_" + generic_runtime_payload.get("status", "partial"),
                             "probe_count": len(generic_runtime_payload.get("results", [])),
                             "coverage_gaps": generic_runtime_payload.get("coverage_notes", [])}
     else:
         coverage_payload = {"status": "not_run", "reason": "No runtime URL supplied; set SECURITY_REVIEWER_RUNTIME_URL or pass --runtime-url."}
+    runtime_for_summary = generic_runtime_payload
+    if runtime_for_summary is None and saved_runtime_payload is not None:
+        try:
+            runtime_for_summary = json.loads((output / "runtime.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            runtime_for_summary = None
+    if runtime_for_summary is None and runtime_url:
+        try:
+            runtime_for_summary = json.loads((output / "runtime.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            runtime_for_summary = None
+    _write(output / "coverage-summary.json", _runtime_coverage_summary(runtime_for_summary, coverage_payload))
     merged = merge_normalized_findings(tuple(batches))
     _write(output / "merged.json", merged.to_dict())
     context = collect_context(merged, project_root=project, profile_artifact=profile_artifact)
@@ -400,69 +399,38 @@ def main() -> int:
         raise SystemExit("Source files changed since profiling; rerun the pipeline before risk or AI review")
     risk = prioritize_findings(merged, context)
     _write(output / "risk.json", risk.to_dict())
-    try:
-        discovery = DiscoveryAgent(provider, DiscoveryConfig(provider=args.ai_provider, model=args.ai_model, max_targets=args.ai_max_targets,
+    agent_state = run_agent_review_graph(
+        provider=provider,
+        discovery_config=DiscoveryConfig(
+            provider=args.ai_provider, model=args.ai_model, max_targets=args.ai_max_targets,
             max_batches=args.ai_max_batches, max_planned_targets=args.ai_max_planned_targets,
             max_candidates=args.ai_max_candidates, max_enrichment_rounds=args.ai_max_enrichment_rounds,
             input_cost_per_million_tokens_usd=args.ai_input_cost_per_million,
-            output_cost_per_million_tokens_usd=args.ai_output_cost_per_million)).run(
-                merged, context, risk, project_root=project, profile_artifact=profile_artifact,
-                additional_coverage_gaps=tuple(execution.coverage_gaps) + tuple(coverage_payload.get("coverage_gaps", ())))
-    except (RuntimeError, ValueError) as error:
-        _write(output / "ai-discovery.json", {"schema_version": "1.0", "status": "blocked", "provider": args.ai_provider,
-                                              "model": args.ai_model, "candidates": [], "usage": {}, "batches": [],
-                                              "warnings": [str(error)]})
-        discovery = None
-    discovery_payload = discovery.to_dict() if discovery is not None else json.loads((output / "ai-discovery.json").read_text(encoding="utf-8"))
+            output_cost_per_million_tokens_usd=args.ai_output_cost_per_million,
+        ),
+        project_root=project, profile_artifact=profile_artifact,
+        merged=merged, context=context, risk=risk,
+        additional_coverage_gaps=tuple(execution.coverage_gaps) + tuple(coverage_payload.get("coverage_gaps", ())),
+        deployment_context=(docker_runtime_payload or {}).get("deployment_context"),
+        max_reviews=args.review_max_findings,
+        write_artifact=lambda name, payload: _write(output / name, payload),
+        review_runner=run_security_review,
+    )
+    discovery_payload = agent_state["discovery_payload"]
     discovery_usage = discovery_payload.get("usage") or {}
     discovery_batches = discovery_payload.get("batches") or []
     failed_discovery_batches = sum(batch.get("status") != "completed" for batch in discovery_batches)
-    discovery_satisfied = required_discovery_satisfied(discovery_payload)
-    if discovery is not None:
-        _write(output / "ai-discovery.json", discovery_payload)
-        candidate_context = collect_candidate_context(discovery, project_root=project, profile_artifact=profile_artifact)
-        candidate_context_payload = candidate_context.to_dict()
-        _write(output / "candidate-context.json", candidate_context_payload)
-        if any(warning.startswith("source_changed_since_profile:") for warning in candidate_context.warnings):
-            raise SystemExit("Source files changed since profiling; rerun the pipeline before AI review")
-    else:
-        candidate_context_payload = {"schema_version": "1.0", "status": "not_run", "candidates": [], "warnings": ["AI Discovery did not produce a result."]}
-        _write(output / "candidate-context.json", candidate_context_payload)
-    if discovery is not None:
-        verification = verify_discovery(discovery, project_root=project, candidate_context=candidate_context)
-        verification_payload = verification.to_dict()
-        triage = triage_candidates(discovery, verification, merged, project_root=project)
-        triage_payload = triage.to_dict()
-    else:
-        verification_payload = {"schema_version": "1.0", "status": "not_run", "project_root": str(project), "records": [], "warnings": ["AI Discovery did not produce a result; verification was not run."]}
-        triage_payload = {"schema_version": "1.0", "status": "not_run", "groups": [], "records": [], "warnings": ["AI Discovery did not produce a result; candidate triage was not run."]}
-    _write(output / "verification.json", verification_payload)
-    _write(output / "candidate-triage.json", triage_payload)
+    discovery_satisfied = agent_state["discovery_satisfied"]
+    candidate_context_payload = agent_state["candidate_context_payload"]
+    verification_payload = agent_state["verification_payload"]
+    triage_payload = agent_state["triage_payload"]
     verification_records = verification_payload.get("records", [])
-    if discovery is not None and discovery_satisfied:
-        selected_ids = {item.merged_finding_id for item in risk.findings if item.selected_for_deep_review}
-        ordered_groups = tuple(sorted(triage.groups, key=lambda group: not any(
-            source_id in selected_ids for source_id in group.scanner_finding_ids)))
-        review_triage = replace(triage, groups=ordered_groups)
-        review_result = run_security_review(discovery, verification, provider=provider, project_root=project,
-                                            merged=merged, context=context, candidate_context=candidate_context,
-                                            triage=review_triage, timeout_seconds=None,
-                                            deployment_context=(docker_runtime_payload or {}).get("deployment_context"),
-                                            max_reviews=max(1, args.review_max_findings))
-        review_payload = review_result.to_dict()
-    else:
-        review_payload = {"schema_version": "1.0", "status": "not_run", "provider": None, "model": None, "reviews": [], "warnings": ["Security Review Agent was not run because required AI Discovery did not complete its planned inspection."], "usage": {}}
-    _write(output / "security-review.json", review_payload)
-    policy_result = evaluate_policy(review_payload, triage_payload=triage_payload)
-    policy_payload = policy_result.to_dict()
-    _write(output / "policy-gate.json", policy_payload)
+    review_payload = agent_state["review_payload"]
+    policy_payload = agent_state["policy_payload"]
     review_satisfied = (review_payload.get("status") == "completed" and
                         not review_payload.get("pending_ids"))
-    pilot_coverage_gap = (
-        "Isolated VM pilot checked local health only; no in-VM vulnerability scan or host-accessible DAST endpoint was provided.",
-    ) if isolated_pilot_payload is not None else ()
     coverage_gaps = sorted(set(profile_result.profile.coverage_gaps + execution.coverage_gaps +
-                               merged.coverage_gaps + risk.coverage_gaps + pilot_coverage_gap +
+                               merged.coverage_gaps + risk.coverage_gaps +
                                scanner_failures +
                                (tuple(saved_runtime_payload["limitations"])
                                 if saved_runtime_payload is not None else ()) +
@@ -475,28 +443,25 @@ def main() -> int:
     write_final_report(output / "security-review-report.md", project=str(project), review=review_payload,
                        policy=policy_payload, triage=triage_payload, verification=verification_payload,
                        discovery=discovery_payload, discovery_required_satisfied=discovery_satisfied,
-                       isolated_pilot=isolated_pilot_payload,
-                       isolated_runtime=isolated_runtime_payload,
                        docker_runtime=docker_runtime_payload,
                        runtime_evidence=generic_runtime_payload,
                        merged=merged.to_dict(), risk=risk.to_dict(),
                        execution=execution.to_dict(), scanner_requirement=scanner_requirement,
                        coverage_gaps=coverage_gaps)
-    report = {"status": "completed" if discovery_satisfied and scanners_satisfied and review_satisfied else "partial", "pre_review": review_payload.get("status") == "not_run",
+    runtime_complete = generic_runtime_payload is None or generic_runtime_payload.get("status") == "completed"
+    report = {"status": "completed" if discovery_satisfied and scanners_satisfied and review_satisfied and runtime_complete else "partial", "pre_review": review_payload.get("status") == "not_run",
               "review_agent_ran": bool(review_payload.get("usage", {}).get("calls")),
               "project": str(project), "adapter_ids": registry.scanner_ids(),
               "test_environment": environment_plan_payload or {"status": "not_requested"},
               "dast_requirement": {"requested": args.require_dast,
                                    "satisfied": (bool(runtime_url) or saved_runtime_payload is not None or
                                                   generic_runtime_payload is not None)
-                                                and coverage_payload.get("status") != "failed"},
+                                                and coverage_payload.get("status") != "failed" and runtime_complete},
               "sast_requirement": {"requested": args.require_sast,
                                    "satisfied": any(task.scanner_id in {"semgrep-ce", "codeql-cli"}
                                                     and task.status == ExecutionStatus.COMPLETED
                                                     for task in execution.tasks)},
               "scanner_requirement": scanner_requirement,
-              "isolated_pilot": isolated_pilot_payload or {"status": "not_requested"},
-              "isolated_runtime": isolated_runtime_payload or {"status": "not_requested"},
               "docker_runtime": docker_runtime_payload or {"status": "not_requested"},
               "runtime_evidence": generic_runtime_payload or {"status": "not_requested"},
               "execution": execution.to_dict(), "merge_summary": asdict(merged.summary),
@@ -555,10 +520,9 @@ def main() -> int:
                              + (["Runtime checks require an authorized target URL or completed Runtime Contract evidence."]
                                 if saved_runtime_payload is None and generic_runtime_payload is None else [])
                              + (["Mutating workflows remain opt-in and are not executed by this run."]
-                                if saved_runtime_payload is None or
-                                not saved_runtime_payload["mutating_checks_enabled"] else
-                                ["Only the bounded stored-XSS and upload probes were enabled; other mutating workflows were not executed."])
-                             + (isolated_pilot_payload["limitations"] if isolated_pilot_payload is not None else [])
+                                if (generic_runtime_payload is None or not generic_runtime_payload.get("mutating_checks_enabled")) and (saved_runtime_payload is None or
+                                not saved_runtime_payload["mutating_checks_enabled"]) else
+                                ["Only the explicitly selected runtime probes/workflows were executed; see their coverage evidence."])
                              + (saved_runtime_payload["limitations"] if saved_runtime_payload is not None else [])}
     _write(output / "pre-review-summary.json", report)
     print(json.dumps({"status": report["status"], "ai_discovery_satisfied": discovery_satisfied,
@@ -566,7 +530,7 @@ def main() -> int:
                       "security_review_satisfied": review_satisfied,
                       "adapters": registry.scanner_ids(), "merged_findings": merged.summary.merged_findings,
                       "coverage_gaps": len(report["coverage_gaps"]), "output": str(output)}))
-    return 0 if discovery_satisfied and scanners_satisfied and review_satisfied else 1
+    return 0 if discovery_satisfied and scanners_satisfied and review_satisfied and runtime_complete else 1
 
 
 if __name__ == "__main__":

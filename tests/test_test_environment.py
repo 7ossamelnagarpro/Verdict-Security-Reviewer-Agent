@@ -96,8 +96,20 @@ def test_repo_cannot_authorize_itself_or_embed_passwords(tmp_path: Path) -> None
 def test_untrusted_compose_cannot_run_on_host(tmp_path: Path) -> None:
     project = _project(tmp_path, compose=True)
     config = _config(tmp_path, project, mode="docker_compose", trust_level="untrusted")
-    with pytest.raises(ValueError, match="VM worker"):
+    with pytest.raises(ValueError, match="untrusted project execution is unsupported"):
         load_environment_spec(config, project_root=project)
+
+
+def test_trusted_local_compose_still_requires_execution_opt_in(tmp_path: Path) -> None:
+    project = _project(tmp_path, compose=True)
+    config = _config(tmp_path, project, mode="docker_compose", trust_level="trusted_local_project")
+    spec = load_environment_spec(config, project_root=project)
+    plan = plan_environment(spec, project_root=project, profile=profile_project(project),
+                            docker_executable="docker")
+    assert plan.status == "ready_for_validation"
+    with pytest.raises(RuntimeError, match="explicit opt-in"):
+        with provision_environment(spec, plan, project_root=project, docker_executable="docker"):
+            pass
 
 
 @pytest.mark.parametrize("url", [
@@ -226,7 +238,7 @@ def test_compose_is_opt_in_and_always_cleaned_up(tmp_path: Path, monkeypatch: py
             raise RuntimeError("simulated scan failure")
     assert any("up" in argv for argv in calls)
     assert any("down" in argv for argv in calls)
-    projects = [argv[argv.index("-p") + 1] for argv in calls]
+    projects = [argv[argv.index("-p") + 1] for argv in calls if "-p" in argv]
     assert len(set(projects)) == 1
 
 

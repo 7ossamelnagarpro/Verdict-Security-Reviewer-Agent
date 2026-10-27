@@ -137,6 +137,7 @@ def load_docker_runtime(run_id: str, *, project_root: Path,
             raise ValueError(f"Docker DAST result did not match its manifest: {filename}")
         result_paths[filename] = str(path)
         counts[filename] = expected_count
+    zap = _read_json(result_root / "runtime.json").get("zap")
     return {
         "schema_version": "1.0", "status": "passed", "run_id": run_id,
         "target_id": "security-lab-web", "backend": "docker_compose",
@@ -146,9 +147,11 @@ def load_docker_runtime(run_id: str, *, project_root: Path,
         "probe_counts": counts, "result_paths": result_paths,
         "manifest_path": str(manifest_path),
         "deployment_context": _flask_debug_startup(project),
+        "zap": zap,
         "limitations": [
-            "DAST checks are fixed Security Lab Web HTTP probes, not generic browser or business-workflow coverage.",
-            "Docker published the test service on host loopback; this is not the VM's no-switch network isolation.",
-            "The trusted container build may access package repositories; Docker is not a substitute for a disposable VM trust boundary.",
+            ("DAST includes bounded Security Lab Web probes and the selected ZAP plan; neither provides exhaustive workflow coverage."
+             if zap else "DAST checks are fixed Security Lab Web HTTP probes, not generic browser or business-workflow coverage."),
+            "Docker published the test service on host loopback; containers are not strong isolation for untrusted code.",
+            "The trusted container build may access package repositories; review and approve the project before execution.",
         ],
     }

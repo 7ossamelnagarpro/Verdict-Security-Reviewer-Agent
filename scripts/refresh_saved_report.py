@@ -1,4 +1,4 @@
-"""Re-render one completed run without starting a VM or scanner."""
+"""Re-render one completed run without starting a target or scanner."""
 
 from __future__ import annotations
 
@@ -41,8 +41,6 @@ def refresh(directory: Path) -> Path:
         verification=_read(directory, "verification.json"),
         discovery=_read(directory, "ai-discovery.json"),
         discovery_required_satisfied=(summary.get("ai_discovery") or {}).get("satisfied"),
-        isolated_pilot=_read(directory, "isolated-pilot-evidence.json"),
-        isolated_runtime=_read(directory, "isolated-runtime-evidence.json"),
         docker_runtime=_read(directory, "docker-runtime-evidence.json"),
         merged=merged, risk=_read(directory, "risk.json"),
         execution=_read(directory, "execution.json"),

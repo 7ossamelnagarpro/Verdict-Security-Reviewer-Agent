@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "mode": "docker_compose",
+  "trust_level": "trusted_local_project",
+  "authorized_for_testing": true,
+  "target": {
+    "base_url": "http://127.0.0.1:8090",
+    "health_path": "/healthz",
+    "expected_status": 200
+  },
+  "compose": {"file": "compose.yaml", "app_service": "api"},
+  "endpoints": ["/", "/healthz", "/auth/login", "/orders", "/webhooks", "/jobs"],
+  "accounts": ["user_a", "user_b", "admin"],
+  "checks": {"authorization": true, "mutating": true},
+  "required_env": []
+}

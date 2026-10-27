@@ -139,8 +139,8 @@ def run_generic_checks(config: GenericRuntimeConfig) -> dict[str, Any]:
         "target": config.base_url, "status": "completed", "mutating_checks_enabled": False,
         "authorization_checks_enabled": False, "results": results,
         "coverage_notes": [
-            "Generic checks are bounded, non-mutating HTTP observations for an authorized target.",
-            "No browser crawl, credentialed authorization workflow, or exploit confirmation was performed.",
+            "Baseline checks use bounded HTTP GET observations for an authorized target; declared paths must be safe to visit.",
+            "The baseline phase alone does not crawl browsers, test account workflows or confirm exploitation; additional phases are recorded separately.",
             "A negative result means only that this probe did not observe the behavior.",
         ],
     }

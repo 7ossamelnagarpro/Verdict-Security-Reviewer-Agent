@@ -134,15 +134,10 @@ def evaluate(report_dir: Path, truth_path: Path, *, review_path: Path | None = N
     merged = _read(report_dir / "merged.json")
     reviews = _read(review_path or report_dir / "security-review.json")
     discovery = _read(report_dir / "ai-discovery.json")
-    isolated_path = report_dir / "isolated-runtime-evidence.json"
-    isolated = _read(isolated_path) if isolated_path.is_file() else {}
-    attested_app_sha256 = (isolated.get("app_sha256")
-                           if isolated.get("status") == "passed" and
-                           isolated.get("network_isolation") == "no_vm_switch" and
-                           isolated.get("worker_removed") is True else None)
     docker_path = report_dir / "docker-runtime-evidence.json"
     docker = _read(docker_path) if docker_path.is_file() else {}
-    if (attested_app_sha256 is None and docker.get("status") == "passed"
+    attested_app_sha256 = None
+    if (docker.get("status") == "passed"
             and docker.get("target_id") == "security-lab-web"
             and docker.get("backend") == "docker_compose"
             and docker.get("stack_removed") is True

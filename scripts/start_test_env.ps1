@@ -8,7 +8,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 if (-not $TrustedLab) {
-    throw "This legacy launcher executes app.py directly on the host. Use it only for a reviewed trusted lab with -TrustedLab; unknown projects require the VM worker."
+    throw "This legacy launcher executes app.py directly on the host. Use it only for a reviewed trusted lab with -TrustedLab; untrusted project execution is unsupported."
 }
 $resolvedApp = (Resolve-Path -LiteralPath $AppPath).Path
 $appFile = Join-Path $resolvedApp "app.py"

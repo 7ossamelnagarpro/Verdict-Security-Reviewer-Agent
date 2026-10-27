@@ -1,0 +1,122 @@
+{
+  "schema_version": "1.0",
+  "mode": "docker_compose",
+  "trust_level": "trusted_local_project",
+  "authorized_for_testing": true,
+  "target": {
+    "base_url": "http://127.0.0.1:8091",
+    "health_path": "/healthz",
+    "expected_status": 200
+  },
+  "compose": {
+    "file": "compose.yaml",
+    "app_service": "api"
+  },
+  "endpoints": [
+    "/", "/healthz", "/view", "/login", "/account", "/comments",
+    "/catalog/search?q=widget", "/catalog/query?q=widget", "/admin/users",
+    "/admin/jobs", "/debug/config", "/auth/continue?next=%2Fview",
+    "/session/start?username=user_a", "/status/secure"
+  ],
+  "accounts": [],
+  "checks": {"authorization": false, "mutating": false},
+  "required_env": [],
+  "workflow_suite": {
+    "version": 1,
+    "accounts": [
+      {"id": "user_a", "role": "user", "login_path": "/auth/login", "encoding": "json", "username_field": "username", "password_field": "password", "session": "bearer", "token_path": "access_token", "verify_path": "/me", "identity_path": "username"},
+      {"id": "user_b", "role": "user", "login_path": "/auth/login", "encoding": "json", "username_field": "username", "password_field": "password", "session": "bearer", "token_path": "access_token", "verify_path": "/me", "identity_path": "username"},
+      {"id": "admin", "role": "admin", "login_path": "/auth/login", "encoding": "json", "username_field": "username", "password_field": "password", "session": "bearer", "token_path": "access_token", "verify_path": "/me", "identity_path": "username"},
+      {"id": "admin_verified", "role": "admin", "login_path": "/auth/checked-login", "encoding": "json", "username_field": "username", "password_field": "password", "session": "bearer", "token_path": "access_token", "verify_path": "/me/verified", "identity_path": "username"}
+    ],
+    "allow_mutation": true,
+    "reset": "fresh_stack",
+    "max_requests": 120,
+    "timeout_seconds": 5,
+    "max_seconds": 300,
+    "workflows": [
+      {"id": "purchase", "title": "Owner can create and pay an order", "severity": "low", "steps": [
+        {"actor": "user_a", "method": "POST", "path": "/orders", "body": {"item": "workflow-test", "quantity": 1, "unit_price": 100}, "capture": {"order_id": "id"}, "expect_status": [200, 201]},
+        {"actor": "user_a", "method": "POST", "path": "/orders/{{order_id}}/pay", "capture": {"invoice_id": "id"}, "expect_status": [200]},
+        {"actor": "user_a", "method": "GET", "path": "/invoices/{{invoice_id}}", "expect_status": [200]}
+      ]},
+      {"id": "order_owner", "title": "Only the owner can read an order", "severity": "high", "steps": [
+        {"actor": "user_b", "method": "POST", "path": "/orders", "body": {"item": "workflow-test", "quantity": 1, "unit_price": 100}, "capture": {"order_id": "id"}, "expect_status": [200, 201]},
+        {"actor": "user_b", "method": "GET", "path": "/orders/{{order_id}}", "expect_status": [200]},
+        {"actor": "user_a", "method": "GET", "path": "/orders/{{order_id}}", "expect_status": [403, 404], "security_check": true}
+      ]},
+      {"id": "invoice_owner", "title": "Only the owner can read an invoice", "severity": "high", "steps": [
+        {"actor": "user_b", "method": "POST", "path": "/orders", "body": {"item": "workflow-test", "quantity": 1, "unit_price": 100}, "capture": {"order_id": "id"}, "expect_status": [200, 201]},
+        {"actor": "user_b", "method": "POST", "path": "/orders/{{order_id}}/pay", "capture": {"invoice_id": "id"}, "expect_status": [200]},
+        {"actor": "user_a", "method": "GET", "path": "/invoices/{{invoice_id}}", "expect_status": [403, 404], "security_check": true}
+      ]},
+      {"id": "admin_users", "title": "User listing requires admin role", "severity": "high", "steps": [
+        {"actor": "admin", "method": "GET", "path": "/admin/users", "expect_status": [200]},
+        {"actor": "user_a", "method": "GET", "path": "/admin/users", "expect_status": [403, 404], "security_check": true}
+      ]},
+      {"id": "admin_jobs", "title": "Job listing requires admin role", "severity": "high", "steps": [
+        {"actor": "admin", "method": "GET", "path": "/admin/jobs", "expect_status": [200]},
+        {"actor": "user_a", "method": "GET", "path": "/admin/jobs", "expect_status": [403, 404], "security_check": true}
+      ]},
+      {"id": "payment_replay", "title": "An already paid order rejects a second payment", "severity": "high", "steps": [
+        {"actor": "user_a", "method": "POST", "path": "/orders", "body": {"item": "workflow-test", "quantity": 1, "unit_price": 100}, "capture": {"order_id": "id"}, "expect_status": [200, 201]},
+        {"actor": "user_a", "method": "POST", "path": "/orders/{{order_id}}/pay", "expect_status": [200]},
+        {"actor": "user_a", "method": "POST", "path": "/orders/{{order_id}}/pay", "expect_status": [400, 409, 422], "security_check": true}
+      ]},
+      {"id": "paid_cancel", "title": "Paid orders require a refund before cancellation", "severity": "high", "steps": [
+        {"actor": "user_a", "method": "POST", "path": "/orders", "body": {"item": "workflow-test", "quantity": 1, "unit_price": 100}, "capture": {"order_id": "id"}, "expect_status": [200, 201]},
+        {"actor": "user_a", "method": "POST", "path": "/orders/{{order_id}}/pay", "expect_status": [200]},
+        {"actor": "user_a", "method": "POST", "path": "/orders/{{order_id}}/cancel", "expect_status": [400, 409, 422], "security_check": true}
+      ]},
+      {"id": "coupon_bounds", "title": "Excessive coupon discounts are rejected", "severity": "high", "steps": [
+        {"actor": "user_a", "method": "POST", "path": "/orders", "body": {"item": "workflow-test", "quantity": 1, "unit_price": 100}, "capture": {"order_id": "id"}, "expect_status": [200, 201]},
+        {"actor": "user_a", "method": "POST", "path": "/orders/{{order_id}}/apply-coupon", "body": {"code": "WELCOME20", "discount": 150}, "expect_status": [400, 422], "security_check": true}
+      ]},
+      {"id": "negative_price", "title": "Negative order prices are rejected", "severity": "high", "steps": [
+        {"actor": "user_a", "method": "POST", "path": "/orders", "body": {"item": "workflow-test", "quantity": 1, "unit_price": -1}, "expect_status": [400, 422], "security_check": true}
+      ]},
+      {"id": "order_initial_state", "title": "New orders cannot start as paid", "severity": "high", "steps": [
+        {"actor": "user_a", "method": "POST", "path": "/orders", "body": {"item": "workflow-test", "quantity": 1, "unit_price": 100, "status": "paid"}, "expect_status": [400, 422], "security_check": true}
+      ]},
+      {"id": "owner_assignment", "title": "Users cannot create orders for another owner", "severity": "high", "steps": [
+        {"actor": "user_b", "method": "GET", "path": "/me", "capture": {"other_id": "id"}, "expect_status": [200]},
+        {"actor": "user_a", "method": "POST", "path": "/orders", "body": {"item": "workflow-test", "quantity": 1, "unit_price": 100, "owner_id": "{{other_id}}"}, "expect_status": [400, 403, 422], "security_check": true}
+      ]},
+      {"id": "worker_role", "title": "Users cannot submit an admin job", "severity": "high", "steps": [
+        {"actor": "user_a", "method": "POST", "path": "/jobs", "body": {"kind": "report", "payload": {}, "run_as": "admin"}, "expect_status": [400, 403, 422], "security_check": true}
+      ]},
+      {"id": "debug_access", "title": "Debug configuration is unavailable anonymously", "severity": "high", "steps": [
+        {"actor": "anonymous", "method": "GET", "path": "/debug/config", "expect_status": [401, 403, 404], "security_check": true}
+      ]},
+      {"id": "profile_owner", "title": "A user cannot read another account profile", "severity": "high", "steps": [
+        {"actor": "user_b", "method": "GET", "path": "/me", "capture": {"other_id": "id"}, "expect_status": [200]},
+        {"actor": "user_a", "method": "GET", "path": "/profiles/{{other_id}}", "expect_status": [403, 404], "security_check": true}
+      ]},
+      {"id": "excessive_data", "title": "Identity response must not expose a social security number", "severity": "medium", "steps": [
+        {"actor": "user_a", "method": "GET", "path": "/me", "expect_status": [200], "assertions": [{"path": "ssn", "op": "absent"}], "security_check": true}
+      ]},
+      {"id": "price_catalog", "title": "Catalog price must be set by the server", "severity": "high", "steps": [
+        {"actor": "user_a", "method": "POST", "path": "/orders", "body": {"item": "widget", "quantity": 1, "unit_price": 0.01}, "expect_status": [200, 201], "assertions": [{"path": "unit_price", "op": "eq", "value": 100}], "security_check": true}
+      ]},
+      {"id": "webhook_destination", "title": "Webhook destination must match the approved internal host exactly", "severity": "high", "steps": [
+        {"actor": "user_a", "method": "POST", "path": "/webhooks", "body": {"target_url": "http://other-internal:9000/mock-external/webhook", "body": {}}, "expect_status": [400, 422], "security_check": true}
+      ]},
+      {"id": "nested_note", "title": "A note must belong to the order named in the URL", "severity": "high", "steps": [
+        {"actor": "user_a", "method": "GET", "path": "/orders/1/notes/2", "expect_status": [403, 404], "security_check": true}
+      ]},
+      {"id": "unsigned_hook", "title": "Incoming webhook events require a valid signature", "severity": "high", "steps": [
+        {"actor": "anonymous", "method": "POST", "path": "/integrations/hook", "body": {"event": "lab-test"}, "expect_status": [400, 401, 403], "security_check": true}
+      ]},
+      {"id": "reset_replay", "title": "Password reset tokens must be single use", "severity": "high", "steps": [
+        {"actor": "anonymous", "method": "POST", "path": "/auth/reset/request", "body": {"username": "user_b"}, "capture": {"reset_token": "reset_token"}, "expect_status": [200]},
+        {"actor": "anonymous", "method": "POST", "path": "/auth/reset/confirm", "body": {"token": "{{reset_token}}", "password": "Reset-Lab-Temporary-1"}, "expect_status": [200]},
+        {"actor": "anonymous", "method": "POST", "path": "/auth/reset/confirm", "body": {"token": "{{reset_token}}", "password": "Reset-Lab-Temporary-2"}, "expect_status": [400, 409, 422], "security_check": true}
+      ]},
+      {"id": "stale_role", "title": "A demoted administrator must lose administrative access", "severity": "high", "steps": [
+        {"actor": "admin_verified", "method": "GET", "path": "/me/verified", "capture": {"admin_id": "id"}, "expect_status": [200]},
+        {"actor": "admin_verified", "method": "POST", "path": "/admin/roles/{{admin_id}}", "body": {"role": "user"}, "expect_status": [200]},
+        {"actor": "admin", "method": "GET", "path": "/admin/token-report", "expect_status": [403, 404], "security_check": true}
+      ]}
+    ]
+  }
+}

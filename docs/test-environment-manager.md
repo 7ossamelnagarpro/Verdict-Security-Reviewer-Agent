@@ -13,9 +13,10 @@ Two modes are supported:
 2. `docker_compose`: validate a user-selected Compose file and, only with an
    explicit execution flag, start the stack, check readiness, and tear down
    that uniquely named stack when the session ends. The Compose recipe must
-   be reviewed by its owner and explicitly marked `trusted_lab`. Untrusted
-   projects are rejected: they require a VM worker rather than Docker on the
-   host. Docker is required; no Docker installation is performed here.
+   be reviewed by its owner and explicitly marked `trusted_lab` or
+   `trusted_local_project`. Untrusted projects are rejected; this application
+   has no worker for executing them. Docker is required; no Docker installation
+   is performed here.
 
 The configuration must be **outside** the scanned project root. For example,
 [`examples/security-lab-web-test-environment.json`](../examples/security-lab-web-test-environment.json)
@@ -66,31 +67,17 @@ non-loopback published ports. Only the explicitly listed `SECURITY_TEST_*`
 variables and a minimal set of process variables are forwarded to Docker
 Compose. A source-file hash
 is checked again before startup. This is **defense in depth, not a security
-boundary equivalent to a VM**; do not run arbitrary hostile Compose files on
-the host. For truly untrusted code, a dedicated disposable worker/VM is still
-required.
+boundary for untrusted code**; do not run arbitrary hostile Compose files on
+the host. Use source-only review when you cannot explicitly trust a project's
+runtime instructions.
 
-For the stronger isolation design and a read-only host prerequisite check,
-see [Hyper-V isolation](hyperv-isolation.md). A passing host check does **not**
-mean a disposable VM worker has been built or tested.
-
-The manager currently prepares and validates the environment. It does **not**
-yet infer migrations or seed data, perform generic login, or turn account
-references into a generic authorization matrix. The existing bounded Runtime
-Scanner contains Security Lab Web-specific routes and test values, so it must
-not be described as a universal DAST scanner. A user can pass the ready URL to
-the existing pipeline explicitly, but generalized runtime testing is a
-separate next step. Missing prerequisites stay visible as `blocked`, not as a
-clean security result.
+This environment manager prepares and validates startup separately from the
+Runtime Contract scanner. Guided contracts can run declared account and
+business workflows, but they cannot infer credentials or business rules safely.
+Missing prerequisites stay visible as `blocked`, not as a clean security result.
 
 The full pipeline also accepts `--test-environment-config PATH`. It records
 `test-environment-plan.json` and a summary entry alongside the Profiler output
 without starting Compose or treating a blocked runtime environment as a
-successful DAST scan. Startup and teardown remain explicit through the manager
-CLI until a generic runtime-scanner contract is implemented.
-
-For the fixed Security Lab Web example, a successfully completed, networkless
-Hyper-V pilot can be attached with `--isolated-pilot-run-id ID`. This is a
-validated historical health-smoke artifact, not automatic provisioning or
-DAST. The pipeline refuses stale source fingerprints and records the remaining
-dynamic-testing gap explicitly. See [Hyper-V isolation](hyperv-isolation.md).
+successful DAST scan. For the full project pipeline, supply a Runtime Contract
+or use the local UI to create and review one; see [Runtime Contract](runtime-contract.md).

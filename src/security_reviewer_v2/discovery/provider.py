@@ -132,8 +132,9 @@ class OllamaProvider:
         body = {
             "model": self.model,
             "stream": False,
-            "format": "json",
-            "options": {"temperature": 0, "num_predict": 1024},
+            "think": False,
+            "format": _DISCOVERY_RESPONSE_SCHEMA,
+            "options": {"temperature": 0, "num_predict": 4096},
             "messages": [
                 {"role": "system", "content": _SYSTEM_PROMPT},
                 {"role": "user", "content": f"Return at most {max_candidates} candidates.\n" + prompt},
@@ -145,6 +146,23 @@ class OllamaProvider:
             headers={"Content-Type": "application/json"},
             method="POST",
         )
+        parsed, payload, retries = _ollama_json_response(request, timeout_seconds)
+        usage = {"provider": self.name, "model": self.model, "total_duration_ns": payload.get("total_duration"),
+                 "prompt_eval_count": payload.get("prompt_eval_count"), "eval_count": payload.get("eval_count"),
+                 "retry_count": retries}
+        return _discovery_response(parsed, max_candidates), usage
+
+    def review(self, prompt: str, *, timeout_seconds: int | None, max_reviews: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        body = {"model": self.model, "stream": False, "think": False, "format": "json", "options": {"temperature": 0}, "messages": [{"role": "system", "content": _REVIEW_SYSTEM_PROMPT}, {"role": "user", "content": prompt}]}
+        request = urllib.request.Request(self.endpoint, data=json.dumps(body).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
+        parsed, payload, retries = _ollama_json_response(request, timeout_seconds)
+        reviews = parsed.get("reviews", []) if isinstance(parsed, dict) else []
+        return (reviews if isinstance(reviews, list) else [])[:max_reviews], {"provider": self.name, "model": self.model, "total_duration_ns": payload.get("total_duration"), "retry_count": retries}
+
+
+def _ollama_json_response(request: urllib.request.Request, timeout_seconds: int | None) -> tuple[dict[str, Any], dict[str, Any], int]:
+    """Retry malformed model output twice, without accepting an invalid response."""
+    for attempt in range(3):
         try:
             with _urlopen(request, timeout_seconds) as response:
                 payload = json.loads(response.read(2_000_000).decode("utf-8", errors="replace"))
@@ -155,30 +173,16 @@ class OllamaProvider:
         content = payload.get("message", {}).get("content", "") if isinstance(payload, dict) else ""
         try:
             parsed = json.loads(content)
-        except json.JSONDecodeError as error:
-            reason = str(payload.get("done_reason") or "unknown")[:40]
-            tokens = payload.get("eval_count")
-            raise RuntimeError(f"Ollama returned non-JSON content (done_reason={reason}, eval_count={tokens})") from error
-        usage = {"provider": self.name, "model": self.model, "total_duration_ns": payload.get("total_duration"),
-                 "prompt_eval_count": payload.get("prompt_eval_count"), "eval_count": payload.get("eval_count")}
-        return _discovery_response(parsed, max_candidates), usage
-
-    def review(self, prompt: str, *, timeout_seconds: int | None, max_reviews: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-        body = {"model": self.model, "stream": False, "format": "json", "options": {"temperature": 0}, "messages": [{"role": "system", "content": _REVIEW_SYSTEM_PROMPT}, {"role": "user", "content": prompt}]}
-        request = urllib.request.Request(self.endpoint, data=json.dumps(body).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
-        try:
-            with _urlopen(request, timeout_seconds) as response:
-                payload = json.loads(response.read(2_000_000).decode("utf-8", errors="replace"))
-        except urllib.error.HTTPError as error:
-            raise RuntimeError(f"Ollama request failed with HTTP {error.code}") from error
-        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as error:
-            raise RuntimeError(f"Ollama request failed: {type(error).__name__}") from error
-        try:
-            parsed = json.loads(payload.get("message", {}).get("content", ""))
-        except json.JSONDecodeError as error:
-            raise RuntimeError("Ollama returned non-JSON review content") from error
-        reviews = parsed.get("reviews", []) if isinstance(parsed, dict) else []
-        return (reviews if isinstance(reviews, list) else [])[:max_reviews], {"provider": self.name, "model": self.model, "total_duration_ns": payload.get("total_duration")}
+        except (TypeError, json.JSONDecodeError) as error:
+            if attempt == 2:
+                reason = str(payload.get("done_reason") or "unknown")[:40]
+                raise RuntimeError(f"Ollama returned non-JSON content after 3 attempts (done_reason={reason}, content_length={len(content)}, starts_with_object={content.lstrip().startswith('{')})") from error
+            continue
+        if isinstance(parsed, dict):
+            return parsed, payload, attempt
+        if attempt == 2:
+            raise RuntimeError("Ollama returned a non-object JSON response after 3 attempts")
+    raise AssertionError("Unreachable Ollama retry state")
 
 
 def _openai_json_request(endpoint: str, api_key: str, model: str, prompt: str, timeout_seconds: int | None, key: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:

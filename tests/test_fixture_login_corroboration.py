@@ -91,12 +91,13 @@ def test_audit_requires_positive_review_and_attested_source(tmp_path: Path) -> N
     review = {"reviews": [{"candidate_id": "brute",
                            "verdict": "likely_vulnerability",
                            "evidence": ["Five unblocked attempts", "Direct login handler and hooks inspected"]}]}
-    isolated = {"status": "passed", "network_isolation": "no_vm_switch",
-                "worker_removed": True, "app_sha256": facts["source_sha256"]}
+    docker = {"status": "passed", "target_id": "security-lab-web",
+              "backend": "docker_compose", "stack_removed": True,
+              "app_sha256": facts["source_sha256"]}
     (tmp_path / "merged.json").write_text(json.dumps(merged), encoding="utf-8")
     (tmp_path / "security-review.json").write_text(json.dumps(review), encoding="utf-8")
     (tmp_path / "ai-discovery.json").write_text('{"candidates": []}', encoding="utf-8")
-    (tmp_path / "isolated-runtime-evidence.json").write_text(json.dumps(isolated), encoding="utf-8")
+    (tmp_path / "docker-runtime-evidence.json").write_text(json.dumps(docker), encoding="utf-8")
     cases = {case["id"]: case for case in evaluate(tmp_path, TRUTH)["cases"]}
     assert cases["TT-BRUTE-001"]["status"] == "detected"
     review["reviews"][0]["verdict"] = "needs_more_evidence"
@@ -105,7 +106,7 @@ def test_audit_requires_positive_review_and_attested_source(tmp_path: Path) -> N
     assert cases["TT-BRUTE-001"]["status"] == "insufficient_evidence"
     review["reviews"][0]["verdict"] = "likely_vulnerability"
     (tmp_path / "security-review.json").write_text(json.dumps(review), encoding="utf-8")
-    isolated["app_sha256"] = "0" * 64
-    (tmp_path / "isolated-runtime-evidence.json").write_text(json.dumps(isolated), encoding="utf-8")
+    docker["app_sha256"] = "0" * 64
+    (tmp_path / "docker-runtime-evidence.json").write_text(json.dumps(docker), encoding="utf-8")
     cases = {case["id"]: case for case in evaluate(tmp_path, TRUTH)["cases"]}
     assert cases["TT-BRUTE-001"]["status"] == "insufficient_evidence"

@@ -1,6 +1,6 @@
 """Review changed issue groups in a saved source-reverification derivative.
 
-No VM, scanners, or AI Discovery are run. Existing model verdicts are reused
+No target runtime, scanners, or AI Discovery are run. Existing model verdicts are reused
 only when the issue group's complete source-ID tuple has not changed. The
 provider is called for the remaining groups, and partial reviews stay partial.
 """
@@ -97,7 +97,7 @@ def review_reverified(
         review=review_payload, policy=policy.to_dict(), triage=triage.to_dict(),
         verification=verification.to_dict(), discovery=discovery.to_dict(),
         discovery_required_satisfied=bool(original.get("ai_discovery", {}).get("satisfied")),
-        isolated_runtime=original.get("isolated_runtime"), merged=merged.to_dict(),
+        merged=merged.to_dict(),
         docker_runtime=(original.get("docker_runtime")
                         if original.get("docker_runtime", {}).get("status") == "passed" else None),
         risk=_read_object(report_dir / "risk.json"),

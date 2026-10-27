@@ -53,7 +53,7 @@ source evidence need further context or manual review rather than being
 upgraded automatically. No local test provider's output is a security review.
 
 To recheck a completed scan after a source-grounding fix, without starting a
-VM, rerunning scanners, or calling the AI provider, use a new derivative output
+the target runtime, rerunning scanners, or calling the AI provider, use a new derivative output
 directory:
 
 ```powershell
@@ -96,7 +96,7 @@ It writes `security-review.json`, `policy-gate.json`,
 derivative only**. Provider failures leave explicit pending groups and can be
 resumed with the same command. `status: completed` means the review ran to
 completion, not that the policy passed or the project is secure. Neither
-command starts a VM, reruns scanners, or repeats AI Discovery.
+command starts the target runtime, reruns scanners, or repeats AI Discovery.
 
 ## Held-out review audit for Security Lab Web
 

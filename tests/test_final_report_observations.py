@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from scripts.refresh_saved_report import refresh
-from security_reviewer_v2.reporting.final import render_final_report
+from security_reviewer_v2.reporting.final import render_final_report, write_final_report
 
 
 def _observation(identifier: str, title: str, scanner: str, path: str,
@@ -81,6 +81,53 @@ def test_report_marks_required_scanner_failure_incomplete() -> None:
     assert "codeql-cli/task-codeql: no normalized scanner output" in markdown
 
 
+def test_report_describes_completed_generic_dast_phases() -> None:
+    markdown = render_final_report(
+        project="lab", review={"status": "completed", "reviews": []},
+        policy={"status": "failed", "decisions": []},
+        runtime_evidence={
+            "source": "generic-web-runtime", "target": "http://127.0.0.1:8090", "results": [{}],
+            "zap": {"status": "completed", "engine": "zap-active", "alerts": 2},
+            "workflow_evidence": {"status": "completed", "coverage": {"executed": 28, "violations": 12}},
+        },
+    )
+    assert "Browser crawl: **not requested**" in markdown
+    assert "ZAP: **completed**" in markdown
+    assert "alerts: **2**" in markdown
+    assert "Account and business workflows: **completed**" in markdown
+    assert "executed: **28**" in markdown
+    assert "contract violations: **12**" in markdown
+    assert "No browser crawl, credentialed authorization workflow" not in markdown
+
+
+def test_report_writes_standalone_html_next_to_markdown_and_escapes_evidence(tmp_path: Path) -> None:
+    markdown_path = tmp_path / "security-review-report.md"
+    malicious = '<script>alert("x")</script>'
+    write_final_report(
+        markdown_path, project="demo <app>",
+        review={"status": "completed", "reviews": [{
+            "candidate_id": "g1", "title": malicious, "verdict": "confirmed_vulnerability",
+            "severity": "high", "evidence": [malicious], "source_ids": ["s1"],
+        }]},
+        policy={"status": "failed", "blocking": True,
+                "decisions": [{"candidate_id": "g1", "action": "block"}]},
+        runtime_evidence={"source": "generic-web-runtime", "target": "http://127.0.0.1:8090",
+                          "results": [{}], "zap": {"status": "completed", "engine": "zap-active", "alerts": 2},
+                          "workflow_evidence": {"status": "completed", "coverage": {"executed": 28, "violations": 12}}},
+        merged={"findings": [_observation("s1", malicious, "web-runtime", "/", dast=True)]},
+    )
+    html_path = markdown_path.with_suffix(".html")
+    assert markdown_path.is_file() and html_path.is_file()
+    content = html_path.read_text(encoding="utf-8")
+    assert "<!doctype html>" in content
+    assert "<style>" in content and "<script>const cards=" in content
+    assert "https://" not in content
+    assert malicious not in content
+    assert '&lt;script&gt;alert(&quot;' in content
+    assert "28 executed" in content and "12 violations" in content
+    assert "confirmed vulnerability" in content
+
+
 def test_refresh_saved_report_preserves_old_report(tmp_path: Path) -> None:
     payloads = {
         "pre-review-summary.json": {"project": "lab", "coverage_gaps": ["One gap"]},
@@ -116,4 +163,3 @@ def test_refresh_saved_report_preserves_trusted_docker_dast_section(tmp_path: Pa
     markdown = refresh(tmp_path).read_text(encoding="utf-8")
     assert "Trusted Docker DAST" in markdown
     assert "web probes: **7**" in markdown
-    assert "Completed VM run" not in markdown

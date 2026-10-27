@@ -59,12 +59,11 @@ or that a finding is exploitable**; the Security Review Agent must assess that.
 
 ```powershell
 ollama pull qwen2.5-coder:7b
-ollama run qwen2.5-coder:7b
-.venv\Scripts\python.exe scripts\run_pre_review_pipeline.py `
-  targets\juice-shop `
-  --output reports\pre-review-juice-shop-ai `
-  --runtime-url http://127.0.0.1:3000 `
-  --runtime-auth --endpoint-coverage --workflow-checks `
+& .\.venv\Scripts\python.exe scripts\run_project_pipeline.py `
+  targets\verdict-comprehensive-lab `
+  --output reports\comprehensive-static-ai `
+  --static-only `
+  --codeql-bundle 'C:\path\to\codeql' `
   --ai-provider ollama --ai-model qwen2.5-coder:7b `
   --ai-max-targets 10 --ai-max-batches 20 --ai-max-candidates 20
 ```

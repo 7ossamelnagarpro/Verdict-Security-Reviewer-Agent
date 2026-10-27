@@ -31,8 +31,6 @@ def main() -> int:
     (args.output / "policy-gate.json").write_text(json.dumps(policy, indent=2) + "\n", encoding="utf-8")
     write_final_report(args.output / "security-review-report.md", project=args.project, review=review,
                        policy=policy, triage=triage, verification=verification,
-                       isolated_pilot=saved("isolated-pilot-evidence.json"),
-                       isolated_runtime=saved("isolated-runtime-evidence.json"),
                        docker_runtime=saved("docker-runtime-evidence.json"),
                        merged=saved("merged.json"), risk=saved("risk.json"),
                        execution=saved("execution.json"),

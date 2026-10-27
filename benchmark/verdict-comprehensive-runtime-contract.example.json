@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "mode": "docker_compose",
+  "trust_level": "trusted_local_project",
+  "authorized_for_testing": true,
+  "target": {
+    "base_url": "http://127.0.0.1:8091",
+    "health_path": "/healthz",
+    "expected_status": 200
+  },
+  "compose": {
+    "file": "compose.yaml",
+    "app_service": "api"
+  },
+  "endpoints": [
+    "/", "/healthz", "/view", "/login", "/catalog/search?q=widget",
+    "/catalog/query?q=widget", "/comments", "/admin/users", "/debug/config"
+  ],
+  "accounts": [],
+  "checks": {
+    "authorization": false,
+    "mutating": false
+  },
+  "required_env": []
+}

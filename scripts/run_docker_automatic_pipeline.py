@@ -1,7 +1,7 @@
 """Trusted Security Lab Web Docker DAST, followed by the unchanged static/AI pipeline.
 
 The application stack is removed before static scanning starts. This is not an
-arbitrary-repository executor or a replacement for the Hyper-V worker.
+arbitrary-repository executor or an isolation boundary for untrusted code.
 """
 
 from __future__ import annotations
@@ -45,6 +45,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--codeql-bundle", type=Path)
     parser.add_argument("--ai-provider", choices=("groq", "ollama"), default="groq")
     parser.add_argument("--ai-model")
+    parser.add_argument("--dast-engine", choices=("baseline", "zap-passive", "zap-active"), default="baseline")
+    parser.add_argument("--browser-dast", action="store_true",
+                        help="run an optional bounded same-origin Playwright crawl")
     args = parser.parse_args(argv)
 
     repository = Path(__file__).resolve().parents[1]
@@ -108,6 +111,13 @@ def main(argv: list[str] | None = None) -> int:
         )
         if authorized.returncode != 0:
             raise RuntimeError("Authorization DAST did not complete: " + authorized.stderr[-1000:])
+        from security_reviewer_v2.scanners.zap_runtime import run_zap
+        run_zap(session.base_url, run_root / "runtime.json", engine=args.dast_engine,
+                stack_name=session.project_name, app_service=spec.app_service)
+        if args.browser_dast:
+            from security_reviewer_v2.scanners.browser_runtime import run_browser_dast
+            run_browser_dast(session.base_url, run_root / "runtime.json", run_root / "browser-runtime-evidence.json")
+        runtime = json.loads((run_root / "runtime.json").read_text(encoding="utf-8"))
         stack_name = session.project_name
     _assert_stack_removed(docker, stack_name)
 

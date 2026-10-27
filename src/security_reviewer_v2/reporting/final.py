@@ -84,8 +84,6 @@ def render_final_report(*, project: str, review: dict[str, Any], policy: dict[st
                         triage: dict[str, Any] | None = None, verification: dict[str, Any] | None = None,
                         discovery: dict[str, Any] | None = None,
                         discovery_required_satisfied: bool | None = None,
-                        isolated_pilot: dict[str, Any] | None = None,
-                        isolated_runtime: dict[str, Any] | None = None,
                         docker_runtime: dict[str, Any] | None = None,
                         runtime_evidence: dict[str, Any] | None = None,
                         merged: dict[str, Any] | None = None,
@@ -139,26 +137,6 @@ def render_final_report(*, project: str, review: dict[str, Any], policy: dict[st
     expected = review.get("usage", {}).get("expected_groups")
     if expected is not None:
         lines.append(f"Issue groups expected: **{expected}**; reviewed: **{len(reviews)}**; pending: **{len(review.get('pending_ids', []))}**.")
-    if isolated_pilot is not None:
-        lines += ["", "## Isolated VM Pilot Evidence", "",
-                  f"- Completed run: `{isolated_pilot['run_id']}`",
-                  f"- Local application health: **HTTP {isolated_pilot['http_status']}**",
-                  "- The disposable worker was removed; the base checkpoint and disk hashes were unchanged according to its lifecycle record.",
-                  "- This is a historical startup smoke test, not a vulnerability scan or a live DAST endpoint.",
-                  f"- Guest report: `{isolated_pilot['guest_report_path']}`",
-                  f"- Lifecycle record: `{isolated_pilot['lifecycle_path']}`"]
-    if isolated_runtime is not None:
-        counts = isolated_runtime["probe_counts"]
-        lines += ["", "## Automatic Isolated DAST", "",
-                  f"- Completed VM run: `{isolated_runtime['run_id']}`",
-                  f"- Health: **HTTP {isolated_runtime['http_status']}**; "
-                  f"web probes: **{counts['runtime.json']}**; "
-                  f"authorization probes: **{counts['authorization.json']}**.",
-                  f"- Mutating probes: **{'enabled' if isolated_runtime['mutating_checks_enabled'] else 'disabled'}**.",
-                  "- The guest had no virtual switch; its loopback probe results were imported after the disposable worker was removed.",
-                  "- Probe findings are evidence to review, not proof that every endpoint or vulnerability was covered.",
-                  f"- Guest report: `{isolated_runtime['guest_report_path']}`",
-                  f"- Lifecycle record: `{isolated_runtime['lifecycle_path']}`"]
     if docker_runtime is not None:
         counts = docker_runtime["probe_counts"]
         lines += ["", "## Trusted Docker DAST", "",
@@ -168,7 +146,7 @@ def render_final_report(*, project: str, review: dict[str, Any], policy: dict[st
                   f"authorization probes: **{counts['authorization.json']}**.",
                   f"- Mutating probes: **{'enabled' if docker_runtime['mutating_checks_enabled'] else 'disabled'}**.",
                   "- The application was published on host loopback; its temporary Compose stack was removed before static and AI review.",
-                  "- Docker does not provide the disposable VM's no-switch network or base-disk integrity guarantees.",
+                  "- Docker is not a security boundary for untrusted application code.",
                   "- Probe findings are evidence to review, not proof that every endpoint or vulnerability was covered.",
                   f"- Docker DAST manifest: `{docker_runtime['manifest_path']}`"]
         deployment = docker_runtime.get("deployment_context")
@@ -181,8 +159,29 @@ def render_final_report(*, project: str, review: dict[str, Any], policy: dict[st
                   f"- Source: `{runtime_evidence.get('source', 'unknown')}`",
                   f"- Target: `{runtime_evidence.get('target', 'redacted')}`",
                   f"- Bounded probe records: **{len(runtime_evidence.get('results', []))}**",
-                  "- This evidence came from an explicit Runtime Contract and contains non-mutating baseline checks.",
-                  "- No browser crawl, credentialed authorization workflow, or exploit confirmation was performed."]
+                  "- This evidence came from an explicit Runtime Contract and contains non-mutating baseline checks."]
+        browser = runtime_evidence.get("browser")
+        if isinstance(browser, dict):
+            lines.append(f"- Browser crawl: **{_plain(browser.get('status', 'unknown'))}**; "
+                         f"pages visited: **{browser.get('pages_visited', 0)}**.")
+        else:
+            lines.append("- Browser crawl: **not requested**.")
+        zap = runtime_evidence.get("zap")
+        if isinstance(zap, dict):
+            lines.append(f"- ZAP: **{_plain(zap.get('status', 'unknown'))}**; "
+                         f"engine: {_code(zap.get('engine', 'unknown'))}; "
+                         f"alerts: **{zap.get('alerts', 0)}**.")
+        else:
+            lines.append("- ZAP: **not requested**.")
+        workflows = runtime_evidence.get("workflow_evidence")
+        if isinstance(workflows, dict):
+            counts = workflows.get("coverage") or {}
+            lines.append(f"- Account and business workflows: **{_plain(workflows.get('status', 'unknown'))}**; "
+                         f"executed: **{counts.get('executed', 0)}**; "
+                         f"contract violations: **{counts.get('violations', 0)}**.")
+        else:
+            lines.append("- Account and business workflows: **not requested**.")
+        lines.append("- These observations do not prove complete vulnerability coverage or exploitation.")
     if execution is not None:
         lines += ["", "## Scanner Execution", ""]
         tasks = execution.get("tasks", [])
@@ -239,8 +238,6 @@ def write_final_report(path: str | Path, *, project: str, review: dict[str, Any]
                        triage: dict[str, Any] | None = None, verification: dict[str, Any] | None = None,
                        discovery: dict[str, Any] | None = None,
                        discovery_required_satisfied: bool | None = None,
-                       isolated_pilot: dict[str, Any] | None = None,
-                       isolated_runtime: dict[str, Any] | None = None,
                        docker_runtime: dict[str, Any] | None = None,
                        runtime_evidence: dict[str, Any] | None = None,
                        merged: dict[str, Any] | None = None,
@@ -248,13 +245,16 @@ def write_final_report(path: str | Path, *, project: str, review: dict[str, Any]
                        execution: dict[str, Any] | None = None,
                        scanner_requirement: dict[str, Any] | None = None,
                        coverage_gaps: list[str] | tuple[str, ...] | None = None) -> None:
-    Path(path).write_text(render_final_report(project=project, review=review, policy=policy,
+    from .html import render_html_report
+
+    path = Path(path)
+    options = dict(project=project, review=review, policy=policy,
                                               triage=triage, verification=verification,
                                               discovery=discovery, discovery_required_satisfied=discovery_required_satisfied,
-                                              isolated_pilot=isolated_pilot,
-                                              isolated_runtime=isolated_runtime,
                                               docker_runtime=docker_runtime,
                                               runtime_evidence=runtime_evidence,
                                               merged=merged, risk=risk, execution=execution,
                                               scanner_requirement=scanner_requirement,
-                                              coverage_gaps=coverage_gaps), encoding="utf-8")
+                                              coverage_gaps=coverage_gaps)
+    path.write_text(render_final_report(**options), encoding="utf-8")
+    path.with_suffix(".html").write_text(render_html_report(**options), encoding="utf-8")

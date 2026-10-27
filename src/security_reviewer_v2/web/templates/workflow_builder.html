@@ -1,0 +1,43 @@
+<fieldset id="workflow-fields" class="form-card">
+<legend>Guided Runtime Contract</legend>
+<p class="help">Describe your application's expected behaviour. Each run records which steps passed, violated a rule or could not be tested.</p>
+<label class="check"><input name="workflow_enabled" type="checkbox">Include account and business-workflow tests</label>
+<div id="workflow-builder" hidden>
+<nav class="wizard-nav" aria-label="Runtime contract steps">
+<button type="button" data-wizard="0">1. Discover</button><button type="button" data-wizard="1">2. Accounts</button><button type="button" data-wizard="2">3. Workflows</button><button type="button" data-wizard="3">4. Limits & reset</button><button type="button" data-wizard="4">5. Validate & save</button>
+</nav>
+<div data-panel="0">
+<h3>1. Confirm your application map</h3><p>Complete Startup method, Local app URL and Health path above. Detect reads source declarations without starting your application. Confirm router prefixes and expected health status.</p>
+<button type="button" id="wf-discover" class="secondary">Discover routes</button>
+<button type="button" id="wf-generate-draft" class="secondary">Generate a reviewable draft</button>
+<div id="wf-map"><p class="help">Discovered routes and their source will appear here.</p></div>
+<p>For an API, a path alone does not describe an operation: POST /orders needs a request body. Add these operations in step 3.</p>
+<button type="button" id="wf-example" class="secondary">Load editable order-service example</button>
+<p class="help">Example includes two users, an admin and expected access/payment rules. It fits the multi-service lab, but review every rule before testing your own application. It is not a benchmark answer key.</p>
+</div>
+<div data-panel="1" hidden>
+<h3>2. Add test accounts</h3><p>Give each identity an alias, such as user_a or admin. Configure how login returns a token or cookie, and a GET endpoint that proves the logged-in username.</p>
+<div id="wf-accounts"></div><button type="button" id="wf-add-account" class="secondary">+ Add account</button>
+<p class="help">Save the contract/project in step 5 before saving account credentials. Credentials go to your OS vault. Tokens stay in worker memory. OAuth/MFA requires a dedicated adapter.</p>
+</div>
+<div data-panel="2" hidden>
+<h3>3. Build workflows</h3><p>Add steps in order. Capture a response field (for example id as order_id), then use <code>{{ '{{order_id}}' }}</code> in a later path or JSON body. Each workflow has its own variables.</p>
+<p class="help">A setup step prepares data. A security assertion describes a rule such as another user must get 403/404. Failed setup blocks dependent steps; it does not prove a vulnerability.</p>
+<div id="wf-workflows"></div><button type="button" id="wf-add-workflow" class="secondary">+ Add workflow</button>
+</div>
+<div data-panel="3" hidden>
+<h3>4. Set limits and data lifecycle</h3>
+<div class="grid"><label>Maximum HTTP requests<input id="wf-max-requests" type="number" min="1" max="300" value="100"></label><label>Maximum workflow seconds<input id="wf-max-seconds" type="number" min="5" max="600" value="300"></label><label>Request timeout (seconds)<input id="wf-timeout" type="number" min="1" max="15" value="5"></label><label>Reset strategy<select id="wf-reset"><option value="fresh_stack">Fresh disposable Compose stack per run</option><option value="none">Existing app — no reset</option></select></label></div>
+<label class="check"><input id="wf-mutation" type="checkbox">Workflows include writes (POST / PUT / PATCH / DELETE)</label>
+<label class="check"><input name="workflow_mutation_approved" type="checkbox">I approve these workflow data changes in this disposable Compose application.</label>
+<p class="help">The runner removes only its own stack and volumes after the run. Each workflow should create independent data. Shared state is not reset between steps or workflows. Custom reset commands are not supported.</p>
+</div>
+<div data-panel="4" hidden>
+<h3>5. Validate, save and run</h3>
+<ol><li>Confirm discovered paths and your expected business rules.</li><li>Validate the contract structure, then save the project.</li><li>Return to Accounts and save each test username/password securely.</li><li>Select your DAST engine and analysis settings, then Start review.</li></ol>
+<div class="actions"><button type="button" id="wf-validate">Validate contract</button><button type="button" id="wf-save" class="secondary">Save contract with project</button><button type="button" id="wf-export" class="secondary">Download Runtime Contract</button></div>
+<p id="wf-validation" class="help">Validation checks configuration. The run verifies health and account identity before testing workflows.</p>
+<details><summary>Contract preview (credential references only)</summary><pre id="wf-preview"></pre></details>
+</div>
+<div class="actions"><button type="button" id="wf-back" class="secondary">← Back</button><button type="button" id="wf-next" class="secondary">Next →</button></div>
+</div></fieldset>

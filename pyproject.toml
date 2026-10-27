@@ -10,6 +10,10 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "Flask>=3.1,<4",
+    "langgraph>=1.2,<1.3",
+    "waitress>=3,<4",
+    "keyring>=25,<26",
+    "psutil>=6,<8",
 ]
 
 [project.optional-dependencies]
@@ -30,10 +34,14 @@ security-collect-context = "security_reviewer_v2.context.cli:main"
 security-collect-candidate-context = "security_reviewer_v2.context.candidate_cli:main"
 security-prioritize-findings = "security_reviewer_v2.prioritization.cli:main"
 security-test-environment = "security_reviewer_v2.test_environment.cli:main"
+security-reviewer-web = "security_reviewer_v2.web.app:main"
 
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"security_reviewer_v2.web" = ["templates/*.html", "static/*.css", "static/*.js"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

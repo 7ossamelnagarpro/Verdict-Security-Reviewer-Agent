@@ -40,6 +40,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--provider", choices=("groq", "ollama"), default="groq")
     parser.add_argument("--model", default="openai/gpt-oss-120b")
     parser.add_argument("--review-batch-size", type=int, default=2)
+    parser.add_argument("--runtime-evidence", type=Path)
+    parser.add_argument("--coverage-summary", type=Path)
     args = parser.parse_args(argv)
     if args.prior_review is not None and not args.prior_review.is_file():
         parser.error("--prior-review must point to an existing security-review.json")
@@ -56,6 +58,10 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--docker-runtime-evidence must point to an existing JSON file")
 
     docker_runtime = None
+    runtime_evidence = json.loads(args.runtime_evidence.read_text(encoding="utf-8")) if args.runtime_evidence else None
+    if runtime_evidence is not None and (runtime_evidence.get("status") not in {"completed", "partial"} or not isinstance(runtime_evidence.get("results"), list)):
+        parser.error("Saved runtime evidence is incomplete")
+    coverage_summary = json.loads(args.coverage_summary.read_text(encoding="utf-8")) if args.coverage_summary else {}
     if args.docker_runtime_evidence is not None:
         try:
             saved_runtime = json.loads(args.docker_runtime_evidence.read_text(encoding="utf-8"))
@@ -131,7 +137,8 @@ def main(argv: list[str] | None = None) -> int:
         write_final_report(args.output / "security-review-report.md", project=str(args.project),
                            review=review_payload, policy=policy.to_dict(), triage=triage.to_dict(),
                            verification=verification.to_dict(), merged=merged.to_dict(),
-                           docker_runtime=docker_runtime)
+                           docker_runtime=docker_runtime, runtime_evidence=runtime_evidence,
+                           coverage_gaps=coverage_summary.get("coverage_gaps", []))
         summary["review"] = {"status": review_payload["status"], "reviewed": len(review_payload["reviews"]),
                              "pending": len(review_payload.get("pending_ids", []))}
         if args.re_review_id:

@@ -55,17 +55,15 @@ def _fixture(tmp_path: Path, *, run_id: str = "1234abcd") -> tuple[Path, Path, P
     return repository, project, results
 
 
-def test_docker_runtime_is_distinct_from_vm_and_requires_matching_evidence(tmp_path: Path) -> None:
+def test_docker_runtime_requires_matching_evidence_and_reports_limits(tmp_path: Path) -> None:
     repository, project, results = _fixture(tmp_path)
     verified = load_docker_runtime("1234abcd", project_root=project, repository_root=repository)
     assert verified["stack_removed"] is True
     assert verified["probe_counts"] == {"runtime.json": 1, "authorization.json": 1}
-    assert "base_checkpoint_unchanged" not in verified
     report = render_final_report(project=str(project), review={"status": "not_run"},
                                  policy={"status": "not_run"}, docker_runtime=verified)
     assert "Trusted Docker DAST" in report
-    assert "Completed VM run" not in report
-    assert "no-switch network" in report
+    assert "not a security boundary for untrusted application code" in report
 
     manifest_path = results / "manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))

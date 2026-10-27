@@ -1,4 +1,4 @@
-"""Re-ground saved AI candidates and re-triage without a VM, scanner, or AI call.
+"""Re-ground saved AI candidates and re-triage without runtime, scanner, or AI calls.
 
 Writes a separate derivative directory. The original scan and its security
 review remain immutable; newly formed groups still require security review.

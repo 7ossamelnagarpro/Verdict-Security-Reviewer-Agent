@@ -1,8 +1,8 @@
 """Keep untrusted repository discovery separate from user-approved execution.
 
-This first version supports an already-running loopback URL or an explicitly
-supplied Docker Compose recipe. It does not infer commands from source files,
-run them on the host, or treat containerization as a perfect sandbox.
+This version supports an already-running loopback URL or an explicitly
+approved trusted-local Docker Compose recipe. It does not infer commands from
+source files, run them on the host, or treat containers as strong isolation.
 """
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ import re
 import secrets
 import shutil
 import subprocess
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -24,6 +25,7 @@ from pathlib import Path, PurePosixPath
 from typing import Iterator, Mapping
 
 from security_reviewer_v2.profiler.models import ProfileResult
+from .leases import register, release
 
 
 SCHEMA_VERSION = "1.0"
@@ -52,6 +54,7 @@ class EnvironmentSpec:
     mutating_checks: bool
     authorized_for_testing: bool
     endpoint_paths: tuple[str, ...] = ()
+    workflow_suite: dict | None = None
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -85,10 +88,10 @@ def load_environment_spec(path: str | Path, *, project_root: str | Path) -> Envi
     config = Path(path).resolve(strict=True)
     if config.is_relative_to(root):
         raise ValueError("Test-environment configuration must be outside the untrusted project root")
-    if not config.is_file() or config.stat().st_size > 32 * 1024:
-        raise ValueError("Test-environment configuration must be a JSON file of at most 32 KiB")
+    if not config.is_file() or config.stat().st_size > 64 * 1024:
+        raise ValueError("Test-environment configuration must be a JSON file of at most 64 KiB")
     payload = json.loads(config.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict) or set(payload) - {"schema_version", "mode", "trust_level", "target", "compose", "accounts", "checks", "required_env", "authorized_for_testing", "endpoints"}:
+    if not isinstance(payload, dict) or set(payload) - {"schema_version", "mode", "trust_level", "target", "compose", "accounts", "checks", "required_env", "authorized_for_testing", "endpoints", "workflow_suite"}:
         raise ValueError("Unknown or invalid test-environment configuration fields")
     if payload.get("schema_version") != SCHEMA_VERSION:
         raise ValueError("Unsupported test-environment schema version")
@@ -98,10 +101,10 @@ def load_environment_spec(path: str | Path, *, project_root: str | Path) -> Envi
     if mode not in {"existing_url", "docker_compose"}:
         raise ValueError("mode must be existing_url or docker_compose")
     trust_level = payload.get("trust_level", "untrusted")
-    if trust_level not in {"untrusted", "trusted_lab"}:
-        raise ValueError("trust_level must be untrusted or trusted_lab")
-    if mode == "docker_compose" and trust_level != "trusted_lab":
-        raise ValueError("Host Docker Compose is only allowed for an explicitly trusted_lab project; untrusted projects require a VM worker")
+    if trust_level not in {"untrusted", "trusted_lab", "trusted_local_project"}:
+        raise ValueError("trust_level must be untrusted, trusted_lab, or trusted_local_project")
+    if mode == "docker_compose" and trust_level not in {"trusted_lab", "trusted_local_project"}:
+        raise ValueError("Host Docker Compose requires an explicitly trusted project; untrusted project execution is unsupported")
     target = _object(payload.get("target"), {"base_url", "health_path", "expected_status"}, "target")
     base_url = _loopback_url(target.get("base_url"))
     health_path = target.get("health_path", "/")
@@ -147,9 +150,16 @@ def load_environment_spec(path: str | Path, *, project_root: str | Path) -> Envi
     elif compose is not None:
         raise ValueError("compose is only valid for docker_compose mode")
     endpoint_paths = _endpoint_paths(payload.get("endpoints", []))
+    from security_reviewer_v2.scanners.runtime_workflows import local_path, validate_suite
+    local_path(health_path)
+    for endpoint in endpoint_paths:
+        local_path(endpoint)
+    suite = payload.get("workflow_suite")
+    if suite is not None:
+        validate_suite(suite, disposable=mode == "docker_compose")
     return EnvironmentSpec(mode, trust_level, base_url, health_path, expected_status, compose_file,
                            app_service, tuple(sorted(set(required_env))), tuple(sorted(set(account_names))), authorization,
-                           mutating, True, endpoint_paths)
+                           mutating, True, endpoint_paths, suite)
 
 
 def plan_environment(
@@ -161,6 +171,9 @@ def plan_environment(
     variables = environment if environment is not None else os.environ
     evidence: list[str] = ["Explicit user authorization was supplied outside the project root."]
     needed_variables = set(spec.required_env_names)
+    if spec.workflow_suite:
+        from security_reviewer_v2.scanners.runtime_workflows import env_name
+        needed_variables.update(env_name(a["id"], f) for a in spec.workflow_suite.get("accounts", []) for f in ("username", "password"))
     if spec.authorization_checks:
         needed_variables.update(spec.account_env_names)
     missing = [f"Required test variable is unset: {name}" for name in sorted(needed_variables)
@@ -174,8 +187,8 @@ def plan_environment(
         if spec.endpoint_paths:
             evidence.append(f"Runtime contract supplied {len(spec.endpoint_paths)} bounded endpoint path(s).")
     else:
-        if spec.trust_level != "trusted_lab":
-            missing.append("Untrusted project execution requires a VM worker; host Docker Compose is forbidden")
+        if spec.trust_level not in {"trusted_lab", "trusted_local_project"}:
+            missing.append("Untrusted project execution is unsupported; host Docker Compose is forbidden")
         assert spec.compose_file is not None
         compose_path = root / spec.compose_file
         if not compose_path.is_file() or compose_path.is_symlink() or not compose_path.resolve().is_relative_to(root):
@@ -222,8 +235,8 @@ def provision_environment(
         _check_health(spec)
         yield TestEnvironmentSession(spec.base_url, spec.mode)
         return
-    if spec.trust_level != "trusted_lab":
-        raise RuntimeError("Untrusted projects cannot execute Docker Compose on the host; use a VM worker")
+    if spec.trust_level not in {"trusted_lab", "trusted_local_project"}:
+        raise RuntimeError("Untrusted projects cannot execute Docker Compose on the host")
     if not allow_compose_execution:
         raise RuntimeError("Compose execution requires explicit opt-in")
     root = Path(project_root).resolve(strict=True)
@@ -240,18 +253,29 @@ def provision_environment(
     docker_env = _docker_environment(spec)
     cleanup_error: RuntimeError | None = None
     startup_attempted = False
+    lease = None
     try:
         configured = runner(common + ["config", "--format", "json"], cwd=root, capture_output=True,
-                            text=True, timeout=30, check=False, env=docker_env)
+                            text=True, encoding="utf-8", errors="replace", timeout=30, check=False, env=docker_env)
         if configured.returncode != 0:
             raise RuntimeError("Docker Compose could not validate this project configuration")
-        _validate_compose_config(json.loads(configured.stdout), spec, root, project_name=common[-1])
+        approved_config = json.loads(configured.stdout)
+        _validate_compose_config(approved_config, spec, root, project_name=common[-1])
+        lease, snapshot = register(common[-1], config=approved_config)
+        common[common.index("-f") + 1] = str(snapshot)
         startup_attempted = True
         started = runner(common + ["up", "--build", "--detach", "--wait"], cwd=root,
-                         capture_output=True, text=True, timeout=900, check=False, env=docker_env)
+                         capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=900, check=False, env=docker_env)
         if started.returncode != 0:
             raise RuntimeError("Docker Compose failed to start the isolated test stack")
-        _check_health(spec)
+        for attempt in range(20):
+            try:
+                _check_health(spec)
+                break
+            except RuntimeError:
+                if attempt == 19:
+                    raise
+                time.sleep(1)
         yield TestEnvironmentSession(spec.base_url, spec.mode, common[-1])
     finally:
         # The unique Compose project name limits cleanup to this invocation.
@@ -261,6 +285,14 @@ def provision_environment(
                                  capture_output=True, text=True, timeout=120, check=False, env=docker_env)
                 if stopped.returncode != 0:
                     cleanup_error = RuntimeError(f"Test stack cleanup failed for {common[-1]}; inspect Docker manually")
+                else:
+                    checked = runner([docker, "ps", "--all", "--filter",
+                                      f"label=com.docker.compose.project={common[-1]}", "--format", "{{.ID}}"],
+                                     capture_output=True, text=True, timeout=30, check=False, env=docker_env)
+                    if checked.returncode or checked.stdout.strip():
+                        cleanup_error = RuntimeError(f"Test stack removal is unverified for {common[-1]}")
+                    elif lease is not None:
+                        release(lease)
             except (OSError, subprocess.TimeoutExpired) as error:
                 cleanup_error = RuntimeError(f"Test stack cleanup could not finish for {common[-1]}; inspect Docker manually")
                 cleanup_error.__cause__ = error
@@ -270,7 +302,7 @@ def provision_environment(
 
 def _validate_compose_config(config: object, spec: EnvironmentSpec, root: Path,
                              *, project_name: str | None = None) -> None:
-    """Reject dangerous host access; this is a bounded lab policy, not a VM."""
+    """Reject dangerous host access; this bounded Docker policy is not strong isolation."""
     if not isinstance(config, dict) or not isinstance(config.get("services"), dict):
         raise ValueError("Docker Compose returned an invalid configuration")
     if set(config) - {"name", "services", "networks", "volumes"}:
