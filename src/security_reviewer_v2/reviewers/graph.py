@@ -33,6 +33,7 @@ from langgraph.graph import END, START, StateGraph
 
 from security_reviewer_v2.agents.tracing import agent_tracing, call_model, graph_config
 from security_reviewer_v2.context.candidate_models import CandidateContextResult
+from security_reviewer_v2.discovery.provider import ProviderResponseError, RequestTooLargeError
 from security_reviewer_v2.context.models import ContextResult
 from security_reviewer_v2.discovery.models import DiscoveryResult
 from security_reviewer_v2.normalization.merge_models import MergeResult
@@ -45,7 +46,7 @@ from .agent import (
 )
 from .models import ReviewItem, ReviewResult
 
-Phase = Literal["review", "stopped", "retry", "next", "done", "empty"]
+Phase = Literal["review", "stopped", "retry", "next", "done", "empty", "split"]
 Prepared = tuple[IssueGroup, dict[str, Any]]
 _MAX_GROUPS_PER_REQUEST = 3
 
@@ -127,7 +128,8 @@ class _Nodes:
         graph.add_edge(START, "prepare")
         _add_routes(graph, "prepare", {"review": "plan_batches", "empty": END})
         _add_routes(graph, "plan_batches", {"review": "review_batch", "done": "finalize"})
-        _add_routes(graph, "review_batch", {"retry": "retry_missing", "next": "checkpoint", "stopped": "finalize"})
+        _add_routes(graph, "review_batch", {"retry": "retry_missing", "next": "checkpoint", "stopped": "finalize",
+                                            "split": "review_batch"})
         graph.add_edge("retry_missing", "checkpoint")
         _add_routes(graph, "checkpoint", {"review": "review_batch", "done": "finalize"})
         graph.add_edge("finalize", END)
@@ -207,6 +209,18 @@ class _Nodes:
             raw, batch_usage = call_model(
                 self.provider, "review", _review_prompt(inputs.project_root, [item for _, item in batch], inputs.deployment_context),
                 span="security-review-model-call", timeout_seconds=inputs.timeout_seconds, max_reviews=len(batch))
+        except (RequestTooLargeError, ProviderResponseError) as error:
+            # Too large for the provider, or the model produced unusable output: neither says anything about the
+            # provider's health.  Split the batch into single-group requests; a single group that still fails stays
+            # pending (never "safe") and the remaining groups are still reviewed.
+            if len(batch) > 1:
+                batches = list(state["batches"])
+                batches[state["cursor"]:state["cursor"] + 1] = [[item] for item in batch]
+                return {"batches": batches, "phase": "split",
+                        "warnings": [f"Review batch of {len(batch)} groups failed ({error}); sending one group at a time."]}
+            return {"phase": "next", "missing": [],
+                    "warnings": [f"{batch[0][0].group_id}: review request not processed ({error}); "
+                                 "group left pending and not reviewed."]}
         except RuntimeError as error:
             return {"phase": "stopped", "stopped": True, "warnings": [f"Review provider stopped: {error}"]}
         usage, reviews, warnings = dict(state["usage"]), dict(state["reviews"]), []

@@ -12,7 +12,8 @@ LangSmith can show, time and replay::
                               |   v                      v
                               +- finalize <---- (fatal provider error)  -> END
 
-Semantics are identical to the previous imperative loop: bounded batches, bounded on-demand
+An HTTP 413 (request larger than the provider allows) routes ``call_model -> shrink_batch -> call_model`` with a
+smaller request instead of ending the run.  Otherwise semantics match the previous imperative loop: bounded batches, bounded on-demand
 context rounds, deterministic candidate verification, and an honest ``PARTIAL`` status whenever
 any coverage gap remains.  Deterministic domain logic stays in ``agent.py``; this module only
 orchestrates it.
@@ -41,11 +42,13 @@ from .models import (
     DISCOVERY_SCHEMA_VERSION, CandidateDisposition, CandidateFinding, DiscoveryBatch, DiscoveryConfig,
     DiscoveryResult, DiscoveryStatus, DiscoveryTarget,
 )
-from .provider import DiscoveryProvider
+from .provider import DiscoveryProvider, ProviderResponseError, RequestTooLargeError
 from .scope import DiscoveryScope, plan_discovery_scope
 
 Phase = Literal["ready", "skipped", "done", "enrich", "call", "close", "next"]
-_NON_FATAL_PROVIDER_ERROR = "non-JSON"
+_LEGACY_BATCH_LEVEL_MARKER = "non-JSON"  # providers that predate ``ProviderResponseError`` (e.g. Ollama)
+_MAX_SHRINKS = 8          # bound on size-reduction retries for one batch
+_MIN_CONTEXT_CHARS = 1_500  # a single target is not shrunk below this prompt budget
 
 
 @dataclass(frozen=True)
@@ -79,6 +82,13 @@ class BatchProgress:
     raw: dict[str, Any] = field(default_factory=dict)
     selected_requests: tuple[Any, ...] = ()
     error: str | None = None
+    batch_level_error: bool = False   # the model answered with unusable content; the provider itself is reachable
+    budget: int = 0                   # prompt character budget this batch was built with
+    shrinks: int = 0                  # how many times a 413 forced a smaller request
+    size_ratio: float | None = None   # limit / requested tokens from the last 413, when reported
+    reason: str = "size"              # why the batch is being shrunk: "size" (HTTP 413) or "output" (unusable answer)
+    last_error: str = ""              # safe text of the failure that triggered the shrink
+    counted: bool = False             # targets already credited as inspected by a successful call
 
 
 class DiscoveryState(TypedDict, total=False):
@@ -89,6 +99,7 @@ class DiscoveryState(TypedDict, total=False):
     pending: list[DiscoveryTarget]
     batch_index: int
     batch: BatchProgress | None
+    target_limit: int                 # largest batch the provider accepted so far (shrinks on HTTP 413, never grows)
     candidates: dict[str, CandidateFinding]
     totals: dict[str, int]
     failed: bool
@@ -116,7 +127,7 @@ class DiscoveryWorkflow:
         return final["result"]
 
     def _step_budget(self) -> int:
-        per_batch = 3 + 3 * (self.config.max_enrichment_rounds + 1)
+        per_batch = 3 + 3 * (self.config.max_enrichment_rounds + 1) + 2 * _MAX_SHRINKS
         return (self.config.max_batches + 1) * per_batch + 10
 
     @staticmethod
@@ -140,13 +151,14 @@ class _Nodes:
     # ------------------------------------------------------------------ wiring
     def compile(self):
         graph = StateGraph(DiscoveryState)
-        for name in ("plan_scope", "select_batch", "call_model", "absorb_candidates",
+        for name in ("plan_scope", "select_batch", "call_model", "shrink_batch", "absorb_candidates",
                      "plan_enrichment", "fetch_context", "close_batch", "finalize"):
             graph.add_node(name, getattr(self, name))
         graph.add_edge(START, "plan_scope")
         graph.add_edge("plan_scope", "select_batch")
         _add_routes(graph, "select_batch", {"ready": "call_model", "skipped": "select_batch", "done": "finalize"})
-        _add_routes(graph, "call_model", {"next": "absorb_candidates", "close": "close_batch"})
+        _add_routes(graph, "call_model", {"next": "absorb_candidates", "close": "close_batch", "shrink": "shrink_batch"})
+        _add_routes(graph, "shrink_batch", {"call": "call_model", "close": "close_batch"})
         graph.add_edge("absorb_candidates", "plan_enrichment")
         _add_routes(graph, "plan_enrichment", {"enrich": "fetch_context", "close": "close_batch"})
         _add_routes(graph, "fetch_context", {"call": "call_model", "close": "close_batch"})
@@ -170,6 +182,7 @@ class _Nodes:
                 scope.gap_evidence, scope.warnings,
                 (*scope.coverage_gaps, "Discovery run was restricted to explicitly selected target IDs."))
         return {"scope": scope, "pending": list(scope.targets), "warnings": list(scope.warnings),
+                "target_limit": self.config.max_targets,
                 "gaps": {*scope.coverage_gaps, *scope.gap_evidence, *self.broker.inventory_gaps}}
 
     def select_batch(self, state: DiscoveryState) -> DiscoveryState:
@@ -178,7 +191,7 @@ class _Nodes:
         if not pending or index > self.config.max_batches:
             return {"batch_index": index, "batch": None, "phase": "done"}
         scope, cfg = state["scope"], self.config
-        selection = pending[:cfg.max_targets]
+        selection = pending[:min(cfg.max_targets, state["target_limit"])]
         batch_scope = DiscoveryScope(tuple(selection), scope.snippets, scope.gap_evidence, scope.warnings, scope.coverage_gaps)
         # Reserve room for requested context on a subsequent model call.
         budget = max(1_000, cfg.max_context_chars - min(4_000, cfg.max_context_chars // 4))
@@ -193,7 +206,8 @@ class _Nodes:
             "pending": [item for item in pending if item.target_id not in included],
             "gaps": {gap for gap in prompt_gaps if "shortened" in gap or "background" in gap or "known findings" in gap},
             "batch": BatchProgress(index, targets, prompt,
-                                   frozenset(item.path.replace("\\", "/") for item in targets if item.path)),
+                                   frozenset(item.path.replace("\\", "/") for item in targets if item.path),
+                                   budget=budget),
         }
 
     def call_model(self, state: DiscoveryState) -> DiscoveryState:
@@ -203,9 +217,26 @@ class _Nodes:
             raw, usage = call_model(self.provider, "discover", batch.prompt, span="discovery-model-call",
                                     timeout_seconds=self.config.timeout_seconds,
                                     max_candidates=self.config.max_candidates)
+        except (RequestTooLargeError, ProviderResponseError) as error:
+            if batch.counted:
+                # These targets were already answered by an earlier call; only the follow-up that adds on-demand
+                # context failed.  Shrinking would re-queue targets that are already inspected (and count them
+                # twice), so keep the first response and say what was lost.
+                return {"batch": replace(batch, selected_requests=()), "phase": "close",
+                        "gaps": {f"Discovery batch {batch.index}: on-demand context could not be added ({error}); "
+                                 "the first response was kept."}}
+            # Too large for the provider, or the model produced unusable output for this request: either way waiting
+            # cannot help, a smaller request can (and isolates a target that keeps breaking the model's output).
+            size = isinstance(error, RequestTooLargeError)
+            return {"batch": replace(batch, size_ratio=error.fit_ratio if size else None,
+                                     reason="size" if size else "output", last_error=str(error)),
+                    "phase": "shrink",
+                    "warnings": [f"Discovery batch {batch.index}: {error}; retrying with a smaller request."]}
         except RuntimeError as error:
             message = str(error)
-            return {"batch": replace(batch, error=message), "failed": True, "phase": "close",
+            batch_level = isinstance(error, ProviderResponseError) or _LEGACY_BATCH_LEVEL_MARKER in message
+            return {"batch": replace(batch, error=message, batch_level_error=batch_level), "failed": True,
+                    "phase": "close",
                     "warnings": [f"Discovery batch {batch.index}: {message}"],
                     "gaps": {f"Discovery batch {batch.index} did not complete; targets: "
                              f"{', '.join(item.target_id for item in batch.targets)}."}}
@@ -216,10 +247,55 @@ class _Nodes:
             raw = {"candidates": raw, "context_requests": []}
         if not isinstance(raw, dict):
             raw = {"candidates": [], "context_requests": []}
-        update: DiscoveryState = {"batch": replace(batch, usage=batch_usage, raw=raw), "totals": totals, "phase": "next"}
-        if batch.calls == 1:
+        update: DiscoveryState = {"batch": replace(batch, usage=batch_usage, raw=raw, counted=True),
+                                  "totals": totals, "phase": "next"}
+        if not batch.counted:  # credit the targets once, on the first call that actually succeeded
             update["inspected"] = list(batch.targets)
         return update
+
+    def shrink_batch(self, state: DiscoveryState) -> DiscoveryState:
+        """Rebuild the current batch smaller after an HTTP 413 or an unusable model answer, so one bad request
+        cannot end discovery.
+
+        Several targets: keep a leading share (sized from the provider's own limit/requested numbers when it
+        reported them, otherwise 60% for size and half for output failures) and return the rest to the front of
+        the queue.  One target: for a size problem shrink its prompt budget; for an output problem there is
+        nothing smaller to try.  Nothing is dropped silently: a target that cannot be processed even then is
+        reported as a gap and stays uninspected.
+        """
+        batch, scope = state["batch"], state["scope"]
+        factor = (min(0.8, max(0.2, batch.size_ratio * 0.85)) if batch.size_ratio
+                  else 0.5 if batch.reason == "output" else 0.6)
+        giving_up = batch.shrinks >= _MAX_SHRINKS
+        selection, returned, budget = batch.targets, (), batch.budget
+        if not giving_up and len(batch.targets) > 1:
+            keep = max(1, int(len(batch.targets) * factor))
+            selection, returned = batch.targets[:keep], batch.targets[keep:]
+        elif not giving_up:
+            budget = int(batch.budget * factor)
+            giving_up = batch.reason == "output" or budget < _MIN_CONTEXT_CHARS
+        if not giving_up:
+            batch_scope = DiscoveryScope(tuple(selection), scope.snippets, scope.gap_evidence, scope.warnings,
+                                         scope.coverage_gaps)
+            prompt, targets, _ = _build_prompt(self.inputs.merged, self.inputs.context, self.inputs.risk,
+                                               batch_scope, budget)
+            giving_up = not targets
+        if giving_up:
+            ids = ", ".join(item.target_id for item in batch.targets)
+            why = ("exceeded the provider request-size limit even with reduced context" if batch.reason == "size"
+                   else f"produced no usable model output even when sent alone ({batch.last_error})")
+            return {"phase": "close", "failed": True,   # provider rejected it: never a silent success
+                    "gaps": {f"Discovery target(s) {ids} {why} and were not inspected."},
+                    "batch": replace(batch, error=f"request not processable: {why}", batch_level_error=True)}
+        included = {item.target_id for item in targets}
+        requeue = [*returned, *(item for item in selection if item.target_id not in included)]
+        # A size limit applies to every later request, so remember the size that fits.  An output failure is caused
+        # by particular targets, so later batches start at full size again (only the offender is isolated).
+        learned = min(state["target_limit"], len(targets)) if len(batch.targets) > 1 and batch.reason == "size" else state["target_limit"]
+        return {"phase": "call", "pending": [*requeue, *state["pending"]], "target_limit": learned,
+                "batch": replace(batch, targets=targets, prompt=prompt, budget=budget, shrinks=batch.shrinks + 1,
+                                 size_ratio=None, last_error="",
+                                 allowed_paths=frozenset(item.path.replace("\\", "/") for item in targets if item.path))}
 
     def absorb_candidates(self, state: DiscoveryState) -> DiscoveryState:
         batch, raw = state["batch"], state["batch"].raw
@@ -287,11 +363,15 @@ class _Nodes:
                                 batch.error, batch.candidate_ids)
         if self.inputs.on_batch is not None:
             self.inputs.on_batch(record)
-        fatal = bool(batch.error) and _NON_FATAL_PROVIDER_ERROR not in batch.error
+        # A transport/HTTP outage stops the run; unusable model content only fails this batch (its targets stay
+        # uninspected and are reported as gaps), so one bad answer cannot hide the remaining batches.
+        fatal = bool(batch.error) and not batch.batch_level_error
         return {"batches": [record], "batch": None, "phase": "done" if fatal else "next"}
 
     def finalize(self, state: DiscoveryState) -> DiscoveryState:
-        gaps, inspected, batches = set(state["gaps"]), state["inspected"], state["batches"]
+        gaps, batches = set(state["gaps"]), state["batches"]
+        seen: set[str] = set()   # invariant: a target is inspected at most once, so inspected <= planned
+        inspected = [item for item in state["inspected"] if not (item.target_id in seen or seen.add(item.target_id))]
         pending, scope = state["pending"], state["scope"]
         if pending:
             gaps.add(f"{len(pending)} planned discovery targets were not inspected; batch or candidate budget was exhausted: "

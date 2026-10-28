@@ -50,7 +50,7 @@ def test_report_shows_all_observations_without_agent_review() -> None:
     assert "codeql-cli" in markdown and "adapter_unavailable" in markdown
     assert "CodeQL unavailable" in markdown
     assert "No agent verdicts were produced" in markdown
-    assert "## Security Review Agent Verdicts" in markdown
+    assert "## Findings" in markdown and "have not been cleared or confirmed by the agent" in markdown
 
 
 def test_report_keeps_agent_verdict_separate_and_escapes_scanner_title() -> None:
@@ -64,7 +64,8 @@ def test_report_keeps_agent_verdict_separate_and_escapes_scanner_title() -> None
     )
     assert "&lt;script&gt;" in markdown
     assert "[click](https://example.test)" not in markdown
-    assert markdown.index("## Scanner and DAST Observations") < markdown.index("## Security Review Agent Verdicts")
+    # Agent verdicts lead; raw scanner observations live in the appendix and stay clearly separate.
+    assert markdown.index("## Findings in detail") < markdown.index("### B. Scanner and DAST Observations")
     assert "Reviewed issue" in markdown
 
 

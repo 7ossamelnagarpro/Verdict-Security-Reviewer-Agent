@@ -102,7 +102,15 @@ class GitleaksAdapter(ScannerAdapter):
         # ``dir``/``git`` subcommands (only ``detect``).  Probe the installed binary and
         # fall back to the equivalent legacy invocation instead of failing the whole task.
         modern = _supports_dir_command(self.config.executable)
-        common = [
+        subcommand = ("git" if request.task.mode == "git_history" else "dir") if modern else "detect"
+        # Feature detection: only pass flags this binary lists in its own ``--help``.  Old builds reject
+        # unknown flags with exit 126 (run_v30: "unknown flag: --no-color"), so a fixed list is fragile.
+        supported = _supported_flags(self.config.executable, subcommand)
+
+        def usable(argument: str) -> bool:
+            return supported is None or argument.split("=", 1)[0] in supported
+
+        common = [argument for argument in (
             "--report-format=json",
             f"--report-path={output}",
             "--no-banner",
@@ -110,7 +118,7 @@ class GitleaksAdapter(ScannerAdapter):
             "--redact",
             "--exit-code=0",
             f"--max-target-megabytes={self.config.max_target_megabytes}",
-        ]
+        ) if usable(argument)]
         if modern:
             config = _write_scan_config(task_directory, request.task.exclusions)
             common.append(f"--config={config}")
@@ -119,12 +127,10 @@ class GitleaksAdapter(ScannerAdapter):
         # rules.  Scanning with the default ruleset and no path exclusions can only report more,
         # never less, so it is the safe direction.
         if modern:
-            subcommand = "git" if request.task.mode == "git_history" else "dir"
             arguments = [subcommand, *common, relative_target]
         else:
-            subcommand = "detect"
             arguments = [subcommand, f"--source={relative_target}", *common]
-            if request.task.mode != "git_history":
+            if request.task.mode != "git_history" and usable("--no-git"):
                 arguments.insert(1, "--no-git")
         return AdapterExecutionPlan(
             commands=(
@@ -208,6 +214,20 @@ def _check_gitleaks_executable(
         detail="Gitleaks executable and runtime version were verified",
         version=version,
     )
+
+
+@functools.lru_cache(maxsize=32)
+def _supported_flags(executable: str, subcommand: str) -> frozenset[str] | None:
+    """Long flags listed by ``gitleaks <subcommand> --help``; ``None`` when that cannot be determined."""
+    try:
+        probe = subprocess.run(
+            [str(executable), subcommand, "--help"], stdin=subprocess.DEVNULL, capture_output=True,
+            text=True, timeout=20, shell=False, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    flags = frozenset(re.findall(r"--[a-z][a-z0-9-]*", probe.stdout + probe.stderr))
+    return flags or None
 
 
 @functools.lru_cache(maxsize=16)

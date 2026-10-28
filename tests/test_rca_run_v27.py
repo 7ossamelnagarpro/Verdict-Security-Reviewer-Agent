@@ -56,7 +56,14 @@ def _mk(path: Path) -> Path:
 
 def _fake_gitleaks(tmp_path: Path, *, modern: bool) -> Path:
     script = tmp_path / ("gl-new" if modern else "gl-old")
-    body = "exit 0" if modern else 'echo "Error: unknown command \\"dir\\" for \\"gitleaks\\"" >&2; exit 1'
+    legacy_help = (  # flags copied from the real run_v30 log: no --no-color
+        "Usage:\n  gitleaks detect [flags]\nFlags:\n      --no-git   treat repo as directory\n"
+        "Global Flags:\n  -c, --config string\n      --exit-code int\n      --max-target-megabytes int\n"
+        "      --no-banner\n      --redact\n  -f, --report-format string\n  -r, --report-path string\n"
+        "  -s, --source string\n")
+    body = ("exit 0" if modern else
+            'if [ "$1" = "dir" ]; then echo "Error: unknown command \\"dir\\" for \\"gitleaks\\"" >&2; exit 1; fi\n'
+            f"cat <<'HELP'\n{legacy_help}HELP")
     script.write_text(f"#!/bin/sh\n{body}\n")
     script.chmod(script.stat().st_mode | stat.S_IEXEC)
     return script
@@ -65,12 +72,14 @@ def _fake_gitleaks(tmp_path: Path, *, modern: bool) -> Path:
 @pytest.mark.skipif(os.name == "nt", reason="uses a POSIX shell stub")
 def test_gitleaks_falls_back_to_detect_when_dir_command_is_missing(tmp_path: Path) -> None:
     gitleaks_module._supports_dir_command.cache_clear()
+    gitleaks_module._supported_flags.cache_clear()
     old = _fake_gitleaks(tmp_path, modern=False)
     adapter = GitleaksAdapter(GitleaksConfig(executable=str(old)))
     plan = adapter.build_execution_plan(request(_mk(tmp_path / "a"), task("gitleaks", ScanType.SECRETS, mode="directory")))
     arguments = plan.commands[0].arguments
     assert arguments[0] == "detect" and "--no-git" in arguments
     assert "--source=." in arguments and "--redact" in arguments and "--exit-code=0" in arguments
+    assert "--no-color" not in arguments   # run_v30: old Gitleaks rejects it (exit 126)
     # Legacy binaries must run on their built-in rules: a generated --config would replace them.
     assert not any(a.startswith("--config") for a in arguments)
 
@@ -78,6 +87,7 @@ def test_gitleaks_falls_back_to_detect_when_dir_command_is_missing(tmp_path: Pat
 @pytest.mark.skipif(os.name == "nt", reason="uses a POSIX shell stub")
 def test_gitleaks_keeps_dir_command_when_supported(tmp_path: Path) -> None:
     gitleaks_module._supports_dir_command.cache_clear()
+    gitleaks_module._supported_flags.cache_clear()
     new = _fake_gitleaks(tmp_path, modern=True)
     adapter = GitleaksAdapter(GitleaksConfig(executable=str(new)))
     plan = adapter.build_execution_plan(request(_mk(tmp_path / "b"), task("gitleaks", ScanType.SECRETS, mode="directory")))
@@ -119,16 +129,17 @@ def test_report_states_decision_coverage_and_does_not_change_verdicts() -> None:
         {"scanner_id": "trivy", "status": "skipped", "reason": "n/a", "prerequisite_checks": []}]}
     markdown = render_final_report(project="p", review=review, policy=policy, execution=execution,
                                    coverage_gaps=["gap one", "gap one", "gap two"])
-    assert "**BLOCKED**" in markdown
-    assert "1 of 2 scanner task(s) completed" in markdown          # skipped task not counted
+    assert "Release blocked" in markdown
+    assert "1 of 2 applicable scanner task(s) completed" in markdown   # skipped task not counted
     assert "SQL Injection DB Cursor Execute" in markdown            # acronym casing restored
-    assert "## Findings at a Glance" in markdown and "## Recommended Next Steps" in markdown
+    assert "## Findings overview" in markdown and "**Then:**" in markdown
     assert "Scanner version not verified" in markdown               # version tolerance is disclosed
-    assert "**not performed**" in markdown                          # no DAST evidence
+    assert "No dynamic testing (DAST) was performed" in markdown     # no DAST evidence
     assert markdown.count("gap one") == 1                           # gaps de-duplicated
     # data integrity: verdict/severity/action values pass through unchanged and in the right rows
-    assert "| 1 | SQL Injection DB Cursor Execute | high | confirmed vulnerability | high | **block** |" in markdown
-    assert "| 2 | Debug Enabled | medium | likely vulnerability | high | **warn** |" in markdown
+    overview = {line.split("|")[1].strip(): line for line in markdown.splitlines() if line.startswith("| ")}
+    assert "SQL Injection DB Cursor Execute" in overview["1"] and "confirmed vulnerability" in overview["1"]
+    assert "block" in overview["1"] and "Debug Enabled" in overview["2"] and "warn" in overview["2"]
 
 
 def test_tool_lookup_accepts_native_and_exe_spellings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -232,10 +243,10 @@ def test_report_has_professional_summary_section() -> None:
                            {"scanner_id": "gitleaks", "status": "failed", "prerequisite_checks": []}]}
     merged = {"findings": [], "summary": {"input_findings": 26, "merged_findings": 14, "duplicates_collapsed": 12}}
     text = render_final_report(project="p", review=review, policy=policy, execution=execution, merged=merged)
-    summary = text.split("## Summary")[1].split("## Executive Summary")[0]
-    assert text.index("## Summary") < text.index("## Executive Summary")
-    assert "This release is **blocked**" in summary and "SQL Injection" in summary
-    assert "| Release-blocking | **1** |" in summary and "| Need manual review (warn) | **1** |" in summary
-    assert "**26** → **14**" in summary and "1 of 2" in summary
-    assert "█" in summary and "Top priorities" in summary and "RG-001" in summary
-    assert "partial" in summary and "not performed" in summary
+    assert text.index("## Scorecard") < text.index("## 🎯 Fix first") < text.index("## Findings overview")
+    assert text.index("## Findings in detail") < text.index("## 🧭 Coverage & trust") < text.index("## Appendix")
+    assert "Release blocked" in text and "Most urgent: SQL Injection" in text
+    scorecard = text.split("## Scorecard")[1].split("## 🎯 Fix first")[0]
+    assert "| **3** | **1** | **1** | **1** | **1 / 2** | 26 → 14 | not run |" in scorecard
+    assert "█" in scorecard and "RG-001" in text.split("## 🎯 Fix first")[1].split("## Findings overview")[0]
+    assert "Scanner coverage is partial" in text and "No dynamic testing (DAST) was performed" in text

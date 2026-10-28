@@ -27,6 +27,7 @@ graph TD;
 	plan_scope(plan_scope)
 	select_batch(select_batch)
 	call_model(call_model)
+	shrink_batch(shrink_batch)
 	absorb_candidates(absorb_candidates)
 	plan_enrichment(plan_enrichment)
 	fetch_context(fetch_context)
@@ -37,6 +38,7 @@ graph TD;
 	absorb_candidates --> plan_enrichment;
 	call_model -.-> absorb_candidates;
 	call_model -.-> close_batch;
+	call_model -.-> shrink_batch;
 	close_batch -.-> finalize;
 	close_batch -.-> select_batch;
 	fetch_context -.-> call_model;
@@ -46,6 +48,8 @@ graph TD;
 	plan_scope --> select_batch;
 	select_batch -.-> call_model;
 	select_batch -.-> finalize;
+	shrink_batch -.-> call_model;
+	shrink_batch -.-> close_batch;
 	finalize --> __end__;
 	select_batch -.-> select_batch;
 	classDef default fill:#f2f0ff,line-height:1.2
@@ -57,7 +61,8 @@ graph TD;
 |---|---|
 | `plan_scope` | Plan targets; apply explicit `target_ids`; seed coverage gaps. |
 | `select_batch` | Pick the next batch and build a size-bounded prompt; skip targets that cannot fit. |
-| `call_model` | One provider call (traced as an `llm` span with token usage). A provider error ends the batch. |
+| `call_model` | One provider call (traced as an `llm` span with token usage). A provider outage ends the run; an unusable answer fails only this batch. |
+| `shrink_batch` | After an HTTP 413 (request too large) or an unusable model answer (e.g. `json_validate_failed`), rebuild the batch smaller and retry in place. A size limit is remembered for later batches; an output failure only isolates the offending target. A target that still fails alone is reported as a gap, never marked inspected. |
 | `absorb_candidates` | Deterministically verify every candidate against real source before keeping it. |
 | `plan_enrichment` | Decide whether requested extra context fits the per-batch budget. |
 | `fetch_context` | Fetch bounded source context and re-prompt (loops back to `call_model`). |

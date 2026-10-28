@@ -25,6 +25,7 @@ nodes and model calls alike, even if ``LANGSMITH_TRACING`` is set globally.
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager, nullcontext
@@ -35,6 +36,8 @@ from langsmith import Client, trace, traceable, tracing_context
 from langsmith.run_helpers import get_current_run_tree, get_tracing_context
 
 from security_reviewer_v2.redaction import redact_source
+
+log = logging.getLogger(__name__)
 
 DEFAULT_PROJECT = "security-reviewer-v2"
 CONTENT_ENV = "SECURITY_REVIEWER_TRACE_CONTENT"
@@ -119,7 +122,14 @@ def agent_tracing(agent: str, *, metadata: Mapping[str, Any] | None = None,
             yield
         return
     project = os.environ.get("LANGSMITH_PROJECT") or os.environ.get("LANGCHAIN_PROJECT") or DEFAULT_PROJECT
-    with tracing_context(enabled=True, client=client or build_client(), project_name=project,
+    try:
+        resolved = client or build_client()
+    except Exception:  # tracing is optional: a broken LangSmith setup must never stop a security review
+        log.warning("LangSmith tracing disabled: could not create the client", exc_info=True)
+        with nullcontext():
+            yield
+        return
+    with tracing_context(enabled=True, client=resolved, project_name=project,
                          tags=["security-reviewer-v2", agent], metadata={"agent": agent, **dict(metadata or {})}):
         yield
 
@@ -166,26 +176,56 @@ def usage_metadata(usage: Any) -> dict[str, int]:
     return result
 
 
+def _trace_outputs(result: Any) -> dict[str, Any]:
+    """LangSmith calls this with ``None`` when the traced function raised; that must not be an error."""
+    if isinstance(result, tuple) and len(result) == 2:
+        return {"response": result[0], "usage": result[1]}
+    return {}
+
+
 def call_model(provider: Any, method: str, prompt: str, *, span: str, **kwargs: Any) -> tuple[Any, Any]:
     """Invoke ``provider.<method>(prompt, **kwargs)`` inside an ``llm`` span carrying token usage.
 
-    Behaves exactly like the direct call (including exceptions) when tracing is off.
+    Tracing is strictly best-effort and can never change the outcome of the model call:
+
+    * a provider exception propagates unchanged, even if the tracing machinery raises afterwards;
+    * a successful response is returned even if the tracing machinery fails afterwards;
+    * if tracing fails before the provider ran, the provider is called once, untraced.
     """
+    outcome: dict[str, Any] = {}
+
     def invoke() -> tuple[Any, Any]:
-        raw, usage = getattr(provider, method)(prompt, **kwargs)
-        run = get_current_run_tree()
-        if run is not None:
-            run.metadata["usage_metadata"] = usage_metadata(usage)
-            run.metadata.setdefault("ls_provider", getattr(provider, "name", "unknown"))
-            run.metadata.setdefault("ls_model_name", getattr(provider, "model", "unknown"))
+        try:
+            raw, usage = getattr(provider, method)(prompt, **kwargs)
+        except BaseException as error:
+            outcome["error"] = error
+            raise
+        outcome["result"] = (raw, usage)
+        try:
+            run = get_current_run_tree()
+            if run is not None:
+                run.metadata["usage_metadata"] = usage_metadata(usage)
+                run.metadata.setdefault("ls_provider", getattr(provider, "name", "unknown"))
+                run.metadata.setdefault("ls_model_name", getattr(provider, "model", "unknown"))
+        except Exception:
+            log.debug("could not attach usage metadata to the trace", exc_info=True)
         return raw, usage
 
-    traced = traceable(
-        name=span, run_type="llm",
-        process_inputs=lambda _: {"messages": [{"role": "user", "content": prompt}], "options": _plain(kwargs)},
-        process_outputs=lambda out: {"response": out[0], "usage": out[1]},
-    )(invoke)
-    return traced()
+    try:
+        traced = traceable(
+            name=span, run_type="llm",
+            process_inputs=lambda _: {"messages": [{"role": "user", "content": prompt}], "options": _plain(kwargs)},
+            process_outputs=_trace_outputs,
+        )(invoke)
+        return traced()
+    except Exception:
+        if "error" in outcome:
+            raise outcome["error"]
+        if "result" in outcome:
+            log.warning("LangSmith tracing failed after the model call succeeded; the response is unaffected", exc_info=True)
+            return outcome["result"]
+        log.warning("LangSmith tracing failed before the model call; calling the model untraced", exc_info=True)
+        return getattr(provider, method)(prompt, **kwargs)
 
 
 def _plain(options: Mapping[str, Any]) -> dict[str, Any]:

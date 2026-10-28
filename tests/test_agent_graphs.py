@@ -78,7 +78,7 @@ def test_discovery_graph_has_the_documented_nodes(tmp_path: Path) -> None:
     graph = DiscoveryWorkflow.build_graph(FakeProvider(), DiscoveryConfig(), DiscoveryInputs(
         merged=SimpleNamespace(), context=SimpleNamespace(), risk=SimpleNamespace(), project_root=tmp_path))
     assert set(graph.get_graph().nodes) - {"__start__", "__end__"} == {
-        "plan_scope", "select_batch", "call_model", "absorb_candidates", "plan_enrichment",
+        "plan_scope", "select_batch", "call_model", "shrink_batch", "absorb_candidates", "plan_enrichment",
         "fetch_context", "close_batch", "finalize"}
 
 
@@ -228,4 +228,5 @@ def test_every_conditional_branch_is_declared_for_diagrams_and_studio(tmp_path: 
         merged=SimpleNamespace(), context=SimpleNamespace(), risk=SimpleNamespace(), project_root=tmp_path))
     discovery_edges = {(edge.source, edge.target) for edge in agent.get_graph().edges}
     assert {("fetch_context", "call_model"), ("select_batch", "select_batch"), ("call_model", "close_batch"),
-            ("close_batch", "select_batch"), ("close_batch", "finalize")} <= discovery_edges
+            ("close_batch", "select_batch"), ("close_batch", "finalize"), ("call_model", "shrink_batch"),
+            ("shrink_batch", "call_model"), ("shrink_batch", "close_batch")} <= discovery_edges

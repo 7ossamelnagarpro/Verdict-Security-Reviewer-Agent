@@ -45,6 +45,7 @@ def refresh(directory: Path) -> Path:
         merged=merged, risk=_read(directory, "risk.json"),
         execution=_read(directory, "execution.json"),
         coverage_gaps=summary.get("coverage_gaps", []),
+        adapter_ids=summary.get("adapter_ids", []),
     )
     return report
 

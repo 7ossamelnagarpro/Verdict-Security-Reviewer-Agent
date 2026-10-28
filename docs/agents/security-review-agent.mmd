@@ -24,6 +24,7 @@ graph TD;
 	review_batch -.-> finalize;
 	review_batch -.-> retry_missing;
 	finalize --> __end__;
+	review_batch -.-> review_batch;
 	classDef default fill:#f2f0ff,line-height:1.2
 	classDef first fill-opacity:0
 	classDef last fill:#bfb6fc

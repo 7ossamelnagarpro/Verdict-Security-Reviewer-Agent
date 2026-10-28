@@ -8,6 +8,7 @@ graph TD;
 	plan_scope(plan_scope)
 	select_batch(select_batch)
 	call_model(call_model)
+	shrink_batch(shrink_batch)
 	absorb_candidates(absorb_candidates)
 	plan_enrichment(plan_enrichment)
 	fetch_context(fetch_context)
@@ -18,6 +19,7 @@ graph TD;
 	absorb_candidates --> plan_enrichment;
 	call_model -.-> absorb_candidates;
 	call_model -.-> close_batch;
+	call_model -.-> shrink_batch;
 	close_batch -.-> finalize;
 	close_batch -.-> select_batch;
 	fetch_context -.-> call_model;
@@ -27,6 +29,8 @@ graph TD;
 	plan_scope --> select_batch;
 	select_batch -.-> call_model;
 	select_batch -.-> finalize;
+	shrink_batch -.-> call_model;
+	shrink_batch -.-> close_batch;
 	finalize --> __end__;
 	select_batch -.-> select_batch;
 	classDef default fill:#f2f0ff,line-height:1.2

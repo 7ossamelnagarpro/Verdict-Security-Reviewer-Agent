@@ -35,7 +35,7 @@ def main() -> int:
                        docker_runtime=saved("docker-runtime-evidence.json"),
                        merged=saved("merged.json"), risk=saved("risk.json"),
                        execution=saved("execution.json"),
-                       coverage_gaps=summary.get("coverage_gaps", []))
+                       coverage_gaps=summary.get("coverage_gaps", []), adapter_ids=summary.get("adapter_ids", []))
     print(json.dumps({"status": policy["status"], "blocking": policy["blocking"], "output": str(args.output)}))
     return 0
 

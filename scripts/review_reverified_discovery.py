@@ -105,6 +105,7 @@ def review_reverified(
         execution=_read_object(report_dir / "execution.json"),
         scanner_requirement=original.get("scanner_requirement"),
         coverage_gaps=original.get("coverage_gaps"),
+        adapter_ids=original.get("adapter_ids"),
     )
     result = {
         "status": "completed" if review.status == "completed" else "partial",
