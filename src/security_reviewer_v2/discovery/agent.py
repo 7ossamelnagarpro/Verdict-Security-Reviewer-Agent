@@ -11,8 +11,6 @@ from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Any, Callable, TypedDict
 
-from langgraph.graph import END, START, StateGraph
-
 from security_reviewer_v2.context.models import ContextResult
 from security_reviewer_v2.normalization.merge_models import MergeResult
 from security_reviewer_v2.prioritization.models import RiskResult
@@ -27,40 +25,6 @@ from .context_tools import ContextBroker
 from .citation_repair import repair_citations
 from .provider import DiscoveryProvider
 from .scope import DiscoveryScope, plan_discovery_scope
-
-
-class _DiscoveryGraphState(TypedDict, total=False):
-    """Transient, bounded discovery state; provider credentials stay in the closure."""
-
-    scope: DiscoveryScope
-    gaps: set[str]
-    warnings: list[str]
-    pending: list[DiscoveryTarget]
-    inspected: list[DiscoveryTarget]
-    batches: list[DiscoveryBatch]
-    exchanges: list[Any]
-    candidates: dict[str, CandidateFinding]
-    totals: dict[str, int]
-    failed: bool
-    batch_index: int
-    batch_ready: bool
-    targets: tuple[DiscoveryTarget, ...]
-    prompt: str | None
-    allowed_paths: set[str]
-    batch_usage: dict[str, int]
-    batch_candidates: int
-    batch_candidate_ids: list[str]
-    calls: int
-    requests: int
-    batch_error: str | None
-    round_index: int
-    sent_prompt_chars: int
-    raw: dict[str, Any]
-    raw_requests: list[Any]
-    needs_context: bool
-    continue_model: bool
-    stop: bool
-    result: DiscoveryResult
 
 
 class DiscoveryAgent:
@@ -81,193 +45,13 @@ class DiscoveryAgent:
         on_batch: Callable[[DiscoveryBatch], None] | None = None,
         target_ids: tuple[str, ...] | None = None,
     ) -> DiscoveryResult:
-        broker = ContextBroker(project_root, self.config, profile_artifact, _redact)
-        def plan_node(_state: _DiscoveryGraphState) -> _DiscoveryGraphState:
-            scope = plan_discovery_scope(
-                merged, risk, context, project_root=project_root,
-                config=self.config, profile_artifact=profile_artifact,
-                additional_coverage_gaps=additional_coverage_gaps,
-            )
-            if target_ids is not None:
-                selected = set(target_ids)
-                missing = selected - {item.target_id for item in scope.targets}
-                if missing:
-                    raise ValueError(f"Requested discovery target IDs are not in the planned scope: {', '.join(sorted(missing))}")
-                scope = DiscoveryScope(tuple(item for item in scope.targets if item.target_id in selected),
-                                       scope.snippets, scope.gap_evidence, scope.warnings,
-                                       (*scope.coverage_gaps, "Discovery run was restricted to explicitly selected target IDs."))
-            return {"scope": scope, "gaps": set((*scope.coverage_gaps, *scope.gap_evidence, *broker.inventory_gaps)),
-                    "warnings": list(scope.warnings), "pending": list(scope.targets), "inspected": [],
-                    "batches": [], "exchanges": [], "candidates": {}, "totals": {}, "failed": False,
-                    "batch_index": 0, "stop": False}
+        # Imported here: graph.py imports the prompt/verification helpers defined in this module.
+        from .graph import DiscoveryInputs, DiscoveryWorkflow
 
-        def prepare_batch_node(state: _DiscoveryGraphState) -> _DiscoveryGraphState:
-            batch_index = state["batch_index"] + 1
-            selection = state["pending"][:self.config.max_targets]
-            scope = state["scope"]
-            batch_scope = DiscoveryScope(tuple(selection), scope.snippets, scope.gap_evidence,
-                                         scope.warnings, scope.coverage_gaps)
-            initial_budget = max(1_000, self.config.max_context_chars - min(4_000, self.config.max_context_chars // 4))
-            prompt, targets, prompt_gaps = _build_prompt(merged, context, risk, batch_scope, initial_budget)
-            gaps = set(state["gaps"])
-            if not targets:
-                gaps.add(f"Discovery target {selection[0].target_id} did not fit the prompt budget.")
-                return {"batch_index": batch_index, "batch_ready": False,
-                        "pending": state["pending"][1:], "gaps": gaps}
-            included_ids = {item.target_id for item in targets}
-            gaps.update(gap for gap in prompt_gaps if "shortened" in gap or "background" in gap or "known findings" in gap)
-            return {"batch_index": batch_index, "batch_ready": True, "targets": targets,
-                    "pending": [item for item in state["pending"] if item.target_id not in included_ids],
-                    "gaps": gaps, "prompt": prompt, "allowed_paths": {item.path.replace("\\", "/") for item in targets if item.path},
-                    "batch_usage": {}, "batch_candidates": 0, "batch_candidate_ids": [],
-                    "calls": 0, "requests": 0, "batch_error": None, "round_index": 0,
-                    "sent_prompt_chars": 0}
-
-        def model_node(state: _DiscoveryGraphState) -> _DiscoveryGraphState:
-            calls = state["calls"] + 1
-            prompt = state["prompt"]
-            assert prompt is not None
-            sent_prompt_chars = state["sent_prompt_chars"] + len(prompt)
-            try:
-                raw, usage = self.provider.discover(prompt, timeout_seconds=self.config.timeout_seconds,
-                                                    max_candidates=self.config.max_candidates)
-            except RuntimeError as error:
-                batch_error = str(error)
-                gaps = set(state["gaps"])
-                gaps.add(f"Discovery batch {state['batch_index']} did not complete; targets: "
-                         + ", ".join(item.target_id for item in state["targets"]) + ".")
-                return {"calls": calls, "sent_prompt_chars": sent_prompt_chars, "failed": True,
-                        "batch_error": batch_error, "gaps": gaps,
-                        "warnings": [*state["warnings"], f"Discovery batch {state['batch_index']}: {batch_error}"]}
-            batch_usage, totals = dict(state["batch_usage"]), dict(state["totals"])
-            _sum_usage(batch_usage, usage)
-            _sum_usage(totals, usage)
-            if isinstance(raw, list):
-                raw = {"candidates": raw, "context_requests": []}
-            if not isinstance(raw, dict):
-                raw = {"candidates": [], "context_requests": []}
-            return {"calls": calls, "sent_prompt_chars": sent_prompt_chars, "raw": raw,
-                    "batch_usage": batch_usage, "totals": totals,
-                    "inspected": [*state["inspected"], *state["targets"]] if calls == 1 else state["inspected"]}
-
-        def assess_response_node(state: _DiscoveryGraphState) -> _DiscoveryGraphState:
-            raw = state["raw"]
-            gaps, candidates = set(state["gaps"]), dict(state["candidates"])
-            batch_candidates = state["batch_candidates"]
-            batch_candidate_ids = list(state["batch_candidate_ids"])
-            if raw.get("omitted_candidates"):
-                gaps.add(f"Discovery batch {state['batch_index']} omitted {raw['omitted_candidates']} candidates by provider response limit.")
-            if raw.get("omitted_context_requests"):
-                gaps.add(f"Discovery batch {state['batch_index']} omitted {raw['omitted_context_requests']} context requests by provider response limit.")
-            raw_candidates = raw.get("candidates", [])
-            if not isinstance(raw_candidates, list):
-                raw_candidates = []
-                gaps.add(f"Discovery batch {state['batch_index']} returned a malformed candidates list.")
-            for item in raw_candidates[:self.config.max_candidates]:
-                if not isinstance(item, dict):
-                    continue
-                candidate = _verify_candidate(item, project_root, state["allowed_paths"], broker)
-                prior = candidates.get(candidate.candidate_id)
-                if prior is None and len(candidates) < self.config.max_total_candidates:
-                    candidates[candidate.candidate_id] = candidate
-                    batch_candidates += 1
-                    batch_candidate_ids.append(candidate.candidate_id)
-                elif prior is None:
-                    gaps.add("Additional AI candidates were omitted by the overall candidate limit; target scanning continued.")
-                elif prior.verification is not CandidateDisposition.SUPPORTED and candidate.verification is CandidateDisposition.SUPPORTED:
-                    candidates[candidate.candidate_id] = candidate
-            raw_requests = raw.get("context_requests", [])
-            needs_context = isinstance(raw_requests, list) and bool(raw_requests)
-            if needs_context and (state["round_index"] >= self.config.max_enrichment_rounds or
-                                  state["requests"] >= self.config.max_context_requests_per_batch):
-                gaps.add(f"Discovery batch {state['batch_index']} had context requests beyond its enrichment budget.")
-                needs_context = False
-            return {"gaps": gaps, "candidates": candidates, "batch_candidates": batch_candidates,
-                    "batch_candidate_ids": batch_candidate_ids,
-                    "raw_requests": raw_requests if isinstance(raw_requests, list) else [],
-                    "needs_context": needs_context}
-
-        def collect_context_node(state: _DiscoveryGraphState) -> _DiscoveryGraphState:
-            available = self.config.max_context_requests_per_batch - state["requests"]
-            selected_requests = state["raw_requests"][:available]
-            gaps = set(state["gaps"])
-            if len(state["raw_requests"]) > available:
-                gaps.add(f"Discovery batch {state['batch_index']} omitted {len(state['raw_requests']) - available} context requests by budget.")
-            round_index = state["round_index"] + 1
-            fresh = [broker.fetch(request, batch_index=state["batch_index"], round_index=round_index)
-                     for request in selected_requests]
-            allowed_paths = set(state["allowed_paths"])
-            for exchange in fresh:
-                if exchange.status == "collected" and exchange.resolved_path:
-                    allowed_paths.add(exchange.resolved_path)
-                elif exchange.note:
-                    gaps.add(f"Discovery batch {state['batch_index']} context request {exchange.status}: {exchange.note}")
-            prompt = _enrichment_prompt(state["prompt"], fresh, self.config.max_context_chars)
-            if prompt is None:
-                gaps.add(f"Discovery batch {state['batch_index']} could not fit on-demand context in the prompt budget.")
-            return {"gaps": gaps, "round_index": round_index, "requests": state["requests"] + len(selected_requests),
-                    "exchanges": [*state["exchanges"], *fresh], "allowed_paths": allowed_paths,
-                    "prompt": prompt, "continue_model": prompt is not None}
-
-        def finish_batch_node(state: _DiscoveryGraphState) -> _DiscoveryGraphState:
-            batch_error = state["batch_error"]
-            batch = DiscoveryBatch(state["batch_index"], tuple(item.target_id for item in state["targets"]),
-                                   "failed" if batch_error else "completed", state["sent_prompt_chars"],
-                                   state["calls"], state["batch_candidates"], state["requests"],
-                                   _with_cost(state["batch_usage"], self.config), batch_error,
-                                   tuple(state["batch_candidate_ids"]))
-            if on_batch is not None:
-                on_batch(batch)
-            return {"batches": [*state["batches"], batch],
-                    "stop": bool(batch_error and "non-JSON" not in batch_error)}
-
-        def finish_node(state: _DiscoveryGraphState) -> _DiscoveryGraphState:
-            gaps = set(state["gaps"])
-            pending, inspected, batches = state["pending"], state["inspected"], state["batches"]
-            if pending:
-                gaps.add(f"{len(pending)} planned discovery targets were not inspected; batch or candidate budget was exhausted: "
-                         + ", ".join(item.target_id for item in pending[:20]))
-            if not inspected:
-                gaps.add("No discovery target was inspected.")
-            status = DiscoveryStatus.BLOCKED if state["failed"] and not inspected else (
-                DiscoveryStatus.PARTIAL if gaps or state["failed"] else DiscoveryStatus.COMPLETED)
-            usage_summary = {**state["totals"], "targets": len(inspected),
-                             "planned_targets": len(state["scope"].targets), "batches": len(batches),
-                             "provider_calls": sum(batch.provider_calls for batch in batches)}
-            result = DiscoveryResult(DISCOVERY_SCHEMA_VERSION, status, self.provider.name, self.provider.model,
-                                     tuple(item.target_id for item in inspected), tuple(state["candidates"].values()),
-                                     tuple(dict.fromkeys(state["warnings"])), tuple(sorted(gaps)),
-                                     _with_cost(usage_summary, self.config), tuple(inspected),
-                                     tuple(batches), tuple(state["exchanges"]))
-            return {"result": result}
-
-        def more_batches(state: _DiscoveryGraphState) -> str:
-            return "next" if state["pending"] and state["batch_index"] < self.config.max_batches and not state["stop"] else "finish"
-
-        graph = StateGraph(_DiscoveryGraphState)
-        graph.add_node("plan_scope", plan_node)
-        graph.add_node("prepare_batch", prepare_batch_node)
-        graph.add_node("model_call", model_node)
-        graph.add_node("assess_candidates", assess_response_node)
-        graph.add_node("collect_requested_context", collect_context_node)
-        graph.add_node("finish_batch", finish_batch_node)
-        graph.add_node("finish_discovery", finish_node)
-        graph.add_edge(START, "plan_scope")
-        graph.add_conditional_edges("plan_scope", lambda state: "next" if state["pending"] else "finish",
-                                    {"next": "prepare_batch", "finish": "finish_discovery"})
-        graph.add_conditional_edges("prepare_batch", lambda state: ("model" if state["batch_ready"] else more_batches(state)),
-                                    {"model": "model_call", "next": "prepare_batch", "finish": "finish_discovery"})
-        graph.add_conditional_edges("model_call", lambda state: "finish" if state["batch_error"] else "assess",
-                                    {"finish": "finish_batch", "assess": "assess_candidates"})
-        graph.add_conditional_edges("assess_candidates", lambda state: "context" if state["needs_context"] else "finish",
-                                    {"context": "collect_requested_context", "finish": "finish_batch"})
-        graph.add_conditional_edges("collect_requested_context", lambda state: "model" if state["continue_model"] else "finish",
-                                    {"model": "model_call", "finish": "finish_batch"})
-        graph.add_conditional_edges("finish_batch", more_batches,
-                                    {"next": "prepare_batch", "finish": "finish_discovery"})
-        graph.add_edge("finish_discovery", END)
-        recursion_limit = 10 + self.config.max_batches * (4 + 3 * self.config.max_enrichment_rounds)
-        return graph.compile().invoke({}, config={"recursion_limit": recursion_limit})["result"]
+        return DiscoveryWorkflow(self.provider, self.config).run(DiscoveryInputs(
+            merged=merged, context=context, risk=risk, project_root=project_root,
+            profile_artifact=profile_artifact, additional_coverage_gaps=additional_coverage_gaps,
+            target_ids=target_ids, on_batch=on_batch))
 
 
 def _sum_usage(target: dict[str, int], usage: Any) -> None:

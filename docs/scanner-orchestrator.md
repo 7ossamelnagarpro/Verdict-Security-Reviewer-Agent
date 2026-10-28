@@ -180,3 +180,11 @@ gaps. It does not claim the project is secure.
   by the normalization layer.
 - Log redaction is defensive but cannot guarantee recognition of every possible
   secret format; scanner configurations should avoid echoing secret values.
+
+## Trivy vulnerability database (SCA)
+
+Scans run with `--skip-db-update`, so `~/.cache/trivy` may contain only the misconfiguration checks
+(`policy/`) and no `db/trivy.db`; the SCA task is then reported `prerequisite_unverified` (never "clean").
+`scripts/run_pre_review_pipeline.py` now downloads the DB once (`trivy image --download-db-only`, DB only,
+no source code is sent) when it is missing. Set `TRIVY_AUTO_DOWNLOAD_DB=0` for offline runs and download
+it yourself: `trivy image --download-db-only`.

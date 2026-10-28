@@ -86,3 +86,22 @@ Close the window to discard the session-only API key; never place it in a
 committed `.env` file or PowerShell profile. No live cloud connection is
 verified by installation alone: the first trace appears only after you run
 an agent stage with a valid key.
+
+## Running from WSL / Linux (why traces may not appear)
+
+Variables set in a Windows PowerShell session, and the key stored in the Windows credential vault,
+are **not visible** to a pipeline started inside WSL. The scripts now read an optional, git-ignored
+`.env` in the repository root (only `LANGSMITH_*`, `LANGCHAIN_*`, `GROQ_*`, `SECURITY_REVIEWER_*` and
+`TRIVY_*` names; real environment variables always win):
+
+```
+LANGSMITH_TRACING=true
+LANGSMITH_API_KEY=lsv2_...
+LANGSMITH_PROJECT=security-reviewer-v2
+# EU region or an org-scoped key:
+# LANGSMITH_ENDPOINT=https://eu.api.smith.langchain.com
+# LANGSMITH_WORKSPACE_ID=...
+```
+
+Every run prints one line, `LangSmith tracing: ON (...)` or `OFF - missing ...`, so a missing key is never
+silent. Both agents are grouped under one `pre-review-pipeline` trace and queued spans are flushed before exit.

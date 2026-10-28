@@ -7,8 +7,6 @@ from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Any, Callable, Protocol, TypedDict
 
-from langgraph.graph import END, START, StateGraph
-
 from security_reviewer_v2.discovery.models import CandidateFinding, DiscoveryResult
 from security_reviewer_v2.normalization.merge_models import MergeResult
 from security_reviewer_v2.context.models import ContextResult
@@ -31,25 +29,6 @@ _REVIEW_INSTRUCTION = "Review every issue group in the items array and return ex
 _MAX_PROMPT_CHARS = 50_000
 
 
-class _ReviewGraphState(TypedDict, total=False):
-    """Transient review state; credentials and provider objects stay outside it."""
-
-    candidates: dict[str, CandidateFinding]
-    scanners: dict[str, Any]
-    groups: tuple[IssueGroup, ...]
-    prepared: list[tuple[IssueGroup, dict[str, Any]]]
-    group_by_id: dict[str, IssueGroup]
-    warnings: list[str]
-    unscheduled: list[str]
-    reviews: dict[str, ReviewItem]
-    batches: list[list[tuple[IssueGroup, dict[str, Any]]]]
-    pending: list[str]
-    usage: dict[str, Any]
-    batch_index: int
-    stopped: bool
-    result: ReviewResult
-
-
 def run_security_review(
     discovery: DiscoveryResult,
     verification: VerificationResult,
@@ -66,139 +45,14 @@ def run_security_review(
     prior_reviews: tuple[ReviewItem, ...] = (),
     on_progress: Callable[[ReviewResult], None] | None = None,
 ) -> ReviewResult:
-    if max_reviews < 1:
-        raise ValueError("max_reviews must be positive; it now limits each batch, not the whole run")
-    def prepare_node(_state: _ReviewGraphState) -> _ReviewGraphState:
-        candidates = {item.candidate_id: item for item in discovery.candidates}
-        verified = {item.candidate_id: item for item in verification.records
-                    if item.disposition is VerificationDisposition.CONFIRMED}
-        scanners = {item.merged_finding_id: item for item in merged.findings} if merged else {}
-        groups = triage.groups if triage else (
-            *(IssueGroup(item.merged_finding_id, "unclassified", item.primary_location.path,
-                         (item.merged_finding_id,), (), ("Scanner finding.",)) for item in scanners.values()),
-            *(IssueGroup(item.candidate_id, "unclassified", item.path, (), (item.candidate_id,),
-                         ("Source-grounded AI candidate.",)) for item in discovery.candidates if item.candidate_id in verified),
-        )
-        prepared: list[tuple[IssueGroup, dict[str, Any]]] = []
-        warnings: list[str] = []
-        unscheduled: list[str] = []
-        for group in groups:
-            group_scanners = [scanners[item_id] for item_id in group.scanner_finding_ids if item_id in scanners]
-            group_records = [verified[item_id] for item_id in group.candidate_ids if item_id in verified]
-            if not group_scanners and not group_records:
-                warnings.append(f"{group.group_id}: no eligible source evidence is available for review.")
-                unscheduled.append(group.group_id)
-                continue
-            prepared.append((group, _group_payload(group, group_records, candidates, group_scanners,
-                                                   context, project_root, candidate_context)))
-        group_by_id = {group.group_id: group for group, _ in prepared}
-        reviews: dict[str, ReviewItem] = {}
-        for prior in prior_reviews:
-            group = group_by_id.get(prior.candidate_id)
-            expected_sources = tuple((*group.scanner_finding_ids, *group.candidate_ids)) if group else ()
-            if group is not None and prior.source_ids == expected_sources and prior.candidate_id not in reviews:
-                reviews[prior.candidate_id] = prior
-            else:
-                warnings.append(f"{prior.candidate_id}: saved review did not match the current issue group and was not reused.")
-        _scope_debug_reviews(reviews, group_by_id, scanners, deployment_context)
-        return {"candidates": candidates, "scanners": scanners, "groups": tuple(groups),
-                "prepared": prepared, "group_by_id": group_by_id, "warnings": warnings,
-                "unscheduled": unscheduled, "reviews": reviews}
+    # Imported here: graph.py imports the prompt/evidence helpers defined in this module.
+    from .graph import ReviewInputs, ReviewWorkflow
 
-    def plan_batches_node(state: _ReviewGraphState) -> _ReviewGraphState:
-        prepared, reviews = state["prepared"], state["reviews"]
-        provider_batch_limit = max(1, min(3, int(getattr(provider, "max_review_groups_per_request", 3))))
-        batches: list[list[tuple[IssueGroup, dict[str, Any]]]] = []
-        current: list[tuple[IssueGroup, dict[str, Any]]] = []
-        pending = list(state["unscheduled"])
-        warnings = list(state["warnings"])
-        for item in prepared:
-            if item[0].group_id in reviews:
-                continue
-            proposed = [*current, item]
-            if len(proposed) > min(max_reviews, provider_batch_limit) or len(_review_prompt(project_root, [entry[1] for entry in proposed], deployment_context)) > _MAX_PROMPT_CHARS:
-                if current:
-                    batches.append(current)
-                    current = []
-            if len(_review_prompt(project_root, [item[1]], deployment_context)) > _MAX_PROMPT_CHARS:
-                pending.append(item[0].group_id)
-                warnings.append(f"{item[0].group_id}: review context exceeds the prompt budget; group was not sent.")
-                continue
-            current.append(item)
-        if current:
-            batches.append(current)
-        return {"batches": batches, "pending": pending, "warnings": warnings,
-                "usage": {"provider": provider.name, "model": provider.model, "calls": 0,
-                          "expected_groups": len(state["groups"]), "reused_groups": len(reviews)},
-                "batch_index": 0, "stopped": False}
-
-    def review_batch_node(state: _ReviewGraphState) -> _ReviewGraphState:
-        batch = state["batches"][state["batch_index"]]
-        expected = {group.group_id: group for group, _ in batch}
-        reviews, warnings, usage = dict(state["reviews"]), list(state["warnings"]), dict(state["usage"])
-        try:
-            raw, batch_usage = provider.review(_review_prompt(project_root, [item for _, item in batch], deployment_context),
-                                               timeout_seconds=timeout_seconds, max_reviews=len(batch))
-            _accumulate_usage(usage, batch_usage)
-        except RuntimeError as error:
-            warnings.append(f"Review provider stopped: {error}")
-            return {"warnings": warnings, "usage": usage, "stopped": True,
-                    "batch_index": state["batch_index"] + 1}
-        missing = _accept_reviews(raw, expected, state["candidates"], reviews, warnings)
-        for group_id in missing:
-            group, payload = next(item for item in batch if item[0].group_id == group_id)
-            try:
-                retry_raw, retry_usage = provider.review(_review_prompt(project_root, [payload], deployment_context),
-                                                          timeout_seconds=timeout_seconds, max_reviews=1)
-                _accumulate_usage(usage, retry_usage)
-            except RuntimeError as error:
-                warnings.append(f"{group_id}: individual review retry failed: {error}")
-                continue
-            _accept_reviews(retry_raw, {group_id: group}, state["candidates"], reviews, warnings)
-        _scope_debug_reviews(reviews, state["group_by_id"], state["scanners"], deployment_context)
-        if on_progress is not None:
-            remaining = tuple(group.group_id for group, _ in state["prepared"] if group.group_id not in reviews)
-            snapshot_usage = {**usage, "reviewed_groups": len(reviews),
-                              "pending_groups": len(remaining) + len(state["unscheduled"])}
-            on_progress(ReviewResult("1.0", "partial", provider.name, provider.model,
-                                     tuple(reviews[group.group_id] for group, _ in state["prepared"] if group.group_id in reviews),
-                                     tuple(warnings), snapshot_usage, tuple((*state["unscheduled"], *remaining))))
-        return {"reviews": reviews, "warnings": warnings, "usage": usage,
-                "batch_index": state["batch_index"] + 1}
-
-    def finish_node(state: _ReviewGraphState) -> _ReviewGraphState:
-        prepared, reviews, warnings = state["prepared"], state["reviews"], state["warnings"]
-        if not prepared:
-            result = ReviewResult("1.0", "partial" if state["unscheduled"] else "completed",
-                                  provider.name, provider.model, (),
-                                  tuple(warnings or ["No verified candidates or scanner findings were available for review."]),
-                                  {"expected_groups": len(state["groups"]), "reviewed_groups": 0, "calls": 0,
-                                   "pending_groups": len(state["unscheduled"])}, tuple(state["unscheduled"]))
-            return {"result": result}
-        pending = list(state["pending"])
-        pending.extend(group.group_id for group, _ in prepared if group.group_id not in reviews and group.group_id not in pending)
-        usage = {**state["usage"], "reviewed_groups": len(reviews), "pending_groups": len(pending)}
-        ordered = tuple(reviews[group.group_id] for group, _ in prepared if group.group_id in reviews)
-        status = "completed" if not pending else ("blocked" if state["stopped"] and not reviews else "partial")
-        return {"result": ReviewResult("1.0", status, provider.name, provider.model, ordered,
-                                       tuple(warnings), usage, tuple(pending))}
-
-    graph = StateGraph(_ReviewGraphState)
-    graph.add_node("prepare_evidence", prepare_node)
-    graph.add_node("plan_batches", plan_batches_node)
-    graph.add_node("review_batch", review_batch_node)
-    graph.add_node("finish_review", finish_node)
-    graph.add_edge(START, "prepare_evidence")
-    graph.add_conditional_edges("prepare_evidence", lambda state: "plan" if state["prepared"] else "finish",
-                                {"plan": "plan_batches", "finish": "finish_review"})
-    graph.add_conditional_edges("plan_batches", lambda state: "review" if state["batches"] else "finish",
-                                {"review": "review_batch", "finish": "finish_review"})
-    graph.add_conditional_edges("review_batch", lambda state: "finish" if state["stopped"] or
-                                state["batch_index"] >= len(state["batches"]) else "review",
-                                {"review": "review_batch", "finish": "finish_review"})
-    graph.add_edge("finish_review", END)
-    group_count = len(triage.groups) if triage else len(discovery.candidates) + len(merged.findings if merged else ())
-    return graph.compile().invoke({}, config={"recursion_limit": max(25, 8 + 2 * group_count)})["result"]
+    return ReviewWorkflow(ReviewInputs(
+        discovery=discovery, verification=verification, provider=provider, project_root=project_root,
+        timeout_seconds=timeout_seconds, max_reviews=max_reviews, merged=merged, context=context,
+        candidate_context=candidate_context, triage=triage, deployment_context=deployment_context,
+        prior_reviews=prior_reviews, on_progress=on_progress)).run()
 
 
 def _build_prompt(records: list[Any], candidates: dict[str, CandidateFinding], scanner_items: list[Any], context: ContextResult | None, root: str | Path, max_reviews: int, *, candidate_context: CandidateContextResult | None = None) -> str:

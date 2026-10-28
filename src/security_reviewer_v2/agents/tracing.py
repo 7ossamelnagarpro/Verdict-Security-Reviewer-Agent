@@ -97,6 +97,18 @@ def tracing_requested() -> bool:
     return switched_on and has_key
 
 
+def tracing_status() -> str:
+    """One human-readable line saying whether traces will reach LangSmith, and why not (never silent)."""
+    switched_on = any(os.environ.get(name, "").strip().lower() in _TRUE for name in _SWITCHES)
+    has_key = bool(os.environ.get("LANGSMITH_API_KEY") or os.environ.get("LANGCHAIN_API_KEY"))
+    if switched_on and has_key:
+        project = os.environ.get("LANGSMITH_PROJECT") or os.environ.get("LANGCHAIN_PROJECT") or DEFAULT_PROJECT
+        return f"LangSmith tracing: ON (project '{project}', content={content_mode()})"
+    missing = [name for name, ok in (("LANGSMITH_TRACING=true", switched_on), ("LANGSMITH_API_KEY", has_key)) if not ok]
+    return ("LangSmith tracing: OFF - missing " + " and ".join(missing) + ". Variables exported in PowerShell are not "
+            "visible inside WSL/Linux; put them in a git-ignored .env file in the repository root.")
+
+
 @lru_cache(maxsize=4)
 def _client(mode: str) -> Client:
     scrub = make_scrubber(mode)
@@ -134,16 +146,28 @@ def agent_tracing(agent: str, *, metadata: Mapping[str, Any] | None = None,
         yield
 
 
+def flush_traces(client: Client | None = None) -> None:
+    """Send queued spans now. A short-lived CLI process can exit before LangSmith's background thread uploads."""
+    try:
+        (client or _client(content_mode())).flush()
+    except Exception:  # tracing is best-effort and must never affect a security review
+        log.debug("LangSmith flush failed", exc_info=True)
+
+
 @contextmanager
 def pipeline_trace(name: str, *, metadata: Mapping[str, Any] | None = None,
                    client: Client | None = None) -> Iterator[None]:
     """Parent span that groups every agent run of one pipeline execution into a single trace."""
-    with agent_tracing(name, metadata=metadata, client=client):
-        if client is None and not tracing_requested() and not get_tracing_context().get("enabled"):
-            yield
-            return
-        with trace(name=name, run_type="chain", metadata=dict(metadata or {})):
-            yield
+    try:
+        with agent_tracing(name, metadata=metadata, client=client):
+            if client is None and not tracing_requested() and not get_tracing_context().get("enabled"):
+                yield
+                return
+            with trace(name=name, run_type="chain", metadata=dict(metadata or {})):
+                yield
+    finally:
+        if client is not None or tracing_requested():
+            flush_traces(client)
 
 
 def graph_config(agent: str, *, recursion_limit: int, metadata: Mapping[str, Any] | None = None) -> dict[str, Any]:

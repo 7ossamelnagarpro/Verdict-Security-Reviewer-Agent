@@ -235,6 +235,10 @@ def _command(args: argparse.Namespace, *, project: Path, output: Path,
 
 
 def main(argv: list[str] | None = None) -> int:
+    from security_reviewer_v2.agents.tracing import tracing_status
+    from security_reviewer_v2.envfile import load_env_file
+    load_env_file(Path(__file__).resolve().parents[1] / ".env", Path.cwd() / ".env")
+    print(tracing_status(), flush=True)
     args = _parser().parse_args(argv)
     try:
         project, output = _validate(args)

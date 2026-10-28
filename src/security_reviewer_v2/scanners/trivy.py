@@ -12,7 +12,7 @@ from pathlib import Path
 from security_reviewer_v2.profiler.models import ScanTask, ScanType
 
 from .base import ScannerAdapter
-from .hostpaths import parse_version
+from .hostpaths import parse_version, translate_arguments
 from .models import (
     AdapterExecutionPlan,
     CheckStatus,
@@ -29,6 +29,11 @@ class TrivyConfig:
     database_path: str | None = None
     skip_db_update: bool = True
     skip_version_check: bool = True
+    # Root cause of "trivy_databases unverified": scans run with --skip-db-update, so the vulnerability DB is
+    # never fetched and ~/.cache/trivy only holds the misconfiguration checks.  When enabled, a missing DB is
+    # downloaded once (DB only: no source code leaves the machine) before the SCA task is judged.
+    auto_download_db: bool = False
+    db_download_timeout_seconds: int = 300
 
     def validate(self) -> None:
         if not Path(self.executable).is_absolute():
@@ -77,13 +82,18 @@ class TrivyAdapter(ScannerAdapter):
         database_detail = "This Trivy scan type does not require a vulnerability database"
         if task.scan_type == ScanType.SCA:
             cache_dir = _trivy_cache_dir(self.config)
+            download_note = ""
+            if (self.config.auto_download_db and cache_dir is not None and not _has_vulnerability_db(cache_dir)
+                    and Path(self.config.executable).is_file()):
+                download_note = _download_vulnerability_db(self.config, cache_dir)
             if cache_dir is not None and _has_vulnerability_db(cache_dir):
                 database_detail = f"Trivy vulnerability database is available at {cache_dir}"
             else:
                 database = CheckStatus.UNVERIFIED
                 database_detail = (
                     f"SCA requires a verified Trivy vulnerability database (checked {cache_dir or 'no cache directory'}); "
-                    "run trivy fs --download-db-only, or set TRIVY_CACHE_DIR to the cache that holds db/trivy.db"
+                    "run trivy image --download-db-only, or set TRIVY_CACHE_DIR to the cache that holds db/trivy.db"
+                    + (f". Automatic download: {download_note}" if download_note else "")
                 )
         return (
             executable_check,
@@ -255,3 +265,29 @@ def _has_vulnerability_db(cache_dir: Path) -> bool:
         (cache_dir / "db" / "trivy.db").is_file()
         and (cache_dir / "db" / "metadata.json").is_file()
     )
+
+
+def _download_vulnerability_db(config: TrivyConfig, cache_dir: Path) -> str:
+    """Fetch only the vulnerability DB into ``cache_dir``. Returns a short failure note ('' on success)."""
+    executable = Path(config.executable)
+    arguments = translate_arguments(executable, ("image", "--download-db-only", "--no-progress", f"--cache-dir={cache_dir}"))
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if key.upper() in {"SYSTEMROOT", "WINDIR", "PATH", "PATHEXT", "TEMP", "TMP", "USERPROFILE", "HOME",
+                           "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "TRIVY_DB_REPOSITORY"}
+    }
+    try:
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        done = subprocess.run(
+            [str(executable), *arguments], stdin=subprocess.DEVNULL, capture_output=True, text=True,
+            timeout=config.db_download_timeout_seconds, shell=False, env=environment, check=False,
+        )
+    except subprocess.TimeoutExpired:
+        return f"timed out after {config.db_download_timeout_seconds}s (check network access to ghcr.io)"
+    except OSError as error:
+        return f"could not start Trivy ({type(error).__name__})"
+    if done.returncode != 0:
+        last = (done.stderr or done.stdout or "").strip().splitlines()[-1:] or ["no output"]
+        return f"Trivy exited with code {done.returncode}: {last[0][:200]}"
+    return "" if _has_vulnerability_db(cache_dir) else "Trivy finished but db/trivy.db was not created"

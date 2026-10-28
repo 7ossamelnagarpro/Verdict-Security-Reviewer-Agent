@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -18,6 +19,8 @@ from pathlib import Path
 
 from security_reviewer_v2.context.collector import collect_context
 from security_reviewer_v2.agent_graph import run_agent_review_graph
+from security_reviewer_v2.agents.tracing import pipeline_trace, tracing_status
+from security_reviewer_v2.envfile import load_env_file
 from security_reviewer_v2.discovery.models import DiscoveryConfig
 from security_reviewer_v2.discovery.provider import provider_from_environment
 from security_reviewer_v2.normalization.codeql import normalize_codeql_sarif_file
@@ -113,7 +116,10 @@ def _build_registry(root: Path, bundle: Path | None) -> AdapterRegistry:
         candidate = root.parent / "tools/trivy-v0.75.0/trivy.exe"
         trivy = str(candidate) if candidate.is_file() else None
     if trivy:
-        adapters.append(TrivyAdapter(TrivyConfig(executable=str(Path(trivy).resolve()))))
+        adapters.append(TrivyAdapter(TrivyConfig(
+            executable=str(Path(trivy).resolve()),
+            # Fetch the vulnerability DB once if it is missing; set TRIVY_AUTO_DOWNLOAD_DB=0 for offline runs.
+            auto_download_db=os.environ.get("TRIVY_AUTO_DOWNLOAD_DB", "1").strip().lower() not in {"0", "false", "no", "off"})))
     if bundle and (bundle / "codeql.exe").is_file():
         suites = {}
         for language in ("python", "javascript", "typescript"):
@@ -131,6 +137,8 @@ def _build_registry(root: Path, bundle: Path | None) -> AdapterRegistry:
 
 
 def main() -> int:
+    load_env_file(Path(__file__).resolve().parents[1] / ".env", Path.cwd() / ".env")
+    print(tracing_status(), flush=True)
     parser = argparse.ArgumentParser(description="Run the complete pre-review pipeline")
     parser.add_argument("project", type=Path)
     parser.add_argument("--output", type=Path)
@@ -399,23 +407,24 @@ def main() -> int:
         raise SystemExit("Source files changed since profiling; rerun the pipeline before risk or AI review")
     risk = prioritize_findings(merged, context)
     _write(output / "risk.json", risk.to_dict())
-    agent_state = run_agent_review_graph(
-        provider=provider,
-        discovery_config=DiscoveryConfig(
-            provider=args.ai_provider, model=args.ai_model, max_targets=args.ai_max_targets,
-            max_batches=args.ai_max_batches, max_planned_targets=args.ai_max_planned_targets,
-            max_candidates=args.ai_max_candidates, max_enrichment_rounds=args.ai_max_enrichment_rounds,
-            input_cost_per_million_tokens_usd=args.ai_input_cost_per_million,
-            output_cost_per_million_tokens_usd=args.ai_output_cost_per_million,
-        ),
-        project_root=project, profile_artifact=profile_artifact,
-        merged=merged, context=context, risk=risk,
-        additional_coverage_gaps=tuple(execution.coverage_gaps) + tuple(coverage_payload.get("coverage_gaps", ())),
-        deployment_context=(docker_runtime_payload or {}).get("deployment_context"),
-        max_reviews=args.review_max_findings,
-        write_artifact=lambda name, payload: _write(output / name, payload),
-        review_runner=run_security_review,
-    )
+    with pipeline_trace("pre-review-pipeline", metadata={"provider": args.ai_provider, "model": str(args.ai_model)}):
+        agent_state = run_agent_review_graph(
+            provider=provider,
+            discovery_config=DiscoveryConfig(
+                provider=args.ai_provider, model=args.ai_model, max_targets=args.ai_max_targets,
+                max_batches=args.ai_max_batches, max_planned_targets=args.ai_max_planned_targets,
+                max_candidates=args.ai_max_candidates, max_enrichment_rounds=args.ai_max_enrichment_rounds,
+                input_cost_per_million_tokens_usd=args.ai_input_cost_per_million,
+                output_cost_per_million_tokens_usd=args.ai_output_cost_per_million,
+            ),
+            project_root=project, profile_artifact=profile_artifact,
+            merged=merged, context=context, risk=risk,
+            additional_coverage_gaps=tuple(execution.coverage_gaps) + tuple(coverage_payload.get("coverage_gaps", ())),
+            deployment_context=(docker_runtime_payload or {}).get("deployment_context"),
+            max_reviews=args.review_max_findings,
+            write_artifact=lambda name, payload: _write(output / name, payload),
+            review_runner=run_security_review,
+        )
     discovery_payload = agent_state["discovery_payload"]
     discovery_usage = discovery_payload.get("usage") or {}
     discovery_batches = discovery_payload.get("batches") or []
