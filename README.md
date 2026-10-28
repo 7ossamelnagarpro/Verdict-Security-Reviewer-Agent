@@ -5,13 +5,13 @@
 <p align="center">
   <img alt="stage" src="https://img.shields.io/badge/stage-in%20development-2F6BFF?style=for-the-badge">
   <img alt="agents" src="https://img.shields.io/badge/AI%20agents-2-7A4DFF?style=for-the-badge">
-  <img alt="artifacts" src="https://img.shields.io/badge/artifacts-JSON%20%2B%20Markdown-FFB020?style=for-the-badge">
+  <img alt="artifacts" src="https://img.shields.io/badge/artifacts-JSON%20%2B%20Markdown%20%2B%20HTML-FFB020?style=for-the-badge">
   <img alt="track" src="https://img.shields.io/badge/track-Data%20Science%20%26%20AI%20Agents-1E9E5A?style=for-the-badge">
 </p>
 
 <p align="center">
   <a href="#-overview">Overview</a> ·
-  <a href="#-run-the-current-docker-prototype">Run</a> ·
+  <a href="#-run-the-local-workspace">Run</a> ·
   <a href="#-the-problem">Problem</a> ·
   <a href="#-whats-different">What's different</a> ·
   <a href="#-pipeline">Pipeline</a> ·
@@ -30,22 +30,33 @@
 | 🔎 **Scanners** | Semgrep CE · CodeQL CLI · Gitleaks · Trivy + bounded DAST probes | Produce findings and saved runtime evidence |
 | 🟣 **Agent 1: AI Discovery** | Step 9 | Inspects planned gaps and proposes candidates; separate source verification does not prove exploitability. |
 | 🟢 **Agent 2: Security Review** | Step 13 | Reviews eligible issue groups and records verdicts; reporting code generates the final report. |
-| 📈 **Saved artifacts** | Per-run JSON and Markdown | Preserve evidence, review status, policy decisions and coverage gaps; MLflow is not integrated. |
+| 📈 **Saved artifacts** | Per-run JSON, Markdown and HTML | Preserve evidence, review status, policy decisions and coverage gaps; MLflow is not integrated. |
 
 **Team:** Hossam Elnagar · Safaa Abu Alsoud, internship / academic security research project.
 
-## ▶️ Run the current Docker prototype
+## ▶️ Run the local workspace
 
-The supported automatic end-to-end command currently targets the trusted
-`targets/security-lab-web` fixture included in this repository. Run it from
-the repository root in an **Administrator PowerShell** with Docker Desktop
-already running:
+Use Python 3.11 or newer. From the repository root, install the local workspace
+and open the **Verdict Security Reviewer** desktop shortcut. Administrator
+PowerShell is not required for the normal installation:
 
 ```powershell
-# Run once after cloning, if the local environment does not exist yet.
-py -3.11 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+& .\scripts\install_local.ps1
+# Then open the Verdict Security Reviewer desktop shortcut.
+```
 
+The UI runs on `http://127.0.0.1:8765` and offers source-only reviews or
+authorized DAST against a local app. For Docker reviews, start Docker Desktop
+first. The installer can optionally prepare Semgrep and ZAP with
+`-InstallSemgrep -InstallZap`; CodeQL, Gitleaks and Trivy are separate tools.
+Use **System setup** in the UI to check what is available. See
+[Local web deployment](docs/local-web-deployment.md) for the review modes and
+first-use steps.
+
+The dedicated CLI command below runs the trusted `targets/security-lab-web`
+fixture. From the repository root, use a new output directory for each run:
+
+```powershell
 $repo = (Get-Location).Path
 $scanOutput = Join-Path $repo ('reports\automatic-security-lab-docker-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
 
@@ -77,16 +88,17 @@ During a run, the pipeline validates the trusted Compose file, starts a
 disposable loopback-only stack, performs the bounded DAST and two-user
 authorization probes, saves and validates the runtime evidence, removes the
 stack, then runs the four static scanners, AI Discovery and Security Review.
-The final JSON and Markdown artifacts are written to `$scanOutput`; the
+The final JSON, Markdown and HTML artifacts are written to `$scanOutput`; the
 temporary runtime evidence is also retained under `reports/docker-autoscan/`
 for that run. A new output directory is required for every run, so previous
 reports are not overwritten.
 
 ### Current scope and boundaries
 
-- The automatic Docker route runs **only** `targets/security-lab-web`; it does
-  not automatically build or run an arbitrary user's Dockerfile, Compose file
-  or runtime URL.
+- The dedicated educational Docker command runs **only**
+  `targets/security-lab-web`. The generic project route can start a developer's
+  own Compose project, but only after explicit trust, testing authorization and
+  runtime validation; it does not run untrusted code automatically.
 - Its default DAST is bounded HTTP and two-account authorization testing.
   Optional ZAP adds bounded traditional crawling/passive analysis or approved
   active tests, not exhaustive browser or business-workflow coverage.
@@ -105,7 +117,7 @@ reports are not overwritten.
 The fixed educational fixture is intentionally vulnerable and should not be
 exposed on a public or shared network.
 
-## 🧰 Review another local project (source-only)
+## 🧰 Review another local project
 
 The project-agnostic entry point accepts any local source tree and runs the
 static, AI Discovery and evidence-based review stages without starting the
@@ -124,7 +136,7 @@ $output = Join-Path (Resolve-Path '.').Path ('reports\my-app-' + (Get-Date -Form
   --ai-model 'qwen2.5-coder:7b'
 ```
 
-This mode is the safe default for arbitrary projects. It runs the Project
+Source-only mode is the safe default for arbitrary projects. It runs the Project
 Profiler, Scan Planner, applicable scanners, AI Discovery, verification,
 triage, Security Review and final reporting. The output directory must be
 new and outside the scanned project. Use `--require-all-scanners` when the
@@ -134,7 +146,7 @@ unsupported or not-applicable tools visible as coverage gaps.
 For a complete scan, omit `--static-only` and provide a Runtime Contract:
 
 ```powershell
-& ".\\.venv\\Scripts\\python.exe" ".\\scripts\\run_project_pipeline.py" `
+& ".\.venv\Scripts\python.exe" ".\scripts\run_project_pipeline.py" `
   $project `
   --output $output `
   --runtime-contract 'C:\path\to\runtime-contract.json' `
@@ -144,10 +156,14 @@ For a complete scan, omit `--static-only` and provide a Runtime Contract:
 ```
 
 The full mode runs bounded generic DAST against the explicitly authorized
-runtime before the static and AI stages. It does not infer a start command or
-run a project's Docker files. Project-specific authorization and mutating
-workflows require a separate adapter; the current HTTP probes tailored to the
-trusted educational fixture remain on its dedicated Docker route.
+runtime before the static and AI stages. An existing loopback app needs no
+startup command. A reviewed trusted-local-project contract can start Compose
+with `--allow-trusted-local-compose`; simple Flask, FastAPI and Express apps
+can use an explicitly approved temporary startup template. The Guided Runtime
+Contract in the UI can also declare account and business-workflow checks;
+write workflows require an approved disposable Compose stack. The fixed
+two-user probes tailored to the educational fixture remain on its dedicated
+Docker route. See [Runtime Contract guide](docs/runtime-contract.md).
 
 ## 🔴 The problem
 
@@ -219,12 +235,13 @@ the table.
 
 Steps 9–14 run through a LangGraph `StateGraph` in `src/security_reviewer_v2/agent_graph.py`.
 
-The local web launcher enables LangSmith tracing for those agent stages by
-default, prompting for a key if needed. It hides trace inputs, outputs and
-metadata and has a `-NoLangSmith` escape hatch; see
-[LangSmith setup](docs/langsmith-setup.md). It does not replace
-the local security evaluation report.
-It coordinates Discovery, evidence collection, verification, triage, Security Review
+The PowerShell web launcher enables LangSmith tracing for those agent stages
+by default, prompting for a key if needed. The desktop shortcut does not
+enable tracing by itself. The PowerShell launcher hides trace inputs, outputs
+and metadata and has a `-NoLangSmith` escape hatch; see
+[LangSmith setup](docs/langsmith-setup.md). Tracing does not replace the local
+security evaluation report. The graph coordinates Discovery, evidence
+collection, verification, triage, Security Review
 and Policy Gate. Agent 1 also has its own graph in `discovery/agent.py`: it plans
 the scope, runs bounded model batches, checks candidates, and loops through
 on-demand context only within its configured limits. Agent 2 has its own graph
@@ -253,6 +270,10 @@ Unreviewed groups or unresolved candidates can leave the overall gate **incomple
 - An automatic run is "completed" only when required DAST, all four scanners, AI Discovery and group review succeed. This does not mean the Policy Gate passed or the app is safe.
 
 ## 🗺️ Coverage map
+
+This table describes the built-in baseline and fixed educational probes;
+optional ZAP and declared workflows can add coverage, but do not guarantee
+that every vulnerability is tested.
 
 | Vulnerability | Detected by |
 |---|---|
