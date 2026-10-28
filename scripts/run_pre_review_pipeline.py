@@ -447,14 +447,9 @@ def main() -> int:
                        runtime_evidence=generic_runtime_payload,
                        merged=merged.to_dict(), risk=risk.to_dict(),
                        execution=execution.to_dict(), scanner_requirement=scanner_requirement,
-<<<<<<< HEAD
                        coverage_gaps=coverage_gaps)
     runtime_complete = generic_runtime_payload is None or generic_runtime_payload.get("status") == "completed"
     report = {"status": "completed" if discovery_satisfied and scanners_satisfied and review_satisfied and runtime_complete else "partial", "pre_review": review_payload.get("status") == "not_run",
-=======
-                       coverage_gaps=coverage_gaps, adapter_ids=registry.scanner_ids())
-    report = {"status": "completed" if discovery_satisfied and scanners_satisfied and review_satisfied else "partial", "pre_review": review_payload.get("status") == "not_run",
->>>>>>> e8f1f4e (Add agent graphs and benchmark evaluation)
               "review_agent_ran": bool(review_payload.get("usage", {}).get("calls")),
               "project": str(project), "adapter_ids": registry.scanner_ids(),
               "test_environment": environment_plan_payload or {"status": "not_requested"},
