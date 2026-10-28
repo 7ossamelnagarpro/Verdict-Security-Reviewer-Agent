@@ -1,6 +1,7 @@
 """Deterministic project profiling and scan planning."""
 
 from .models import (
+    CodeGraphSummary,
     Completeness,
     PlanStatus,
     PrerequisiteState,
@@ -11,6 +12,7 @@ from .models import (
 from .service import profile_project
 
 __all__ = [
+    "CodeGraphSummary",
     "Completeness",
     "PlanStatus",
     "PrerequisiteState",

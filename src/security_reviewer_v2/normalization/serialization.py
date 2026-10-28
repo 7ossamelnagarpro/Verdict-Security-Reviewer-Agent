@@ -23,6 +23,7 @@ from .models import (
     NormalizationSummary,
     NormalizationWarning,
     RelatedLocation,
+    PackageInfo,
     ScannerProvenance,
     UnifiedFinding,
 )
@@ -161,6 +162,7 @@ def _finding(value: Any) -> UnifiedFinding:
             run_index=int(scanner["run_index"]),
             result_index=int(scanner["result_index"]),
             automation_id=_optional_text(scanner.get("automation_id")),
+            task_id=_optional_text(scanner.get("task_id")),
         ),
         rule_id=str(value["rule_id"]),
         title=str(value["title"]),
@@ -178,6 +180,20 @@ def _finding(value: Any) -> UnifiedFinding:
         rule_kind=_optional_text(value.get("rule_kind")),
         rule_help_uri=_optional_text(value.get("rule_help_uri")),
         runtime_evidence=bounded_runtime_evidence(value.get("runtime_evidence")),
+        finding_kind=_optional_text(value.get("finding_kind")),
+        package=_package(value.get("package")),
+        component_id=_optional_text(value.get("component_id")),
+    )
+
+
+def _package(value: Any) -> PackageInfo | None:
+    if not isinstance(value, dict) or not value.get("name"):
+        return None
+    return PackageInfo(
+        name=str(value["name"]),
+        installed_version=_optional_text(value.get("installed_version")),
+        fixed_version=_optional_text(value.get("fixed_version")),
+        ecosystem=_optional_text(value.get("ecosystem")),
     )
 
 

@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .analysis import analyze_discovery
 from .discovery import discover_project
+from .code_graph import load_code_graph
 from .models import (
     Completeness,
     ProfileResult,
@@ -24,6 +25,7 @@ def profile_project(
     *,
     limits: ProfilerLimits | None = None,
     policy: ProfilerPolicy | None = None,
+    code_graph_path: str | Path | None = None,
 ) -> ProfileResult:
     """Profile a local directory and create a deterministic, non-executing plan."""
     selected_limits = limits or ProfilerLimits()
@@ -61,12 +63,20 @@ def profile_project(
         policy_version=selected_policy.version,
         registry_version=REGISTRY_VERSION,
     )
+    # Pass 2 of the two-pass flow: ingest an already-built code graph (read-only,
+    # never executed here) so the planner can use its hints.
+    code_graph = (
+        load_code_graph(code_graph_path, root=discovery.root, profile=profile)
+        if code_graph_path is not None
+        else None
+    )
     plan = create_scan_plan(
         profile,
         policy=selected_policy,
         registry=registry,
+        code_graph=code_graph,
     )
-    return ProfileResult(profile=profile, scan_plan=plan)
+    return ProfileResult(profile=profile, scan_plan=plan, code_graph=code_graph)
 
 
 def _profile_coverage_gaps(components, discovery, warnings) -> tuple[str, ...]:
@@ -89,7 +99,7 @@ def _profile_coverage_gaps(components, discovery, warnings) -> tuple[str, ...]:
                 f"{component.component_id}: a manifest was found, but no supported lockfile."
             )
         for dependency_file in component.dependency_files:
-            if dependency_file.parse_status in {"invalid", "unreadable", "detected_only"}:
+            if dependency_file.parse_status in {"invalid", "unreadable", "detected_only", "truncated"}:
                 gaps.append(
                     f"Dependency metadata is incomplete for {dependency_file.path} "
                     f"({dependency_file.parse_status})."

@@ -9,8 +9,10 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from .codeql import NormalizationInputError
+from .common import line_hash, normalize_relative_path
 from .models import (
     FINDING_SCHEMA_VERSION,
+    KIND_SAST,
     CodeFlowStep,
     FindingConfidence,
     FindingLocation,
@@ -24,7 +26,12 @@ from .models import (
 )
 
 
-def normalize_semgrep_json_file(path: str | Path) -> NormalizationResult:
+LINE_HASH_KEY = "verdict.lineHash/v1"
+# Semgrep CE fills login-gated fields with this literal instead of omitting them.
+_PLACEHOLDER_FINGERPRINTS = {"requires login"}
+
+
+def normalize_semgrep_json_file(path: str | Path, *, project_root: str | Path | None = None) -> NormalizationResult:
     source = Path(path)
     if not source.is_file():
         raise NormalizationInputError(f"Semgrep JSON file is unavailable: {source}")
@@ -34,7 +41,7 @@ def normalize_semgrep_json_file(path: str | Path) -> NormalizationResult:
         raise NormalizationInputError(
             f"Semgrep input could not be read as JSON: {type(error).__name__}"
         ) from error
-    return normalize_semgrep_json(payload)
+    return normalize_semgrep_json(payload, project_root=project_root)
 
 
 def _read_json_text(path: Path) -> str:
@@ -45,7 +52,9 @@ def _read_json_text(path: Path) -> str:
         return raw.decode("cp1252")
 
 
-def normalize_semgrep_json(payload: dict[str, Any]) -> NormalizationResult:
+def normalize_semgrep_json(
+    payload: dict[str, Any], *, project_root: str | Path | None = None
+) -> NormalizationResult:
     if not isinstance(payload, dict):
         raise NormalizationInputError("Semgrep JSON root must be an object")
     results = payload.get("results")
@@ -79,7 +88,9 @@ def normalize_semgrep_json(payload: dict[str, Any]) -> NormalizationResult:
             )
             continue
         try:
-            findings.append(_normalize_result(result, version=version, result_index=result_index))
+            findings.append(_normalize_result(
+                result, version=version, result_index=result_index, project_root=project_root,
+            ))
         except ValueError as error:
             skipped += 1
             warnings.append(
@@ -125,11 +136,12 @@ def _normalize_result(
     *,
     version: str | None,
     result_index: int,
+    project_root: str | Path | None = None,
 ) -> UnifiedFinding:
     rule_id = str(result.get("check_id") or "").strip()
     if not rule_id:
         raise ValueError("Semgrep result has no check_id")
-    path = _normalize_path(result.get("path"))
+    path = _normalize_path(result.get("path"), project_root)
     if path is None:
         raise ValueError(f"Semgrep result {rule_id} has no safe relative path")
     start = result.get("start") if isinstance(result.get("start"), dict) else {}
@@ -152,10 +164,15 @@ def _normalize_result(
     severity = _severity(metadata.get("impact"), extra.get("severity"))
     confidence = _confidence(metadata.get("confidence"))
     fingerprint = _optional_text(extra.get("fingerprint"))
+    if fingerprint is not None and fingerprint.casefold() in _PLACEHOLDER_FINGERPRINTS:
+        fingerprint = None
     fingerprints = {"semgrep": fingerprint} if fingerprint else {}
+    content_hash = line_hash(project_root, path, location.start_line)
+    if content_hash:
+        fingerprints[LINE_HASH_KEY] = content_hash
     title = _optional_text(metadata.get("shortDescription")) or _rule_title(rule_id)
     help_uri = _help_uri(metadata)
-    code_flow = _dataflow_trace(extra.get("dataflow_trace"))
+    code_flow = _dataflow_trace(extra.get("dataflow_trace"), project_root)
     finding_id = _finding_id(rule_id, location, fingerprints, message)
     return UnifiedFinding(
         finding_id=finding_id,
@@ -183,10 +200,11 @@ def _normalize_result(
         fingerprints=fingerprints,
         rule_kind=_optional_text(metadata.get("kind")) or "pattern",
         rule_help_uri=help_uri,
+        finding_kind=KIND_SAST,
     )
 
 
-def _dataflow_trace(value: Any) -> tuple[CodeFlowStep, ...]:
+def _dataflow_trace(value: Any, project_root: str | Path | None = None) -> tuple[CodeFlowStep, ...]:
     if not isinstance(value, dict):
         return ()
     ordered = (
@@ -198,7 +216,7 @@ def _dataflow_trace(value: Any) -> tuple[CodeFlowStep, ...]:
     for field_name, role in ordered:
         candidates = _trace_locations(value.get(field_name))
         for candidate in candidates:
-            location = _semgrep_location(candidate)
+            location = _semgrep_location(candidate, project_root)
             if location is None:
                 continue
             steps.append(
@@ -228,8 +246,8 @@ def _trace_locations(value: Any) -> list[dict[str, Any]]:
     return found
 
 
-def _semgrep_location(value: dict[str, Any]) -> FindingLocation | None:
-    path = _normalize_path(value.get("path"))
+def _semgrep_location(value: dict[str, Any], project_root: str | Path | None = None) -> FindingLocation | None:
+    path = _normalize_path(value.get("path"), project_root)
     if path is None:
         return None
     start = value.get("start") if isinstance(value.get("start"), dict) else {}
@@ -243,15 +261,8 @@ def _semgrep_location(value: dict[str, Any]) -> FindingLocation | None:
     )
 
 
-def _normalize_path(value: Any) -> str | None:
-    if not isinstance(value, str) or not value.strip():
-        return None
-    normalized = value.strip().replace("\\", "/")
-    normalized = re.sub(r"^[A-Za-z]:/", "", normalized).lstrip("/")
-    path = PurePosixPath(normalized)
-    if not normalized or ".." in path.parts:
-        return None
-    return path.as_posix()
+def _normalize_path(value: Any, project_root: str | Path | None = None) -> str | None:
+    return normalize_relative_path(value, project_root=project_root)
 
 
 def _cwes(value: Any) -> tuple[str, ...]:

@@ -14,8 +14,6 @@ _SAFE_KEYS = frozenset({
     "served_as_html", "content_disposition", "marker_present",
     "source_guard_absent", "source_scope", "source_path", "source_line",
     "source_sha256",
-    "scanner_rule", "method", "parameter", "cwe_id",
-    "workflow_id", "step", "actor", "expected_statuses", "assertion_results",
 })
 
 

@@ -166,6 +166,17 @@ def _discover_component_roots(discovery: DiscoveryResult) -> tuple[str, ...]:
             root != "." and _is_within(iac_root, root) for root in manifest_roots
         ):
             roots.add(iac_root)
+    # Source that lives outside every detected root (e.g. top-level tests/ or
+    # scripts/ next to api/ and web/) must not silently vanish from the profile
+    # and therefore from SAST planning. Give it a conservative root component.
+    if roots and "." not in roots:
+        for item in discovery.files:
+            if item.category not in {FileCategory.SOURCE, FileCategory.TEST} or not language_for_file(item):
+                continue
+            parent = _normalize_root(str(PurePosixPath(item.path).parent))
+            if not any(_is_within(parent, root) for root in roots):
+                roots.add(".")
+                break
     if not roots:
         roots.add(".")
     return tuple(sorted(roots, key=lambda value: (_root_depth(value), value.casefold())))
@@ -341,7 +352,7 @@ def _detect_dependencies(
     paths = {item.path for item in dependency_records}
     for item in dependency_records:
         name = PurePosixPath(item.path).name.casefold()
-        content = discovery.reader.read(item.path)
+        content = discovery.reader.read(item.path, purpose="manifest")
         if content is None:
             warning = f"Dependency file could not be read within limits: {item.path}"
             warnings.append(warning)
@@ -360,8 +371,16 @@ def _detect_dependencies(
         dependencies: tuple[DependencyRecord, ...] = ()
         parse_status = "detected_only"
         local_warnings: list[str] = []
+        truncated = item.path in discovery.reader.truncated
+        if truncated:
+            # A truncated structured file cannot be parsed reliably; say so rather
+            # than reporting a misleading "invalid" parse.
+            parse_status = "truncated"
+            local_warnings.append("File exceeds the manifest read limit; dependency parsing was skipped")
         try:
-            if name == "pyproject.toml":
+            if truncated:
+                pass
+            elif name == "pyproject.toml":
                 dependencies = _parse_pyproject(content)
                 parse_status = "parsed"
             elif name.startswith("requirements") and name.endswith(".txt"):
@@ -667,7 +686,7 @@ def _is_workspace_root(discovery: DiscoveryResult, root: str) -> bool:
     package_path = "package.json" if root == "." else f"{root}/package.json"
     if package_path not in discovery.absolute_paths:
         return False
-    content = discovery.reader.read(package_path)
+    content = discovery.reader.read(package_path, purpose="manifest")
     if not content:
         return False
     try:

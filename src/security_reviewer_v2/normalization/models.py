@@ -7,7 +7,19 @@ from enum import Enum
 from typing import Any
 
 
-FINDING_SCHEMA_VERSION = "1.0"
+# 1.1 adds optional ``finding_kind``, ``package``, ``component_id`` and
+# ``scanner.task_id``. Every new field defaults to None, and artifacts saved
+# as 1.0 still load unchanged.
+FINDING_SCHEMA_VERSION = "1.1"
+
+# Scanner-independent finding categories. Downstream stages route on these
+# instead of guessing from free-text ``categories``.
+KIND_SAST = "sast"
+KIND_SCA = "sca"
+KIND_SECRETS = "secrets"
+KIND_MISCONFIGURATION = "misconfiguration"
+KIND_DAST = "dast"
+FINDING_KINDS = (KIND_SAST, KIND_SCA, KIND_SECRETS, KIND_MISCONFIGURATION, KIND_DAST)
 
 
 class StringEnum(str, Enum):
@@ -70,6 +82,18 @@ class ScannerProvenance:
     run_index: int
     result_index: int
     automation_id: str | None
+    # Scan-plan task that produced the finding (set by ``attach_plan_context``).
+    task_id: str | None = None
+
+
+@dataclass(frozen=True)
+class PackageInfo:
+    """Dependency facts for SCA findings; without them a CVE is not actionable."""
+
+    name: str
+    installed_version: str | None
+    fixed_version: str | None = None
+    ecosystem: str | None = None
 
 
 @dataclass(frozen=True)
@@ -94,6 +118,10 @@ class UnifiedFinding:
     rule_help_uri: str | None
     # Bounded, redacted probe facts. Never store response bodies or credentials.
     runtime_evidence: dict[str, Any] | None = None
+    finding_kind: str | None = None
+    package: PackageInfo | None = None
+    # Profiler component that owns the finding's path (set by ``attach_plan_context``).
+    component_id: str | None = None
 
 
 @dataclass(frozen=True)

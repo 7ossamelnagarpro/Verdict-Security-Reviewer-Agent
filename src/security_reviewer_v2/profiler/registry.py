@@ -5,7 +5,7 @@ from __future__ import annotations
 from .models import ScanType, ScannerCapability
 
 
-REGISTRY_VERSION = "2026.10.03-1"
+REGISTRY_VERSION = "2026.10.18-1"
 
 
 def load_builtin_registry() -> tuple[ScannerCapability, ...]:
@@ -55,7 +55,18 @@ def load_builtin_registry() -> tuple[ScannerCapability, ...]:
             ecosystems=(),
             target_kinds=("source_tree",),
             modes=("community_registry_rules", "local_rules"),
-            rule_references=("p/python", "p/security-audit", "p/owasp-top-ten"),
+            rule_references=("p/security-audit", "p/owasp-top-ten"),
+            language_rule_references=(
+                ("csharp", ("p/csharp",)),
+                ("go", ("p/golang",)),
+                ("java", ("p/java",)),
+                ("javascript", ("p/javascript",)),
+                ("kotlin", ("p/kotlin",)),
+                ("python", ("p/python",)),
+                ("ruby", ("p/ruby",)),
+                ("rust", ("p/rust",)),
+                ("typescript", ("p/typescript",)),
+            ),
             prerequisites=("semgrep_executable", "semgrep_rules"),
             verified_version="1.178.0",
             capability_status="verified",
@@ -63,6 +74,7 @@ def load_builtin_registry() -> tuple[ScannerCapability, ...]:
                 "Community rules vary in coverage and quality.",
                 "Community Edition does not provide Semgrep Pro cross-file analysis.",
                 "Selecting the scanner does not prove that an applicable rule exists.",
+                "Per-language rule-pack names (csharp, kotlin, rust) must be re-verified against the registry.",
             ),
             official_reference="https://semgrep.dev/products/semgrep-vs-ce",
             verified_on="2026-10-01",
@@ -165,6 +177,28 @@ def load_builtin_registry() -> tuple[ScannerCapability, ...]:
             ),
             official_reference="https://trivy.dev/docs/latest/target/repository/",
             verified_on="2026-10-02",
+        ),
+        ScannerCapability(
+            scanner_id="graphify",
+            display_name="Graphify code knowledge graph",
+            edition="Open source CLI (PyPI: graphifyy)",
+            scan_types=(ScanType.CODE_GRAPH,),
+            languages=(),
+            ecosystems=(),
+            target_kinds=("source_tree",),
+            modes=("ast_only",),
+            rule_references=(),
+            prerequisites=("graphify_executable", "tree_sitter_grammars"),
+            verified_version="unverified",
+            capability_status="unverified",
+            limitations=(
+                "Enrichment, not a security scanner: it produces no findings.",
+                "Static snapshot; it must be rebuilt after code changes.",
+                "ast_only mode must disable LLM-based semantic extraction so the run stays local and deterministic.",
+                "Headless invocation flags and the graph.json schema are not yet verified; confirm before relying on them.",
+            ),
+            official_reference="https://github.com/Graphify-Labs/graphify",
+            verified_on="not_verified",
         ),
     )
     _validate_registry(capabilities)

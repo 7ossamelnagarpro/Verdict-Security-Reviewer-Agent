@@ -34,6 +34,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="Write the review decision JSON; defaults beside --output",
     )
     parser.add_argument("--max-files", type=int, default=10_000)
+    parser.add_argument("--max-file-size", type=int, default=10 * 1024 * 1024)
+    parser.add_argument("--max-content-read-bytes", type=int, default=64 * 1024)
+    parser.add_argument("--max-manifest-bytes", type=int, default=8 * 1024 * 1024)
+    parser.add_argument(
+        "--code-graph",
+        action="store_true",
+        help="Plan a Graphify code-graph enrichment task (pass 1; nothing is executed)",
+    )
+    parser.add_argument(
+        "--code-graph-json",
+        type=Path,
+        help="Ingest an existing graph.json to refine the plan (pass 2)",
+    )
     parser.add_argument("--max-depth", type=int, default=30)
     parser.add_argument("--max-content-bytes", type=int, default=2 * 1024 * 1024)
     parser.add_argument("--timeout", type=float, default=30.0)
@@ -54,6 +67,9 @@ def main(argv: list[str] | None = None) -> int:
     limits = ProfilerLimits(
         max_files=args.max_files,
         max_depth=args.max_depth,
+        max_file_size_bytes=args.max_file_size,
+        max_content_read_bytes=args.max_content_read_bytes,
+        max_manifest_read_bytes=args.max_manifest_bytes,
         max_total_content_bytes=args.max_content_bytes,
         timeout_seconds=args.timeout,
     )
@@ -68,9 +84,15 @@ def main(argv: list[str] | None = None) -> int:
         large_component_file_threshold=args.large_component_files,
         large_component_byte_threshold=args.large_component_bytes,
         sast_chunk_size=args.sast_chunk_size,
+        enabled_enrichers=("graphify",) if args.code_graph else (),
     )
     try:
-        result = profile_project(args.project_path, limits=limits, policy=policy)
+        result = profile_project(
+            args.project_path,
+            limits=limits,
+            policy=policy,
+            code_graph_path=args.code_graph_json,
+        )
         artifact = create_saved_profile_artifact(
             result, args.project_path, limits=limits, policy=policy
         )

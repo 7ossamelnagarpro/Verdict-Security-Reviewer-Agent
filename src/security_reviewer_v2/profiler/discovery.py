@@ -146,11 +146,14 @@ class BoundedTextReader:
     root: Path
     limits: ProfilerLimits
     total_bytes_read: int = 0
+    manifest_bytes_read: int = 0
+    truncated: set[str] = field(default_factory=set)
     cache: dict[str, str | None] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
     resource_limit_hit: bool = False
 
-    def read(self, relative_path: str) -> str | None:
+    def read(self, relative_path: str, *, purpose: str = "source") -> str | None:
+        """purpose="manifest" uses a larger cap and a separate pool (see limits)."""
         if relative_path in self.cache:
             return self.cache[relative_path]
         absolute = (self.root / relative_path).resolve(strict=False)
@@ -164,8 +167,12 @@ class BoundedTextReader:
             self.warnings.append(f"Could not stat {relative_path}: {type(error).__name__}")
             self.cache[relative_path] = None
             return None
-        allowed = min(size, self.limits.max_content_read_bytes)
-        remaining = self.limits.max_total_content_bytes - self.total_bytes_read
+        manifest = purpose == "manifest"
+        per_file = self.limits.max_manifest_read_bytes if manifest else self.limits.max_content_read_bytes
+        pool = self.limits.max_total_manifest_bytes if manifest else self.limits.max_total_content_bytes
+        used = self.manifest_bytes_read if manifest else self.total_bytes_read - self.manifest_bytes_read
+        allowed = min(size, per_file)
+        remaining = pool - used
         if remaining <= 0:
             self.resource_limit_hit = True
             self.warnings.append("Total content-read limit reached")
@@ -180,8 +187,11 @@ class BoundedTextReader:
             self.cache[relative_path] = None
             return None
         self.total_bytes_read += len(raw)
+        if manifest:
+            self.manifest_bytes_read += len(raw)
         if size > allowed:
             self.resource_limit_hit = True
+            self.truncated.add(relative_path)
             self.warnings.append(
                 f"Content for {relative_path} was truncated at {allowed} bytes"
             )
@@ -210,7 +220,8 @@ def discover_project(
         raise ProfilingInputError(f"Project path is not a directory: {raw_root}")
     root = raw_root.resolve()
     try:
-        next(os.scandir(root), None)
+        with os.scandir(root) as probe:
+            next(probe, None)
     except (OSError, PermissionError) as error:
         raise ProfilingInputError(
             f"Project directory is not readable: {root} ({type(error).__name__})"

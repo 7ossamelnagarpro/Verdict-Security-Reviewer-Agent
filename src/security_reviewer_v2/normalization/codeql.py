@@ -9,6 +9,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 from urllib.parse import unquote, urlparse
 
+from .models import KIND_SAST
 from .models import (
     FINDING_SCHEMA_VERSION,
     CodeFlowStep,
@@ -203,6 +204,7 @@ def _normalize_result(
     )
     help_uri = _optional_text(rule.get("helpUri"))
     return UnifiedFinding(
+            finding_kind=KIND_SAST,
         finding_id=finding_id,
         schema_version=FINDING_SCHEMA_VERSION,
         scanner=ScannerProvenance(

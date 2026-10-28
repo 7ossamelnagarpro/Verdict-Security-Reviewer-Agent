@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from security_reviewer_v2.context.models import ContextResult, EvidenceContext, FindingContext
@@ -68,6 +69,7 @@ class _Assessment:
     band: PriorityBand
     factors: tuple[RiskFactor, ...]
     context_available: bool
+    report_only: bool = False
 
 
 def prioritize_findings(
@@ -75,13 +77,18 @@ def prioritize_findings(
     context: ContextResult,
     *,
     policy: RiskPolicy | None = None,
+    hotspots: Mapping[str, int] | None = None,
 ) -> RiskResult:
-    """Rank every finding while selecting only bounded deep-review candidates."""
+    """Rank every finding while selecting only bounded deep-review candidates.
+
+    ``hotspots`` maps a project-relative path to the number of files connected
+    to it in the code graph (from the profiler); it is optional.
+    """
     selected_policy = policy or RiskPolicy()
     selected_policy.validate()
     context_by_id = {item.merged_finding_id: item for item in context.findings}
     assessments = [
-        _assess(finding, context_by_id.get(finding.merged_finding_id))
+        _assess(finding, context_by_id.get(finding.merged_finding_id), hotspots)
         for finding in merged.findings
     ]
     assessments.sort(key=_assessment_sort_key)
@@ -90,7 +97,12 @@ def prioritize_findings(
     deep_review_slots = selected_policy.max_deep_reviews
     for rank, assessment in enumerate(assessments, start=1):
         qualifies = assessment.score >= selected_policy.deep_review_threshold
-        if not assessment.context_available:
+        if assessment.report_only:
+            # Dependency CVEs have no source excerpt to verify or deep-review;
+            # they are reported on their own merits.
+            disposition = ReviewDisposition.STANDARD_REPORT
+            selected = False
+        elif not assessment.context_available:
             disposition = ReviewDisposition.NEEDS_VERIFICATION
             selected = False
         elif qualifies and deep_review_slots > 0:
@@ -174,7 +186,11 @@ def prioritize_findings(
     )
 
 
-def _assess(finding: MergedFinding, context: FindingContext | None) -> _Assessment:
+def _assess(
+    finding: MergedFinding,
+    context: FindingContext | None,
+    hotspots: Mapping[str, int] | None = None,
+) -> _Assessment:
     factors: list[RiskFactor] = []
     severity = finding.severity.value
     severity_points = SEVERITY_POINTS.get(severity, SEVERITY_POINTS["unknown"])
@@ -202,7 +218,24 @@ def _assess(finding: MergedFinding, context: FindingContext | None) -> _Assessme
         )
 
     context_available = context is not None and context.primary.excerpt is not None
-    if context is None:
+    canonical = finding.canonical_finding
+    is_sca = canonical.finding_kind == "sca"
+    if is_sca:
+        cvss = canonical.security_severity_score
+        if cvss is not None and cvss >= 7.0:
+            factors.append(RiskFactor("cvss_score", "CVSS base score", 10 if cvss >= 9.0 else 6, (f"{cvss:.1f}",)))
+        if canonical.package is not None and canonical.package.fixed_version:
+            factors.append(RiskFactor("fix_available", "Fixed version exists", 3, (canonical.package.fixed_version,)))
+    if not is_sca and hotspots and finding.primary_location.path in hotspots:
+        factors.append(RiskFactor(
+            "code_graph_hotspot", "File is a hub in the code graph", 5,
+            (f"{hotspots[finding.primary_location.path]} connected files",),
+        ))
+    if not is_sca and _is_non_production_path(finding.primary_location.path):
+        factors.append(RiskFactor("non_production_path", "Test, fixture or example path", -15, (finding.primary_location.path,)))
+    if is_sca:
+        pass  # no source context expected for a dependency finding
+    elif context is None:
         factors.append(
             RiskFactor("missing_context", "Context unavailable", -15, ("no context package",))
         )
@@ -234,7 +267,17 @@ def _assess(finding: MergedFinding, context: FindingContext | None) -> _Assessme
             )
 
     score = max(0, min(100, sum(item.points for item in factors)))
-    return _Assessment(finding, score, _priority_band(score), tuple(factors), context_available)
+    return _Assessment(finding, score, _priority_band(score), tuple(factors), context_available, is_sca)
+
+
+_NON_PRODUCTION_SEGMENTS = frozenset({
+    "test", "tests", "__tests__", "spec", "specs", "fixtures", "mocks", "__mocks__",
+    "examples", "example", "docs",
+})
+
+
+def _is_non_production_path(path: str) -> bool:
+    return any(part.casefold() in _NON_PRODUCTION_SEGMENTS for part in path.split("/")[:-1])
 
 
 def _external_signals(context: FindingContext) -> tuple[str, ...]:

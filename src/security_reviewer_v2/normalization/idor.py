@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from .codeql import NormalizationInputError
+from .models import KIND_DAST
 from .models import (
     FINDING_SCHEMA_VERSION,
     FindingConfidence,
@@ -40,6 +41,7 @@ def normalize_idor_json_file(path: str | Path) -> NormalizationResult:
         fingerprint = hashlib.sha256(f"idor:{path_value}:{rule_id}".encode()).hexdigest()[:24]
         findings.append(
             UnifiedFinding(
+            finding_kind=KIND_DAST,
                 finding_id=f"idor-{fingerprint}",
                 schema_version=FINDING_SCHEMA_VERSION,
                 scanner=ScannerProvenance("idor-dast", "Authorization Differential Probe", "1.0", 0, index, None),

@@ -9,8 +9,10 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from .codeql import NormalizationInputError
+from .common import line_hash, normalize_relative_path
 from .models import (
     FINDING_SCHEMA_VERSION,
+    KIND_SECRETS,
     FindingConfidence,
     FindingLocation,
     FindingSeverity,
@@ -23,7 +25,14 @@ from .models import (
 )
 
 
-def normalize_gitleaks_json_file(path: str | Path) -> NormalizationResult:
+LINE_HASH_KEY = "verdict.lineHash/v1"
+# CWE-798: Use of Hard-coded Credentials. Gitleaks does not label its rules
+# with a CWE, so without this the risk engine's CWE-798 weighting and the
+# cross-scanner merge (Semgrep/Trivy secret findings) could never apply.
+SECRET_CWE = "CWE-798"
+
+
+def normalize_gitleaks_json_file(path: str | Path, *, project_root: str | Path | None = None) -> NormalizationResult:
     source = Path(path)
     if not source.is_file():
         raise NormalizationInputError(f"Gitleaks JSON file is unavailable: {source}")
@@ -33,10 +42,10 @@ def normalize_gitleaks_json_file(path: str | Path) -> NormalizationResult:
         raise NormalizationInputError(
             f"Gitleaks input could not be read as JSON: {type(error).__name__}"
         ) from error
-    return normalize_gitleaks_json(payload)
+    return normalize_gitleaks_json(payload, project_root=project_root)
 
 
-def normalize_gitleaks_json(payload: Any) -> NormalizationResult:
+def normalize_gitleaks_json(payload: Any, *, project_root: str | Path | None = None) -> NormalizationResult:
     if not isinstance(payload, list):
         raise NormalizationInputError("Input is not recognized Gitleaks JSON (expected an array)")
     findings: list[UnifiedFinding] = []
@@ -48,7 +57,7 @@ def normalize_gitleaks_json(payload: Any) -> NormalizationResult:
             warnings.append(NormalizationWarning("invalid_result", "Gitleaks result is not an object", 0, index))
             continue
         try:
-            findings.append(_normalize_result(result, index))
+            findings.append(_normalize_result(result, index, project_root))
         except ValueError as error:
             skipped += 1
             warnings.append(NormalizationWarning("result_skipped", str(error), 0, index))
@@ -66,9 +75,11 @@ def normalize_gitleaks_json(payload: Any) -> NormalizationResult:
     )
 
 
-def _normalize_result(result: dict[str, Any], index: int) -> UnifiedFinding:
+def _normalize_result(
+    result: dict[str, Any], index: int, project_root: str | Path | None = None
+) -> UnifiedFinding:
     rule_id = _text(result.get("RuleID")) or _text(result.get("RuleId"))
-    path = _normalize_path(result.get("File"))
+    path = _normalize_path(result.get("File"), project_root)
     if not rule_id:
         raise ValueError("Gitleaks result has no RuleID")
     if path is None:
@@ -98,26 +109,31 @@ def _normalize_result(result: dict[str, Any], index: int) -> UnifiedFinding:
         severity=FindingSeverity.HIGH,
         security_severity_score=None,
         confidence=FindingConfidence.MEDIUM,
-        cwes=(),
+        cwes=(SECRET_CWE,),
         categories=("secrets",),
         primary_location=location,
         code_flow=(),
         related_locations=(),
-        fingerprints={"gitleaks": fingerprint} if fingerprint else {},
+        fingerprints=_fingerprints(fingerprint, project_root, path, start_line),
         rule_kind="secret",
         rule_help_uri=None,
+        finding_kind=KIND_SECRETS,
     )
 
 
-def _normalize_path(value: Any) -> str | None:
-    if not isinstance(value, str) or not value.strip():
-        return None
-    normalized = value.strip().replace("\\", "/")
-    normalized = re.sub(r"^[A-Za-z]:/", "", normalized).lstrip("/")
-    path = PurePosixPath(normalized)
-    if not normalized or ".." in path.parts:
-        return None
-    return path.as_posix()
+def _fingerprints(
+    fingerprint: str | None, project_root: str | Path | None, path: str, line: int | None
+) -> dict[str, str]:
+    result = {"gitleaks": fingerprint} if fingerprint else {}
+    # Hash only: the secret text is never read into the finding.
+    content_hash = line_hash(project_root, path, line)
+    if content_hash:
+        result[LINE_HASH_KEY] = content_hash
+    return result
+
+
+def _normalize_path(value: Any, project_root: str | Path | None = None) -> str | None:
+    return normalize_relative_path(value, project_root=project_root)
 
 
 def _text(value: Any) -> str | None:

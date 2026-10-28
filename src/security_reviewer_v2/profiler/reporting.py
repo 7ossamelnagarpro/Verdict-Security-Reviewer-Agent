@@ -76,10 +76,26 @@ def render_markdown(result: ProfileResult) -> str:
                 f"- **Prerequisites:** {_items(task.prerequisites)}",
                 f"- **Prerequisite status:** `{task.prerequisite_status.value}`",
                 f"- **Resource class:** `{task.resource_class}`",
+                f"- **Phase:** `{task.phase}`",
                 "",
             ])
     else:
         lines.extend(["No scan tasks were selected.", ""])
+    graph = result.code_graph
+    if graph is not None:
+        lines.extend(["## Code Graph", "",
+            f"- **Status:** `{graph.schema_status}`",
+            f"- **Nodes / edges:** {graph.node_count} / {graph.edge_count}",
+            f"- **Source files covered:** {graph.covered_source_files} (uncovered: {graph.uncovered_source_count})",
+            f"- **Graph SHA-256:** `{graph.graph_sha256}`", ""])
+        if graph.hotspots:
+            lines.extend(["| Hotspot file | Component | Connected files |", "|---|---|---:|"])
+            lines.extend(f"| `{_cell(h.path)}` | `{h.component_id}` | {h.connected_files} |" for h in graph.hotspots[:10])
+            lines.append("")
+        if graph.cross_component_edges:
+            lines.extend(["| From component | To component | Edges |", "|---|---|---:|"])
+            lines.extend(f"| `{e.from_component}` | `{e.to_component}` | {e.edge_count} |" for e in graph.cross_component_edges[:10])
+            lines.append("")
     lines.extend(["## Coverage Gaps", ""])
     lines.extend(_bullet_or_none(tuple(sorted(set(profile.coverage_gaps + plan.coverage_gaps)))))
     lines.extend(["", "## Warnings", ""])

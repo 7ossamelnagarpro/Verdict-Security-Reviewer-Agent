@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 
+from .models import KIND_DAST
 from .models import (FINDING_SCHEMA_VERSION, FindingConfidence, FindingLocation,
                      FindingSeverity, NormalizationResult, NormalizationStatus,
                      NormalizationSummary, ScannerProvenance, UnifiedFinding)
@@ -25,6 +26,7 @@ def normalize_authorization_json_file(path: str | Path) -> NormalizationResult:
         confidence = FindingConfidence(str(item.get("confidence", "medium")))
         title = str(item.get("title", rule_id))
         findings.append(UnifiedFinding(
+            finding_kind=KIND_DAST,
             finding_id=f"authorization-{fingerprint}", schema_version=FINDING_SCHEMA_VERSION,
             scanner=ScannerProvenance("authorization-dast", "Authorization Differential Probe", "1.0", 0, index, None),
             rule_id=rule_id, title=title, description=title, message=title,

@@ -13,7 +13,7 @@ from .discovery import discover_project
 from .models import ProfileResult, ProfilerLimits, ProfilerPolicy
 
 
-SNAPSHOT_VERSION = "1.0"
+SNAPSHOT_VERSION = "1.1"
 
 
 def create_saved_profile_artifact(
@@ -120,6 +120,8 @@ def _make_snapshot(
         },
         "inventory_sha256": _digest(payload["profile"]["inventory"]),
         "scan_plan_sha256": _digest(payload["scan_plan"]),
+        # Binds the ingested graph summary so it cannot be edited after review.
+        "code_graph_sha256": _digest(payload.get("code_graph")),
         "files": files,
     }
     return {**body, "fingerprint": _digest(body)}

@@ -55,6 +55,7 @@ class ScanType(StringEnum):
     SECRETS = "secrets"
     MISCONFIGURATION = "misconfiguration"
     CONTAINER_IMAGE = "container_image"
+    CODE_GRAPH = "code_graph"
 
 
 class PlanStatus(StringEnum):
@@ -78,6 +79,11 @@ class ProfilerLimits:
     max_file_size_bytes: int = 10 * 1024 * 1024
     max_content_read_bytes: int = 64 * 1024
     max_total_content_bytes: int = 2 * 1024 * 1024
+    # Manifests and lockfiles are parsed as structured data, so truncating them
+    # corrupts the parse. They get their own per-file cap and their own pool so
+    # source-reading can never starve dependency discovery.
+    max_manifest_read_bytes: int = 8 * 1024 * 1024
+    max_total_manifest_bytes: int = 32 * 1024 * 1024
     max_depth: int = 30
     timeout_seconds: float = 30.0
 
@@ -139,6 +145,26 @@ class ProfilerPolicy:
     large_component_file_threshold: int = 750
     large_component_byte_threshold: int = 20 * 1024 * 1024
     sast_chunk_size: int = 8
+    # Enrichers are non-scanner stages (e.g. "graphify") that run before scanning
+    # and feed hints back to the planner. Disabled by default so existing plans
+    # are unchanged.
+    enabled_enrichers: tuple[str, ...] = ()
+    code_graph_exclusions: tuple[str, ...] = (
+        ".git/**",
+        ".venv/**",
+        "node_modules/**",
+        "vendor/**",
+        "dist/**",
+        "build/**",
+        "__pycache__",
+        "*.pyc",
+        "*.png",
+        "*.jpg",
+        "*.gif",
+        "*.pdf",
+        "*.mp4",
+        "*.mov",
+    )
 
     def validate(self) -> None:
         overlap = set(self.enabled_scanners) & set(self.disabled_scanners)
@@ -293,6 +319,9 @@ class ScannerCapability:
     limitations: tuple[str, ...]
     official_reference: str
     verified_on: str
+    # (language, rule packs) pairs; the planner unions the packs of every
+    # language a task covers instead of reusing one static list for all.
+    language_rule_references: tuple[tuple[str, tuple[str, ...]], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -312,6 +341,8 @@ class ScanTask:
     prerequisite_status: PrerequisiteState
     status: PlanStatus
     resource_class: str = "standard"
+    phase: str = "scan"  # "enrichment" tasks run before "scan" tasks
+    expected_outputs: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -325,9 +356,43 @@ class ScanPlan:
 
 
 @dataclass(frozen=True)
+class CodeGraphHotspot:
+    path: str
+    component_id: str | None
+    connected_files: int
+
+
+@dataclass(frozen=True)
+class CrossComponentEdge:
+    from_component: str
+    to_component: str
+    edge_count: int
+
+
+@dataclass(frozen=True)
+class CodeGraphSummary:
+    """Facts derived from a code-graph file. Holds inventory-validated paths and
+    counts only; graph labels/snippets are untrusted text and are never copied."""
+
+    schema_status: str  # recognized | unrecognized | unreadable | too_large
+    graph_sha256: str | None
+    node_count: int
+    edge_count: int
+    files_in_graph: int
+    covered_source_files: int
+    uncovered_source_count: int
+    uncovered_source_sample: tuple[str, ...]
+    stale_graph_file_count: int
+    hotspots: tuple[CodeGraphHotspot, ...]
+    cross_component_edges: tuple[CrossComponentEdge, ...]
+    warnings: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class ProfileResult:
     profile: ProjectProfile
     scan_plan: ScanPlan
+    code_graph: CodeGraphSummary | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return _to_primitive(self)

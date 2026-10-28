@@ -6,7 +6,9 @@ import hashlib
 from dataclasses import replace
 from pathlib import PurePosixPath
 
+from .code_graph import hotspot_scores
 from .models import (
+    CodeGraphSummary,
     ComponentProfile,
     Evidence,
     PlanStatus,
@@ -26,12 +28,14 @@ def create_scan_plan(
     *,
     policy: ProfilerPolicy,
     registry: tuple[ScannerCapability, ...],
+    code_graph: CodeGraphSummary | None = None,
 ) -> ScanPlan:
     """Create stable planning decisions without executing scanner binaries."""
     capabilities = {item.scanner_id: item for item in registry}
     tasks: list[ScanTask] = []
     gaps = list(profile.coverage_gaps)
     warnings: list[str] = []
+    scores = hotspot_scores(code_graph)
 
     for component in profile.components:
         for language_detection in component.languages:
@@ -50,6 +54,7 @@ def create_scan_plan(
                     component,
                     scanner_id=scanner_id,
                     policy=policy,
+                    hotspots=scores,
                 )
                 for chunk_index, target_chunk in enumerate(targets):
                     reasons = [
@@ -60,6 +65,10 @@ def create_scan_plan(
                         reasons.append(
                             "Large component uses deterministic scoped SAST targets to reduce "
                             "per-process cost; CodeQL remains component-wide for data-flow coverage."
+                        )
+                    if scores and scanner_id == "semgrep-ce" and large:
+                        reasons.append(
+                            "Scopes are ordered by code-graph connectivity so the most connected code is scanned first."
                         )
                     if len(targets) > 1:
                         reasons.append(
@@ -78,6 +87,7 @@ def create_scan_plan(
                             reasons=tuple(reasons),
                             policy=policy,
                             resource_class="large" if large else "standard",
+                            language=language,
                         )
                     )
             if not matched_sast:
@@ -129,7 +139,7 @@ def create_scan_plan(
                     policy=policy,
                 )
             )
-            if dependency_file.parse_status in {"invalid", "unreadable", "detected_only"}:
+            if dependency_file.parse_status in {"invalid", "unreadable", "detected_only", "truncated"}:
                 gaps.append(
                     f"Dependency coverage for {dependency_file.path} is limited "
                     f"because its profile status is {dependency_file.parse_status}."
@@ -282,6 +292,7 @@ def create_scan_plan(
                 )
             )
 
+    _plan_code_graph(profile, policy, capabilities, code_graph, tasks, gaps, warnings)
     tasks = _coalesce_codeql(_deduplicate_tasks(tasks))
     if profile.completeness.value != "complete":
         warnings.append(
@@ -291,7 +302,7 @@ def create_scan_plan(
         schema_version=profile.schema_version,
         policy_version=policy.version,
         registry_version=REGISTRY_VERSION,
-        tasks=tuple(sorted(tasks, key=lambda item: item.task_id)),
+        tasks=tuple(sorted(tasks, key=lambda item: (item.phase != "enrichment", item.task_id))),
         coverage_gaps=tuple(sorted(set(gaps))),
         warnings=tuple(sorted(set(warnings))),
     )
@@ -312,13 +323,16 @@ def _task(
     force_unverified: bool = False,
     explicit_status: PlanStatus | None = None,
     resource_class: str = "standard",
+    phase: str = "scan",
+    expected_outputs: tuple[str, ...] = (),
+    language: str | None = None,
 ) -> ScanTask:
     prerequisite_state = _prerequisite_state(scanner, policy)
     if force_unverified and prerequisite_state == PrerequisiteState.AVAILABLE:
         prerequisite_state = PrerequisiteState.UNVERIFIED
     if explicit_status is not None:
         status = explicit_status
-    elif scanner.scanner_id in policy.disabled_scanners or scanner.scanner_id not in policy.enabled_scanners:
+    elif scanner.scanner_id in policy.disabled_scanners or not _is_enabled(scanner, policy):
         status = PlanStatus.DISABLED_BY_POLICY
     elif prerequisite_state == PrerequisiteState.MISSING:
         status = PlanStatus.BLOCKED
@@ -346,7 +360,7 @@ def _task(
         target_paths=tuple(sorted(target_paths)),
         language_or_ecosystem=language_or_ecosystem,
         mode=mode,
-        rule_references=scanner.rule_references,
+        rule_references=_rule_references(scanner, language),
         exclusions=tuple(sorted(exclusions)),
         evidence=tuple(sorted(evidence, key=lambda item: (item.path, item.evidence_type))),
         reasons=reasons,
@@ -354,7 +368,19 @@ def _task(
         prerequisite_status=prerequisite_state,
         status=status,
         resource_class=resource_class,
+        phase=phase,
+        expected_outputs=expected_outputs,
     )
+
+
+def _is_enabled(scanner: ScannerCapability, policy: ProfilerPolicy) -> bool:
+    return scanner.scanner_id in policy.enabled_scanners or scanner.scanner_id in policy.enabled_enrichers
+
+
+def _rule_references(scanner: ScannerCapability, language: str | None) -> tuple[str, ...]:
+    """Base rules plus the packs for this language (not one static list for all)."""
+    extra = dict(scanner.language_rule_references).get(language or "", ())
+    return tuple(dict.fromkeys(scanner.rule_references + extra))
 
 
 def _is_large_component(component: ComponentProfile, policy: ProfilerPolicy) -> bool:
@@ -370,31 +396,57 @@ def _sast_targets(
     *,
     scanner_id: str,
     policy: ProfilerPolicy,
+    hotspots: dict[str, int] | None = None,
 ) -> tuple[tuple[str, ...], ...]:
     """Return stable bounded scopes for expensive SAST on large components.
 
     Semgrep can safely receive multiple directory/file targets. CodeQL keeps
     one component source root so cross-file data-flow queries remain intact.
     """
-    if scanner_id != "semgrep-ce" or not _is_large_component(component, policy):
-        return ((component.root,),)
     root = PurePosixPath(component.root)
+    # Components nested under this one own their files. Scanning this root as a
+    # whole would scan them twice, so Semgrep targets only the files this
+    # component owns.
+    nested = tuple(sorted(
+        other.root for other in profile.components
+        if other.root != component.root
+        and (component.root == "." or _path_within(PurePosixPath(other.root), root))
+    ))
+    if scanner_id != "semgrep-ce" or not (_is_large_component(component, policy) or nested):
+        return ((component.root,),)
     candidates: set[str] = set()
+    owned_categories = {"source", "test"} if nested else {"source"}
     for item in profile.inventory:
-        if item.category.value != "source":
+        if item.category.value not in owned_categories:
             continue
         path = PurePosixPath(item.path)
         if component.root != "." and not _path_within(path, root):
+            continue
+        if any(_path_within(path, PurePosixPath(other)) for other in nested):
             continue
         relative = path.relative_to(root) if component.root != "." else path
         if len(relative.parts) <= 1:
             candidates.add(path.as_posix())
         else:
             first = relative.parts[0]
-            candidates.add((root / first).as_posix() if component.root != "." else first)
+            directory = (root / first).as_posix() if component.root != "." else first
+            # A directory that contains a nested component cannot be a target
+            # (it would re-scan that component); fall back to the file itself.
+            if any(other == directory or other.startswith(directory + "/") for other in nested):
+                candidates.add(path.as_posix())
+            else:
+                candidates.add(directory)
     if not candidates:
         return ((component.root,),)
-    ordered = sorted(candidates, key=str.casefold)
+    scores = hotspots or {}
+
+    def score(candidate: str) -> int:
+        return max(
+            (value for path, value in scores.items() if path == candidate or path.startswith(candidate + "/")),
+            default=0,
+        )
+
+    ordered = sorted(candidates, key=lambda value: (-score(value), value.casefold()))
     chunks = [
         tuple(ordered[index : index + policy.sast_chunk_size])
         for index in range(0, len(ordered), policy.sast_chunk_size)
@@ -473,5 +525,61 @@ def _deduplicate_tasks(tasks: list[ScanTask]) -> list[ScanTask]:
             )
         else:
             identity = task.task_id
-        unique.setdefault(identity, task)
+        existing = unique.get(identity)
+        if existing is None:
+            unique[identity] = task
+        elif task.scanner_id == "semgrep-ce":
+            unique[identity] = replace(
+                existing,
+                rule_references=tuple(dict.fromkeys(existing.rule_references + task.rule_references)),
+                reasons=existing.reasons + (
+                    f"Same invocation also covers {task.language_or_ecosystem} (rule packs merged).",
+                ),
+            )
     return list(unique.values())
+
+
+def _plan_code_graph(profile, policy, capabilities, code_graph, tasks, gaps, warnings) -> None:
+    """Enrichment stage: plan graph build (pass 1) or report on an ingested graph (pass 2)."""
+    if code_graph is not None:
+        if code_graph.schema_status != "recognized":
+            gaps.append(f"Code graph was supplied but is {code_graph.schema_status}; graph hints were ignored.")
+        elif code_graph.uncovered_source_count:
+            gaps.append(
+                f"Code graph does not cover {code_graph.uncovered_source_count} profiled source file(s); "
+                "hotspot and cross-component hints are incomplete."
+            )
+        warnings.extend(code_graph.warnings)
+        return  # graph already exists: no build task needed
+    capability = capabilities.get("graphify")
+    if capability is None or "graphify" not in policy.enabled_enrichers:
+        return
+    languages = sorted({d.name for c in profile.components for d in c.languages})
+    source_files = sum(1 for item in profile.inventory if item.category.value == "source")
+    if not languages:
+        return
+    tasks.append(
+        _task(
+            scanner=capability,
+            scan_type=ScanType.CODE_GRAPH,
+            component=None,
+            target_paths=(".",),
+            language_or_ecosystem=None,
+            mode="ast_only",
+            exclusions=policy.code_graph_exclusions,
+            evidence=(Evidence(
+                path=".",
+                evidence_type="source_inventory",
+                detail=f"{source_files} source files across {len(languages)} language(s): {', '.join(languages)}",
+            ),),
+            reasons=(
+                "A code graph supplies structure (call/import edges, hotspots, cross-component links) that file-level profiling cannot.",
+                "Runs in ast_only mode: local tree-sitter parsing, no LLM extraction, no docs/media.",
+                "Enrichment only; re-run the profiler with the resulting graph.json to refine scan scoping.",
+            ),
+            policy=policy,
+            phase="enrichment",
+            expected_outputs=("graphify-out/graph.json",),
+            resource_class="large" if source_files >= policy.large_component_file_threshold else "standard",
+        )
+    )

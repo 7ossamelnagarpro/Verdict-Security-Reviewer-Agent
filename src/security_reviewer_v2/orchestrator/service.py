@@ -32,6 +32,10 @@ from security_reviewer_v2.scanners.registry import AdapterRegistry
 from .runner import ProcessRunner
 
 
+ENRICHMENT_PHASE = "enrichment"
+ENRICHMENT_SKIP_REASON = "Enrichment task runs outside the scanner orchestrator"
+
+
 @dataclass(frozen=True)
 class OrchestratorPolicy:
     task_timeout_seconds: float = 600.0
@@ -225,6 +229,12 @@ class ScannerOrchestrator:
                 ExecutionStatus.SKIPPED,
                 f"Planning status is {task.status.value}",
             )
+        if task.phase == ENRICHMENT_PHASE and self.registry.get(task.scanner_id) is None:
+            # Enrichers (for example the code-graph builder) feed the planner
+            # before scanning. Without an adapter they are not scanner
+            # executions, so they must not appear as a failed scanner or as a
+            # coverage gap.
+            return _terminal_result(task, ExecutionStatus.SKIPPED, ENRICHMENT_SKIP_REASON)
         if task.status == PlanStatus.UNSUPPORTED:
             return _terminal_result(task, ExecutionStatus.UNSUPPORTED, "Task is unsupported")
         if task.status == PlanStatus.BLOCKED:
