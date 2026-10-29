@@ -258,7 +258,8 @@ def provision_environment(
         configured = runner(common + ["config", "--format", "json"], cwd=root, capture_output=True,
                             text=True, encoding="utf-8", errors="replace", timeout=30, check=False, env=docker_env)
         if configured.returncode != 0:
-            raise RuntimeError("Docker Compose could not validate this project configuration")
+            raise RuntimeError(_compose_error("Docker Compose could not validate this project configuration",
+                                              configured, spec))
         approved_config = json.loads(configured.stdout)
         _validate_compose_config(approved_config, spec, root, project_name=common[-1])
         lease, snapshot = register(common[-1], config=approved_config)
@@ -267,7 +268,9 @@ def provision_environment(
         started = runner(common + ["up", "--build", "--detach", "--wait"], cwd=root,
                          capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=900, check=False, env=docker_env)
         if started.returncode != 0:
-            raise RuntimeError("Docker Compose failed to start the isolated test stack")
+            # ``--wait`` failures only say "container X is unhealthy/exited"; the service log says why.
+            raise RuntimeError(_compose_error("Docker Compose failed to start the isolated test stack", started, spec)
+                               + _service_logs(runner, common, root, docker_env, spec))
         for attempt in range(20):
             try:
                 _check_health(spec)
@@ -353,6 +356,22 @@ def _validate_compose_config(config: object, spec: EnvironmentSpec, root: Path,
         raise ValueError("Application service does not publish the declared loopback port")
 
 
+# Variables the Docker *client* needs to find the daemon, its credential helper and its plugins.
+# ``docker compose config`` never contacts the daemon or a credential helper, so a missing variable
+# only shows up at ``up --build`` (daemon unreachable, ``docker-credential-*.exe`` not executable...)
+# although the same stack starts fine from an interactive shell that still has them.
+_DOCKER_CLIENT_ENV = frozenset({
+    "DOCKER_HOST", "DOCKER_CONTEXT", "DOCKER_CONFIG", "DOCKER_CERT_PATH", "DOCKER_TLS_VERIFY",
+    "XDG_RUNTIME_DIR",                      # rootless Docker socket
+    "WSL_INTEROP", "WSL_DISTRO_NAME",       # launching Docker Desktop's Windows credential helper from WSL
+    "APPDATA", "LOCALAPPDATA", "PROGRAMDATA", "PROGRAMFILES", "ALLUSERSPROFILE",   # Docker Desktop on Windows
+})
+# NAME=value / NAME: value where NAME looks like a secret (underscores only, so tool names such as
+# docker-credential-desktop.exe in "…exe: exec format error" are not mistaken for assignments).
+_SECRET_ASSIGNMENT = re.compile(
+    r"(?i)\b([A-Z0-9_]*(?:PASSWORD|PASSWD|SECRET|TOKEN|API_?KEY)[A-Z0-9_]*)(\s*[=:]\s*)\S+")
+
+
 def _docker_environment(spec: EnvironmentSpec) -> dict[str, str]:
     """Do not forward provider keys or arbitrary host secrets to Compose."""
     # Docker locates per-user CLI plugins (including Compose) under the home
@@ -362,7 +381,44 @@ def _docker_environment(spec: EnvironmentSpec) -> dict[str, str]:
     if spec.authorization_checks:
         approved.update(spec.account_env_names)
     return {name: value for name, value in os.environ.items()
-            if name in kept or name in approved}
+            if name in kept or name.upper() in _DOCKER_CLIENT_ENV or name in approved}
+
+
+def _redacted_tail(text: str, spec: EnvironmentSpec, limit: int) -> str:
+    """Last ``limit`` characters of Docker output with approved secret values and secret-looking assignments removed."""
+    for name in (*spec.required_env_names, *spec.account_env_names):
+        value = os.environ.get(name, "")
+        if len(value) >= 4:
+            text = text.replace(value, "[redacted]")
+    text = _SECRET_ASSIGNMENT.sub(lambda m: f"{m.group(1)}{m.group(2)}[redacted]", text)
+    text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", text).strip()
+    return text[-limit:]
+
+
+def _compose_error(prefix: str, result: object, spec: EnvironmentSpec, *, limit: int = 1500) -> str:
+    """``prefix`` plus the bounded, redacted tail of Docker's own output (stderr first, then stdout).
+
+    Without it every Compose failure looks identical ("failed to start") and the real cause (daemon
+    unreachable, build error, unhealthy container, port in use...) is lost.
+    """
+    parts = (getattr(result, "stderr", None), getattr(result, "stdout", None))
+    tail = _redacted_tail("\n".join(p for p in parts if isinstance(p, str) and p.strip()), spec, limit)
+    code = getattr(result, "returncode", None)
+    return f"{prefix} (exit code {code})" + (f": {tail}" if tail else " (Docker produced no output)")
+
+
+def _service_logs(runner, common: list[str], root: Path, docker_env: dict[str, str],
+                  spec: EnvironmentSpec, *, limit: int = 1500) -> str:
+    """Best-effort log tail for the failure message; never raises and never hides the real error."""
+    try:
+        logs = runner(common + ["logs", "--no-color", "--tail", "30"], cwd=root, capture_output=True, text=True,
+                      encoding="utf-8", errors="replace", timeout=30, check=False, env=docker_env)
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+    output = getattr(logs, "stdout", None)
+    if getattr(logs, "returncode", 1) != 0 or not isinstance(output, str) or not output.strip():
+        return ""
+    return "\n--- service logs ---\n" + _redacted_tail(output, spec, limit)
 
 
 def _check_health(spec: EnvironmentSpec) -> None:

@@ -17,12 +17,18 @@ from .merge_models import (
     SourceCoverage,
 )
 from .models import (
+    KIND_MISCONFIGURATION,
+    KIND_SCA,
+    KIND_SECRETS,
     FindingConfidence,
     FindingSeverity,
     NormalizationResult,
     NormalizationStatus,
     UnifiedFinding,
 )
+
+# Kinds that keep their own identity and must never be merged by source-line overlap.
+_OWN_IDENTITY_KINDS = frozenset({KIND_SCA, KIND_SECRETS, KIND_MISCONFIGURATION})
 
 
 SEVERITY_RANK = {
@@ -201,7 +207,7 @@ def _mergeable_for_root_cause(group: tuple[UnifiedFinding, ...]) -> bool:
     # Secrets keep their stricter identity (two different secrets can share a line); SCA/config
     # findings have no source line and are handled by their own identity.
     return not any(item.scanner.scanner_id == "gitleaks" or item.package is not None
-                   or item.finding_kind in {"package", "misconfiguration"} for item in group)
+                   or item.finding_kind in _OWN_IDENTITY_KINDS for item in group)
 
 
 def _merge_by_root_cause(
