@@ -311,7 +311,19 @@ def _runtime_lines(isolated_pilot: dict[str, Any] | None, isolated_runtime: dict
                   f"- Target: `{runtime_evidence.get('target', 'redacted')}`",
                   f"- Bounded probe records: **{len(runtime_evidence.get('results', []))}**",
                   "- This evidence came from an explicit Runtime Contract and contains non-mutating baseline checks.",
-                  "- No browser crawl, credentialed authorization workflow, or exploit confirmation was performed."]
+                  ]
+        browser, zap, flows = (runtime_evidence.get(k) for k in ("browser", "zap", "workflow_evidence"))
+        lines.append(f"- Browser crawl: **{browser.get('status', 'unknown')}**; pages visited: **{browser.get('pages_visited', 0)}**."
+                     if isinstance(browser, dict) else "- Browser crawl: **not requested**.")
+        lines.append(f"- ZAP: **{zap.get('status', 'unknown')}**; engine: `{zap.get('engine', 'unknown')}`; alerts: **{zap.get('alerts', 0)}**."
+                     if isinstance(zap, dict) else "- ZAP: **not requested**.")
+        if isinstance(flows, dict):
+            counts = flows.get("coverage") if isinstance(flows.get("coverage"), dict) else {}
+            lines.append(f"- Account and business workflows: **{flows.get('status', 'unknown')}** · "
+                         f"{counts.get('executed', 0)} executed · {counts.get('violations', 0)} violations.")
+        else:
+            lines.append("- Account and business workflows: **not requested**.")
+        lines.append("- These observations do not prove complete vulnerability coverage or exploitation.")
     return lines
 
 

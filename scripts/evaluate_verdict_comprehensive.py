@@ -8,10 +8,11 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
-from html import escape
 import json
 from pathlib import Path
 from typing import Any
+
+from security_reviewer_v2.reporting.evaluation_html import render_evaluation
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -220,47 +221,43 @@ def markdown(result: dict[str, Any]) -> str:
 
 
 def html_report(result: dict[str, Any]) -> str:
-    summary = result["summary"]
-    provenance = result["scan_provenance"]
+    """Evaluation page in the same style (and dark/light switch) as the run report."""
+    summary, provenance = result["summary"], result["scan_provenance"]
+    discovery, review = provenance["ai_discovery"] or {}, provenance["security_review"] or {}
     rows = []
     for row in result["cases"]:
-        signatures = "; ".join(f"{item['rule_id']} @ {item['path']}" for item in row["expected_signatures"]) or "No exact signature defined"
-        signals = "; ".join(f"{item['scanner'] or 'unknown'} / {item['rule_id']} @ {item['path']} "
-                            f"→ {item['verdict']} (group {item['group_id']})" for item in row["signals"]) or "No exact reviewed signal"
-        rows.append("<tr><td><code>{}</code></td><td>{}<small>{}</small></td><td>{}</td>"
-                    "<td>{}<small>{}</small></td><td>{}<small>Proof: {}</small><small>Source: {}; origin: {}</small></td>"
-                    "<td><small>Expected: {}</small><br>{}</td></tr>".format(
-                        escape(row["id"]), escape(row["category"]), escape(row["location"]),
-                        escape(row["ground_truth"].replace("_", " ")),
-                        escape(row["status"].replace("_", " ")), escape(row["severity"] or "not assigned"),
-                        escape(row["expected_behavior"] or "not recorded"), escape(row["proof_ref"] or "not recorded"),
-                        escape(row["source"] or "not recorded"), escape(", ".join(row["origin"]) or "not recorded"),
-                        escape(signatures), escape(signals)))
-    limits = "".join(f"<li>{escape(item)}</li>" for item in result["limitations"])
-    return f"""<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Verdict · Comprehensive lab evaluation</title><style>
-body{{margin:0;background:#0b1220;color:#e8f0f6;font:15px system-ui,sans-serif}}main{{max-width:1400px;margin:auto;padding:40px 24px}}
-h1{{font-size:30px}}p,li{{color:#b8c9d8;line-height:1.55}}.cards{{display:flex;gap:12px;flex-wrap:wrap;margin:24px 0}}
-.card{{background:#152237;border:1px solid #30445d;border-radius:12px;padding:18px;min-width:170px}}.card strong{{display:block;font-size:28px;color:#80e1c5}}
-.scroll{{overflow:auto;border:1px solid #30445d;border-radius:12px}}table{{width:100%;border-collapse:collapse;min-width:800px}}
-th,td{{text-align:left;padding:12px;border-bottom:1px solid #26384c;vertical-align:top}}th{{background:#152237}}tr:nth-child(even){{background:#101c2e}}
-code{{color:#c7e4ff}}small{{display:block;color:#95aabd;margin-top:5px}}.note{{background:#152237;border-left:3px solid #80e1c5;padding:12px 16px}}
-</style><main><h1>Comprehensive lab · held-out evaluation</h1>
-<p>Ground truth was used only after the saved scan and review were complete. This is not a claim of exhaustive vulnerability coverage.</p>
-<div class="cards"><div class="card"><strong>{summary['detected']}/{summary['known_positive_cases']}</strong>Detected known-positive cases</div>
-<div class="card"><strong>{summary['needs_review']}</strong>Need review</div>
-<div class="card"><strong>{summary['not_detected']}</strong>No exact reviewed signal</div>
-<div class="card"><strong>{summary['safe_controls_not_assessed']}</strong>Safe controls not audited</div></div>
-<p class="note">Precision and F1 are not calculated: safe controls and unmatched findings require manual adjudication. A missing exact match does not prove the application is safe.</p>
-<h2>Scan provenance</h2><p>{escape(str(provenance['project']))} · {escape(str(provenance['scan_status']))} ·
-{escape(', '.join(provenance['adapters']))} · {provenance['merged_findings']} merged findings · {provenance['reviewed_groups']} reviewed groups</p>
-<p>AI discovery: {escape(str((provenance['ai_discovery'] or {}).get('provider', 'unknown')))} / {escape(str((provenance['ai_discovery'] or {}).get('model', 'unknown')))};
-AI review: {escape(str((provenance['security_review'] or {}).get('status', 'unknown')))};
-recorded coverage gaps: {len(provenance['coverage_gaps'])}.</p>
-<h2>All {len(result['cases'])} benchmark cases</h2>
-<div class="scroll"><table><thead><tr><th>Case</th><th>Category / location</th><th>Ground truth</th><th>Scan outcome / severity</th><th>Expected behavior / proof</th><th>Audit signatures / matched evidence</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>
-<h2>Recorded coverage gaps</h2><ul>{''.join(f'<li>{escape(str(gap))}</li>' for gap in provenance['coverage_gaps']) or '<li>None recorded</li>'}</ul>
-<h2>Limits</h2><ul>{limits}</ul></main></html>"""
+        rows.append({
+            "id": row["id"], "status": row["status"],
+            "cells": [(row["category"], row["location"]), row["ground_truth"].replace("_", " "), row["severity"] or "not assigned"],
+            "details": [
+                ("Expected behavior", row["expected_behavior"]), ("Proof", row["proof_ref"]),
+                ("Source / origin", f"{row['source'] or 'not recorded'}; origin: {', '.join(row['origin']) or 'not recorded'}"),
+                ("Audit signatures", [f"{item['rule_id']} @ {item['path']}" for item in row["expected_signatures"]] or ["No exact signature defined"]),
+                ("Matched evidence", [f"{item['scanner'] or 'unknown'} / {item['rule_id']} @ {item['path']} → {item['verdict']} (group {item['group_id']})"
+                                      for item in row["signals"]] or ["No exact reviewed signal"]),
+            ],
+        })
+    return render_evaluation(
+        title="Comprehensive lab · held-out evaluation",
+        headline=f"{summary['detected']}/{summary['known_positive_cases']} known-positive cases detected",
+        intro="Ground truth was used only after the saved scan and review were complete. This is not a claim of exhaustive vulnerability coverage.",
+        cards=[(f"{summary['detected']}/{summary['known_positive_cases']}", "Detected known-positive cases"),
+               (summary["needs_review"], "Need review"), (summary["not_detected"], "No exact reviewed signal"),
+               (summary["safe_controls_not_assessed"], "Safe controls not audited")],
+        notes=["Precision and F1 are not calculated: safe controls and unmatched findings require manual adjudication. "
+               "A missing exact match does not prove the application is safe."],
+        provenance=[("Project", provenance["project"]), ("Scan status", provenance["scan_status"]),
+                    ("Scanners", ", ".join(provenance["adapters"])),
+                    ("Findings", f"{provenance['merged_findings']} merged · {provenance['reviewed_groups']} reviewed groups"),
+                    ("AI discovery", f"{discovery.get('provider', 'unknown')} / {discovery.get('model', 'unknown')}"),
+                    ("AI review", review.get("status", "unknown")), ("Coverage gaps", len(provenance["coverage_gaps"]))],
+        donut=[("Detected", summary["detected"], "var(--mint)"), ("Needs review", summary["needs_review"], "var(--medium)"),
+               ("No exact signal", summary["not_detected"], "var(--high)"),
+               ("Safe controls", summary["safe_controls_not_assessed"], "var(--low)")],
+        table_title=f"All {len(result['cases'])} benchmark cases",
+        columns=["Case", "Category / location", "Ground truth", "Severity"], outcome_header="Outcome",
+        rows=rows,
+        sections=[("Recorded coverage gaps", provenance["coverage_gaps"]), ("Limits", result["limitations"])])
 
 
 def main() -> None:

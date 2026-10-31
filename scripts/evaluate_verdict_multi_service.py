@@ -8,10 +8,11 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
-from html import escape
 import json
 from pathlib import Path
 from typing import Any
+
+from security_reviewer_v2.reporting.evaluation_html import render_evaluation
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -187,30 +188,24 @@ def markdown(result: dict[str, Any]) -> str:
 
 
 def html_report(result: dict[str, Any]) -> str:
+    """Evaluation page in the same style (and dark/light switch) as the run report."""
     s = result["summary"]
-    rows = "\n".join(
-        "<tr><td><code>{}</code></td><td>{}</td><td>{}</td><td><span class='{}'>{}</span></td><td>{}</td><td>{}</td></tr>".format(
-            escape(row["id"]), escape(row["category"]), escape(row["ground_truth"]),
-            escape(row["status"]), escape(row["status"].replace("_", " ")),
-            escape(", ".join(item["group_id"] for item in row["signals"]) or "—"), escape(row["reason"]))
-        for row in result["scenarios"])
-    limitations = "".join(f"<li>{escape(item)}</li>" for item in result["limitations"])
-    return f"""<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Verdict · Multi-service evaluation</title><style>
-body{{margin:0;background:#0b1220;color:#e8f0f6;font:15px system-ui,sans-serif}}main{{max-width:1400px;margin:auto;padding:40px 24px}}
-h1{{font-size:30px}}p,li{{color:#b8c9d8;line-height:1.55}}.cards{{display:flex;gap:12px;flex-wrap:wrap;margin:24px 0}}
-.card{{background:#152237;border:1px solid #30445d;border-radius:12px;padding:18px;min-width:170px}}.card strong{{display:block;font-size:28px;color:#80e1c5}}
-.scroll{{overflow:auto;border:1px solid #30445d;border-radius:12px}}table{{width:100%;border-collapse:collapse;min-width:1050px}}
-th,td{{text-align:left;padding:12px;border-bottom:1px solid #26384c;vertical-align:top}}th{{background:#152237}}tr:nth-child(even){{background:#101c2e}}
-code{{color:#c7e4ff}}span.detected{{color:#80e1c5}}span.needs_review{{color:#ffd382}}span.not_detected{{color:#ff9c9c}}
-</style><main><h1>Multi-service evaluation</h1><p>Held-out comparison after scanning. Ground truth was not supplied to scanners or AI.</p>
-<div class="cards"><div class="card"><strong>{s['detected']}/{s['confirmed_ground_truth']}</strong>Detected confirmed cases</div>
-<div class="card"><strong>{s['positive_case_recall']:.1%}</strong>Positive-case recall</div>
-<div class="card"><strong>{s['needs_review_confirmed']}</strong>Needs review</div>
-<div class="card"><strong>{s['not_detected_confirmed']}</strong>Not detected</div>
-<div class="card"><strong>{s['candidate_only']}</strong>Candidate-only, excluded</div></div>
-<div class="scroll"><table><thead><tr><th>Scenario</th><th>Category</th><th>Truth</th><th>Result</th><th>Reviewed signal</th><th>Reason</th></tr></thead><tbody>{rows}</tbody></table></div>
-<h2>Interpretation</h2><ul>{limitations}</ul></main></html>"""
+    rows = [{"id": row["id"], "status": row["status"],
+             "cells": [row["category"], row["ground_truth"], ", ".join(item["group_id"] for item in row["signals"]) or "—"],
+             "details": [("Reason", row["reason"]), ("Reviewed signal(s)", [item["group_id"] for item in row["signals"]] or ["None"])]}
+            for row in result["scenarios"]]
+    return render_evaluation(
+        title="Multi-service evaluation",
+        headline=f"{s['detected']}/{s['confirmed_ground_truth']} confirmed cases detected · recall {s['positive_case_recall']:.1%}",
+        intro="Held-out comparison after scanning. Ground truth was not supplied to scanners or AI.",
+        cards=[(f"{s['detected']}/{s['confirmed_ground_truth']}", "Detected confirmed cases"),
+               (f"{s['positive_case_recall']:.1%}", "Positive-case recall"), (s["needs_review_confirmed"], "Needs review"),
+               (s["not_detected_confirmed"], "Not detected"), (s["candidate_only"], "Candidate-only, excluded")],
+        donut=[("Detected", s["detected"], "var(--mint)"), ("Needs review", s["needs_review_confirmed"], "var(--medium)"),
+               ("Not detected", s["not_detected_confirmed"], "var(--high)"), ("Excluded", s["candidate_only"], "var(--ln)")],
+        donut_unit="scenarios", table_title=f"All {len(result['scenarios'])} scenarios",
+        columns=["Scenario", "Category", "Truth", "Reviewed signal"], outcome_header="Result", rows=rows,
+        sections=[("Interpretation", result["limitations"])])
 
 
 def main() -> None:

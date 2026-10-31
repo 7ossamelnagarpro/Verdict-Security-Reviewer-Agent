@@ -6,7 +6,8 @@ import argparse
 import json
 from pathlib import Path
 
-from security_reviewer_v2.discovery.combine import combine_discovery_runs
+from security_reviewer_v2.discovery.combine import combine_discovery_runs, remaining_target_ids
+from security_reviewer_v2.discovery.completion import required_discovery_satisfied
 
 
 def main() -> int:
@@ -14,16 +15,23 @@ def main() -> int:
     parser.add_argument("base", type=Path)
     parser.add_argument("continuation", type=Path)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--allow-partial", action="store_true",
+                        help="keep the completed batches of a continuation that stopped early (e.g. provider quota) and list what is left")
     args = parser.parse_args()
     base = json.loads(args.base.read_text(encoding="utf-8"))
     continuation = json.loads(args.continuation.read_text(encoding="utf-8"))
-    result = combine_discovery_runs(base, continuation)
+    result = combine_discovery_runs(base, continuation, allow_partial=args.allow_partial)
     result["resumption"] = {"base": str(args.base), "continuation": str(args.continuation)}
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"status": result["status"], "targets": result["usage"]["targets"],
                       "planned_targets": result["usage"]["planned_targets"],
-                      "candidates": len(result["candidates"]), "output": str(args.output)}))
+                      "candidates": len(result["candidates"]), "output": str(args.output),
+                      "required_stage_satisfied": required_discovery_satisfied(result)}))
+    left = remaining_target_ids(result)
+    if left:
+        print(f"{len(left)} planned target(s) still uninspected. Re-run run_saved_ai_discovery.py with:")
+        print(" ".join(f'--target-id "{i}"' for i in left))
     return 0
 
 

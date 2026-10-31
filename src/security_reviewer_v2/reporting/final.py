@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .view import _scanner_rows, build_view
+
 
 def _plain(value: Any) -> str:
     """Keep scanner-controlled labels from becoming Markdown or HTML."""
@@ -90,7 +92,8 @@ def render_final_report(*, project: str, review: dict[str, Any], policy: dict[st
                         risk: dict[str, Any] | None = None,
                         execution: dict[str, Any] | None = None,
                         scanner_requirement: dict[str, Any] | None = None,
-                        coverage_gaps: list[str] | tuple[str, ...] | None = None) -> str:
+                        coverage_gaps: list[str] | tuple[str, ...] | None = None,
+                        adapter_ids: list[str] | tuple[str, ...] | None = None) -> str:
     lines = ["# Security Review Report", "", f"- Project: `{project}`", f"- Generated (UTC): `{datetime.now(timezone.utc).isoformat()}`", f"- Policy status: **{policy.get('status', 'unknown')}**", f"- Review status: **{review.get('status', 'unknown')}**", "", "## Executive Summary", ""]
     if scanner_requirement and scanner_requirement.get("requested"):
         scanner_status = "complete" if scanner_requirement.get("satisfied") else "incomplete"
@@ -191,6 +194,11 @@ def render_final_report(*, project: str, review: dict[str, Any], policy: dict[st
                          for task in tasks if isinstance(task, dict))
         else:
             lines.append("No scanner tasks were recorded.")
+        idle = [row for row in _scanner_rows(execution, tuple(adapter_ids or ()), tuple(coverage_gaps or ()))
+                if row.status == "not_scheduled"]
+        if idle:
+            lines.extend(f"- {_plain(row.role)}: **{_plain(row.outcome)}**" + "".join(f" — {_plain(n)}" for n in row.notes) for row in idle)
+            lines.append("Registered but not scheduled (nothing to scan): " + ", ".join(_code(row.scanner) for row in idle) + ".")
     if merged is not None:
         lines.extend(_render_observations(merged, risk))
     lines += ["", "## Security Review Agent Verdicts", ""]
@@ -244,17 +252,17 @@ def write_final_report(path: str | Path, *, project: str, review: dict[str, Any]
                        risk: dict[str, Any] | None = None,
                        execution: dict[str, Any] | None = None,
                        scanner_requirement: dict[str, Any] | None = None,
-                       coverage_gaps: list[str] | tuple[str, ...] | None = None) -> None:
-    from .html import render_html_report
+                       coverage_gaps: list[str] | tuple[str, ...] | None = None,
+                       adapter_ids: list[str] | tuple[str, ...] | None = None) -> Path:
+    from .html_report import render_html
 
     path = Path(path)
-    options = dict(project=project, review=review, policy=policy,
-                                              triage=triage, verification=verification,
-                                              discovery=discovery, discovery_required_satisfied=discovery_required_satisfied,
-                                              docker_runtime=docker_runtime,
-                                              runtime_evidence=runtime_evidence,
-                                              merged=merged, risk=risk, execution=execution,
-                                              scanner_requirement=scanner_requirement,
-                                              coverage_gaps=coverage_gaps)
+    options = dict(project=project, review=review, policy=policy, triage=triage, verification=verification,
+                   discovery=discovery, discovery_required_satisfied=discovery_required_satisfied,
+                   docker_runtime=docker_runtime, runtime_evidence=runtime_evidence, merged=merged, risk=risk,
+                   execution=execution, scanner_requirement=scanner_requirement, coverage_gaps=coverage_gaps,
+                   adapter_ids=adapter_ids)
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(render_final_report(**options), encoding="utf-8")
-    path.with_suffix(".html").write_text(render_html_report(**options), encoding="utf-8")
+    path.with_suffix(".html").write_text(render_html(build_view(**options)), encoding="utf-8")
+    return path

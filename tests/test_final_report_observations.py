@@ -121,7 +121,7 @@ def test_report_writes_standalone_html_next_to_markdown_and_escapes_evidence(tmp
     assert markdown_path.is_file() and html_path.is_file()
     content = html_path.read_text(encoding="utf-8")
     assert "<!doctype html>" in content
-    assert "<style>" in content and "<script>const cards=" in content
+    assert "<style>" in content and 'id="theme"' in content and 'id="dr"' in content
     assert "https://" not in content
     assert malicious not in content
     assert '&lt;script&gt;alert(&quot;' in content

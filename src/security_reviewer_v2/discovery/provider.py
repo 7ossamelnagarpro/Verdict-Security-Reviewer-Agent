@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import http.client
 import json
+import math
 import os
 import re
 import socket
@@ -119,6 +120,9 @@ class GroqProvider:
     max_review_groups_per_request: int = 1
 
     def _post(self, body: dict[str, Any], timeout_seconds: int | None) -> tuple[dict[str, Any], int, float]:
+        effort = os.environ.get("GROQ_REASONING_EFFORT", "").strip().lower()
+        if effort in {"low", "medium", "high"} and self.model in _GROQ_STRICT_JSON_MODELS:
+            body = {**body, "reasoning_effort": effort}   # opt-in: gpt-oss spends most output tokens on reasoning
         request = urllib.request.Request(
             self.endpoint,
             data=json.dumps(body).encode("utf-8"),
@@ -248,13 +252,81 @@ def _urlopen(request: urllib.request.Request, timeout_seconds: int | None):
     return urllib.request.urlopen(request) if timeout_seconds is None else urllib.request.urlopen(request, timeout=timeout_seconds)
 
 
-def _retry_after_seconds(headers: Any) -> float | None:
-    """A usable server-provided delay (1-90 s), or None."""
+def _rate_limit_fallback_seconds() -> float | None:
+    """Opt-in wait for an HTTP 429 that carries no Retry-After (env GROQ_RATE_LIMIT_FALLBACK_SECONDS, 1-300 s).
+
+    Unset by default, so the documented "never retried without a usable Retry-After" behaviour is unchanged.
+    A per-minute token limit reopens within a minute, so ~65 s clears it; a daily limit does not, which is
+    why only a *missing* header is covered and a long Retry-After still fails fast.
+    """
     try:
-        delay = max(1.0, float(headers.get("Retry-After", "")))
+        seconds = float(os.environ.get("GROQ_RATE_LIMIT_FALLBACK_SECONDS", ""))
+    except ValueError:
+        return None
+    return seconds if 1 <= seconds <= 300 else None
+
+
+_RATE_STATE: dict[str, float] = {}
+_ESTIMATED_COMPLETION_TOKENS = 2500   # observed discovery answers are ~1-3K tokens, mostly model reasoning
+_DURATION_PART = re.compile(r"(\d+(?:\.\d+)?)(ms|h|m|s)")
+_UNIT_SECONDS = {"ms": 0.001, "s": 1.0, "m": 60.0, "h": 3600.0}
+
+
+def _pacing_enabled() -> bool:
+    return os.environ.get("GROQ_PACE_RATE_LIMITS", "1").strip().lower() not in {"0", "false", "no", "off"}
+
+
+def _duration_seconds(text: Any) -> float | None:
+    """Groq rate-limit durations look like ``659ms``, ``7.66s`` or ``1m2.5s``."""
+    parts = _DURATION_PART.findall(text) if isinstance(text, str) else []
+    return sum(float(number) * _UNIT_SECONDS[unit] for number, unit in parts) if parts else None
+
+
+def _remember_rate_limits(headers: Any) -> None:
+    """Keep the per-minute token budget the provider reported on its last successful answer."""
+    if headers is None or not _pacing_enabled():
+        return
+    try:
+        remaining = float(headers.get("x-ratelimit-remaining-tokens", ""))
+    except (AttributeError, TypeError, ValueError):
+        return
+    reset = _duration_seconds(headers.get("x-ratelimit-reset-tokens"))
+    if reset is not None:
+        _RATE_STATE.update(remaining=remaining, reset_at=time.monotonic() + reset)
+
+
+def _pace_before_request(request: urllib.request.Request) -> float:
+    """Wait for the per-minute token window to reopen instead of sending a request that would get an HTTP 429.
+
+    Uses only the provider's own headers from the previous answer; with none (first call, other providers, tests) it
+    does nothing.  Set GROQ_PACE_RATE_LIMITS=0 to disable.  Returns the seconds slept.
+    """
+    if not _pacing_enabled() or "reset_at" not in _RATE_STATE:
+        return 0.0
+    data = request.data if isinstance(request.data, (bytes, bytearray)) else b""
+    needed = len(data) / 3 + _ESTIMATED_COMPLETION_TOKENS
+    wait, remaining = _RATE_STATE["reset_at"] - time.monotonic(), _RATE_STATE["remaining"]
+    _RATE_STATE.clear()
+    if remaining >= needed or wait <= 0:
+        return 0.0
+    wait = min(wait + 0.25, 90.0)
+    time.sleep(wait)
+    return wait
+
+
+def _retry_after_header(headers: Any) -> float | None:
+    """The server's requested wait in seconds exactly as sent (finite, >= 0), or None when absent or unreadable."""
+    try:
+        delay = float(headers.get("Retry-After", ""))
     except (AttributeError, TypeError, ValueError):
         return None
-    return delay if delay <= 90 else None
+    return max(delay, 0.0) if math.isfinite(delay) else None
+
+
+def _retry_after_seconds(headers: Any) -> float | None:
+    """A usable server-provided delay (1-90 s), or None."""
+    delay = _retry_after_header(headers)
+    return max(1.0, delay) if delay is not None and delay <= 90 else None
 
 
 def _http_error_details(error: urllib.error.HTTPError) -> dict[str, Any]:
@@ -287,9 +359,13 @@ def _http_error_details(error: urllib.error.HTTPError) -> dict[str, Any]:
     return details
 
 
-def _http_failure(code: int, details: dict[str, Any], retries: int, waited: float) -> _GroqHTTPFailure:
+def _http_failure(code: int, details: dict[str, Any], retries: int, waited: float,
+                  retry_after: float | None = None) -> _GroqHTTPFailure:
     category = details["category"]
     message = f"AI provider request failed with HTTP {code}" + (f" ({category})" if category else "")
+    if code == 429:  # say how long the provider wants us to wait: seconds = per-minute limit, minutes/hours = daily limit
+        message += (f"; provider asked to wait {retry_after:.0f} s" if retry_after is not None
+                    else "; provider sent no usable Retry-After")
     if code == 413:
         limit, requested = details["limit"], details["requested"]
         if limit and requested:
@@ -337,7 +413,8 @@ def _groq_json_request(request: urllib.request.Request, timeout_seconds: int | N
     * 4xx (auth, bad request, too large) are never retried.
     """
     timeout = _HOSTED_DEFAULT_TIMEOUT_SECONDS if timeout_seconds is None else timeout_seconds
-    retries, waited, transient_retries, format_retry_used = 0, 0.0, 0, False
+    retries, transient_retries, format_retry_used = 0, 0, False
+    waited = _pace_before_request(request)
 
     def transport_failure(category: str, detail: str, attempts: int) -> _GroqTransportFailure:
         suffix = f"; gave up after {attempts} attempts" if attempts > 1 else ""
@@ -348,6 +425,7 @@ def _groq_json_request(request: urllib.request.Request, timeout_seconds: int | N
         try:
             with _urlopen(request, timeout) as response:
                 raw = response.read(2_000_000)
+                _remember_rate_limits(getattr(response, "headers", None))
             try:
                 return json.loads(raw.decode("utf-8", errors="replace")), retries, waited
             except ValueError as error:
@@ -359,6 +437,8 @@ def _groq_json_request(request: urllib.request.Request, timeout_seconds: int | N
                 retries += 1
                 continue
             delay = _retry_after_seconds(error.headers)
+            if error.code == 429 and delay is None and _retry_after_header(error.headers) is None:
+                delay = _rate_limit_fallback_seconds()  # opt-in: a per-minute window always reopens within ~60 s
             if error.code == 429 and retries < 10 and delay is not None and waited + delay <= _MAX_RATE_LIMIT_WAIT_SECONDS:
                 time.sleep(delay)
                 waited += delay
@@ -371,7 +451,7 @@ def _groq_json_request(request: urllib.request.Request, timeout_seconds: int | N
                 retries += 1
                 transient_retries += 1
                 continue
-            raise _http_failure(error.code, details, retries, waited) from error
+            raise _http_failure(error.code, details, retries, waited, _retry_after_header(error.headers)) from error
         except urllib.error.URLError as error:
             category, detail, safe_to_retry = _classify_url_error(error.reason)
             if safe_to_retry and transient_retries < len(_TRANSIENT_BACKOFF_SECONDS):

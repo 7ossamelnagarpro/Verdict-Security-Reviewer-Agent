@@ -25,6 +25,13 @@ from security_reviewer_v2.discovery.provider import GroqProvider, ProviderRespon
 
 from tests.test_ai_discovery import _inputs
 
+@pytest.fixture(autouse=True)
+def _fresh_rate_state():
+    provider_module._RATE_STATE.clear()
+    yield
+    provider_module._RATE_STATE.clear()
+
+
 API_KEY = "gsk_SECRET_do_not_leak_123"
 PROMPT = "SENSITIVE-SOURCE-CODE: password = 'hunter2'"
 STRICT = "openai/gpt-oss-120b"      # uses json_schema, so a 400 triggers the one-shot json_object fallback
@@ -171,6 +178,80 @@ def test_http_429_without_a_usable_retry_after_is_not_retried(monkeypatch, heade
     with pytest.raises(RuntimeError, match="HTTP 429"):
         discover()
     assert wire.calls == 1 and wire.sleeps == []
+
+
+@pytest.mark.parametrize("headers, expected", [({"Retry-After": "1140"}, "asked to wait 1140 s"), ({}, "no usable Retry-After"),
+                                               ({"Retry-After": "inf"}, "no usable Retry-After")])
+def test_http_429_failure_says_how_long_the_provider_wanted_us_to_wait(monkeypatch, headers, expected):
+    Wire(monkeypatch, http_error(429, headers))
+    with pytest.raises(RuntimeError, match=expected):
+        discover()
+
+
+def test_http_429_without_retry_after_waits_the_opt_in_fallback_and_retries(monkeypatch):
+    monkeypatch.setenv("GROQ_RATE_LIMIT_FALLBACK_SECONDS", "65")
+    wire = Wire(monkeypatch, http_error(429, {}), completion())
+    discover()
+    assert wire.calls == 2 and wire.sleeps == [65.0]
+
+
+def test_http_429_with_a_long_retry_after_still_fails_fast_even_with_the_fallback(monkeypatch):
+    monkeypatch.setenv("GROQ_RATE_LIMIT_FALLBACK_SECONDS", "65")
+    wire = Wire(monkeypatch, http_error(429, {"Retry-After": "1140"}))
+    with pytest.raises(RuntimeError, match="asked to wait 1140 s"):
+        discover()
+    assert wire.calls == 1 and wire.sleeps == []
+
+
+class _Answer(io.BytesIO):
+    def __init__(self, body: bytes, headers: dict) -> None:
+        super().__init__(body)
+        self.headers = headers
+
+
+def _scripted(monkeypatch, *answers):
+    sleeps: list[float] = []
+    queue = list(answers)
+    monkeypatch.setattr(provider_module, "_urlopen", lambda request, timeout: queue.pop(0))
+    monkeypatch.setattr(provider_module.time, "sleep", sleeps.append)
+    return sleeps
+
+
+def test_pacing_waits_for_the_token_window_instead_of_provoking_a_429(monkeypatch):
+    low = {"x-ratelimit-remaining-tokens": "300", "x-ratelimit-reset-tokens": "7.5s"}
+    sleeps = _scripted(monkeypatch, _Answer(completion(), low), _Answer(completion(), {}))
+    discover(); discover()
+    assert len(sleeps) == 1 and sleeps[0] == pytest.approx(7.75, abs=0.2)
+
+
+def test_pacing_does_not_wait_when_enough_tokens_remain(monkeypatch):
+    plenty = {"x-ratelimit-remaining-tokens": "7900", "x-ratelimit-reset-tokens": "7.5s"}
+    sleeps = _scripted(monkeypatch, _Answer(completion(), plenty), _Answer(completion(), {}))
+    discover(); discover()
+    assert sleeps == []
+
+
+def test_pacing_can_be_switched_off(monkeypatch):
+    monkeypatch.setenv("GROQ_PACE_RATE_LIMITS", "0")
+    low = {"x-ratelimit-remaining-tokens": "300", "x-ratelimit-reset-tokens": "7.5s"}
+    sleeps = _scripted(monkeypatch, _Answer(completion(), low), _Answer(completion(), {}))
+    discover(); discover()
+    assert sleeps == []
+
+
+@pytest.mark.parametrize("text, seconds", [("659ms", 0.659), ("7.66s", 7.66), ("1m2.5s", 62.5), ("", None), ("soon", None)])
+def test_rate_limit_durations_are_parsed(text, seconds):
+    assert provider_module._duration_seconds(text) == pytest.approx(seconds) if seconds is not None else provider_module._duration_seconds(text) is None
+
+
+def test_reasoning_effort_is_opt_in_and_only_for_gpt_oss(monkeypatch):
+    seen: list[dict] = []
+    monkeypatch.setattr(provider_module, "_urlopen", lambda request, timeout: (seen.append(json.loads(request.data)), io.BytesIO(completion()))[1])
+    monkeypatch.setattr(provider_module.time, "sleep", lambda s: None)
+    discover(STRICT)
+    monkeypatch.setenv("GROQ_REASONING_EFFORT", "low")
+    discover(STRICT); discover(PLAIN)
+    assert "reasoning_effort" not in seen[0] and seen[1]["reasoning_effort"] == "low" and "reasoning_effort" not in seen[2]
 
 
 def test_http_5xx_is_retried_a_bounded_number_of_times(monkeypatch):
