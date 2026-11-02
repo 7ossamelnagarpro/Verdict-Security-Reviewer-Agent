@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import re
 from pathlib import Path
 
 from .analysis import analyze_discovery
@@ -79,6 +80,11 @@ def profile_project(
     return ProfileResult(profile=profile, scan_plan=plan, code_graph=code_graph)
 
 
+def _is_exact_pin(version: str | None) -> bool:
+    """``==1.2.3`` (Python) or a bare ``1.2.3`` (npm); ranges, wildcards and unpinned names are not exact."""
+    return bool(version) and re.fullmatch(r"(?:===?\s*)?\d+(?:\.\d+)*(?:[A-Za-z0-9.+-]*)", version.strip()) is not None and "*" not in version
+
+
 def _profile_coverage_gaps(components, discovery, warnings) -> tuple[str, ...]:
     gaps: list[str] = []
     for component in components:
@@ -94,9 +100,12 @@ def _profile_coverage_gaps(components, discovery, warnings) -> tuple[str, ...]:
         manifests = tuple(item for item in component.dependency_files if item.kind == "manifest")
         has_lockfile = any(item.kind == "lockfile" for item in component.dependency_files)
         if manifests and not has_lockfile and any(item.dependencies for item in manifests):
+            direct = [record for item in manifests for record in item.dependencies]
+            pinned = (f" All {len(direct)} direct dependencies are exactly pinned; their transitive dependencies are not recorded."
+                      if direct and all(_is_exact_pin(record.version) for record in direct) else "")
             gaps.append(
                 f"Resolved transitive dependency versions are unverified for component "
-                f"{component.component_id}: a manifest was found, but no supported lockfile."
+                f"{component.component_id}: a manifest was found, but no supported lockfile.{pinned}"
             )
         for dependency_file in component.dependency_files:
             if dependency_file.parse_status in {"invalid", "unreadable", "detected_only", "truncated"}:

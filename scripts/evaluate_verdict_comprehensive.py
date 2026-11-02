@@ -69,10 +69,11 @@ def _matches(case_id: str, source: dict[str, Any]) -> bool:
             continue
         if rule.startswith("workflow."):
             facts = source.get("runtime_evidence") or {}
-            expected = facts.get("expected_statuses") or []
-            actual = facts.get("status")
-            if not (type(actual) is int and all(type(item) is int for item in expected)
-                    and False in (facts.get("assertion_results") or [])):
+            expected, results = facts.get("expected_statuses") or [], facts.get("assertion_results")
+            # The workflow scanner emits a workflow.* finding only for a confirmed violation. Runs saved before the
+            # normalizer kept assertion details carry just the HTTP status: accept those, never a recorded pass.
+            if not (type(facts.get("status")) is int and all(type(item) is int for item in expected)
+                    and (results is None or False in results)):
                 continue
         return True
     return False
@@ -228,7 +229,7 @@ def html_report(result: dict[str, Any]) -> str:
     for row in result["cases"]:
         rows.append({
             "id": row["id"], "status": row["status"],
-            "cells": [(row["category"], row["location"]), row["ground_truth"].replace("_", " "), row["severity"] or "not assigned"],
+            "cells": [(row["category"], row["location"]), row["ground_truth"].replace("_", " "), (row["severity"] or "not assigned").replace("_", " ")],
             "details": [
                 ("Expected behavior", row["expected_behavior"]), ("Proof", row["proof_ref"]),
                 ("Source / origin", f"{row['source'] or 'not recorded'}; origin: {', '.join(row['origin']) or 'not recorded'}"),
@@ -253,7 +254,8 @@ def html_report(result: dict[str, Any]) -> str:
                     ("AI review", review.get("status", "unknown")), ("Coverage gaps", len(provenance["coverage_gaps"]))],
         donut=[("Detected", summary["detected"], "var(--mint)"), ("Needs review", summary["needs_review"], "var(--medium)"),
                ("No exact signal", summary["not_detected"], "var(--high)"),
-               ("Safe controls", summary["safe_controls_not_assessed"], "var(--low)")],
+               ("Safe controls", summary["safe_controls_not_assessed"], "var(--low)"),
+               ("Candidate only", summary["candidate_only_excluded"], "var(--ln)")],
         table_title=f"All {len(result['cases'])} benchmark cases",
         columns=["Case", "Category / location", "Ground truth", "Severity"], outcome_header="Outcome",
         rows=rows,

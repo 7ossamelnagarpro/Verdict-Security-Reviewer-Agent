@@ -13,6 +13,7 @@ from typing import Any
 from security_reviewer_v2.normalization.merge_models import MergeResult, MergedFinding
 from security_reviewer_v2.normalization.models import FindingLocation, UnifiedFinding
 
+from .routes import RouteHandler, build_route_index, explain_route, resolve_route
 from .models import (
     CONTEXT_SCHEMA_VERSION,
     ContextPolicy,
@@ -47,6 +48,7 @@ class _SourceReader:
         self.bytes_read = 0
         self.expected_hashes: dict[str, str] | None = None
         self.index: tuple[str, ...] | None = None
+        self._routes: list[RouteHandler] | None = None
         if profile_artifact is not None:
             snapshot = profile_artifact.get("project_snapshot")
             profile = profile_artifact.get("profile")
@@ -65,6 +67,23 @@ class _SourceReader:
                 raise ContextCollectionError("invalid_profile_inventory") from error
             if set(self.index) != set(self.expected_hashes):
                 raise ContextCollectionError("profile_inventory_hash_mismatch")
+
+    def route_index(self) -> list[RouteHandler]:
+        """HTTP routes declared in the project's Python sources (built once, bounded, never executes code)."""
+        if self._routes is None:
+            skipped = {"tests", "test", "venv", ".venv", "node_modules", "site-packages", "migrations"}
+            parsed: list[tuple[str, ast.AST]] = []
+            for relative in self._paths():
+                if not relative.casefold().endswith(".py") or skipped & set(PurePosixPath(relative).parts[:-1]) or len(parsed) >= 300:
+                    continue
+                try:
+                    loaded = self.load(relative)
+                except ContextCollectionError:
+                    continue
+                if loaded.python_tree is not None:
+                    parsed.append((loaded.relative_path, loaded.python_tree))
+            self._routes = build_route_index(parsed)
+        return self._routes
 
     def _paths(self) -> tuple[str, ...]:
         if self.index is None:
@@ -182,6 +201,7 @@ def collect_context(
     evidence_count = 0
     excerpts_count = 0
     unavailable_count = 0
+    unavailable_groups: dict[str, list[str]] = {}
 
     for finding in merged.findings:
         context = _finding_context(finding, reader, selected_policy)
@@ -192,12 +212,12 @@ def collect_context(
         unavailable_count += sum(item.excerpt is None for item in items)
         global_warnings.extend(context.warnings)
         if context.primary.excerpt is None:
-            gaps.append(
-                f"{finding.merged_finding_id}: primary source context is unavailable."
-            )
+            unavailable_groups.setdefault(_unavailable_reason(finding, context, reader), []).append(finding.merged_finding_id)
         for item in context.additional_primaries:
             if item.excerpt is None:
                 gaps.append(f"{finding.merged_finding_id}: source {item.source_finding_id} primary context is unavailable.")
+
+    gaps.extend(_unavailable_gaps(unavailable_groups))
 
     if not merged.findings:
         status = {
@@ -307,14 +327,47 @@ def _finding_context(
     )
 
 
+def _unavailable_reason(finding: Any, context: FindingContext, reader: _SourceReader) -> str:
+    """Why a finding has no primary source excerpt, so the gap says what to fix instead of repeating an ID."""
+    if "dast" in finding.categories:
+        canonical = finding.canonical_finding
+        facts = canonical.runtime_evidence if isinstance(canonical.runtime_evidence, dict) else {}
+        method = facts.get("method") if isinstance(facts.get("method"), str) else None
+        path = finding.primary_location.path.split("?", 1)[0]
+        match = explain_route(reader.route_index(), path, method)
+        if match.reason == "ambiguous":
+            methods = ", ".join(sorted({name for handler in match.candidates for name in handler.methods}))
+            return f"several handlers serve {path} ({methods}) and the request method was not recorded"
+        if match.reason == "no_route":
+            return f"no declared route matches the runtime path {path}"
+        return f"the handler for {path} could not be read"
+    return context.primary.warning or "the scanner reported no readable source location"
+
+
+def _unavailable_gaps(groups: dict[str, list[str]], shown: int = 5) -> list[str]:
+    gaps = []
+    for reason, ids in sorted(groups.items()):
+        ordered = sorted(ids)
+        more = f" (+{len(ordered) - shown} more)" if len(ordered) > shown else ""
+        gaps.append(f"Primary source context is unavailable for {len(ordered)} finding(s): {reason}: "
+                    f"{', '.join(ordered[:shown])}{more}.")
+    return gaps
+
+
 def _runtime_source_location(finding: UnifiedFinding, reader: _SourceReader) -> FindingLocation | None:
-    """Resolve a unique Flask route to source, without guessing from proximity.
+    """Resolve the handler that serves a runtime finding's HTTP path, without guessing from proximity.
 
     The original HTTP location remains in the normalized finding. This only
     supplies source context to review when an exact route-template match exists.
     """
     if "dast" not in finding.categories:
         return None
+    facts = finding.runtime_evidence if isinstance(finding.runtime_evidence, dict) else {}
+    method = facts.get("method") if isinstance(facts.get("method"), str) else None
+    handler = resolve_route(reader.route_index(), finding.primary_location.path, method)
+    if handler is not None:
+        return FindingLocation(handler.path, handler.line, None, handler.line, None)
+    # Fallback for single-file Flask apps (and the CORS hook, which is not a route): the original exact matcher.
     try:
         loaded = reader.load("app.py")
     except ContextCollectionError:

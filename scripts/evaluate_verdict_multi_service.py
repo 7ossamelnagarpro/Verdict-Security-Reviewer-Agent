@@ -57,14 +57,15 @@ def _runtime_match(case_id: str, source: dict[str, Any]) -> bool:
         return False
     rule, workflow, method, path = signature
     facts = source.get("runtime_evidence") or {}
-    actual = facts.get("status")
-    expected = facts.get("expected_statuses")
-    return (source.get("rule_id") == rule
-            and (source.get("primary_location") or {}).get("path") == path
-            and facts.get("workflow_id") == workflow and facts.get("method") == method
-            and type(actual) is int and isinstance(expected, list)
-            and all(type(item) is int for item in expected)
-            and actual not in expected and False in (facts.get("assertion_results") or []))
+    actual, expected, results = facts.get("status"), facts.get("expected_statuses"), facts.get("assertion_results")
+    if (source.get("rule_id") != rule or (source.get("primary_location") or {}).get("path") != path
+            or type(actual) is not int or facts.get("workflow_id") not in (None, workflow) or facts.get("method") not in (None, method)):
+        return False
+    # A workflow.* finding exists only for a confirmed violation. Runs saved before the normalizer kept the assertion
+    # details carry just the HTTP status: accept those, but never a recorded pass or a status that was expected.
+    if expected is not None and not (isinstance(expected, list) and all(type(item) is int for item in expected) and actual not in expected):
+        return False
+    return results is None or False in results
 
 
 def _static_match(case_id: str, source: dict[str, Any]) -> bool:

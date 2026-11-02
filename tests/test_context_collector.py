@@ -362,3 +362,61 @@ def test_review_prompt_receives_additional_scanner_primary(tmp_path: Path) -> No
     assert other["scanner_id"] == "semgrep-ce"
     assert other["line"] == 2
     assert "a = 1" in other["excerpt"]
+
+
+DAST_APP = (
+    "from fastapi import APIRouter\nrouter = APIRouter()\n\n"
+    "@router.post(\"/comments\")\ndef add_comment():\n    return 1\n\n"
+    "@router.get(\"/comments\")\ndef show_comments():\n    return 2\n"
+)
+
+
+def dast_finding(method: str | None) -> UnifiedFinding:
+    facts = {"status": 200, **({"method": method} if method else {})}
+    return replace(unified(), rule_id="zap.10038", categories=("security", "dast"),
+                   primary_location=FindingLocation("/comments", None, None, None, None), runtime_evidence=facts)
+
+
+def test_runtime_finding_with_an_ambiguous_path_gets_one_reasoned_gap(tmp_path: Path) -> None:
+    (tmp_path / "extra.py").write_text(DAST_APP, encoding="utf-8")
+
+    result = collect_context(merged(dast_finding(None)), project_root=tmp_path)
+
+    assert result.status == ContextStatus.FAILED or result.status == ContextStatus.PARTIAL
+    gaps = [gap for gap in result.coverage_gaps if "Primary source context is unavailable" in gap]
+    assert len(gaps) == 1
+    assert "several handlers serve /comments (GET, POST) and the request method was not recorded" in gaps[0]
+    assert "for 1 finding(s)" in gaps[0] and "merged-one" in gaps[0]
+
+
+def test_runtime_finding_with_a_recorded_method_resolves_to_its_handler(tmp_path: Path) -> None:
+    (tmp_path / "extra.py").write_text(DAST_APP, encoding="utf-8")
+
+    result = collect_context(merged(dast_finding("GET")), project_root=tmp_path)
+
+    assert not any("Primary source context is unavailable" in gap for gap in result.coverage_gaps)
+    excerpt = result.findings[0].primary.excerpt
+    assert excerpt is not None and "show_comments" in excerpt.code
+
+
+def test_runtime_finding_without_any_matching_route_names_the_path(tmp_path: Path) -> None:
+    (tmp_path / "extra.py").write_text(DAST_APP, encoding="utf-8")
+    finding = replace(dast_finding(None), primary_location=FindingLocation("/missing", None, None, None, None))
+
+    result = collect_context(merged(finding), project_root=tmp_path)
+
+    assert any("no declared route matches the runtime path /missing" in gap for gap in result.coverage_gaps)
+
+
+def test_static_finding_gap_carries_the_collector_warning_code(tmp_path: Path) -> None:
+    result = collect_context(merged(unified(path="../outside.py", line=1)), project_root=tmp_path)
+
+    assert any("unsafe_relative_path" in gap and "Primary source context is unavailable" in gap for gap in result.coverage_gaps)
+
+
+def test_gap_lists_are_compact_and_deterministic() -> None:
+    from security_reviewer_v2.context.collector import _unavailable_gaps
+
+    (line,) = _unavailable_gaps({"reason": [f"merged-{n}" for n in (9, 1, 5, 3, 7, 2, 8)]})
+    assert line == ("Primary source context is unavailable for 7 finding(s): reason: "
+                    "merged-1, merged-2, merged-3, merged-5, merged-7 (+2 more).")

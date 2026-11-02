@@ -14,6 +14,8 @@ _SAFE_KEYS = frozenset({
     "served_as_html", "content_disposition", "marker_present",
     "source_guard_absent", "source_scope", "source_path", "source_line",
     "source_sha256",
+    # Business-workflow violations: which workflow/step/method failed and the recorded assertion outcome.
+    "workflow_id", "step", "method", "expected_statuses", "assertion_results",
 })
 
 

@@ -160,8 +160,11 @@ def run_agent_review_graph(
         return {"review_payload": payload}
 
     def policy_node(state: AgentReviewState) -> AgentReviewState:
+        # The gate must see the deterministic evidence (scanner findings, source verification) it names in its
+        # rules; without it every decision is "not assessed" and RG-001 could block on an unchecked AI verdict.
         payload = evaluate_policy(
-            state["review_payload"], triage_payload=state["triage_payload"]
+            state["review_payload"], triage_payload=state["triage_payload"],
+            merged_payload=merged.to_dict(), verification_payload=state.get("verification_payload"),
         ).to_dict()
         write_artifact("policy-gate.json", payload)
         return {"policy_payload": payload}

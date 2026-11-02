@@ -424,3 +424,21 @@ def test_review_gate_supports_planned_broad_and_cancel_without_mutating_plan(tmp
     assert planned.approved is True
     assert cancelled.approved is False
     assert result.scan_plan == original_plan
+
+
+def test_lockfile_gap_says_when_direct_dependencies_are_exactly_pinned(tmp_path: Path) -> None:
+    write(tmp_path, "app.py", "from flask import Flask\napp = Flask(__name__)\n")
+    write(tmp_path, "requirements.txt", "Flask==3.1.3\nrequests==2.32.3\n")
+
+    gap = next(gap for gap in profile_project(tmp_path).profile.coverage_gaps if "no supported lockfile" in gap)
+
+    assert "All 2 direct dependencies are exactly pinned; their transitive dependencies are not recorded." in gap
+
+
+def test_lockfile_gap_does_not_claim_pins_for_ranges_or_unpinned_names(tmp_path: Path) -> None:
+    write(tmp_path, "app.py", "from flask import Flask\napp = Flask(__name__)\n")
+    write(tmp_path, "requirements.txt", "Flask>=3.0\nrequests\n")
+
+    gap = next(gap for gap in profile_project(tmp_path).profile.coverage_gaps if "no supported lockfile" in gap)
+
+    assert "exactly pinned" not in gap

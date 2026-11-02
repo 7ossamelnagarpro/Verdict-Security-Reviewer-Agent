@@ -85,3 +85,16 @@ def test_candidate_truth_never_enters_recall_and_html_escapes():
     assert "&lt;script&gt;" in html
     assert "<script>alert(1)</script>" not in html
     assert len(json.loads(json.dumps(result))["scenarios"]) == 18
+
+
+def _runtime_source(evidence):
+    return {"rule_id": "workflow.order_owner.3", "primary_location": {"path": "/orders/{{order_id}}"}, "runtime_evidence": evidence}
+
+
+def test_multi_service_runtime_match_accepts_status_only_evidence_but_not_a_pass_or_other_workflow():
+    assert audit._runtime_match("vmsl-authz-002", _runtime_source({"status": 200, "values_redacted": True}))
+    assert audit._runtime_match("vmsl-authz-002", _runtime_source(
+        {"status": 200, "workflow_id": "order_owner", "method": "GET", "expected_statuses": [403], "assertion_results": [False]}))
+    assert not audit._runtime_match("vmsl-authz-002", _runtime_source({"status": 403, "expected_statuses": [403], "assertion_results": [True]}))
+    assert not audit._runtime_match("vmsl-authz-002", _runtime_source({"status": 200, "workflow_id": "other", "method": "GET"}))
+    assert not audit._runtime_match("vmsl-authz-002", _runtime_source({"values_redacted": True}))
