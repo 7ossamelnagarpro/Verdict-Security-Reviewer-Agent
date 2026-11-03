@@ -110,6 +110,50 @@ def owasp_for(cwes: tuple[str, ...]) -> tuple[str, ...]:
 
 # ----------------------------------------------------------------------------- view dataclasses
 @dataclass(frozen=True)
+class DynamicTrace:
+    """What one dynamic (DAST) test did and what it recorded, for one finding.
+
+    ``steps`` is either the *probe definition* (``steps_source == "definition"``: the fixed request sequence of the
+    named scanner check, copied from its source) or the *recorded workflow steps* (``"workflow"``: executed steps
+    with their observed HTTP status).  ``facts`` are the recorded output values; response bodies, cookies and
+    credentials are never stored by the scanners, so they never appear here.
+    """
+    scanner: str
+    rule_id: str
+    target: str
+    severity: str
+    confidence: str
+    steps_source: str                                  # definition | workflow | none
+    steps: tuple[tuple[str, str], ...]                 # (what was sent / done, what it means or what was seen)
+    facts: tuple[tuple[str, str], ...]                 # recorded output, key -> value
+    record: tuple[tuple[str, str], ...] = ()           # the probe's own result record (vulnerable, severity, ...)
+
+
+@dataclass(frozen=True)
+class ProbeRow:
+    """One executed dynamic check, including the ones that did not find anything."""
+    source: str
+    rule_id: str
+    target: str
+    outcome: str                                       # finding | not observed
+    severity: str
+    confidence: str
+    output: tuple[tuple[str, str], ...]
+
+
+@dataclass(frozen=True)
+class WorkflowStepRow:
+    workflow: str
+    step: int
+    actor: str
+    request: str
+    status: str
+    http_status: str
+    expected: str
+    assertions: str
+
+
+@dataclass(frozen=True)
 class Finding:
     number: int
     group_id: str
@@ -133,6 +177,8 @@ class Finding:
     reason: str
     evidence_basis: str
     policy_evidence: tuple[str, ...]
+    origins: tuple[str, ...] = ()                      # any of: static, dynamic, ai
+    dynamic: tuple[DynamicTrace, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -198,6 +244,88 @@ class ReportView:
     skipped_tasks: int = 0
     not_scheduled: tuple[str, ...] = ()
     limitations: tuple[str, ...] = field(default=())
+    probes: tuple[ProbeRow, ...] = ()
+    workflow_steps: tuple[WorkflowStepRow, ...] = ()
+    probes_omitted: int = 0
+    origin_counts: dict[str, int] = field(default_factory=dict)
+
+
+# ----------------------------------------------------------------------------- dynamic test traces
+# The fixed request sequence of each built-in dynamic check, copied from the scanner that runs it
+# (scanners/web_runtime.py, scanners/idor.py).  Only rule ids defined there are listed; for any other dynamic rule the
+# report shows recorded output only and never guesses the steps.
+PROBE_DEFINITIONS: dict[str, tuple[tuple[str, str], ...]] = {
+    "web.reflected-xss": (
+        ("GET /search?q=<script>alert(1)</script>", "Send a script payload as the search term; no browser is launched."),
+        ("Inspect the response body", "Vulnerable when the payload comes back unescaped.")),
+    "web.predictable-session-token": (
+        ("POST /login (form login with a test account)", "Authenticate and read the Set-Cookie header."),
+        ("Inspect the token cookie", "Only the token's shape is kept, never its value; vulnerable when it matches tok-<number>-staticsalt.")),
+    "web.sensitive-data-exposure": (
+        ("GET /debug", "Request the debug endpoint without authentication."),
+        ("Parse the JSON keys", "Vulnerable when HTTP 200 and the keys include secret_key or env; values are redacted.")),
+    "web.verbose-error": (
+        ("GET /search?q=%27%22%22%22", "Send a malformed query to provoke a server error."),
+        ("Inspect status and body markers", "Vulnerable when HTTP 5xx and the body contains a database-error marker.")),
+    "web.missing-brute-force-protection": (
+        ("POST /login with a wrong password, 5 times", "A bounded attempt series, not password spraying."),
+        ("Inspect the 5 statuses", "Vulnerable when none of them is HTTP 429 or 423.")),
+    "web.stored-xss": (
+        ("POST /comments with an HTML event-handler payload", "Mutating check; runs only when mutating probes are enabled."),
+        ("GET /comments", "Vulnerable when the stored payload is served back unescaped.")),
+    "web.insecure-file-upload": (
+        ("POST /upload with an HTML file containing a marker script", "Mutating check; runs only when mutating probes are enabled."),
+        ("GET /uploads/<file>", "Vulnerable when the file is served back and the marker is present.")),
+    "idor.cross-user-resource-access": (
+        ("User A requests User A's own resource (GET)", "Establishes User A's session as valid."),
+        ("User B requests User B's resource (GET)", "Baseline response for the protected resource."),
+        ("User A requests User B's resource (GET)", "Vulnerable when the status is 2xx and the response equals User B's.")),
+}
+_MAX_PROBE_ROWS = 300
+_MAX_FACT_CHARS = 200
+
+
+def _is_dynamic(item: dict[str, Any]) -> bool:
+    return "dast" in (item.get("categories") or []) or item.get("finding_kind") == "dast"
+
+
+def _fact_value(value: Any) -> str:
+    if isinstance(value, (list, tuple)):
+        text = ", ".join(_fact_value(v) for v in value)
+    elif isinstance(value, dict):
+        text = json.dumps(value, sort_keys=True, ensure_ascii=False)
+    elif isinstance(value, bool):
+        text = "yes" if value else "no"
+    else:
+        text = str(value)
+    return text if len(text) <= _MAX_FACT_CHARS else text[:_MAX_FACT_CHARS - 1] + "\u2026"
+
+
+def _facts(evidence: Any) -> tuple[tuple[str, str], ...]:
+    if not isinstance(evidence, dict):
+        return ()
+    return tuple((str(k), ", ".join("pass" if x else "fail" for x in v) if k == "assertion_results" and isinstance(v, list) else _fact_value(v))
+                 for k, v in sorted(evidence.items()))
+
+
+def _normal_target(path: str) -> str:
+    return path.split("?", 1)[0].rstrip("/") or "/"
+
+
+def workflow_step_lines(flow: dict[str, Any], flagged_step: int | None = None) -> list[tuple[str, str]]:
+    """Recorded steps of one executed workflow: request, observed HTTP status, expected status, assertion outcome."""
+    lines: list[tuple[str, str]] = []
+    for step in flow.get("steps", []):
+        if not isinstance(step, dict):
+            continue
+        seen = f"HTTP {step['http_status']}" if "http_status" in step else str(step.get("reason") or "not executed")
+        expected = f", expected {_fact_value(step['expected_status'])}" if "expected_status" in step else ""
+        checks = step.get("assertion_results")
+        verdict = f", checks {sum(bool(c) for c in checks)}/{len(checks)} passed" if isinstance(checks, list) and checks else ""
+        mark = "  <- reported step" if flagged_step is not None and step.get("step") == flagged_step else ""
+        lines.append((f"{step.get('step')}. {step.get('actor', 'anonymous')}: {step.get('method', '?')} {step.get('path', '?')}",
+                      f"{step.get('status', 'unknown')} - {seen}{expected}{verdict}{mark}"))
+    return lines
 
 
 # ----------------------------------------------------------------------------- evidence index
@@ -206,7 +334,7 @@ class _Evidence:
 
     def __init__(self, review: dict[str, Any], policy: dict[str, Any], merged: dict[str, Any] | None,
                  triage: dict[str, Any] | None, verification: dict[str, Any] | None,
-                 discovery: dict[str, Any] | None) -> None:
+                 discovery: dict[str, Any] | None, runtime: dict[str, Any] | None = None) -> None:
         self.decisions = {str(d.get("candidate_id")): d for d in policy.get("decisions", []) if isinstance(d, dict)}
         self.merged = {str(f.get("merged_finding_id")): f for f in (merged or {}).get("findings", [])
                        if isinstance(f, dict)}
@@ -216,6 +344,13 @@ class _Evidence:
         self.records = {str(r.get("candidate_id")): r for r in (triage or {}).get("records", []) if isinstance(r, dict)}
         self.ai_candidates = {str(c.get("candidate_id")): c for c in (discovery or {}).get("candidates", [])
                               if isinstance(c, dict)}
+        runtime = runtime if isinstance(runtime, dict) else {}
+        # recorded results of every executed check, keyed so a finding can be matched to its own probe record
+        self.runtime_results = {(str(r.get("rule_id")), _normal_target(str(r.get("path") or ""))): r
+                                for r in runtime.get("results", []) if isinstance(r, dict)}
+        flows = runtime.get("workflow_evidence")
+        self.workflows = {str(w.get("id")): w for w in (flows or {}).get("workflows", []) if isinstance(w, dict)} \
+            if isinstance(flows, dict) else {}
 
     def _members(self, group_id: str) -> tuple[list[str], list[str]]:
         group = self.groups.get(group_id) or {}
@@ -247,6 +382,54 @@ class _Evidence:
                 if cwe not in found:
                     found.append(str(cwe))
         return tuple(found)
+
+    def origins(self, group_id: str) -> tuple[str, ...]:
+        """Which kinds of testing produced this group: static (scanners/SAST/SCA/secrets), dynamic (DAST), ai."""
+        scanner_ids, ai_ids = self._members(group_id)
+        found: list[str] = []
+        for identifier in scanner_ids:
+            merged = self.merged.get(identifier) or {}
+            sources = [x for x in merged.get("source_findings", []) if isinstance(x, dict)]
+            kinds = {"dynamic" if _is_dynamic(x) else "static" for x in sources} or \
+                {"dynamic" if _is_dynamic(merged) else "static"}
+            found += [k for k in sorted(kinds) if k not in found]
+        if ai_ids and "ai" not in found:
+            found.append("ai")
+        return tuple(found)
+
+    def dynamic_traces(self, group_id: str) -> tuple[DynamicTrace, ...]:
+        traces: list[DynamicTrace] = []
+        seen: set[tuple[str, str]] = set()
+        for identifier in self._members(group_id)[0]:
+            merged = self.merged.get(identifier) or {}
+            for source in (x for x in merged.get("source_findings", []) if isinstance(x, dict) and _is_dynamic(x)):
+                rule = str(source.get("rule_id") or "")
+                target = location_label(source.get("primary_location")) or "runtime"
+                if (rule, target) in seen:
+                    continue
+                seen.add((rule, target))
+                scanner = source.get("scanner") if isinstance(source.get("scanner"), dict) else {}
+                result = self.runtime_results.get((rule, _normal_target(target)))
+                facts = _facts(result.get("evidence")) if result and result.get("evidence") else \
+                    _facts(source.get("runtime_evidence"))
+                record = ((("vulnerable", "yes" if result.get("vulnerable") else "no"),
+                           ("severity", str(result.get("severity", ""))), ("confidence", str(result.get("confidence", ""))))
+                          if result else ())
+                steps, origin = self._steps(rule, source)
+                traces.append(DynamicTrace(
+                    str(scanner.get("scanner_name") or scanner.get("scanner_id") or "dynamic scanner"), rule, target,
+                    str(source.get("severity", "unknown")), str(source.get("confidence", "unknown")),
+                    origin, steps, facts, record))
+        return tuple(traces)
+
+    def _steps(self, rule: str, source: dict[str, Any]) -> tuple[tuple[tuple[str, str], ...], str]:
+        if rule in PROBE_DEFINITIONS:
+            return PROBE_DEFINITIONS[rule], "definition"
+        match = re.match(r"^workflow\.(.+)\.(\d+)$", rule)
+        flow = self.workflows.get(match.group(1)) if match else None
+        if flow:
+            return tuple(workflow_step_lines(flow, int(match.group(2)))), "workflow"
+        return (), "none"
 
     def detected_by(self, group_id: str) -> tuple[tuple[str, ...], int]:
         scanner_ids, ai_ids = self._members(group_id)
@@ -413,6 +596,34 @@ def _observations(merged: dict[str, Any] | None, risk: dict[str, Any] | None) ->
                  for o in result)
 
 
+def _probe_rows(runtime: dict[str, Any] | None) -> tuple[tuple[ProbeRow, ...], int]:
+    """Every executed dynamic check with its recorded output, passes included (a clean probe is evidence too)."""
+    results = [r for r in (runtime or {}).get("results", []) if isinstance(r, dict)]
+    rows = tuple(ProbeRow(str(r.get("source") or (runtime or {}).get("source") or "runtime"), str(r.get("rule_id") or "unknown"),
+                          str(r.get("path") or "runtime"), "finding" if r.get("vulnerable") else "not observed",
+                          str(r.get("severity", "")), str(r.get("confidence", "")), _facts(r.get("evidence")))
+                 for r in results[:_MAX_PROBE_ROWS])
+    return rows, max(0, len(results) - _MAX_PROBE_ROWS)
+
+
+def _workflow_rows(runtime: dict[str, Any] | None) -> tuple[WorkflowStepRow, ...]:
+    flows = (runtime or {}).get("workflow_evidence")
+    rows: list[WorkflowStepRow] = []
+    for flow in (flows or {}).get("workflows", []) if isinstance(flows, dict) else []:
+        if not isinstance(flow, dict):
+            continue
+        for step in flow.get("steps", []):
+            if not isinstance(step, dict):
+                continue
+            checks = step.get("assertion_results")
+            rows.append(WorkflowStepRow(
+                str(flow.get("title") or flow.get("id") or "workflow"), int(step.get("step") or 0), str(step.get("actor", "anonymous")),
+                f"{step.get('method', '?')} {step.get('path', '?')}", str(step.get("status", "unknown")),
+                str(step.get("http_status", "-")), _fact_value(step["expected_status"]) if "expected_status" in step else "-",
+                f"{sum(bool(c) for c in checks)}/{len(checks)} passed" if isinstance(checks, list) and checks else "-"))
+    return tuple(rows[:_MAX_PROBE_ROWS])
+
+
 def build_view(*, project: str, review: dict[str, Any], policy: dict[str, Any], triage: dict[str, Any] | None = None,
                verification: dict[str, Any] | None = None, discovery: dict[str, Any] | None = None,
                discovery_required_satisfied: bool | None = None, isolated_pilot: dict[str, Any] | None = None,
@@ -422,7 +633,7 @@ def build_view(*, project: str, review: dict[str, Any], policy: dict[str, Any], 
                scanner_requirement: dict[str, Any] | None = None,
                coverage_gaps: list[str] | tuple[str, ...] | None = None,
                adapter_ids: list[str] | tuple[str, ...] | None = None) -> ReportView:
-    evidence = _Evidence(review, policy, merged, triage, verification, discovery)
+    evidence = _Evidence(review, policy, merged, triage, verification, discovery, runtime_evidence)
     raw_reviews = [item for item in review.get("reviews", []) if isinstance(item, dict)]
 
     def action_of(item: dict[str, Any]) -> str:
@@ -448,7 +659,8 @@ def build_view(*, project: str, review: dict[str, Any], policy: dict[str, Any], 
             tuple(str(e) for e in item.get("limitations", []) or []),
             tuple(str(e) for e in item.get("source_ids", []) or []),
             str(decision.get("blocking_reason") or decision.get("reason") or ""),
-            str(decision.get("evidence_basis") or ""), tuple(str(e) for e in decision.get("evidence", []) or [])))
+            str(decision.get("evidence_basis") or ""), tuple(str(e) for e in decision.get("evidence", []) or []),
+            evidence.origins(gid), evidence.dynamic_traces(gid)))
     blocking = tuple(f for f in findings if f.action == "block")
     counts = {"reviewed": len(findings), "block": len(blocking),
               "warn": sum(f.action == "warn" for f in findings), "allow": sum(f.action == "allow" for f in findings)}
@@ -522,6 +734,9 @@ def build_view(*, project: str, review: dict[str, Any], policy: dict[str, Any], 
         "Verdicts are produced by an AI model reading bounded code excerpts; they are not independently validated exploits.",
         "Severities and scores are triage aids, not CVSS ratings.",
     ) + (() if dynamic else ("No runtime/DAST evidence is included, so exploitability is inferred from code.",))
+    probes, probes_omitted = _probe_rows(runtime_evidence)
+    flow_rows = _workflow_rows(runtime_evidence)
+    origin_counts = {key: sum(key in f.origins for f in findings) for key in ("static", "dynamic", "ai")}
     return ReportView(
         project=project, generated=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"), decision=decision_key,
         headline=headline, bottom_line=tuple(bottom), policy_status=str(policy.get("status", "unknown")),
@@ -535,4 +750,5 @@ def build_view(*, project: str, review: dict[str, Any], policy: dict[str, Any], 
         next_steps=tuple(steps), scanner_requirement=scanner_requirement,
         runtime_lines=tuple(_runtime_lines(isolated_pilot, isolated_runtime, docker_runtime, runtime_evidence)),
         expected_groups=(review.get("usage") or {}).get("expected_groups"), skipped_tasks=skipped,
-        not_scheduled=tuple(r.scanner for r in rows if r.status == "not_scheduled"), limitations=limitations)
+        not_scheduled=tuple(r.scanner for r in rows if r.status == "not_scheduled"), limitations=limitations,
+        probes=probes, workflow_steps=flow_rows, probes_omitted=probes_omitted, origin_counts=origin_counts)
