@@ -45,7 +45,7 @@ PowerShell is not required for the normal installation:
 # Then open the Verdict Security Reviewer desktop shortcut.
 ```
 
-The UI runs on `http://127.0.0.1:8765` and offers source-only reviews or
+The UI runs on `http://127.0.0.1:8770` and offers source-only reviews or
 authorized DAST against a local app. For Docker reviews, start Docker Desktop
 first. The installer can optionally prepare Semgrep and ZAP with
 `-InstallSemgrep -InstallZap`; CodeQL, Gitleaks and Trivy are separate tools.
@@ -114,6 +114,12 @@ reports are not overwritten.
 - Trivy currently performs the supported filesystem/dependency/configuration
   checks; built-image scanning and MLflow integration are not implemented.
 
+For the current comprehensive lab target, the project also supports Codebase
+Memory indexing, active ZAP, browser DAST and declared business workflows when
+their explicit runtime configuration is supplied. These stages remain bounded
+and report their own coverage or partial status; they do not silently become
+full application coverage.
+
 The fixed educational fixture is intentionally vulnerable and should not be
 exposed on a public or shared network.
 
@@ -143,6 +149,12 @@ new and outside the scanned project. Use `--require-all-scanners` when the
 project contract requires every scanner adapter; otherwise the planner keeps
 unsupported or not-applicable tools visible as coverage gaps.
 
+Codebase Memory is enabled by default for the project pipeline. It builds a
+structural index of the scanned source tree (files, symbols, imports, calls and
+routes) and feeds route/context corroboration into Application Map and AI
+Discovery. It is not a vulnerability scanner and it does not replace
+LangGraph; LangGraph orchestrates the AI review stages.
+
 For a complete scan, omit `--static-only` and provide a Runtime Contract:
 
 ```powershell
@@ -164,6 +176,15 @@ Contract in the UI can also declare account and business-workflow checks;
 write workflows require an approved disposable Compose stack. The fixed
 two-user probes tailored to the educational fixture remain on its dedicated
 Docker route. See [Runtime Contract guide](docs/runtime-contract.md).
+
+## 🔬 Evaluation
+
+Evaluation is a separate post-scan operation. It compares saved findings with
+the educational ground-truth benchmark and reports detected and undetected
+cases, recall lower bounds and adjudication limits. Ground truth is never sent
+to scanners or agents during the scan. See
+`scripts/evaluate_verdict_comprehensive.py` and the generated
+`evaluation-*.md`/`evaluation-*.html` artifacts.
 
 ## 🔴 The problem
 
