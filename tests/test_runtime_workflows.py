@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import copy
 import json
-import os
 import re
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
 
 import pytest
 
@@ -672,105 +670,3 @@ def test_contract_ui_persistence_validation_and_vault(tmp_path, monkeypatch):
     )
 
 
-@pytest.mark.skipif(
-    os.environ.get("VERDICT_TEST_WORKFLOW_DOCKER") != "1",
-    reason="Explicit local disposable Docker integration test",
-)
-@pytest.mark.parametrize("route", ["direct", "pipeline"])
-def test_real_multiservice_workflows_and_cleanup(tmp_path, monkeypatch, route):
-    import subprocess
-
-    from security_reviewer_v2.profiler import profile_project
-    from security_reviewer_v2.test_environment import (
-        load_environment_spec,
-        plan_environment,
-        provision_environment,
-    )
-
-    project = Path(__file__).resolve().parents[1] / "targets/verdict-multi-service-lab"
-    suite = order_service_example()
-    for name, password in (
-        ("user_a", "UserA-Lab-Only-1"),
-        ("user_b", "UserB-Lab-Only-1"),
-        ("admin", "Admin-Lab-Only-1"),
-    ):
-        monkeypatch.setenv(env_name(name, "username"), name)
-        monkeypatch.setenv(env_name(name, "password"), password)
-    contract = {
-        "schema_version": "1.0",
-        "mode": "docker_compose",
-        "trust_level": "trusted_local_project",
-        "authorized_for_testing": True,
-        "target": {
-            "base_url": "http://127.0.0.1:8090",
-            "health_path": "/healthz",
-            "expected_status": 200,
-        },
-        "compose": {"file": "compose.yaml", "app_service": "api"},
-        "workflow_suite": suite,
-    }
-    path = tmp_path / "contract.json"
-    path.write_text(json.dumps(contract))
-    spec = load_environment_spec(path, project_root=project)
-    plan = plan_environment(
-        spec, project_root=project, profile=profile_project(project)
-    )
-    monkeypatch.setenv("VERDICT_LEASE_ROOT", str(tmp_path / "leases"))
-    if route == "pipeline":
-        from contextlib import contextmanager
-        from types import SimpleNamespace
-
-        from scripts import run_project_pipeline as pipeline
-
-        sessions = []
-
-        @contextmanager
-        def tracked(*args, **kwargs):
-            with provision_environment(*args, **kwargs) as session:
-                sessions.append(session)
-                yield session
-
-        monkeypatch.setattr(pipeline, "provision_environment", tracked)
-        args = SimpleNamespace(
-            runtime_contract=path,
-            allow_trusted_local_compose=True,
-            dast_engine="baseline",
-        )
-        runtime = pipeline._prepare_runtime(
-            args, project=project, output=tmp_path / "runtime-output"
-        )
-        payload = json.loads(runtime.read_text())
-        evidence = payload["workflow_evidence"]
-        assert payload["status"] == "completed"
-        assert payload["authorization_checks_enabled"] is True
-        assert payload["mutating_checks_enabled"] is True
-        assert any(r["rule_id"].startswith("workflow.") for r in payload["results"])
-        assert normalize_runtime_json_file(runtime).findings
-        session = sessions[0]
-    else:
-        with provision_environment(
-            spec, plan, project_root=project, allow_compose_execution=True
-        ) as session:
-            evidence = run_workflows(session.base_url, suite, disposable=True)
-            (tmp_path / "workflow-evidence.json").write_text(
-                json.dumps(evidence, indent=2)
-            )
-    assert evidence["status"] == "completed", evidence
-    assert evidence["coverage"]["unresolved"] == 0
-    assert evidence["coverage"]["executed"] == evidence["coverage"]["declared"]
-    assert all(a["status"] == "verified" for a in evidence["accounts"])
-    remaining = subprocess.run(
-        [
-            "docker",
-            "ps",
-            "-a",
-            "--filter",
-            f"label=com.docker.compose.project={session.project_name}",
-            "--format",
-            "{{.ID}}",
-        ],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    assert remaining.stdout.strip() == ""

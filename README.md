@@ -53,23 +53,9 @@ Use **System setup** in the UI to check what is available. See
 [Local web deployment](docs/local-web-deployment.md) for the review modes and
 first-use steps.
 
-The dedicated CLI command below runs the trusted `targets/security-lab-web`
-fixture. From the repository root, use a new output directory for each run:
-
-```powershell
-$repo = (Get-Location).Path
-$scanOutput = Join-Path $repo ('reports\automatic-security-lab-docker-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
-
-& "$repo\.venv\Scripts\python.exe" "$repo\scripts\run_docker_automatic_pipeline.py" `
-  --output $scanOutput `
-  --codeql-bundle 'C:\path\to\codeql-2.27.1\codeql'
-```
-
-The CodeQL directory must contain the Windows `codeql.exe` executable. Semgrep
-CE, Gitleaks and Trivy must be installed and available to the process. The
-readiness stage checks all four adapters before Docker starts and stops the run
-if a required adapter, the CodeQL bundle, the AI provider or the output path
-is not ready.
+The project pipeline runs the bundled `targets/verdict-comprehensive-lab` or
+an explicitly authorized local project. From the repository root, use a new
+output directory for each run and provide a Runtime Contract for DAST.
 
 The automatic command uses Groq by default. Set `GROQ_API_KEY` only in the
 PowerShell session that runs the scan; never commit an API key to this
@@ -77,28 +63,25 @@ repository. A local Ollama provider can be selected instead when its service
 and model are already available:
 
 ```powershell
-& "$repo\.venv\Scripts\python.exe" "$repo\scripts\run_docker_automatic_pipeline.py" `
-  --output $scanOutput `
+& ".\.venv\Scripts\python.exe" ".\scripts\run_project_pipeline.py" `
+  "targets\verdict-comprehensive-lab" `
+  --output "reports\comprehensive-run" `
+  --runtime-contract "C:\path\to\runtime-contract.json" `
+  --allow-trusted-local-compose `
   --codeql-bundle 'C:\path\to\codeql-2.27.1\codeql' `
   --ai-provider ollama `
   --ai-model 'qwen2.5-coder:7b'
 ```
 
-During a run, the pipeline validates the trusted Compose file, starts a
-disposable loopback-only stack, performs the bounded DAST and two-user
-authorization probes, saves and validates the runtime evidence, removes the
-stack, then runs the four static scanners, AI Discovery and Security Review.
-The final JSON, Markdown and HTML artifacts are written to `$scanOutput`; the
-temporary runtime evidence is also retained under `reports/docker-autoscan/`
-for that run. A new output directory is required for every run, so previous
-reports are not overwritten.
+During a run, the pipeline validates the contract, starts the explicitly
+trusted disposable stack, performs bounded DAST, then runs the static scanners,
+Codebase Memory, AI Discovery and Security Review. JSON, Markdown and HTML
+artifacts are written to the output directory.
 
 ### Current scope and boundaries
 
-- The dedicated educational Docker command runs **only**
-  `targets/security-lab-web`. The generic project route can start a developer's
-  own Compose project, but only after explicit trust, testing authorization and
-  runtime validation; it does not run untrusted code automatically.
+- The comprehensive lab route starts Docker only after explicit trust, testing
+  authorization and runtime validation; it does not run untrusted code automatically.
 - Its default DAST is bounded HTTP and two-account authorization testing.
   Optional ZAP adds bounded traditional crawling/passive analysis or approved
   active tests, not exhaustive browser or business-workflow coverage.
@@ -367,7 +350,7 @@ The current pipeline writes per-run JSON evidence plus Markdown and standalone H
 
 ## 🧪 Evaluation plan
 
-> **Current status:** post-scan checks exist for the bundled educational targets. A rigorous, controlled three-mode study has not been completed.
+> **Current status:** post-scan checks exist for the bundled comprehensive lab. A rigorous, controlled three-mode study has not been completed.
 
 An eventual three-mode comparison needs a controlled protocol and clearly separated inputs before its numbers can support a broad research claim:
 
@@ -378,13 +361,6 @@ An eventual three-mode comparison needs a controlled protocol and clearly separa
 | **Hybrid** | The implemented full scan: fixed Docker DAST, four scanners, AI Discovery and Security Review |
 
 **Metrics:** positive-case recall is available for the educational fixtures. The comprehensive lab also has matched safe controls, but whole-report precision, F1 and False Positive Rate still need adjudication of extra findings and a validated comparison protocol. Latency, token usage, severity quality and remediation correctness remain separate evaluation work.
-
-The separate 18-scenario multi-service target also has a held-out post-scan
-audit: `scripts/evaluate_verdict_multi_service.py` compares a completed saved
-scan and final review with `benchmark/verdict-multi-service-scenarios.json`.
-It creates JSON, Markdown and HTML evaluation files without running scanners
-or passing ground truth to AI. See `benchmark/README.md` for the command and
-interpretation limits.
 
 The comprehensive lab has its own held-out evaluation in
 `scripts/evaluate_verdict_comprehensive.py`; see

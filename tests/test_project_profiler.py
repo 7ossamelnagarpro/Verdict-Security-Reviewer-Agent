@@ -186,22 +186,6 @@ def test_manifest_without_lockfile_plans_sca_and_reports_version_limit(
     assert "no supported lockfile" in render_markdown(result)
 
 
-def test_security_lab_fixture_keeps_labels_outside_scan_root() -> None:
-    project = Path(__file__).resolve().parents[1]
-    target = project / "targets" / "security-lab-web"
-    ground_truth = project / "benchmark" / "security_lab_web_ground_truth.json"
-
-    result = profile_project(target)
-
-    assert ground_truth.is_file()
-    assert not (target / "ground_truth.json").exists()
-    assert all("ground_truth" not in item.path for item in result.profile.inventory)
-    assert any(
-        task.scan_type.value == "sca" and task.scanner_id == "trivy"
-        for task in result.scan_plan.tasks
-    )
-
-
 def test_git_worktree_file_is_distinguished_from_git_directory(tmp_path: Path) -> None:
     write(tmp_path, ".git", "gitdir: ../repo/.git/worktrees/demo\n")
     write(tmp_path, "main.py", "value = 1\n")
