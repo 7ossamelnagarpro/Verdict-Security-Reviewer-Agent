@@ -1,0 +1,245 @@
+{
+  "schema_version": "1.0",
+  "status": "partial",
+  "project_root": "/mnt/c/Users/ASUS/Downloads/2update/verdict-integrated/targets/security-lab-web",
+  "records": [
+    {
+      "candidate_id": "ai-6fb1063526db509e",
+      "disposition": "confirmed",
+      "path": "app.py",
+      "start_line": 213,
+      "end_line": 221,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "@app.route(\"/orders/<int:order_id>\")",
+        "def view_order(order_id):",
+        "    if \"user_id\" not in session:",
+        "        return redirect(\"/login\")",
+        "    db = get_db()",
+        "    row = db.execute(\"SELECT * FROM orders WHERE id = ?\", (order_id,)).fetchone()",
+        "    if not row:",
+        "        return \"Not found\", 404"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-b03ac219cba40435",
+      "disposition": "confirmed",
+      "path": "app.py",
+      "start_line": 227,
+      "end_line": 237,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "@app.route(\"/profile/<int:user_id>\")",
+        "def profile(user_id):",
+        "    if \"user_id\" not in session:",
+        "        return redirect(\"/login\")",
+        "    db = get_db()",
+        "    row = db.execute(",
+        "        \"SELECT id, username, email, ssn, role FROM users WHERE id = ?\", (user_id,)",
+        "    ).fetchone()"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-1e3619ff05668110",
+      "disposition": "confirmed",
+      "path": "app.py",
+      "start_line": 243,
+      "end_line": 250,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "@app.route(\"/admin\")",
+        "def admin_panel():",
+        "    role = request.args.get(\"role\") or session.get(\"role\")",
+        "    if role != \"admin\":",
+        "        pass",
+        "    db = get_db()",
+        "    users = db.execute(\"SELECT id, username, role, email, ssn FROM users\").fetchall()",
+        "    return jsonify([dict(u) for u in users])"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-4454203f9e8a35f7",
+      "disposition": "confirmed",
+      "path": "app.py",
+      "start_line": 227,
+      "end_line": 237,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "row = db.execute(",
+        "    \"SELECT id, username, email, ssn, role FROM users WHERE id = ?\", (user_id,)",
+        ").fetchone()",
+        "return jsonify(dict(row))"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-db4ade143a09457d",
+      "disposition": "confirmed",
+      "path": "app.py",
+      "start_line": 213,
+      "end_line": 221,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "row = db.execute(\"SELECT * FROM orders WHERE id = ?\", (order_id,)).fetchone()",
+        "return jsonify(dict(row))"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-7be8937ff6225bb6",
+      "disposition": "confirmed",
+      "path": "app.py",
+      "start_line": 243,
+      "end_line": 250,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "def admin_panel():",
+        "    role = request.args.get(\"role\") or session.get(\"role\")",
+        "    if role != \"admin\":",
+        "        pass",
+        "    db = get_db()",
+        "    users = db.execute(\"SELECT id, username, role, email, ssn FROM users\").fetchall()",
+        "    return jsonify([dict(u) for u in users])"
+      ],
+      "notes": [
+        "source_citation_reanchored:entry_point:app.py:243->244",
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-2b3a1697da7140d6",
+      "disposition": "confirmed",
+      "path": "app.py",
+      "start_line": 227,
+      "end_line": 237,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "@app.route(\"/profile/<int:user_id>\")",
+        "def profile(user_id):",
+        "    if \"user_id\" not in session:",
+        "        return redirect(\"/login\")",
+        "    db = get_db()",
+        "    row = db.execute(",
+        "        \"SELECT id, username, email, ssn, role FROM users WHERE id = ?\", (user_id,)",
+        "    ).fetchone()"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-ec881f01d33a5d56",
+      "disposition": "confirmed",
+      "path": "app.py",
+      "start_line": 213,
+      "end_line": 221,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "@app.route(\"/orders/<int:order_id>\")",
+        "def view_order(order_id):",
+        "    if \"user_id\" not in session:",
+        "        return redirect(\"/login\")",
+        "    db = get_db()",
+        "    row = db.execute(\"SELECT * FROM orders WHERE id = ?\", (order_id,)).fetchone()",
+        "    if not row:",
+        "        return \"Not found\", 404"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-f460633f26012558",
+      "disposition": "needs_more_evidence",
+      "path": "app.py",
+      "start_line": 5,
+      "end_line": 5,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "import subprocess"
+      ],
+      "notes": [
+        "Discovery stage could not ground all required structured evidence."
+      ]
+    },
+    {
+      "candidate_id": "ai-a3e7c1aa99e8b687",
+      "disposition": "confirmed",
+      "path": "app.py",
+      "start_line": 327,
+      "end_line": 329,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "@app.route(\"/uploads/<path:filename>\")",
+        "def serve_upload(filename):"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    }
+  ],
+  "warnings": []
+}

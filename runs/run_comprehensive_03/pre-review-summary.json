@@ -1,0 +1,446 @@
+{
+  "status": "completed",
+  "pre_review": false,
+  "review_agent_ran": true,
+  "project": "/mnt/c/Users/ASUS/Downloads/2update/verdict-integrated/targets/verdict-comprehensive-lab",
+  "adapter_ids": [
+    "codeql-cli",
+    "gitleaks",
+    "semgrep-ce",
+    "trivy"
+  ],
+  "test_environment": {
+    "status": "not_requested"
+  },
+  "dast_requirement": {
+    "requested": false,
+    "satisfied": false
+  },
+  "sast_requirement": {
+    "requested": true,
+    "satisfied": true
+  },
+  "scanner_requirement": {
+    "requested": false,
+    "required": [],
+    "satisfied": true,
+    "failures": []
+  },
+  "docker_runtime": {
+    "status": "not_requested"
+  },
+  "runtime_evidence": {
+    "status": "not_requested"
+  },
+  "execution": {
+    "schema_version": "1.0",
+    "run_id": "static-20261028T121845Z",
+    "status": "partial",
+    "project_root_name": "verdict-comprehensive-lab",
+    "started_at": "2026-10-28T12:18:45.829165+00:00",
+    "finished_at": "2026-10-28T12:21:25.205118+00:00",
+    "tasks": [
+      {
+        "task_id": "task-45e5f84af47a",
+        "scanner_id": "trivy",
+        "status": "prerequisite_unverified",
+        "reason": "Unverified prerequisites: trivy_databases",
+        "prerequisite_checks": [
+          {
+            "name": "trivy_executable",
+            "status": "available",
+            "detail": "Trivy runtime version 0.71.2 differs from 0.75.0 (version check skipped)",
+            "version": "0.71.2"
+          },
+          {
+            "name": "target_paths",
+            "status": "available",
+            "detail": "All Trivy targets are inside the project root",
+            "version": null
+          },
+          {
+            "name": "trivy_databases",
+            "status": "unverified",
+            "detail": "SCA requires a verified Trivy vulnerability database (checked /home/asus_safaa99/.cache/trivy); run trivy image --download-db-only, or set TRIVY_CACHE_DIR to the cache that holds db/trivy.db. Automatic download: Trivy exited with code 1: \t* Get \"https://mirror.gcr.io/v2/\": dial tcp: lookup mirror.gcr.io on 10.255.255.254:53: read udp 10.255.255.254:51398->10.255.255.254:53: i/o timeout",
+            "version": null
+          }
+        ],
+        "commands": [],
+        "raw_outputs": [],
+        "started_at": null,
+        "finished_at": null
+      },
+      {
+        "task_id": "task-510db4138e2f",
+        "scanner_id": "gitleaks",
+        "status": "completed",
+        "reason": "Gitleaks produced valid JSON output",
+        "prerequisite_checks": [
+          {
+            "name": "gitleaks_executable",
+            "status": "available",
+            "detail": "Gitleaks executable exists; runtime version could not be read (version check skipped)",
+            "version": null
+          },
+          {
+            "name": "target_paths",
+            "status": "available",
+            "detail": "All Gitleaks targets are inside the project root",
+            "version": null
+          },
+          {
+            "name": "git_metadata",
+            "status": "available",
+            "detail": "Git-history mode is not requested",
+            "version": null
+          }
+        ],
+        "commands": [
+          {
+            "name": "gitleaks-detect",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 0.117163,
+            "stdout_log": "gitleaks/task-510db4138e2f/logs/gitleaks-detect.stdout.log",
+            "stderr_log": "gitleaks/task-510db4138e2f/logs/gitleaks-detect.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          }
+        ],
+        "raw_outputs": [
+          "gitleaks/task-510db4138e2f/result.json"
+        ],
+        "started_at": "2026-10-28T12:19:20.431430+00:00",
+        "finished_at": "2026-10-28T12:19:20.613508+00:00"
+      },
+      {
+        "task_id": "task-9f00818366ac",
+        "scanner_id": "trivy",
+        "status": "skipped",
+        "reason": "Planning status is not_applicable",
+        "prerequisite_checks": [],
+        "commands": [],
+        "raw_outputs": [],
+        "started_at": null,
+        "finished_at": null
+      },
+      {
+        "task_id": "task-dcae5d188e58",
+        "scanner_id": "semgrep-ce",
+        "status": "completed",
+        "reason": "Semgrep produced valid JSON output",
+        "prerequisite_checks": [
+          {
+            "name": "semgrep_executable",
+            "status": "available",
+            "detail": "Semgrep executable and runtime version were verified",
+            "version": "1.178.0"
+          },
+          {
+            "name": "semgrep_rules",
+            "status": "available",
+            "detail": "Trusted Semgrep configs are configured; registry availability is verified during execution",
+            "version": null
+          },
+          {
+            "name": "target_paths",
+            "status": "available",
+            "detail": "All Semgrep targets are inside the project root",
+            "version": null
+          }
+        ],
+        "commands": [
+          {
+            "name": "semgrep-scan",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 79.631173,
+            "stdout_log": "semgrep-ce/task-dcae5d188e58/logs/semgrep-scan.stdout.log",
+            "stderr_log": "semgrep-ce/task-dcae5d188e58/logs/semgrep-scan.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          }
+        ],
+        "raw_outputs": [
+          "semgrep-ce/task-dcae5d188e58/result.json"
+        ],
+        "started_at": "2026-10-28T12:19:35.715156+00:00",
+        "finished_at": "2026-10-28T12:20:55.511026+00:00"
+      },
+      {
+        "task_id": "task-e01e4c2db2dc",
+        "scanner_id": "codeql-cli",
+        "status": "completed",
+        "reason": "CodeQL produced valid SARIF output",
+        "prerequisite_checks": [
+          {
+            "name": "codeql_executable",
+            "status": "available",
+            "detail": "CodeQL runtime version 2.27.2 differs from 2.27.1 (version check skipped)",
+            "version": "2.27.2"
+          },
+          {
+            "name": "language_query_pack",
+            "status": "available",
+            "detail": "Configured python standard query suite exists",
+            "version": null
+          },
+          {
+            "name": "target_paths",
+            "status": "available",
+            "detail": "All CodeQL targets are inside the project root",
+            "version": null
+          },
+          {
+            "name": "codeql_search_path",
+            "status": "available",
+            "detail": "Configured CodeQL search path exists",
+            "version": null
+          }
+        ],
+        "commands": [
+          {
+            "name": "database-create",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 8.002747,
+            "stdout_log": "codeql-cli/task-e01e4c2db2dc/logs/database-create.stdout.log",
+            "stderr_log": "codeql-cli/task-e01e4c2db2dc/logs/database-create.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          },
+          {
+            "name": "database-analyze",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 17.19984,
+            "stdout_log": "codeql-cli/task-e01e4c2db2dc/logs/database-analyze.stdout.log",
+            "stderr_log": "codeql-cli/task-e01e4c2db2dc/logs/database-analyze.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          }
+        ],
+        "raw_outputs": [
+          "codeql-cli/task-e01e4c2db2dc/result.sarif"
+        ],
+        "started_at": "2026-10-28T12:20:56.245246+00:00",
+        "finished_at": "2026-10-28T12:21:21.584003+00:00"
+      },
+      {
+        "task_id": "task-ea7752418b98",
+        "scanner_id": "trivy",
+        "status": "completed",
+        "reason": "Trivy produced valid JSON output",
+        "prerequisite_checks": [
+          {
+            "name": "trivy_executable",
+            "status": "available",
+            "detail": "Trivy runtime version 0.71.2 differs from 0.75.0 (version check skipped)",
+            "version": "0.71.2"
+          },
+          {
+            "name": "target_paths",
+            "status": "available",
+            "detail": "All Trivy targets are inside the project root",
+            "version": null
+          },
+          {
+            "name": "trivy_databases",
+            "status": "available",
+            "detail": "This Trivy scan type does not require a vulnerability database",
+            "version": null
+          }
+        ],
+        "commands": [
+          {
+            "name": "trivy-filesystem-0",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 1.121128,
+            "stdout_log": "trivy/task-ea7752418b98/logs/trivy-filesystem-0.stdout.log",
+            "stderr_log": "trivy/task-ea7752418b98/logs/trivy-filesystem-0.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          },
+          {
+            "name": "trivy-filesystem-1",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 0.719215,
+            "stdout_log": "trivy/task-ea7752418b98/logs/trivy-filesystem-1.stdout.log",
+            "stderr_log": "trivy/task-ea7752418b98/logs/trivy-filesystem-1.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          },
+          {
+            "name": "trivy-filesystem-2",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 0.718766,
+            "stdout_log": "trivy/task-ea7752418b98/logs/trivy-filesystem-2.stdout.log",
+            "stderr_log": "trivy/task-ea7752418b98/logs/trivy-filesystem-2.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          },
+          {
+            "name": "trivy-filesystem-3",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 0.718981,
+            "stdout_log": "trivy/task-ea7752418b98/logs/trivy-filesystem-3.stdout.log",
+            "stderr_log": "trivy/task-ea7752418b98/logs/trivy-filesystem-3.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          }
+        ],
+        "raw_outputs": [
+          "trivy/task-ea7752418b98/result-0.json",
+          "trivy/task-ea7752418b98/result-1.json",
+          "trivy/task-ea7752418b98/result-2.json",
+          "trivy/task-ea7752418b98/result-3.json"
+        ],
+        "started_at": "2026-10-28T12:21:21.722254+00:00",
+        "finished_at": "2026-10-28T12:21:25.186446+00:00"
+      }
+    ],
+    "coverage_gaps": [
+      "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile.",
+      "trivy task task-45e5f84af47a did not complete: prerequisite_unverified (Unverified prerequisites: trivy_databases)."
+    ],
+    "warnings": []
+  },
+  "merge_summary": {
+    "input_batches": 7,
+    "input_findings": 20,
+    "merged_findings": 19,
+    "duplicates_collapsed": 1
+  },
+  "endpoint_coverage": {
+    "status": "not_run",
+    "endpoint_count": null,
+    "probe_count": null,
+    "probed_count": 0,
+    "authentication": null,
+    "workflows": null,
+    "coverage_gaps": []
+  },
+  "ai_discovery": {
+    "required": true,
+    "satisfied": true,
+    "status": "partial",
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "provider_calls": 4,
+    "planned_targets": 20,
+    "inspected_targets": 20,
+    "failed_batches": 0,
+    "candidate_count": 11,
+    "supported_candidates": 8,
+    "coverage_gaps": [
+      "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile.",
+      "trivy task task-45e5f84af47a did not complete: prerequisite_unverified (Unverified prerequisites: trivy_databases)."
+    ],
+    "warnings": [
+      "Discovery batch 1: AI provider request failed with HTTP 400 (json_validate_failed); model output 0 chars, not valid JSON; retrying with a smaller request."
+    ]
+  },
+  "candidate_context": {
+    "status": "partial",
+    "summary": {
+      "input_candidates": 11,
+      "contexts_created": 11,
+      "evidence_locations": 52,
+      "excerpts_collected": 52,
+      "unavailable_locations": 0,
+      "files_read": 2,
+      "bytes_read": 40607
+    },
+    "coverage_gaps": [
+      "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile.",
+      "trivy task task-45e5f84af47a did not complete: prerequisite_unverified (Unverified prerequisites: trivy_databases)."
+    ],
+    "warnings": [
+      "Discovery batch 1: AI provider request failed with HTTP 400 (json_validate_failed); model output 0 chars, not valid JSON; retrying with a smaller request."
+    ]
+  },
+  "verification": {
+    "status": "partial",
+    "record_count": 11,
+    "confirmed": 5,
+    "needs_more_evidence": 6,
+    "rejected": 0,
+    "warnings": [
+      "Discovery batch 1: AI provider request failed with HTTP 400 (json_validate_failed); model output 0 chars, not valid JSON; retrying with a smaller request."
+    ]
+  },
+  "candidate_triage": {
+    "status": "partial",
+    "summary": {
+      "input_scanner_findings": 19,
+      "input_ai_candidates": 11,
+      "review_groups": 24,
+      "scanner_overlap": 0,
+      "candidate_overlap": 0,
+      "novel_candidates": 3,
+      "uncertain_overlap": 2,
+      "needs_more_evidence": 6,
+      "rejected": 0
+    },
+    "warnings": [
+      "ai-399c790f8ce192d7: overlap is uncertain; separate review is required.",
+      "ai-b0dfdc8f9b2bed63: overlap is uncertain; separate review is required."
+    ]
+  },
+  "security_review": {
+    "status": "completed",
+    "satisfied": true,
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "review_count": 24,
+    "pending_ids": [],
+    "warnings": []
+  },
+  "policy_gate": {
+    "status": "failed",
+    "blocking": true,
+    "decision_count": 24,
+    "warnings": [
+      "RG-003: high likely vulnerability requires manual review; not auto-confirmed.",
+      "RG-006: low confirmed vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: medium likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: medium likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: low likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: low likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: low needs more evidence is not sufficiently confirmed for an automatic block.",
+      "RG-006: medium needs more evidence is not sufficiently confirmed for an automatic block.",
+      "RG-006: medium likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "8 AI candidates remain unresolved; they are not confirmed vulnerabilities."
+    ]
+  },
+  "context_summary": {
+    "input_findings": 19,
+    "contexts_created": 19,
+    "evidence_locations": 74,
+    "excerpts_collected": 74,
+    "files_read": 7,
+    "bytes_read": 45765,
+    "unavailable_locations": 0
+  },
+  "risk_summary": {
+    "input_findings": 19,
+    "ranked_findings": 19,
+    "selected_for_deep_review": 9,
+    "queued_for_deep_review": 0,
+    "standard_report": 10,
+    "needs_verification": 0
+  },
+  "coverage_gaps": [
+    "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile.",
+    "trivy task task-45e5f84af47a did not complete: prerequisite_unverified (Unverified prerequisites: trivy_databases)."
+  ],
+  "limitations": [
+    "Scanner silence is not proof of safety.",
+    "Runtime checks require an authorized target URL or completed Runtime Contract evidence.",
+    "Mutating workflows remain opt-in and are not executed by this run."
+  ]
+}

@@ -1,0 +1,2378 @@
+{
+  "schema_version": "1.1",
+  "status": "complete",
+  "project_root": "/mnt/c/Users/ASUS/Downloads/2update/verdict-integrated/targets/verdict-comprehensive-lab",
+  "findings": [
+    {
+      "merged_finding_id": "merged-70f8087c412d06924742",
+      "title": "Wildcard Cors",
+      "severity": "low",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-942"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.fastapi.security.wildcard-cors.wildcard-cors",
+        "location": {
+          "path": "api/app.py",
+          "start_line": 26,
+          "start_column": 19,
+          "end_line": 26,
+          "end_column": 24,
+          "snippet": null
+        },
+        "message": "CORS policy allows any origin (using wildcard '*'). This is insecure and should be avoided.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-243196a7a6a7f4370cd1",
+        "excerpt_ref": "ex-9459790f1d1611f290a14d4daa90ec7982142f995992aff55b6d3073da912483"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-3202e1e1074cfd44b9bf",
+      "title": "Clear-text logging of sensitive information",
+      "severity": "high",
+      "confidence": "high",
+      "cwes": [
+        "CWE-312",
+        "CWE-359",
+        "CWE-532"
+      ],
+      "scanners": [
+        "codeql-cli",
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "codeql-cli",
+        "rule_id": "py/clear-text-logging-sensitive-data",
+        "location": {
+          "path": "api/app.py",
+          "start_line": 137,
+          "start_column": 55,
+          "end_line": null,
+          "end_column": 95,
+          "snippet": null
+        },
+        "message": "This expression logs [sensitive data (secret)](1) as clear text.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-cfe66151dbff24377948",
+        "symbol_ref": "sym-2017ba326600217e189954a712db26ac01e36a3ec2f3a3d65ab511d2d1a47f0c",
+        "excerpt_ref": "ex-c0c441a93aaeb5e9cfa64a6594a22a24e640939c6a995b2fa26b827f4745c75e"
+      },
+      "code_flow": [],
+      "related": [
+        {
+          "evidence_type": "related",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/clear-text-logging-sensitive-data",
+          "location": {
+            "path": "api/app.py",
+            "start_line": 137,
+            "start_column": 55,
+            "end_line": null,
+            "end_column": 95,
+            "snippet": null
+          },
+          "message": "sensitive data (secret)",
+          "flow_index": null,
+          "thread_index": null,
+          "step_index": null,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-2017ba326600217e189954a712db26ac01e36a3ec2f3a3d65ab511d2d1a47f0c",
+          "excerpt_ref": "ex-c0c441a93aaeb5e9cfa64a6594a22a24e640939c6a995b2fa26b827f4745c75e"
+        }
+      ],
+      "warnings": [],
+      "additional_primaries": [
+        {
+          "evidence_type": "primary",
+          "scanner_id": "semgrep-ce",
+          "rule_id": "python.lang.security.audit.logging.logger-credential-leak.python-logger-credential-disclosure",
+          "location": {
+            "path": "api/app.py",
+            "start_line": 137,
+            "start_column": 5,
+            "end_line": 137,
+            "end_column": 96,
+            "snippet": null
+          },
+          "message": "Detected a python logger call with a potential hardcoded secret \"login user=%s app_secret=%s\" being logged. This may lead to secret credentials being exposed. Make sure that the logger is not logging  sensitive information.",
+          "flow_index": null,
+          "thread_index": null,
+          "step_index": null,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": "finding-2e982654735c1187197b",
+          "symbol_ref": "sym-2017ba326600217e189954a712db26ac01e36a3ec2f3a3d65ab511d2d1a47f0c",
+          "excerpt_ref": "ex-c0c441a93aaeb5e9cfa64a6594a22a24e640939c6a995b2fa26b827f4745c75e"
+        }
+      ]
+    },
+    {
+      "merged_finding_id": "merged-9c6fcf61fc01168b15e2",
+      "title": "Log Injection",
+      "severity": "medium",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-117"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "codeql-cli",
+        "rule_id": "py/log-injection",
+        "location": {
+          "path": "api/app.py",
+          "start_line": 137,
+          "start_column": 45,
+          "end_line": null,
+          "end_column": 53,
+          "snippet": null
+        },
+        "message": "This log entry depends on a [user-provided value](1).",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-a24fd7815efb02a43f82",
+        "symbol_ref": "sym-2017ba326600217e189954a712db26ac01e36a3ec2f3a3d65ab511d2d1a47f0c",
+        "excerpt_ref": "ex-c0c441a93aaeb5e9cfa64a6594a22a24e640939c6a995b2fa26b827f4745c75e"
+      },
+      "code_flow": [
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/log-injection",
+          "location": {
+            "path": "api/app.py",
+            "start_line": 167,
+            "start_column": 17,
+            "end_line": null,
+            "end_column": 24,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for request",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 0,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-a2dc6cc18425c0731eabbe59db452cf925a043471f996ca49e663cdfbcaa0134",
+          "excerpt_ref": "ex-f15f72533f9396c2b30ddd4794b4c00e5f0621a7fe0c277d1e3555b017e4b4c2"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/log-injection",
+          "location": {
+            "path": "api/app.py",
+            "start_line": 169,
+            "start_column": 9,
+            "end_line": null,
+            "end_column": 13,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for data",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 1,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-a2dc6cc18425c0731eabbe59db452cf925a043471f996ca49e663cdfbcaa0134",
+          "excerpt_ref": "ex-57de3d80e61e2728697088dbdd64c217fad63b1a034dcc009df2acc1ab122094"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/log-injection",
+          "location": {
+            "path": "api/app.py",
+            "start_line": 172,
+            "start_column": 23,
+            "end_line": null,
+            "end_column": 27,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for data",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 2,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-a2dc6cc18425c0731eabbe59db452cf925a043471f996ca49e663cdfbcaa0134",
+          "excerpt_ref": "ex-c12cb8ad79d1a5e91c0897059293bf3791733f8eb8e1b4c90b2f42dda57c7026"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/log-injection",
+          "location": {
+            "path": "api/app.py",
+            "start_line": 172,
+            "start_column": 23,
+            "end_line": null,
+            "end_column": 47,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for Attribute()",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 3,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-a2dc6cc18425c0731eabbe59db452cf925a043471f996ca49e663cdfbcaa0134",
+          "excerpt_ref": "ex-c12cb8ad79d1a5e91c0897059293bf3791733f8eb8e1b4c90b2f42dda57c7026"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/log-injection",
+          "location": {
+            "path": "api/app.py",
+            "start_line": 172,
+            "start_column": 19,
+            "end_line": null,
+            "end_column": 48,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for str()",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 4,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-a2dc6cc18425c0731eabbe59db452cf925a043471f996ca49e663cdfbcaa0134",
+          "excerpt_ref": "ex-c12cb8ad79d1a5e91c0897059293bf3791733f8eb8e1b4c90b2f42dda57c7026"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/log-injection",
+          "location": {
+            "path": "api/app.py",
+            "start_line": 130,
+            "start_column": 12,
+            "end_line": null,
+            "end_column": 20,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for username",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 5,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-2017ba326600217e189954a712db26ac01e36a3ec2f3a3d65ab511d2d1a47f0c",
+          "excerpt_ref": "ex-0ec161f970c985686661c76c9e9b6dfcdca8db40e57373ce9480262eddcba4e2"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/log-injection",
+          "location": {
+            "path": "api/app.py",
+            "start_line": 137,
+            "start_column": 45,
+            "end_line": null,
+            "end_column": 53,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for username",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 6,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-2017ba326600217e189954a712db26ac01e36a3ec2f3a3d65ab511d2d1a47f0c",
+          "excerpt_ref": "ex-c0c441a93aaeb5e9cfa64a6594a22a24e640939c6a995b2fa26b827f4745c75e"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/log-injection",
+          "location": {
+            "path": "api/app.py",
+            "start_line": 167,
+            "start_column": 17,
+            "end_line": null,
+            "end_column": 24,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for request",
+          "flow_index": 1,
+          "thread_index": 0,
+          "step_index": 0,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-a2dc6cc18425c0731eabbe59db452cf925a043471f996ca49e663cdfbcaa0134",
+          "excerpt_ref": "ex-f15f72533f9396c2b30ddd4794b4c00e5f0621a7fe0c277d1e3555b017e4b4c2"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/log-injection",
+          "location": {
+            "path": "api/app.py",
+            "start_line": 171,
+            "start_column": 9,
+            "end_line": null,
+            "end_column": 13,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for data",
+          "flow_index": 1,
+          "thread_index": 0,
+          "step_index": 1,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-a2dc6cc18425c0731eabbe59db452cf925a043471f996ca49e663cdfbcaa0134",
+          "excerpt_ref": "ex-07ed095e76ace3e44b6e931e2ef2d38ac6eea9893b148622ee1826d8c468befc"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/log-injection",
+          "location": {
+            "path": "api/app.py",
+            "start_line": 172,
+            "start_column": 23,
+            "end_line": null,
+            "end_column": 27,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for data",
+          "flow_index": 1,
+          "thread_index": 0,
+          "step_index": 2,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-a2dc6cc18425c0731eabbe59db452cf925a043471f996ca49e663cdfbcaa0134",
+          "excerpt_ref": "ex-c12cb8ad79d1a5e91c0897059293bf3791733f8eb8e1b4c90b2f42dda57c7026"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/log-injection",
+          "location": {
+            "path": "api/app.py",
+            "start_line": 172,
+            "start_column": 23,
+            "end_line": null,
+            "end_column": 47,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for Attribute()",
+          "flow_index": 1,
+          "thread_index": 0,
+          "step_index": 3,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-a2dc6cc18425c0731eabbe59db452cf925a043471f996ca49e663cdfbcaa0134",
+          "excerpt_ref": "ex-c12cb8ad79d1a5e91c0897059293bf3791733f8eb8e1b4c90b2f42dda57c7026"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/log-injection",
+          "location": {
+            "path": "api/app.py",
+            "start_line": 172,
+            "start_column": 19,
+            "end_line": null,
+            "end_column": 48,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for str()",
+          "flow_index": 1,
+          "thread_index": 0,
+          "step_index": 4,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-a2dc6cc18425c0731eabbe59db452cf925a043471f996ca49e663cdfbcaa0134",
+          "excerpt_ref": "ex-c12cb8ad79d1a5e91c0897059293bf3791733f8eb8e1b4c90b2f42dda57c7026"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/log-injection",
+          "location": {
+            "path": "api/app.py",
+            "start_line": 130,
+            "start_column": 12,
+            "end_line": null,
+            "end_column": 20,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for username",
+          "flow_index": 1,
+          "thread_index": 0,
+          "step_index": 5,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-2017ba326600217e189954a712db26ac01e36a3ec2f3a3d65ab511d2d1a47f0c",
+          "excerpt_ref": "ex-0ec161f970c985686661c76c9e9b6dfcdca8db40e57373ce9480262eddcba4e2"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/log-injection",
+          "location": {
+            "path": "api/app.py",
+            "start_line": 137,
+            "start_column": 45,
+            "end_line": null,
+            "end_column": 53,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for username",
+          "flow_index": 1,
+          "thread_index": 0,
+          "step_index": 6,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-2017ba326600217e189954a712db26ac01e36a3ec2f3a3d65ab511d2d1a47f0c",
+          "excerpt_ref": "ex-c0c441a93aaeb5e9cfa64a6594a22a24e640939c6a995b2fa26b827f4745c75e"
+        }
+      ],
+      "related": [
+        {
+          "evidence_type": "related",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/log-injection",
+          "location": {
+            "path": "api/app.py",
+            "start_line": 167,
+            "start_column": 17,
+            "end_line": null,
+            "end_column": 24,
+            "snippet": null
+          },
+          "message": "user-provided value",
+          "flow_index": null,
+          "thread_index": null,
+          "step_index": null,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-a2dc6cc18425c0731eabbe59db452cf925a043471f996ca49e663cdfbcaa0134",
+          "excerpt_ref": "ex-f15f72533f9396c2b30ddd4794b4c00e5f0621a7fe0c277d1e3555b017e4b4c2"
+        }
+      ],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-18f1abe978f9fdaad8e6",
+      "title": "SQL query built from user-controlled sources",
+      "severity": "high",
+      "confidence": "high",
+      "cwes": [
+        "CWE-89"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "codeql-cli",
+        "rule_id": "py/sql-injection",
+        "location": {
+          "path": "api/extra.py",
+          "start_line": 119,
+          "start_column": 28,
+          "end_line": null,
+          "end_column": 33,
+          "snippet": null
+        },
+        "message": "This SQL query depends on a [user-provided value](1).",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-5e7b731c6445970909c9",
+        "symbol_ref": "sym-70be67d61b107e5e96bab2839c493417307ce1a14e69bc38d4c5ab7fb625e327",
+        "excerpt_ref": "ex-6151bfc5281334b673c82495f1c0435746879779c54dfa6e2a6e84e79e2dbcfd"
+      },
+      "code_flow": [
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/sql-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 116,
+            "start_column": 18,
+            "end_line": null,
+            "end_column": 22,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for body",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 0,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-70be67d61b107e5e96bab2839c493417307ce1a14e69bc38d4c5ab7fb625e327",
+          "excerpt_ref": "ex-b4c6dc1ac7e8270655f2c5cb8b95ab649441d9679cd5eae2c9e629f93d15bfa8"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/sql-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 117,
+            "start_column": 5,
+            "end_line": null,
+            "end_column": 10,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for query",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 1,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-70be67d61b107e5e96bab2839c493417307ce1a14e69bc38d4c5ab7fb625e327",
+          "excerpt_ref": "ex-2520e696e63e13b1acb8b94512dcef504a4b679401700bb1d9d6ea076b1238c9"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/sql-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 119,
+            "start_column": 28,
+            "end_line": null,
+            "end_column": 33,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for query",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 2,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-70be67d61b107e5e96bab2839c493417307ce1a14e69bc38d4c5ab7fb625e327",
+          "excerpt_ref": "ex-6151bfc5281334b673c82495f1c0435746879779c54dfa6e2a6e84e79e2dbcfd"
+        }
+      ],
+      "related": [
+        {
+          "evidence_type": "related",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/sql-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 116,
+            "start_column": 18,
+            "end_line": null,
+            "end_column": 22,
+            "snippet": null
+          },
+          "message": "user-provided value",
+          "flow_index": null,
+          "thread_index": null,
+          "step_index": null,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-70be67d61b107e5e96bab2839c493417307ce1a14e69bc38d4c5ab7fb625e327",
+          "excerpt_ref": "ex-b4c6dc1ac7e8270655f2c5cb8b95ab649441d9679cd5eae2c9e629f93d15bfa8"
+        }
+      ],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-f60fee7d82fbca512208",
+      "title": "SQL query built from user-controlled sources",
+      "severity": "high",
+      "confidence": "high",
+      "cwes": [
+        "CWE-89"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "codeql-cli",
+        "rule_id": "py/sql-injection",
+        "location": {
+          "path": "api/extra.py",
+          "start_line": 144,
+          "start_column": 29,
+          "end_line": null,
+          "end_column": 82,
+          "snippet": null
+        },
+        "message": "This SQL query depends on a [user-provided value](1).",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-7605384fbc7aee3bcd8a",
+        "symbol_ref": "sym-475216a892f76163dccd1fc9e95e5e0dcb32a1d072c1b6428749d25b4c9894f9",
+        "excerpt_ref": "ex-f890974ec8d3a7bd131055f48cc88488b7b8df749407060daa07e2de6873b9e7"
+      },
+      "code_flow": [
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/sql-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 142,
+            "start_column": 20,
+            "end_line": null,
+            "end_column": 21,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for q",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 0,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-475216a892f76163dccd1fc9e95e5e0dcb32a1d072c1b6428749d25b4c9894f9",
+          "excerpt_ref": "ex-5c484a3e3e6fe09c7a512a372985740aff7a0ddd87e54153b59464bb46ca99e8"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/sql-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 144,
+            "start_column": 29,
+            "end_line": null,
+            "end_column": 82,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for Fstring",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 1,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-475216a892f76163dccd1fc9e95e5e0dcb32a1d072c1b6428749d25b4c9894f9",
+          "excerpt_ref": "ex-f890974ec8d3a7bd131055f48cc88488b7b8df749407060daa07e2de6873b9e7"
+        }
+      ],
+      "related": [
+        {
+          "evidence_type": "related",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/sql-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 142,
+            "start_column": 20,
+            "end_line": null,
+            "end_column": 21,
+            "snippet": null
+          },
+          "message": "user-provided value",
+          "flow_index": null,
+          "thread_index": null,
+          "step_index": null,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-475216a892f76163dccd1fc9e95e5e0dcb32a1d072c1b6428749d25b4c9894f9",
+          "excerpt_ref": "ex-5c484a3e3e6fe09c7a512a372985740aff7a0ddd87e54153b59464bb46ca99e8"
+        }
+      ],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-ea527a7d7441e2b11700",
+      "title": "Reflected server-side cross-site scripting",
+      "severity": "high",
+      "confidence": "high",
+      "cwes": [
+        "CWE-79",
+        "CWE-116"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "codeql-cli",
+        "rule_id": "py/reflective-xss",
+        "location": {
+          "path": "api/extra.py",
+          "start_line": 145,
+          "start_column": 12,
+          "end_line": null,
+          "end_column": 90,
+          "snippet": null
+        },
+        "message": "Cross-site scripting vulnerability due to a [user-provided value](1).",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-a8c8d9148f5e4ee9d3fd",
+        "symbol_ref": "sym-475216a892f76163dccd1fc9e95e5e0dcb32a1d072c1b6428749d25b4c9894f9",
+        "excerpt_ref": "ex-7a3dcda98b8ba7e84d84f9fdd2bc5473be7f80d3c3b048c63a0b65128eeed3b7"
+      },
+      "code_flow": [
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/reflective-xss",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 142,
+            "start_column": 20,
+            "end_line": null,
+            "end_column": 21,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for q",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 0,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-475216a892f76163dccd1fc9e95e5e0dcb32a1d072c1b6428749d25b4c9894f9",
+          "excerpt_ref": "ex-5c484a3e3e6fe09c7a512a372985740aff7a0ddd87e54153b59464bb46ca99e8"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/reflective-xss",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 145,
+            "start_column": 12,
+            "end_line": null,
+            "end_column": 90,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for BinaryExpr",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 1,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-475216a892f76163dccd1fc9e95e5e0dcb32a1d072c1b6428749d25b4c9894f9",
+          "excerpt_ref": "ex-7a3dcda98b8ba7e84d84f9fdd2bc5473be7f80d3c3b048c63a0b65128eeed3b7"
+        }
+      ],
+      "related": [
+        {
+          "evidence_type": "related",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/reflective-xss",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 142,
+            "start_column": 20,
+            "end_line": null,
+            "end_column": 21,
+            "snippet": null
+          },
+          "message": "user-provided value",
+          "flow_index": null,
+          "thread_index": null,
+          "step_index": null,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-475216a892f76163dccd1fc9e95e5e0dcb32a1d072c1b6428749d25b4c9894f9",
+          "excerpt_ref": "ex-5c484a3e3e6fe09c7a512a372985740aff7a0ddd87e54153b59464bb46ca99e8"
+        }
+      ],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-f4eaf141df049c63545d",
+      "title": "Uncontrolled data used in path expression",
+      "severity": "high",
+      "confidence": "high",
+      "cwes": [
+        "CWE-22",
+        "CWE-23",
+        "CWE-36",
+        "CWE-73",
+        "CWE-99"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "codeql-cli",
+        "rule_id": "py/path-injection",
+        "location": {
+          "path": "api/extra.py",
+          "start_line": 212,
+          "start_column": 13,
+          "end_line": null,
+          "end_column": 36,
+          "snippet": null
+        },
+        "message": "This path depends on a [user-provided value](1).",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-480ccba498d117b3450e",
+        "symbol_ref": "sym-a1447c5c8b2c76ea695561cb436aca5451220720d73678a5c754fbcfcb2b26c6",
+        "excerpt_ref": "ex-517b0af2004fb60de55acbff97e6ec12a5f7772b0c68c060c65ee4fcbcdac545"
+      },
+      "code_flow": [
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/path-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 211,
+            "start_column": 15,
+            "end_line": null,
+            "end_column": 19,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for name",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 0,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-a1447c5c8b2c76ea695561cb436aca5451220720d73678a5c754fbcfcb2b26c6",
+          "excerpt_ref": "ex-5b43e4c3d5cf91f598ec310581092b62b6ad3feb3ff6246b1928aea035268311"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/path-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 212,
+            "start_column": 13,
+            "end_line": null,
+            "end_column": 36,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for BinaryExpr",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 1,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-a1447c5c8b2c76ea695561cb436aca5451220720d73678a5c754fbcfcb2b26c6",
+          "excerpt_ref": "ex-517b0af2004fb60de55acbff97e6ec12a5f7772b0c68c060c65ee4fcbcdac545"
+        }
+      ],
+      "related": [
+        {
+          "evidence_type": "related",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/path-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 211,
+            "start_column": 15,
+            "end_line": null,
+            "end_column": 19,
+            "snippet": null
+          },
+          "message": "user-provided value",
+          "flow_index": null,
+          "thread_index": null,
+          "step_index": null,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-a1447c5c8b2c76ea695561cb436aca5451220720d73678a5c754fbcfcb2b26c6",
+          "excerpt_ref": "ex-5b43e4c3d5cf91f598ec310581092b62b6ad3feb3ff6246b1928aea035268311"
+        }
+      ],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-83d97da4516adf20e20f",
+      "title": "Uncontrolled data used in path expression",
+      "severity": "high",
+      "confidence": "high",
+      "cwes": [
+        "CWE-22",
+        "CWE-23",
+        "CWE-36",
+        "CWE-73",
+        "CWE-99"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "codeql-cli",
+        "rule_id": "py/path-injection",
+        "location": {
+          "path": "api/extra.py",
+          "start_line": 213,
+          "start_column": 56,
+          "end_line": null,
+          "end_column": 60,
+          "snippet": null
+        },
+        "message": "This path depends on a [user-provided value](1).",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-26bd24fa5794fd60d9e9",
+        "symbol_ref": "sym-a1447c5c8b2c76ea695561cb436aca5451220720d73678a5c754fbcfcb2b26c6",
+        "excerpt_ref": "ex-b2526cfeeee89a72cca4eaa8b411a36d3c1f484ea54ba5751c5c1563e1396c91"
+      },
+      "code_flow": [
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/path-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 211,
+            "start_column": 15,
+            "end_line": null,
+            "end_column": 19,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for name",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 0,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-a1447c5c8b2c76ea695561cb436aca5451220720d73678a5c754fbcfcb2b26c6",
+          "excerpt_ref": "ex-5b43e4c3d5cf91f598ec310581092b62b6ad3feb3ff6246b1928aea035268311"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/path-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 212,
+            "start_column": 5,
+            "end_line": null,
+            "end_column": 9,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for file",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 1,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-a1447c5c8b2c76ea695561cb436aca5451220720d73678a5c754fbcfcb2b26c6",
+          "excerpt_ref": "ex-517b0af2004fb60de55acbff97e6ec12a5f7772b0c68c060c65ee4fcbcdac545"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/path-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 213,
+            "start_column": 56,
+            "end_line": null,
+            "end_column": 60,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for file",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 2,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-a1447c5c8b2c76ea695561cb436aca5451220720d73678a5c754fbcfcb2b26c6",
+          "excerpt_ref": "ex-b2526cfeeee89a72cca4eaa8b411a36d3c1f484ea54ba5751c5c1563e1396c91"
+        }
+      ],
+      "related": [
+        {
+          "evidence_type": "related",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/path-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 211,
+            "start_column": 15,
+            "end_line": null,
+            "end_column": 19,
+            "snippet": null
+          },
+          "message": "user-provided value",
+          "flow_index": null,
+          "thread_index": null,
+          "step_index": null,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-a1447c5c8b2c76ea695561cb436aca5451220720d73678a5c754fbcfcb2b26c6",
+          "excerpt_ref": "ex-5b43e4c3d5cf91f598ec310581092b62b6ad3feb3ff6246b1928aea035268311"
+        }
+      ],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-b527b3ed30e57aac5ec5",
+      "title": "Uncontrolled data used in path expression",
+      "severity": "high",
+      "confidence": "high",
+      "cwes": [
+        "CWE-22",
+        "CWE-23",
+        "CWE-36",
+        "CWE-73",
+        "CWE-99"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "codeql-cli",
+        "rule_id": "py/path-injection",
+        "location": {
+          "path": "api/extra.py",
+          "start_line": 215,
+          "start_column": 21,
+          "end_line": null,
+          "end_column": 25,
+          "snippet": null
+        },
+        "message": "This path depends on a [user-provided value](1).",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-aa95c189edc76290622b",
+        "symbol_ref": "sym-a1447c5c8b2c76ea695561cb436aca5451220720d73678a5c754fbcfcb2b26c6",
+        "excerpt_ref": "ex-cfe2ca9b6faf566a0f7ee33cda5188e7f27bcb176193488b00abfb887feb6303"
+      },
+      "code_flow": [
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/path-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 211,
+            "start_column": 15,
+            "end_line": null,
+            "end_column": 19,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for name",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 0,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-a1447c5c8b2c76ea695561cb436aca5451220720d73678a5c754fbcfcb2b26c6",
+          "excerpt_ref": "ex-5b43e4c3d5cf91f598ec310581092b62b6ad3feb3ff6246b1928aea035268311"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/path-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 212,
+            "start_column": 5,
+            "end_line": null,
+            "end_column": 9,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for file",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 1,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-a1447c5c8b2c76ea695561cb436aca5451220720d73678a5c754fbcfcb2b26c6",
+          "excerpt_ref": "ex-517b0af2004fb60de55acbff97e6ec12a5f7772b0c68c060c65ee4fcbcdac545"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/path-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 215,
+            "start_column": 21,
+            "end_line": null,
+            "end_column": 25,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for file",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 2,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-a1447c5c8b2c76ea695561cb436aca5451220720d73678a5c754fbcfcb2b26c6",
+          "excerpt_ref": "ex-cfe2ca9b6faf566a0f7ee33cda5188e7f27bcb176193488b00abfb887feb6303"
+        }
+      ],
+      "related": [
+        {
+          "evidence_type": "related",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/path-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 211,
+            "start_column": 15,
+            "end_line": null,
+            "end_column": 19,
+            "snippet": null
+          },
+          "message": "user-provided value",
+          "flow_index": null,
+          "thread_index": null,
+          "step_index": null,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-a1447c5c8b2c76ea695561cb436aca5451220720d73678a5c754fbcfcb2b26c6",
+          "excerpt_ref": "ex-5b43e4c3d5cf91f598ec310581092b62b6ad3feb3ff6246b1928aea035268311"
+        }
+      ],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-24d14609e3893220ea16",
+      "title": "Uncontrolled data used in path expression",
+      "severity": "high",
+      "confidence": "high",
+      "cwes": [
+        "CWE-22",
+        "CWE-23",
+        "CWE-36",
+        "CWE-73",
+        "CWE-99"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "codeql-cli",
+        "rule_id": "py/path-injection",
+        "location": {
+          "path": "api/extra.py",
+          "start_line": 221,
+          "start_column": 13,
+          "end_line": null,
+          "end_column": 24,
+          "snippet": null
+        },
+        "message": "This path depends on a [user-provided value](1).",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-ac18ed89b1a00ae2c8bf",
+        "symbol_ref": "sym-bc96266daf214ac9b26a084094dd45eb2d38eabc27eeeb0b5596fd1ab3e209f4",
+        "excerpt_ref": "ex-1ac48491e57c26208cdda924f99044aa7a19087381c2e9cbf4dfc7c7d84ce507"
+      },
+      "code_flow": [
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/path-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 219,
+            "start_column": 24,
+            "end_line": null,
+            "end_column": 28,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for name",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 0,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-bc96266daf214ac9b26a084094dd45eb2d38eabc27eeeb0b5596fd1ab3e209f4",
+          "excerpt_ref": "ex-074e33809a0718bd1d262b367984db57cf6f7f0ec4ed3c88cf6d475eb0c6c743"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/path-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 221,
+            "start_column": 13,
+            "end_line": null,
+            "end_column": 24,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for BinaryExpr",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 1,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-bc96266daf214ac9b26a084094dd45eb2d38eabc27eeeb0b5596fd1ab3e209f4",
+          "excerpt_ref": "ex-1ac48491e57c26208cdda924f99044aa7a19087381c2e9cbf4dfc7c7d84ce507"
+        }
+      ],
+      "related": [
+        {
+          "evidence_type": "related",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/path-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 219,
+            "start_column": 24,
+            "end_line": null,
+            "end_column": 28,
+            "snippet": null
+          },
+          "message": "user-provided value",
+          "flow_index": null,
+          "thread_index": null,
+          "step_index": null,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-bc96266daf214ac9b26a084094dd45eb2d38eabc27eeeb0b5596fd1ab3e209f4",
+          "excerpt_ref": "ex-074e33809a0718bd1d262b367984db57cf6f7f0ec4ed3c88cf6d475eb0c6c743"
+        }
+      ],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-794dcb4921076779cef0",
+      "title": "Uncontrolled data used in path expression",
+      "severity": "high",
+      "confidence": "high",
+      "cwes": [
+        "CWE-22",
+        "CWE-23",
+        "CWE-36",
+        "CWE-73",
+        "CWE-99"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "codeql-cli",
+        "rule_id": "py/path-injection",
+        "location": {
+          "path": "api/extra.py",
+          "start_line": 222,
+          "start_column": 45,
+          "end_line": null,
+          "end_column": 49,
+          "snippet": null
+        },
+        "message": "This path depends on a [user-provided value](1).",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-2f756e27fddc389636a8",
+        "symbol_ref": "sym-bc96266daf214ac9b26a084094dd45eb2d38eabc27eeeb0b5596fd1ab3e209f4",
+        "excerpt_ref": "ex-8c0a7f9d4c72eea4427ece9387023bb9fc9cde80df759600491fcf52c6ee2e17"
+      },
+      "code_flow": [
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/path-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 219,
+            "start_column": 24,
+            "end_line": null,
+            "end_column": 28,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for name",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 0,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-bc96266daf214ac9b26a084094dd45eb2d38eabc27eeeb0b5596fd1ab3e209f4",
+          "excerpt_ref": "ex-074e33809a0718bd1d262b367984db57cf6f7f0ec4ed3c88cf6d475eb0c6c743"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/path-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 221,
+            "start_column": 5,
+            "end_line": null,
+            "end_column": 9,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for file",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 1,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-bc96266daf214ac9b26a084094dd45eb2d38eabc27eeeb0b5596fd1ab3e209f4",
+          "excerpt_ref": "ex-1ac48491e57c26208cdda924f99044aa7a19087381c2e9cbf4dfc7c7d84ce507"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/path-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 222,
+            "start_column": 45,
+            "end_line": null,
+            "end_column": 49,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for file",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 2,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-bc96266daf214ac9b26a084094dd45eb2d38eabc27eeeb0b5596fd1ab3e209f4",
+          "excerpt_ref": "ex-8c0a7f9d4c72eea4427ece9387023bb9fc9cde80df759600491fcf52c6ee2e17"
+        }
+      ],
+      "related": [
+        {
+          "evidence_type": "related",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/path-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 219,
+            "start_column": 24,
+            "end_line": null,
+            "end_column": 28,
+            "snippet": null
+          },
+          "message": "user-provided value",
+          "flow_index": null,
+          "thread_index": null,
+          "step_index": null,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-bc96266daf214ac9b26a084094dd45eb2d38eabc27eeeb0b5596fd1ab3e209f4",
+          "excerpt_ref": "ex-074e33809a0718bd1d262b367984db57cf6f7f0ec4ed3c88cf6d475eb0c6c743"
+        }
+      ],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-b3c734b4cef8dd70fce0",
+      "title": "Uncontrolled data used in path expression",
+      "severity": "high",
+      "confidence": "high",
+      "cwes": [
+        "CWE-22",
+        "CWE-23",
+        "CWE-36",
+        "CWE-73",
+        "CWE-99"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "codeql-cli",
+        "rule_id": "py/path-injection",
+        "location": {
+          "path": "api/extra.py",
+          "start_line": 224,
+          "start_column": 21,
+          "end_line": null,
+          "end_column": 25,
+          "snippet": null
+        },
+        "message": "This path depends on a [user-provided value](1).",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-603f6a08a677ccbb0c42",
+        "symbol_ref": "sym-bc96266daf214ac9b26a084094dd45eb2d38eabc27eeeb0b5596fd1ab3e209f4",
+        "excerpt_ref": "ex-642fb1021a070cbc87ec2b81ad637fe5a02a5276ad480624c7ec52369b2ff674"
+      },
+      "code_flow": [
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/path-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 219,
+            "start_column": 24,
+            "end_line": null,
+            "end_column": 28,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for name",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 0,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-bc96266daf214ac9b26a084094dd45eb2d38eabc27eeeb0b5596fd1ab3e209f4",
+          "excerpt_ref": "ex-074e33809a0718bd1d262b367984db57cf6f7f0ec4ed3c88cf6d475eb0c6c743"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/path-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 221,
+            "start_column": 5,
+            "end_line": null,
+            "end_column": 9,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for file",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 1,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-bc96266daf214ac9b26a084094dd45eb2d38eabc27eeeb0b5596fd1ab3e209f4",
+          "excerpt_ref": "ex-1ac48491e57c26208cdda924f99044aa7a19087381c2e9cbf4dfc7c7d84ce507"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/path-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 224,
+            "start_column": 21,
+            "end_line": null,
+            "end_column": 25,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for file",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 2,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-bc96266daf214ac9b26a084094dd45eb2d38eabc27eeeb0b5596fd1ab3e209f4",
+          "excerpt_ref": "ex-642fb1021a070cbc87ec2b81ad637fe5a02a5276ad480624c7ec52369b2ff674"
+        }
+      ],
+      "related": [
+        {
+          "evidence_type": "related",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/path-injection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 219,
+            "start_column": 24,
+            "end_line": null,
+            "end_column": 28,
+            "snippet": null
+          },
+          "message": "user-provided value",
+          "flow_index": null,
+          "thread_index": null,
+          "step_index": null,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-bc96266daf214ac9b26a084094dd45eb2d38eabc27eeeb0b5596fd1ab3e209f4",
+          "excerpt_ref": "ex-074e33809a0718bd1d262b367984db57cf6f7f0ec4ed3c88cf6d475eb0c6c743"
+        }
+      ],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-51bf51abe866bf8d3d67",
+      "title": "URL redirection from remote source",
+      "severity": "medium",
+      "confidence": "high",
+      "cwes": [
+        "CWE-601"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "codeql-cli",
+        "rule_id": "py/url-redirection",
+        "location": {
+          "path": "api/extra.py",
+          "start_line": 617,
+          "start_column": 29,
+          "end_line": null,
+          "end_column": 33,
+          "snippet": null
+        },
+        "message": "Untrusted URL redirection depends on a [user-provided value](1).",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-ce61cc3f35454cc194f9",
+        "symbol_ref": "sym-5f440b9a4528e6ca3c4a9600cb97959b4d0cab0b9f8f72df11375e8d65c91632",
+        "excerpt_ref": "ex-4b26073771af03b839ef81ca02e6f74a2e2e6ee4e81081d5a24582b276d97f38"
+      },
+      "code_flow": [
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/url-redirection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 616,
+            "start_column": 17,
+            "end_line": null,
+            "end_column": 21,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for next",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 0,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-5f440b9a4528e6ca3c4a9600cb97959b4d0cab0b9f8f72df11375e8d65c91632",
+          "excerpt_ref": "ex-10bac3c33a50a74691b7f1d2cdeff1013533b715c54a64c46cd3af75787be5b7"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/url-redirection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 617,
+            "start_column": 29,
+            "end_line": null,
+            "end_column": 33,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for next",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 1,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-5f440b9a4528e6ca3c4a9600cb97959b4d0cab0b9f8f72df11375e8d65c91632",
+          "excerpt_ref": "ex-4b26073771af03b839ef81ca02e6f74a2e2e6ee4e81081d5a24582b276d97f38"
+        }
+      ],
+      "related": [
+        {
+          "evidence_type": "related",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/url-redirection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 616,
+            "start_column": 17,
+            "end_line": null,
+            "end_column": 21,
+            "snippet": null
+          },
+          "message": "user-provided value",
+          "flow_index": null,
+          "thread_index": null,
+          "step_index": null,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-5f440b9a4528e6ca3c4a9600cb97959b4d0cab0b9f8f72df11375e8d65c91632",
+          "excerpt_ref": "ex-10bac3c33a50a74691b7f1d2cdeff1013533b715c54a64c46cd3af75787be5b7"
+        }
+      ],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-f41fd10802e7c4dd22bb",
+      "title": "URL redirection from remote source",
+      "severity": "medium",
+      "confidence": "high",
+      "cwes": [
+        "CWE-601"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "codeql-cli",
+        "rule_id": "py/url-redirection",
+        "location": {
+          "path": "api/extra.py",
+          "start_line": 625,
+          "start_column": 29,
+          "end_line": null,
+          "end_column": 33,
+          "snippet": null
+        },
+        "message": "Untrusted URL redirection depends on a [user-provided value](1).",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-67c9c8a69323ffdda94c",
+        "symbol_ref": "sym-56d61921f95976fd39fb4f72d5b2f30d64f25552f8c95d8b1c7f6aab8720eda6",
+        "excerpt_ref": "ex-e4c1425ca32b36843786a8b39075b1740e6cb523847c9745c444d282bfc5fe9e"
+      },
+      "code_flow": [
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/url-redirection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 621,
+            "start_column": 23,
+            "end_line": null,
+            "end_column": 27,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for next",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 0,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-56d61921f95976fd39fb4f72d5b2f30d64f25552f8c95d8b1c7f6aab8720eda6",
+          "excerpt_ref": "ex-2be7c98f9d8fc0d2cf782630f2d33b93fdd1727772bc4cedfa45782df7c28118"
+        },
+        {
+          "evidence_type": "code_flow",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/url-redirection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 625,
+            "start_column": 29,
+            "end_line": null,
+            "end_column": 33,
+            "snippet": null
+          },
+          "message": "ControlFlowNode for next",
+          "flow_index": 0,
+          "thread_index": 0,
+          "step_index": 1,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-56d61921f95976fd39fb4f72d5b2f30d64f25552f8c95d8b1c7f6aab8720eda6",
+          "excerpt_ref": "ex-e4c1425ca32b36843786a8b39075b1740e6cb523847c9745c444d282bfc5fe9e"
+        }
+      ],
+      "related": [
+        {
+          "evidence_type": "related",
+          "scanner_id": "codeql-cli",
+          "rule_id": "py/url-redirection",
+          "location": {
+            "path": "api/extra.py",
+            "start_line": 621,
+            "start_column": 23,
+            "end_line": null,
+            "end_column": 27,
+            "snippet": null
+          },
+          "message": "user-provided value",
+          "flow_index": null,
+          "thread_index": null,
+          "step_index": null,
+          "collection_status": "collected",
+          "warning": null,
+          "source_finding_id": null,
+          "symbol_ref": "sym-56d61921f95976fd39fb4f72d5b2f30d64f25552f8c95d8b1c7f6aab8720eda6",
+          "excerpt_ref": "ex-2be7c98f9d8fc0d2cf782630f2d33b93fdd1727772bc4cedfa45782df7c28118"
+        }
+      ],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-58377a692410b6446bbd",
+      "title": "No HEALTHCHECK defined",
+      "severity": "low",
+      "confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "trivy"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "trivy",
+        "rule_id": "DS-0026",
+        "location": {
+          "path": "Dockerfile.api",
+          "start_line": null,
+          "start_column": null,
+          "end_line": null,
+          "end_column": null,
+          "snippet": null
+        },
+        "message": "Add HEALTHCHECK instruction in your Dockerfile",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "file_context",
+        "warning": null,
+        "source_finding_id": "finding-48290f2dcbee31dfed61",
+        "excerpt_ref": "ex-ab051c04f974afb4f6932bc118260a918113a9e441b90858211f1bd54c7414ba"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-0de42012099941c48e01",
+      "title": "No HEALTHCHECK defined",
+      "severity": "low",
+      "confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "trivy"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "trivy",
+        "rule_id": "DS-0026",
+        "location": {
+          "path": "Dockerfile.mock",
+          "start_line": null,
+          "start_column": null,
+          "end_line": null,
+          "end_column": null,
+          "snippet": null
+        },
+        "message": "Add HEALTHCHECK instruction in your Dockerfile",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "file_context",
+        "warning": null,
+        "source_finding_id": "finding-870cf9f254d0b4d8f63d",
+        "excerpt_ref": "ex-28fb7e999255792c7a27c00623ac5fd347747c228c5515ba49684ee9712296da"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-df83daf10f817c7aa965",
+      "title": "No HEALTHCHECK defined",
+      "severity": "low",
+      "confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "trivy"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "trivy",
+        "rule_id": "DS-0026",
+        "location": {
+          "path": "Dockerfile.worker",
+          "start_line": null,
+          "start_column": null,
+          "end_line": null,
+          "end_column": null,
+          "snippet": null
+        },
+        "message": "Add HEALTHCHECK instruction in your Dockerfile",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "file_context",
+        "warning": null,
+        "source_finding_id": "finding-668b40d0b72f4b4180cc",
+        "excerpt_ref": "ex-7cdb6adf2c38638868bd7bb69f3cbd939fcb6a44891d00a2e6b1bf6d3dabdf70"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-7711056ee3332442a201",
+      "title": "Dynamic Urllib Use Detected",
+      "severity": "low",
+      "confidence": "low",
+      "cwes": [
+        "CWE-939"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected",
+        "location": {
+          "path": "tests/test_smoke.py",
+          "start_line": 20,
+          "start_column": 10,
+          "end_line": 22,
+          "end_column": 6,
+          "snippet": null
+        },
+        "message": "Detected a dynamic value being used with urllib. urllib supports 'file://' schemes, so a dynamic value controlled by a malicious actor may allow them to read arbitrary files. Audit uses of urllib calls to ensure user data cannot control the URLs, or consider using the 'requests' library instead.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-6b5853a5c5dbc818ad2c",
+        "symbol_ref": "sym-e1796518c7b29589c594cb9d4727bf268e9ba35b6a72b0f845c72d01e4ae77e0",
+        "excerpt_ref": "ex-737e9b0a3b49b45cca60a9cf54e30c8182d3f92557faa7d9e7d371a079b45348"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-c150b78349615dd9bc2d",
+      "title": "Dynamic Urllib Use Detected",
+      "severity": "low",
+      "confidence": "low",
+      "cwes": [
+        "CWE-939"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected",
+        "location": {
+          "path": "worker/worker.py",
+          "start_line": 23,
+          "start_column": 14,
+          "end_line": 23,
+          "end_column": 56,
+          "snippet": null
+        },
+        "message": "Detected a dynamic value being used with urllib. urllib supports 'file://' schemes, so a dynamic value controlled by a malicious actor may allow them to read arbitrary files. Audit uses of urllib calls to ensure user data cannot control the URLs, or consider using the 'requests' library instead.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-a84e1037fb0b8a6e0a7e",
+        "symbol_ref": "sym-eaa8af82a7de9d4a76ac1c52c23e61a7b463b754926e7a19126a979757eaf3bf",
+        "excerpt_ref": "ex-a330203565c3888b977741f1a19132e466d4404bd4686afbfe3fa751663b60fa"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    }
+  ],
+  "warnings": [],
+  "coverage_gaps": [],
+  "summary": {
+    "input_findings": 19,
+    "contexts_created": 19,
+    "evidence_locations": 74,
+    "excerpts_collected": 74,
+    "files_read": 7,
+    "bytes_read": 45765,
+    "unavailable_locations": 0
+  },
+  "shared_excerpts": {
+    "ex-074e33809a0718bd1d262b367984db57cf6f7f0ec4ed3c88cf6d475eb0c6c743": {
+      "path": "api/extra.py",
+      "start_line": 215,
+      "end_line": 223,
+      "code": "215 |     return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")\n216 | \n217 | \n218 | @router.get(\"/files/verified\")\n219 | def verified_file_read(name: str) -> Response:\n220 |     root = (FILES / \"public\").resolve()\n221 |     file = (root / name).resolve()\n222 |     if not file.is_relative_to(root) or not file.is_file():\n223 |         raise HTTPException(404, \"File not found\")",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-07ed095e76ace3e44b6e931e2ef2d38ac6eea9893b148622ee1826d8c468befc": {
+      "path": "api/app.py",
+      "start_line": 167,
+      "end_line": 175,
+      "code": "167 | async def login(request: Request) -> dict[str, Any]:\n168 |     if \"application/json\" in request.headers.get(\"content-type\", \"\"):\n169 |         data = await request.json()\n170 |     else:\n171 |         data = await request.form()\n172 |     return _login(str(data.get(\"username\", \"\")), str(data.get(\"password\", \"\")))\n173 | \n174 | \n175 | @app.post(\"/auth/register\")",
+      "content_sha256": "d919824d206b836d33631237b3f7a04b0fb93af2f6d9126aa1c0bcf553a05e7d"
+    },
+    "ex-0ec161f970c985686661c76c9e9b6dfcdca8db40e57373ce9480262eddcba4e2": {
+      "path": "api/app.py",
+      "start_line": 126,
+      "end_line": 134,
+      "code": "126 |     payload: dict[str, Any] = {}\n127 |     run_as: str = \"user\"\n128 | \n129 | \n130 | def _login(username: str, password: str) -> dict[str, Any]:\n131 |     with connection() as conn:\n132 |         user = conn.execute(\n133 |             \"SELECT id,username,password,role,email FROM users WHERE username=%s\", (username,)\n134 |         ).fetchone()",
+      "content_sha256": "d919824d206b836d33631237b3f7a04b0fb93af2f6d9126aa1c0bcf553a05e7d"
+    },
+    "ex-10bac3c33a50a74691b7f1d2cdeff1013533b715c54a64c46cd3af75787be5b7": {
+      "path": "api/extra.py",
+      "start_line": 612,
+      "end_line": 620,
+      "code": "612 |     return {\"status\": \"changed\"}\n613 | \n614 | \n615 | @router.get(\"/auth/continue\")\n616 | def continue_to(next: str = \"/\") -> RedirectResponse:\n617 |     return RedirectResponse(next, status_code=302)\n618 | \n619 | \n620 | @router.get(\"/auth/continue/verified\")",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-1ac48491e57c26208cdda924f99044aa7a19087381c2e9cbf4dfc7c7d84ce507": {
+      "path": "api/extra.py",
+      "start_line": 217,
+      "end_line": 225,
+      "code": "217 | \n218 | @router.get(\"/files/verified\")\n219 | def verified_file_read(name: str) -> Response:\n220 |     root = (FILES / \"public\").resolve()\n221 |     file = (root / name).resolve()\n222 |     if not file.is_relative_to(root) or not file.is_file():\n223 |         raise HTTPException(404, \"File not found\")\n224 |     return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")\n225 | ",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-2520e696e63e13b1acb8b94512dcef504a4b679401700bb1d9d6ea076b1238c9": {
+      "path": "api/extra.py",
+      "start_line": 113,
+      "end_line": 121,
+      "code": "113 | \n114 | \n115 | @router.post(\"/auth/legacy-login\")\n116 | def legacy_login(body: Login) -> dict:\n117 |     query = f\"SELECT id,username,role FROM users WHERE username='{body.username}' AND password='{body.password}'\"\n118 |     with connection() as conn:\n119 |         row = conn.execute(query).fetchone()\n120 |     if not row:\n121 |         raise HTTPException(401, \"Invalid credentials\")",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-28fb7e999255792c7a27c00623ac5fd347747c228c5515ba49684ee9712296da": {
+      "path": "Dockerfile.mock",
+      "start_line": 1,
+      "end_line": 6,
+      "code": "1 | FROM python:3.12-slim\n2 | WORKDIR /app\n3 | COPY mock_external ./mock_external\n4 | USER 10001:10001\n5 | EXPOSE 9000\n6 | CMD [\"python\", \"-m\", \"mock_external.server\"]",
+      "content_sha256": "fd6862c44cc9f1acec9dfef4a6ccfc10b5b189298c4b2aba806bd2fa4243bf97"
+    },
+    "ex-2be7c98f9d8fc0d2cf782630f2d33b93fdd1727772bc4cedfa45782df7c28118": {
+      "path": "api/extra.py",
+      "start_line": 617,
+      "end_line": 625,
+      "code": "617 |     return RedirectResponse(next, status_code=302)\n618 | \n619 | \n620 | @router.get(\"/auth/continue/verified\")\n621 | def verified_continue(next: str = \"/\") -> RedirectResponse:\n622 |     parts = urlsplit(next)\n623 |     if not next.startswith(\"/\") or next.startswith(\"//\") or parts.scheme or parts.netloc:\n624 |         raise HTTPException(400, \"Local path required\")\n625 |     return RedirectResponse(next, status_code=302)",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-2ed66862f6d2add5a5536a6b80898df4fdb45dab509de9a702b07e90dc5be676": {
+      "path": "api/extra.py",
+      "start_line": 219,
+      "end_line": 224,
+      "code": "219 | def verified_file_read(name: str) -> Response:\n220 |     root = (FILES / \"public\").resolve()\n221 |     file = (root / name).resolve()\n222 |     if not file.is_relative_to(root) or not file.is_file():\n223 |         raise HTTPException(404, \"File not found\")\n224 |     return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-4b26073771af03b839ef81ca02e6f74a2e2e6ee4e81081d5a24582b276d97f38": {
+      "path": "api/extra.py",
+      "start_line": 613,
+      "end_line": 621,
+      "code": "613 | \n614 | \n615 | @router.get(\"/auth/continue\")\n616 | def continue_to(next: str = \"/\") -> RedirectResponse:\n617 |     return RedirectResponse(next, status_code=302)\n618 | \n619 | \n620 | @router.get(\"/auth/continue/verified\")\n621 | def verified_continue(next: str = \"/\") -> RedirectResponse:",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-517b0af2004fb60de55acbff97e6ec12a5f7772b0c68c060c65ee4fcbcdac545": {
+      "path": "api/extra.py",
+      "start_line": 208,
+      "end_line": 216,
+      "code": "208 | \n209 | \n210 | @router.get(\"/files\")\n211 | def file_read(name: str) -> Response:\n212 |     file = (FILES / \"public\" / name).resolve()\n213 |     if not file.is_relative_to(FILES.resolve()) or not file.is_file():\n214 |         raise HTTPException(404, \"File not found\")\n215 |     return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")\n216 | ",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-57de3d80e61e2728697088dbdd64c217fad63b1a034dcc009df2acc1ab122094": {
+      "path": "api/app.py",
+      "start_line": 165,
+      "end_line": 173,
+      "code": "165 | \n166 | @app.post(\"/auth/login\")\n167 | async def login(request: Request) -> dict[str, Any]:\n168 |     if \"application/json\" in request.headers.get(\"content-type\", \"\"):\n169 |         data = await request.json()\n170 |     else:\n171 |         data = await request.form()\n172 |     return _login(str(data.get(\"username\", \"\")), str(data.get(\"password\", \"\")))\n173 | ",
+      "content_sha256": "d919824d206b836d33631237b3f7a04b0fb93af2f6d9126aa1c0bcf553a05e7d"
+    },
+    "ex-57f623b026f422ead8b88d5ec9ed615fdae5101222a54d3a1ca580002d45cfdc": {
+      "path": "api/extra.py",
+      "start_line": 621,
+      "end_line": 625,
+      "code": "621 | def verified_continue(next: str = \"/\") -> RedirectResponse:\n622 |     parts = urlsplit(next)\n623 |     if not next.startswith(\"/\") or next.startswith(\"//\") or parts.scheme or parts.netloc:\n624 |         raise HTTPException(400, \"Local path required\")\n625 |     return RedirectResponse(next, status_code=302)",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-5b43e4c3d5cf91f598ec310581092b62b6ad3feb3ff6246b1928aea035268311": {
+      "path": "api/extra.py",
+      "start_line": 207,
+      "end_line": 215,
+      "code": "207 |     return {\"status\": \"authorized\"}\n208 | \n209 | \n210 | @router.get(\"/files\")\n211 | def file_read(name: str) -> Response:\n212 |     file = (FILES / \"public\" / name).resolve()\n213 |     if not file.is_relative_to(FILES.resolve()) or not file.is_file():\n214 |         raise HTTPException(404, \"File not found\")\n215 |     return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-5c484a3e3e6fe09c7a512a372985740aff7a0ddd87e54153b59464bb46ca99e8": {
+      "path": "api/extra.py",
+      "start_line": 138,
+      "end_line": 146,
+      "code": "138 |     return {\"access_token\": token, \"username\": row[\"username\"]}\n139 | \n140 | \n141 | @router.get(\"/catalog/search\", response_class=HTMLResponse)\n142 | def catalog_search(q: str = \"\") -> str:\n143 |     with connection() as conn:\n144 |         rows = conn.execute(f\"SELECT name FROM products WHERE name ILIKE '%{q}%'\").fetchall()\n145 |     return f\"<h1>Results for {q}</h1>\" + \"\".join(f\"<p>{row['name']}</p>\" for row in rows)\n146 | ",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-6151bfc5281334b673c82495f1c0435746879779c54dfa6e2a6e84e79e2dbcfd": {
+      "path": "api/extra.py",
+      "start_line": 115,
+      "end_line": 123,
+      "code": "115 | @router.post(\"/auth/legacy-login\")\n116 | def legacy_login(body: Login) -> dict:\n117 |     query = f\"SELECT id,username,role FROM users WHERE username='{body.username}' AND password='{body.password}'\"\n118 |     with connection() as conn:\n119 |         row = conn.execute(query).fetchone()\n120 |     if not row:\n121 |         raise HTTPException(401, \"Invalid credentials\")\n122 |     return {\"access_token\": make_token(row), \"username\": row[\"username\"]}\n123 | ",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-642fb1021a070cbc87ec2b81ad637fe5a02a5276ad480624c7ec52369b2ff674": {
+      "path": "api/extra.py",
+      "start_line": 220,
+      "end_line": 228,
+      "code": "220 |     root = (FILES / \"public\").resolve()\n221 |     file = (root / name).resolve()\n222 |     if not file.is_relative_to(root) or not file.is_file():\n223 |         raise HTTPException(404, \"File not found\")\n224 |     return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")\n225 | \n226 | \n227 | @router.get(\"/errors/query\")\n228 | def error_query() -> dict:",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-737e9b0a3b49b45cca60a9cf54e30c8182d3f92557faa7d9e7d371a079b45348": {
+      "path": "tests/test_smoke.py",
+      "start_line": 16,
+      "end_line": 24,
+      "code": "16 |     headers = {\"Content-Type\": \"application/json\"}\n17 |     if token:\n18 |         headers[\"Authorization\"] = f\"Bearer {token}\"\n19 |     data = json.dumps(body).encode() if body is not None else None\n20 |     with urllib.request.urlopen(\n21 |         urllib.request.Request(BASE + path, data=data, headers=headers, method=method), timeout=5\n22 |     ) as response:\n23 |         return response.status, json.loads(response.read())\n24 | ",
+      "content_sha256": "ea8929ebe093139bd2dacc29ba261cc3d0180d5e40c4d140ee47ff7be923c8b7"
+    },
+    "ex-78dd8bbd5f1fa7b59647a5c09fe1a953aec84e140d0bd5bb014754ff4aca6a14": {
+      "path": "api/app.py",
+      "start_line": 130,
+      "end_line": 138,
+      "code": "130 | def _login(username: str, password: str) -> dict[str, Any]:\n131 |     with connection() as conn:\n132 |         user = conn.execute(\n133 |             \"SELECT id,username,password,role,email FROM users WHERE username=%s\", (username,)\n134 |         ).fetchone()\n135 |     if not user or user[\"password\"] != password:\n136 |         raise HTTPException(401, \"Invalid credentials\")\n137 |     log.info(\"login user=%s app_secret=%s\", username, os.environ.get(\"APP_SECRET\", \"lab-only\"))\n138 |     return {\"access_token\": make_token(user), \"token_type\": \"bearer\", \"user\": user[\"username\"]}",
+      "content_sha256": "d919824d206b836d33631237b3f7a04b0fb93af2f6d9126aa1c0bcf553a05e7d"
+    },
+    "ex-7a3dcda98b8ba7e84d84f9fdd2bc5473be7f80d3c3b048c63a0b65128eeed3b7": {
+      "path": "api/extra.py",
+      "start_line": 141,
+      "end_line": 149,
+      "code": "141 | @router.get(\"/catalog/search\", response_class=HTMLResponse)\n142 | def catalog_search(q: str = \"\") -> str:\n143 |     with connection() as conn:\n144 |         rows = conn.execute(f\"SELECT name FROM products WHERE name ILIKE '%{q}%'\").fetchall()\n145 |     return f\"<h1>Results for {q}</h1>\" + \"\".join(f\"<p>{row['name']}</p>\" for row in rows)\n146 | \n147 | \n148 | @router.get(\"/catalog/query\", response_class=HTMLResponse)\n149 | def catalog_query(q: str = \"\") -> str:",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-7cdb6adf2c38638868bd7bb69f3cbd939fcb6a44891d00a2e6b1bf6d3dabdf70": {
+      "path": "Dockerfile.worker",
+      "start_line": 1,
+      "end_line": 7,
+      "code": "1 | FROM python:3.12-slim\n2 | WORKDIR /app\n3 | COPY requirements.txt .\n4 | RUN pip install --no-cache-dir -r requirements.txt\n5 | COPY worker ./worker\n6 | USER 10001:10001\n7 | CMD [\"python\", \"-m\", \"worker.worker\"]",
+      "content_sha256": "f893c54217d7f0c2910bd8b5f66962f6060008ecaf291a2d6c03a5b52c971db9"
+    },
+    "ex-84c56e62a2354cf4f44e58f2c18edc2e9815422029ac570baee699afcc73d88d": {
+      "path": "api/extra.py",
+      "start_line": 616,
+      "end_line": 617,
+      "code": "616 | def continue_to(next: str = \"/\") -> RedirectResponse:\n617 |     return RedirectResponse(next, status_code=302)",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-8c0a7f9d4c72eea4427ece9387023bb9fc9cde80df759600491fcf52c6ee2e17": {
+      "path": "api/extra.py",
+      "start_line": 218,
+      "end_line": 226,
+      "code": "218 | @router.get(\"/files/verified\")\n219 | def verified_file_read(name: str) -> Response:\n220 |     root = (FILES / \"public\").resolve()\n221 |     file = (root / name).resolve()\n222 |     if not file.is_relative_to(root) or not file.is_file():\n223 |         raise HTTPException(404, \"File not found\")\n224 |     return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")\n225 | \n226 | ",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-925a282d7b8ea9f2480af6c97f8129fa6c1fdab73a31e6015183ccbb6b9c7133": {
+      "path": "worker/worker.py",
+      "start_line": 14,
+      "end_line": 25,
+      "code": "14 | def run_job(job: dict) -> dict:\n15 |     if job[\"kind\"] == \"webhook\":\n16 |         payload = job[\"payload\"]\n17 |         request = urllib.request.Request(\n18 |             payload[\"target_url\"],\n19 |             data=json.dumps(payload.get(\"body\", {})).encode(),\n20 |             headers={\"Content-Type\": \"application/json\"},\n21 |             method=\"POST\",\n22 |         )\n23 |         with urllib.request.urlopen(request, timeout=3) as response:\n24 |             return {\"status\": response.status, \"worker_identity\": job[\"run_as\"]}\n25 |     return {\"status\": \"completed\", \"kind\": job[\"kind\"], \"worker_identity\": job[\"run_as\"]}",
+      "content_sha256": "eb0310a5d6500a489892274c80985c565935b938b4890e3c418e659540abae1f"
+    },
+    "ex-9459790f1d1611f290a14d4daa90ec7982142f995992aff55b6d3073da912483": {
+      "path": "api/app.py",
+      "start_line": 22,
+      "end_line": 30,
+      "code": "22 | \n23 | app = FastAPI(title=\"Verdict Comprehensive Lab\", version=\"1.0.0\")\n24 | app.add_middleware(\n25 |     CORSMiddleware,\n26 |     allow_origins=[\"*\"],\n27 |     allow_credentials=True,\n28 |     allow_methods=[\"*\"],\n29 |     allow_headers=[\"*\"],\n30 | )",
+      "content_sha256": "d919824d206b836d33631237b3f7a04b0fb93af2f6d9126aa1c0bcf553a05e7d"
+    },
+    "ex-a16c1185c0a3ef915d6ed7573e6dcacfee4f99e00ce6663a726b1d82ace18caf": {
+      "path": "tests/test_smoke.py",
+      "start_line": 15,
+      "end_line": 23,
+      "code": "15 | def request(method: str, path: str, body: dict | None = None, token: str | None = None):\n16 |     headers = {\"Content-Type\": \"application/json\"}\n17 |     if token:\n18 |         headers[\"Authorization\"] = f\"Bearer {token}\"\n19 |     data = json.dumps(body).encode() if body is not None else None\n20 |     with urllib.request.urlopen(\n21 |         urllib.request.Request(BASE + path, data=data, headers=headers, method=method), timeout=5\n22 |     ) as response:\n23 |         return response.status, json.loads(response.read())",
+      "content_sha256": "ea8929ebe093139bd2dacc29ba261cc3d0180d5e40c4d140ee47ff7be923c8b7"
+    },
+    "ex-a330203565c3888b977741f1a19132e466d4404bd4686afbfe3fa751663b60fa": {
+      "path": "worker/worker.py",
+      "start_line": 19,
+      "end_line": 27,
+      "code": "19 |             data=json.dumps(payload.get(\"body\", {})).encode(),\n20 |             headers={\"Content-Type\": \"application/json\"},\n21 |             method=\"POST\",\n22 |         )\n23 |         with urllib.request.urlopen(request, timeout=3) as response:\n24 |             return {\"status\": response.status, \"worker_identity\": job[\"run_as\"]}\n25 |     return {\"status\": \"completed\", \"kind\": job[\"kind\"], \"worker_identity\": job[\"run_as\"]}\n26 | \n27 | ",
+      "content_sha256": "eb0310a5d6500a489892274c80985c565935b938b4890e3c418e659540abae1f"
+    },
+    "ex-ab051c04f974afb4f6932bc118260a918113a9e441b90858211f1bd54c7414ba": {
+      "path": "Dockerfile.api",
+      "start_line": 1,
+      "end_line": 8,
+      "code": "1 | FROM python:3.12-slim\n2 | WORKDIR /app\n3 | COPY requirements.txt .\n4 | RUN pip install --no-cache-dir -r requirements.txt\n5 | COPY api ./api\n6 | USER 10001:10001\n7 | EXPOSE 8091\n8 | CMD [\"uvicorn\", \"api.app:app\", \"--host\", \"0.0.0.0\", \"--port\", \"8091\"]",
+      "content_sha256": "40ad1b33d327fab8e542175ac44dfc7ceddbe43544e024d89be2df06fed90032"
+    },
+    "ex-ab4ac1f3b30b517d08543db4c3e9861796f81830a7208118cca6ec627e52d6b6": {
+      "path": "api/extra.py",
+      "start_line": 211,
+      "end_line": 215,
+      "code": "211 | def file_read(name: str) -> Response:\n212 |     file = (FILES / \"public\" / name).resolve()\n213 |     if not file.is_relative_to(FILES.resolve()) or not file.is_file():\n214 |         raise HTTPException(404, \"File not found\")\n215 |     return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-b2526cfeeee89a72cca4eaa8b411a36d3c1f484ea54ba5751c5c1563e1396c91": {
+      "path": "api/extra.py",
+      "start_line": 209,
+      "end_line": 217,
+      "code": "209 | \n210 | @router.get(\"/files\")\n211 | def file_read(name: str) -> Response:\n212 |     file = (FILES / \"public\" / name).resolve()\n213 |     if not file.is_relative_to(FILES.resolve()) or not file.is_file():\n214 |         raise HTTPException(404, \"File not found\")\n215 |     return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")\n216 | \n217 | ",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-b4c6dc1ac7e8270655f2c5cb8b95ab649441d9679cd5eae2c9e629f93d15bfa8": {
+      "path": "api/extra.py",
+      "start_line": 112,
+      "end_line": 120,
+      "code": "112 |     return {\"id\": user[\"id\"], \"username\": user[\"username\"], \"email\": user[\"email\"]}\n113 | \n114 | \n115 | @router.post(\"/auth/legacy-login\")\n116 | def legacy_login(body: Login) -> dict:\n117 |     query = f\"SELECT id,username,role FROM users WHERE username='{body.username}' AND password='{body.password}'\"\n118 |     with connection() as conn:\n119 |         row = conn.execute(query).fetchone()\n120 |     if not row:",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-c0c441a93aaeb5e9cfa64a6594a22a24e640939c6a995b2fa26b827f4745c75e": {
+      "path": "api/app.py",
+      "start_line": 133,
+      "end_line": 141,
+      "code": "133 |             \"SELECT id,username,password,role,email FROM users WHERE username=%s\", (username,)\n134 |         ).fetchone()\n135 |     if not user or user[\"password\"] != password:\n136 |         raise HTTPException(401, \"Invalid credentials\")\n137 |     log.info(\"login user=%s app_secret=%s\", username, os.environ.get(\"APP_SECRET\", \"lab-only\"))\n138 |     return {\"access_token\": make_token(user), \"token_type\": \"bearer\", \"user\": user[\"username\"]}\n139 | \n140 | \n141 | @app.on_event(\"startup\")",
+      "content_sha256": "d919824d206b836d33631237b3f7a04b0fb93af2f6d9126aa1c0bcf553a05e7d"
+    },
+    "ex-c12cb8ad79d1a5e91c0897059293bf3791733f8eb8e1b4c90b2f42dda57c7026": {
+      "path": "api/app.py",
+      "start_line": 168,
+      "end_line": 176,
+      "code": "168 |     if \"application/json\" in request.headers.get(\"content-type\", \"\"):\n169 |         data = await request.json()\n170 |     else:\n171 |         data = await request.form()\n172 |     return _login(str(data.get(\"username\", \"\")), str(data.get(\"password\", \"\")))\n173 | \n174 | \n175 | @app.post(\"/auth/register\")\n176 | def register(body: LoginBody) -> dict[str, Any]:",
+      "content_sha256": "d919824d206b836d33631237b3f7a04b0fb93af2f6d9126aa1c0bcf553a05e7d"
+    },
+    "ex-cfe2ca9b6faf566a0f7ee33cda5188e7f27bcb176193488b00abfb887feb6303": {
+      "path": "api/extra.py",
+      "start_line": 211,
+      "end_line": 219,
+      "code": "211 | def file_read(name: str) -> Response:\n212 |     file = (FILES / \"public\" / name).resolve()\n213 |     if not file.is_relative_to(FILES.resolve()) or not file.is_file():\n214 |         raise HTTPException(404, \"File not found\")\n215 |     return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")\n216 | \n217 | \n218 | @router.get(\"/files/verified\")\n219 | def verified_file_read(name: str) -> Response:",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-e445e8aae48e667c697308edf96d7d39a4817119ded02efb6cfb204800ac16e7": {
+      "path": "api/extra.py",
+      "start_line": 116,
+      "end_line": 122,
+      "code": "116 | def legacy_login(body: Login) -> dict:\n117 |     query = f\"SELECT id,username,role FROM users WHERE username='{body.username}' AND password='{body.password}'\"\n118 |     with connection() as conn:\n119 |         row = conn.execute(query).fetchone()\n120 |     if not row:\n121 |         raise HTTPException(401, \"Invalid credentials\")\n122 |     return {\"access_token\": make_token(row), \"username\": row[\"username\"]}",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-e4c1425ca32b36843786a8b39075b1740e6cb523847c9745c444d282bfc5fe9e": {
+      "path": "api/extra.py",
+      "start_line": 621,
+      "end_line": 629,
+      "code": "621 | def verified_continue(next: str = \"/\") -> RedirectResponse:\n622 |     parts = urlsplit(next)\n623 |     if not next.startswith(\"/\") or next.startswith(\"//\") or parts.scheme or parts.netloc:\n624 |         raise HTTPException(400, \"Local path required\")\n625 |     return RedirectResponse(next, status_code=302)\n626 | \n627 | \n628 | @router.post(\"/integrations/hook\")\n629 | async def receive_hook(request: Request) -> dict:",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-ec662823b579c818c32ea9b652c9f742b967b7e8cedde8d0aa6cf3b49257736a": {
+      "path": "api/app.py",
+      "start_line": 167,
+      "end_line": 172,
+      "code": "167 | async def login(request: Request) -> dict[str, Any]:\n168 |     if \"application/json\" in request.headers.get(\"content-type\", \"\"):\n169 |         data = await request.json()\n170 |     else:\n171 |         data = await request.form()\n172 |     return _login(str(data.get(\"username\", \"\")), str(data.get(\"password\", \"\")))",
+      "content_sha256": "d919824d206b836d33631237b3f7a04b0fb93af2f6d9126aa1c0bcf553a05e7d"
+    },
+    "ex-f15f72533f9396c2b30ddd4794b4c00e5f0621a7fe0c277d1e3555b017e4b4c2": {
+      "path": "api/app.py",
+      "start_line": 163,
+      "end_line": 171,
+      "code": "163 |     return {\"service\": \"verdict-comprehensive-lab\", \"health\": \"/healthz\"}\n164 | \n165 | \n166 | @app.post(\"/auth/login\")\n167 | async def login(request: Request) -> dict[str, Any]:\n168 |     if \"application/json\" in request.headers.get(\"content-type\", \"\"):\n169 |         data = await request.json()\n170 |     else:\n171 |         data = await request.form()",
+      "content_sha256": "d919824d206b836d33631237b3f7a04b0fb93af2f6d9126aa1c0bcf553a05e7d"
+    },
+    "ex-f890974ec8d3a7bd131055f48cc88488b7b8df749407060daa07e2de6873b9e7": {
+      "path": "api/extra.py",
+      "start_line": 140,
+      "end_line": 148,
+      "code": "140 | \n141 | @router.get(\"/catalog/search\", response_class=HTMLResponse)\n142 | def catalog_search(q: str = \"\") -> str:\n143 |     with connection() as conn:\n144 |         rows = conn.execute(f\"SELECT name FROM products WHERE name ILIKE '%{q}%'\").fetchall()\n145 |     return f\"<h1>Results for {q}</h1>\" + \"\".join(f\"<p>{row['name']}</p>\" for row in rows)\n146 | \n147 | \n148 | @router.get(\"/catalog/query\", response_class=HTMLResponse)",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    },
+    "ex-f899cb1c299f84c3a7cf543673bb5f7d1ca588d0fc0ec240f40aed5e566d85e5": {
+      "path": "api/extra.py",
+      "start_line": 142,
+      "end_line": 145,
+      "code": "142 | def catalog_search(q: str = \"\") -> str:\n143 |     with connection() as conn:\n144 |         rows = conn.execute(f\"SELECT name FROM products WHERE name ILIKE '%{q}%'\").fetchall()\n145 |     return f\"<h1>Results for {q}</h1>\" + \"\".join(f\"<p>{row['name']}</p>\" for row in rows)",
+      "content_sha256": "c5d4c9222d59836aa765ff804db2ba072d7fadd729e26788b1f7f8af50fec75c"
+    }
+  },
+  "shared_symbols": {
+    "sym-2017ba326600217e189954a712db26ac01e36a3ec2f3a3d65ab511d2d1a47f0c": {
+      "language": "python",
+      "kind": "function",
+      "name": "_login",
+      "qualified_name": "_login",
+      "start_line": 130,
+      "end_line": 138,
+      "truncated": false,
+      "excerpt_ref": "ex-78dd8bbd5f1fa7b59647a5c09fe1a953aec84e140d0bd5bb014754ff4aca6a14"
+    },
+    "sym-475216a892f76163dccd1fc9e95e5e0dcb32a1d072c1b6428749d25b4c9894f9": {
+      "language": "python",
+      "kind": "function",
+      "name": "catalog_search",
+      "qualified_name": "catalog_search",
+      "start_line": 142,
+      "end_line": 145,
+      "truncated": false,
+      "excerpt_ref": "ex-f899cb1c299f84c3a7cf543673bb5f7d1ca588d0fc0ec240f40aed5e566d85e5"
+    },
+    "sym-56d61921f95976fd39fb4f72d5b2f30d64f25552f8c95d8b1c7f6aab8720eda6": {
+      "language": "python",
+      "kind": "function",
+      "name": "verified_continue",
+      "qualified_name": "verified_continue",
+      "start_line": 621,
+      "end_line": 625,
+      "truncated": false,
+      "excerpt_ref": "ex-57f623b026f422ead8b88d5ec9ed615fdae5101222a54d3a1ca580002d45cfdc"
+    },
+    "sym-5f440b9a4528e6ca3c4a9600cb97959b4d0cab0b9f8f72df11375e8d65c91632": {
+      "language": "python",
+      "kind": "function",
+      "name": "continue_to",
+      "qualified_name": "continue_to",
+      "start_line": 616,
+      "end_line": 617,
+      "truncated": false,
+      "excerpt_ref": "ex-84c56e62a2354cf4f44e58f2c18edc2e9815422029ac570baee699afcc73d88d"
+    },
+    "sym-70be67d61b107e5e96bab2839c493417307ce1a14e69bc38d4c5ab7fb625e327": {
+      "language": "python",
+      "kind": "function",
+      "name": "legacy_login",
+      "qualified_name": "legacy_login",
+      "start_line": 116,
+      "end_line": 122,
+      "truncated": false,
+      "excerpt_ref": "ex-e445e8aae48e667c697308edf96d7d39a4817119ded02efb6cfb204800ac16e7"
+    },
+    "sym-a1447c5c8b2c76ea695561cb436aca5451220720d73678a5c754fbcfcb2b26c6": {
+      "language": "python",
+      "kind": "function",
+      "name": "file_read",
+      "qualified_name": "file_read",
+      "start_line": 211,
+      "end_line": 215,
+      "truncated": false,
+      "excerpt_ref": "ex-ab4ac1f3b30b517d08543db4c3e9861796f81830a7208118cca6ec627e52d6b6"
+    },
+    "sym-a2dc6cc18425c0731eabbe59db452cf925a043471f996ca49e663cdfbcaa0134": {
+      "language": "python",
+      "kind": "function",
+      "name": "login",
+      "qualified_name": "login",
+      "start_line": 167,
+      "end_line": 172,
+      "truncated": false,
+      "excerpt_ref": "ex-ec662823b579c818c32ea9b652c9f742b967b7e8cedde8d0aa6cf3b49257736a"
+    },
+    "sym-bc96266daf214ac9b26a084094dd45eb2d38eabc27eeeb0b5596fd1ab3e209f4": {
+      "language": "python",
+      "kind": "function",
+      "name": "verified_file_read",
+      "qualified_name": "verified_file_read",
+      "start_line": 219,
+      "end_line": 224,
+      "truncated": false,
+      "excerpt_ref": "ex-2ed66862f6d2add5a5536a6b80898df4fdb45dab509de9a702b07e90dc5be676"
+    },
+    "sym-e1796518c7b29589c594cb9d4727bf268e9ba35b6a72b0f845c72d01e4ae77e0": {
+      "language": "python",
+      "kind": "function",
+      "name": "request",
+      "qualified_name": "request",
+      "start_line": 15,
+      "end_line": 23,
+      "truncated": false,
+      "excerpt_ref": "ex-a16c1185c0a3ef915d6ed7573e6dcacfee4f99e00ce6663a726b1d82ace18caf"
+    },
+    "sym-eaa8af82a7de9d4a76ac1c52c23e61a7b463b754926e7a19126a979757eaf3bf": {
+      "language": "python",
+      "kind": "function",
+      "name": "run_job",
+      "qualified_name": "run_job",
+      "start_line": 14,
+      "end_line": 25,
+      "truncated": false,
+      "excerpt_ref": "ex-925a282d7b8ea9f2480af6c97f8129fa6c1fdab73a31e6015183ccbb6b9c7133"
+    }
+  }
+}

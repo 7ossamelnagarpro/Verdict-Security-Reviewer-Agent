@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0",
+  "status": "partial",
+  "project_root": "/mnt/c/Users/ASUS/Downloads/2update/verdict-integrated/targets/verdict-comprehensive-lab",
+  "candidates": [],
+  "warnings": [
+    "Discovery batch 1: AI provider request failed (timeout): no response within 120s after the request was sent"
+  ],
+  "coverage_gaps": [
+    "10 planned discovery targets were not inspected; batch or candidate budget was exhausted: file:api/app.py#L199-204, merged-b527b3ed30e57aac5ec5, file:mock_external/server.py#L1-30, merged-24d14609e3893220ea16, file:api/extra.py#L125-138, merged-794dcb4921076779cef0, file:worker/__init__.py#L1-1, merged-b3c734b4cef8dd70fce0, file:api/extra.py#L247-268, file:api/extra.py#L288-301",
+    "35 known findings were omitted from the discovery prompt's duplicate-avoidance list.",
+    "A negative result means only that this probe did not observe the behavior.",
+    "A violation is an observed contract mismatch requiring security review.",
+    "Baseline checks use bounded HTTP GET observations for an authorized target; declared paths must be safe to visit.",
+    "Browser crawl is same-origin and GET-only; forms, clicks, OAuth/MFA and destructive workflows were not submitted.",
+    "Coverage applies only to declared assertions, accounts and workflows.",
+    "Discovery batch 1 did not complete; targets: file:api/__init__.py#L1-1, merged-18f1abe978f9fdaad8e6, file:api/app.py#L175-186, merged-f60fee7d82fbca512208, file:api/seed.py#L1-30, merged-ea527a7d7441e2b11700, file:api/app.py#L189-196, merged-f4eaf141df049c63545d, file:mock_external/__init__.py#L1-1, merged-83d97da4516adf20e20f.",
+    "Fresh stack resets the run; workflows must create independent test data. No per-step database reset is performed.",
+    "No discovery target was inspected.",
+    "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile. All 4 direct dependencies are exactly pinned; their transitive dependencies are not recorded.",
+    "This baseline phase only makes bounded HTTP GET observations; browser crawling, ZAP and account workflows are separate phases, reported only when they ran."
+  ],
+  "summary": {
+    "input_candidates": 0,
+    "contexts_created": 0,
+    "evidence_locations": 0,
+    "excerpts_collected": 0,
+    "unavailable_locations": 0,
+    "files_read": 0,
+    "bytes_read": 0
+  },
+  "shared_excerpts": {},
+  "shared_symbols": {}
+}

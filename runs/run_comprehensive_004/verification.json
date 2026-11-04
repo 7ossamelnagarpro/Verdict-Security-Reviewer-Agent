@@ -1,0 +1,129 @@
+{
+  "schema_version": "1.0",
+  "status": "partial",
+  "project_root": "/mnt/c/Users/ASUS/Downloads/2update/verdict-integrated/targets/verdict-comprehensive-lab",
+  "records": [
+    {
+      "candidate_id": "ai-28ed38ca2afc58a9",
+      "disposition": "needs_more_evidence",
+      "path": "api/extra.py",
+      "start_line": 210,
+      "end_line": 215,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "210 | @router.get(\"/files\")",
+        "211 | def file_read(name: str) -> Response:",
+        "212 |     file = (FILES / \"public\" / name).resolve()",
+        "213 |     if not file.is_relative_to(FILES.resolve()) or not file.is_file():",
+        "214 |         raise HTTPException(404, \"File not found\")",
+        "215 |     return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")"
+      ],
+      "notes": [
+        "AI evidence was not found in the reported source excerpt."
+      ]
+    },
+    {
+      "candidate_id": "ai-ecad85d018f3e02e",
+      "disposition": "needs_more_evidence",
+      "path": "api/extra.py",
+      "start_line": 115,
+      "end_line": 122,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "115 | @router.post(\"/auth/legacy-login\")",
+        "116 | def legacy_login(body: Login) -> dict:",
+        "117 |     query = f\"SELECT id,username,role FROM users WHERE username='{body.username}' AND [REDACTED]\"",
+        "118 |     with connection() as conn:",
+        "119 |         row = conn.execute(query).fetchone()",
+        "120 |     if not row:",
+        "121 |         raise HTTPException(401, \"Invalid credentials\")",
+        "122 |     return {\"access_token\": make_token(row), \"username\": row[\"username\"]}"
+      ],
+      "notes": [
+        "AI evidence was not found in the reported source excerpt."
+      ]
+    },
+    {
+      "candidate_id": "ai-43510b76998e0143",
+      "disposition": "confirmed",
+      "path": "api/app.py",
+      "start_line": 175,
+      "end_line": 186,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "175: @app.post(\"/auth/register\")",
+        "176: def register(body: LoginBody) -> dict[str, Any]:",
+        "177:     with connection() as conn:",
+        "178:         try:",
+        "179:             user = conn.execute(",
+        "180:                 \"INSERT INTO users (username,password,role,email,ssn) VALUES (%s,%s,'user',%s,'000-00-9999') RETURNING id,username,role\",",
+        "181:                 (body.username, body.password, f\"{body.username}@example.test\"),",
+        "182:             ).fetchone()"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-74bc42d71789d76e",
+      "disposition": "confirmed",
+      "path": "api/app.py",
+      "start_line": 189,
+      "end_line": 196,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "189: @app.post(\"/auth/refresh\")",
+        "190: def refresh(authorization: str | None = Header(default=None)) -> dict[str, str]:",
+        "191:     user = principal(authorization)",
+        "192:     with connection() as conn:",
+        "193:         row = conn.execute(\"SELECT id,username,role FROM users WHERE id=%s\", (user[\"sub\"],)).fetchone()",
+        "194:     if not row:",
+        "195:         raise HTTPException(401, \"Unknown account\")",
+        "196:     return {\"access_token\": make_token(row), \"token_type\": \"bearer\"}"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-9a47b8ee113fbed2",
+      "disposition": "confirmed",
+      "path": "api/app.py",
+      "start_line": 186,
+      "end_line": 186,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "186:     return {\"user\": user, \"access_token\": make_token(user)}"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    }
+  ],
+  "warnings": [
+    "Discovery batch 2: AI provider request failed with HTTP 429 (rate_limit_exceeded)"
+  ]
+}

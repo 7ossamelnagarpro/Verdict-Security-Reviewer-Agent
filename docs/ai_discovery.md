@@ -45,6 +45,26 @@ exist in inspected context. Missing or inconsistent anchors produce an
 deterministic Verification stage. **Neither stage proves that a check is absent
 or that a finding is exploitable**; the Security Review Agent must assess that.
 
+## What the model receives (and how to see it in LangSmith)
+
+Every target sent to the model carries real source: exploratory targets carry their source window, and
+`risk_finding` targets carry the code around the flagged line in addition to the merged scanner excerpt. The prompt
+lists `targets` first and the merge-derived `known_findings` / `coverage_gaps` last (capped to 15% of the prompt), so
+the code is visible even when LangSmith cuts a string at 4,000 characters (`SECURITY_REVIEWER_TRACE_CONTENT=redacted`).
+Each `discovery-model-call` span also has a `summary` input (visible in the default `metadata` mode) listing, per
+target, its kind, path, line range and the number of code characters sent. Use `--ai-max-files` and
+`--ai-max-context-chars` to widen coverage of large repositories (together with `--ai-max-planned-targets` and
+`--ai-max-batches`).
+
+## Provider failures during discovery
+
+A failure that happens *before* the request is sent (DNS, TLS, connection refused) is an outage and stops discovery at
+once. A response that is **lost after the request was sent** (`connection_closed`, read `timeout`: typical for a long
+generation by a large reasoning model) is retried: the batch is halved, the other targets go back to the queue, and
+nothing is marked inspected until a call succeeds. Two such failures in a row are tolerated; the third stops discovery as
+an outage, and any successful call resets the count. Each retry is recorded as a warning on the run. If lost responses
+keep happening, shorten the generation with `GROQ_REASONING_EFFORT=low` or lower `--ai-max-context-chars`.
+
 ## Safety defaults
 
 - The full pipeline always runs Discovery; `--ai-discovery` is accepted only for compatibility and cannot disable it.

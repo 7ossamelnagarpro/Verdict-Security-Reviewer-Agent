@@ -207,8 +207,14 @@ def _trace_outputs(result: Any) -> dict[str, Any]:
     return {}
 
 
-def call_model(provider: Any, method: str, prompt: str, *, span: str, **kwargs: Any) -> tuple[Any, Any]:
+def call_model(provider: Any, method: str, prompt: str, *, span: str,
+               trace_summary: Mapping[str, Any] | None = None, **kwargs: Any) -> tuple[Any, Any]:
     """Invoke ``provider.<method>(prompt, **kwargs)`` inside an ``llm`` span carrying token usage.
+
+    ``trace_summary`` is shown beside the prompt in LangSmith and is never passed to the provider.  Callers use it
+    for short structural facts (which files/lines were sent, how much code) that stay readable in the default
+    ``metadata`` mode, where the long prompt string itself is hidden and in ``redacted`` mode is cut at 4,000
+    characters.
 
     Tracing is strictly best-effort and can never change the outcome of the model call:
 
@@ -238,7 +244,8 @@ def call_model(provider: Any, method: str, prompt: str, *, span: str, **kwargs: 
     try:
         traced = traceable(
             name=span, run_type="llm",
-            process_inputs=lambda _: {"messages": [{"role": "user", "content": prompt}], "options": _plain(kwargs)},
+            process_inputs=lambda _: {"messages": [{"role": "user", "content": prompt}], "options": _plain(kwargs),
+                                      **({"summary": dict(trace_summary)} if trace_summary else {})},
             process_outputs=_trace_outputs,
         )(invoke)
         return traced()

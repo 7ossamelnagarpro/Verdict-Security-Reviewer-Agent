@@ -21,6 +21,7 @@ orchestrates it.
 
 from __future__ import annotations
 
+import json
 import operator
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
@@ -49,6 +50,11 @@ Phase = Literal["ready", "skipped", "done", "enrich", "call", "close", "next"]
 _LEGACY_BATCH_LEVEL_MARKER = "non-JSON"  # providers that predate ``ProviderResponseError`` (e.g. Ollama)
 _MAX_SHRINKS = 8          # bound on size-reduction retries for one batch
 _MIN_CONTEXT_CHARS = 1_500  # a single target is not shrunk below this prompt budget
+# The request reached the provider but the answer never arrived (connection reset / read timeout).  A long generation
+# from a large reasoning model can trigger this, so it is retried smaller; it is not by itself an outage.  Failures
+# before the request is sent (DNS, TLS, refused) are real outages and still stop discovery immediately.
+_LOST_RESPONSE_CATEGORIES = frozenset({"connection_closed", "timeout"})
+_MAX_TRANSPORT_RETRIES = 2  # consecutive lost responses tolerated before discovery stops as an outage
 
 
 @dataclass(frozen=True)
@@ -86,7 +92,7 @@ class BatchProgress:
     budget: int = 0                   # prompt character budget this batch was built with
     shrinks: int = 0                  # how many times a 413 forced a smaller request
     size_ratio: float | None = None   # limit / requested tokens from the last 413, when reported
-    reason: str = "size"              # why the batch is being shrunk: "size" (HTTP 413) or "output" (unusable answer)
+    reason: str = "size"              # why the batch is being shrunk: "size" (HTTP 413), "output" (unusable answer) or "transport" (lost response)
     last_error: str = ""              # safe text of the failure that triggered the shrink
     counted: bool = False             # targets already credited as inspected by a successful call
 
@@ -103,6 +109,7 @@ class DiscoveryState(TypedDict, total=False):
     candidates: dict[str, CandidateFinding]
     totals: dict[str, int]
     failed: bool
+    transport_failures: int           # consecutive lost responses; any successful model call resets it
     inspected: Annotated[list[DiscoveryTarget], operator.add]
     batches: Annotated[list[DiscoveryBatch], operator.add]
     exchanges: Annotated[list[Any], operator.add]
@@ -182,7 +189,7 @@ class _Nodes:
                 scope.gap_evidence, scope.warnings,
                 (*scope.coverage_gaps, "Discovery run was restricted to explicitly selected target IDs."))
         return {"scope": scope, "pending": list(scope.targets), "warnings": list(scope.warnings),
-                "target_limit": self.config.max_targets,
+                "target_limit": self.config.max_targets, "transport_failures": 0,
                 "gaps": {*scope.coverage_gaps, *scope.gap_evidence, *self.broker.inventory_gaps}}
 
     def select_batch(self, state: DiscoveryState) -> DiscoveryState:
@@ -215,6 +222,7 @@ class _Nodes:
         batch = replace(batch, calls=batch.calls + 1, sent_prompt_chars=batch.sent_prompt_chars + len(batch.prompt))
         try:
             raw, usage = call_model(self.provider, "discover", batch.prompt, span="discovery-model-call",
+                                    trace_summary=_prompt_summary(batch),
                                     timeout_seconds=self.config.timeout_seconds,
                                     max_candidates=self.config.max_candidates)
         except (RequestTooLargeError, ProviderResponseError) as error:
@@ -234,6 +242,17 @@ class _Nodes:
                     "warnings": [f"Discovery batch {batch.index}: {error}; retrying with a smaller request."]}
         except RuntimeError as error:
             message = str(error)
+            streak = state.get("transport_failures", 0) + 1
+            if getattr(error, "category", None) in _LOST_RESPONSE_CATEGORIES and streak <= _MAX_TRANSPORT_RETRIES:
+                note = f"{message}; the response was lost after the request was sent"
+                if batch.counted:   # the first answer is already in; only the on-demand context follow-up was lost
+                    return {"batch": replace(batch, selected_requests=()), "phase": "close", "transport_failures": streak,
+                            "gaps": {f"Discovery batch {batch.index}: on-demand context could not be added ({note}); "
+                                     "the first response was kept."}}
+                return {"batch": replace(batch, reason="transport", last_error=message), "phase": "shrink",
+                        "transport_failures": streak,
+                        "warnings": [f"Discovery batch {batch.index}: {note}; retrying with a smaller request "
+                                     f"({streak} of {_MAX_TRANSPORT_RETRIES})."]}
             batch_level = isinstance(error, ProviderResponseError) or _LEGACY_BATCH_LEVEL_MARKER in message
             return {"batch": replace(batch, error=message, batch_level_error=batch_level), "failed": True,
                     "phase": "close",
@@ -248,7 +267,7 @@ class _Nodes:
         if not isinstance(raw, dict):
             raw = {"candidates": [], "context_requests": []}
         update: DiscoveryState = {"batch": replace(batch, usage=batch_usage, raw=raw, counted=True),
-                                  "totals": totals, "phase": "next"}
+                                  "totals": totals, "phase": "next", "transport_failures": 0}
         if not batch.counted:  # credit the targets once, on the first call that actually succeeded
             update["inspected"] = list(batch.targets)
         return update
@@ -265,7 +284,7 @@ class _Nodes:
         """
         batch, scope = state["batch"], state["scope"]
         factor = (min(0.8, max(0.2, batch.size_ratio * 0.85)) if batch.size_ratio
-                  else 0.5 if batch.reason == "output" else 0.6)
+                  else 0.5 if batch.reason in ("output", "transport") else 0.6)
         giving_up = batch.shrinks >= _MAX_SHRINKS
         selection, returned, budget = batch.targets, (), batch.budget
         if not giving_up and len(batch.targets) > 1:
@@ -283,6 +302,7 @@ class _Nodes:
         if giving_up:
             ids = ", ".join(item.target_id for item in batch.targets)
             why = ("exceeded the provider request-size limit even with reduced context" if batch.reason == "size"
+                   else f"lost the provider connection even with a reduced request ({batch.last_error})" if batch.reason == "transport"
                    else f"produced no usable model output even when sent alone ({batch.last_error})")
             return {"phase": "close", "failed": True,   # provider rejected it: never a silent success
                     "gaps": {f"Discovery target(s) {ids} {why} and were not inspected."},
@@ -389,6 +409,23 @@ class _Nodes:
             tuple(item.target_id for item in inspected), tuple(state["candidates"].values()),
             tuple(dict.fromkeys(state["warnings"])), tuple(sorted(gaps)), usage,
             tuple(inspected), tuple(batches), tuple(state["exchanges"]))}
+
+
+def _prompt_summary(batch: BatchProgress) -> dict[str, Any]:
+    """What this model call actually contains, for LangSmith: per-target path, line range and amount of source code."""
+    summary: dict[str, Any] = {"batch": batch.index, "prompt_chars": len(batch.prompt), "targets": len(batch.targets)}
+    try:
+        body = json.loads(batch.prompt.partition("\n\n")[2])
+        records = [item for item in body.get("targets", []) if isinstance(item, dict)]
+        summary["targets_with_source_code"] = sum(1 for item in records if item.get("code"))
+        summary["source_code_chars"] = sum(len(item.get("code") or "") for item in records)
+        summary["known_findings_sent"] = len(body.get("known_findings", []))
+        summary["target_list"] = [
+            f"{item.get('kind')} {item.get('path')}:{item.get('start_line')}-{item.get('end_line')} "
+            f"code={len(item.get('code') or '')}c"[:190] for item in records[:30]]
+    except (ValueError, AttributeError, TypeError):
+        pass
+    return summary
 
 
 def _add_routes(graph: StateGraph, source: str, routes: dict[str, str]) -> None:

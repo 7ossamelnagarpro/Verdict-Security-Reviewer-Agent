@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.2",
+  "status": "blocked",
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "scope": [],
+  "candidates": [],
+  "warnings": [
+    "Discovery batch 1: AI provider request failed with HTTP 400 (json_validate_failed)"
+  ],
+  "coverage_gaps": [
+    "2 source windows were shortened by the prompt character budget.",
+    "35 planned discovery targets were not inspected; batch or candidate budget was exhausted: file:helpers/ThingFactory.py#L1-21, merged-e3541edd3a1bee97e935, file:helpers/utils.py#L1-40, merged-400abf28dca80b22eac6, file:testcode/BenchmarkTest00155.py#L21-57, merged-45c2e411890b332b06f9, file:testcode/BenchmarkTest00169.py#L1-40, merged-919caa004fdbceac06f2, file:testcode/BenchmarkTest00246.py#L21-67, merged-c0e018ebfac46ce99f7a, file:testcode/BenchmarkTest00271.py#L1-40, merged-1970d12d68ceaafba0e8, file:testcode/BenchmarkTest00280.py#L1-40, merged-d9a3103e3b61f4dae4ce, file:testcode/BenchmarkTest00283.py#L21-55, merged-9d738fad026bef853071, file:testcode/BenchmarkTest00284.py#L21-53, file:testcode/BenchmarkTest00338.py#L21-56, file:testcode/BenchmarkTest00365.py#L1-40, file:testcode/BenchmarkTest00395.py#L21-59",
+    "39 known findings were omitted from the discovery prompt's duplicate-avoidance list.",
+    "Dependency/SCA coverage is unknown for component component-cdb4ee2aea: no supported manifest or lockfile was found.",
+    "Discovery batch 1 did not complete; targets: file:helpers/db_sqlite.py#L1-40, merged-cd88912f8146c062dacf, file:testcode/BenchmarkTest00011.py#L34-56, merged-93ccb9cb7ebc9422e31c, file:helpers/ldap.py#L1-21, merged-050536f628fbddaf1e1c, file:testcode/BenchmarkTest00063.py#L34-71, merged-a1b9777f103958f5ab7e, file:helpers/separate_request.py#L1-19, merged-009e23ebbe55e21c6bf6.",
+    "No discovery target was inspected."
+  ],
+  "usage": {
+    "targets": 0,
+    "planned_targets": 45,
+    "batches": 1,
+    "provider_calls": 1,
+    "estimated_cost_usd": null,
+    "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+  },
+  "target_plan": [],
+  "batches": [
+    {
+      "batch_index": 1,
+      "target_ids": [
+        "file:helpers/db_sqlite.py#L1-40",
+        "merged-cd88912f8146c062dacf",
+        "file:testcode/BenchmarkTest00011.py#L34-56",
+        "merged-93ccb9cb7ebc9422e31c",
+        "file:helpers/ldap.py#L1-21",
+        "merged-050536f628fbddaf1e1c",
+        "file:testcode/BenchmarkTest00063.py#L34-71",
+        "merged-a1b9777f103958f5ab7e",
+        "file:helpers/separate_request.py#L1-19",
+        "merged-009e23ebbe55e21c6bf6"
+      ],
+      "status": "failed",
+      "prompt_chars": 15934,
+      "provider_calls": 1,
+      "candidate_count": 0,
+      "context_requests": 0,
+      "usage": {
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": "AI provider request failed with HTTP 400 (json_validate_failed)",
+      "candidate_ids": []
+    }
+  ],
+  "context_exchanges": []
+}

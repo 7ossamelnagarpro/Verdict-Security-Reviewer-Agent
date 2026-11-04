@@ -1,0 +1,740 @@
+{
+  "schema_version": "1.2",
+  "status": "partial",
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "scope": [
+    "file:app.py#L213-221",
+    "merged-134617a3d0aad53ab237",
+    "file:app.py#L227-237",
+    "merged-aff4a97275f541026c63",
+    "file:app.py#L243-250",
+    "merged-b151286667cab3988485",
+    "merged-5b028c5d5e2211edf809",
+    "merged-c72dd6bc5b84ce4d23ec",
+    "merged-00c3ef613187b77ed9e6",
+    "merged-99f14e50a31b9cf4f31b",
+    "merged-553fc2269771ce1811f3",
+    "merged-6f060dba31974b8f9989"
+  ],
+  "candidates": [
+    {
+      "candidate_id": "ai-6fb1063526db509e",
+      "title": "Missing ownership check on order view",
+      "category": "Authorization",
+      "severity": "High",
+      "confidence": "Medium",
+      "path": "app.py",
+      "start_line": 213,
+      "end_line": 221,
+      "evidence": [
+        "@app.route(\"/orders/<int:order_id>\")",
+        "def view_order(order_id):",
+        "    if \"user_id\" not in session:",
+        "        return redirect(\"/login\")",
+        "    db = get_db()",
+        "    row = db.execute(\"SELECT * FROM orders WHERE id = ?\", (order_id,)).fetchone()",
+        "    if not row:",
+        "        return \"Not found\", 404"
+      ],
+      "reasoning": "The endpoint fetches an order by its primary key without verifying that the authenticated user owns the order or has permission to view it. An attacker could enumerate order IDs and access other users' orders.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "app.py",
+        "line": 213,
+        "code": "@app.route(\"/orders/<int:order_id>\")"
+      },
+      "sensitive_operation": {
+        "path": "app.py",
+        "line": 218,
+        "code": "row = db.execute(\"SELECT * FROM orders WHERE id = ?\", (order_id,)).fetchone()"
+      },
+      "missing_check": {
+        "path": "app.py",
+        "line": 219,
+        "expected_check": "verify that row['user_id'] == session['user_id'] or that the user has a role permitting access",
+        "observation": "No ownership or role check is performed before returning the order data"
+      },
+      "remaining_questions": [
+        "Does the orders table contain a user_id column linking orders to owners?",
+        "Are there any higher\u2011level decorators that might enforce ownership (e.g., a custom @require_owner)?"
+      ]
+    },
+    {
+      "candidate_id": "ai-b03ac219cba40435",
+      "title": "Missing ownership check on user profile view",
+      "category": "Authorization",
+      "severity": "High",
+      "confidence": "Medium",
+      "path": "app.py",
+      "start_line": 227,
+      "end_line": 237,
+      "evidence": [
+        "@app.route(\"/profile/<int:user_id>\")",
+        "def profile(user_id):",
+        "    if \"user_id\" not in session:",
+        "        return redirect(\"/login\")",
+        "    db = get_db()",
+        "    row = db.execute(",
+        "        \"SELECT id, username, email, ssn, role FROM users WHERE id = ?\", (user_id,)",
+        "    ).fetchone()"
+      ],
+      "reasoning": "The endpoint returns a user's full profile (including SSN) based solely on the URL parameter without confirming that the requester is the same user or an admin, enabling enumeration of other users' personal data.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "app.py",
+        "line": 227,
+        "code": "@app.route(\"/profile/<int:user_id>\")"
+      },
+      "sensitive_operation": {
+        "path": "app.py",
+        "line": 232,
+        "code": "row = db.execute(\"SELECT id, username, email, ssn, role FROM users WHERE id = ?\", (user_id,)).fetchone()"
+      },
+      "missing_check": {
+        "path": "app.py",
+        "line": 233,
+        "expected_check": "ensure session['user_id'] == user_id or session['role'] == 'admin'",
+        "observation": "No verification of requester identity before returning the profile"
+      },
+      "remaining_questions": [
+        "Is the SSN field intended to be exposed via this endpoint?",
+        "Are there any global request hooks that might enforce user matching?"
+      ]
+    },
+    {
+      "candidate_id": "ai-1e3619ff05668110",
+      "title": "Improper admin access control via request parameter",
+      "category": "Authorization",
+      "severity": "Critical",
+      "confidence": "Medium",
+      "path": "app.py",
+      "start_line": 243,
+      "end_line": 250,
+      "evidence": [
+        "@app.route(\"/admin\")",
+        "def admin_panel():",
+        "    role = request.args.get(\"role\") or session.get(\"role\")",
+        "    if role != \"admin\":",
+        "        pass",
+        "    db = get_db()",
+        "    users = db.execute(\"SELECT id, username, role, email, ssn FROM users\").fetchall()",
+        "    return jsonify([dict(u) for u in users])"
+      ],
+      "reasoning": "The endpoint trusts a role value supplied via query string; if the caller omits the parameter, it falls back to the session role, but the `if role != \"admin\": pass` block does not abort execution. Consequently, any authenticated user can retrieve the full user list, including sensitive fields, by simply calling `/admin`.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "app.py",
+        "line": 243,
+        "code": "@app.route(\"/admin\")"
+      },
+      "sensitive_operation": {
+        "path": "app.py",
+        "line": 249,
+        "code": "users = db.execute(\"SELECT id, username, role, email, ssn FROM users\").fetchall()"
+      },
+      "missing_check": {
+        "path": "app.py",
+        "line": 246,
+        "expected_check": "return 403 or abort if role != \"admin\"",
+        "observation": "The branch contains only `pass`, allowing execution to continue"
+      },
+      "remaining_questions": [
+        "Is there any surrounding middleware that might enforce admin checks?",
+        "Are there other routes that rely on the same `role` query\u2011parameter pattern?"
+      ]
+    },
+    {
+      "candidate_id": "ai-4454203f9e8a35f7",
+      "title": "Sensitive personal data exposure in profile endpoint",
+      "category": "Information Exposure",
+      "severity": "Medium",
+      "confidence": "High",
+      "path": "app.py",
+      "start_line": 227,
+      "end_line": 237,
+      "evidence": [
+        "row = db.execute(",
+        "    \"SELECT id, username, email, ssn, role FROM users WHERE id = ?\", (user_id,)",
+        ").fetchone()",
+        "return jsonify(dict(row))"
+      ],
+      "reasoning": "The response includes the `ssn` field, which is highly sensitive personal information. Returning it in a JSON API without redaction or explicit consent constitutes an information disclosure risk.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "app.py",
+        "line": 227,
+        "code": "@app.route(\"/profile/<int:user_id>\")"
+      },
+      "sensitive_operation": {
+        "path": "app.py",
+        "line": 237,
+        "code": "return jsonify(dict(row))"
+      },
+      "missing_check": {
+        "path": "app.py",
+        "line": 237,
+        "expected_check": "filter out or mask the `ssn` field before serialization",
+        "observation": "The full row, including `ssn`, is returned directly"
+      },
+      "remaining_questions": [
+        "Is the SSN required for any client functionality?",
+        "Are there compliance requirements (e.g., GDPR) that mandate masking of this field?"
+      ]
+    },
+    {
+      "candidate_id": "ai-db4ade143a09457d",
+      "title": "Potential information disclosure in order view endpoint",
+      "category": "Information Exposure",
+      "severity": "Low",
+      "confidence": "Medium",
+      "path": "app.py",
+      "start_line": 213,
+      "end_line": 221,
+      "evidence": [
+        "row = db.execute(\"SELECT * FROM orders WHERE id = ?\", (order_id,)).fetchone()",
+        "return jsonify(dict(row))"
+      ],
+      "reasoning": "The endpoint returns all columns of the `orders` table without filtering. If the table contains payment details, shipping addresses, or other PII, they are exposed to any caller who can guess an order ID.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "app.py",
+        "line": 213,
+        "code": "@app.route(\"/orders/<int:order_id>\")"
+      },
+      "sensitive_operation": {
+        "path": "app.py",
+        "line": 218,
+        "code": "row = db.execute(\"SELECT * FROM orders WHERE id = ?\", (order_id,)).fetchone()"
+      },
+      "missing_check": {
+        "path": "app.py",
+        "line": 218,
+        "expected_check": "select only non\u2011sensitive columns or redact sensitive fields before returning",
+        "observation": "All columns are returned verbatim"
+      },
+      "remaining_questions": [
+        "What columns exist in the `orders` table?",
+        "Is there a need to expose full order details to the client?"
+      ]
+    },
+    {
+      "candidate_id": "ai-7be8937ff6225bb6",
+      "title": "Missing authorization enforcement on admin panel",
+      "category": "Authorization",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "app.py",
+      "start_line": 243,
+      "end_line": 250,
+      "evidence": [
+        "def admin_panel():",
+        "    role = request.args.get(\"role\") or session.get(\"role\")",
+        "    if role != \"admin\":",
+        "        pass",
+        "    db = get_db()",
+        "    users = db.execute(\"SELECT id, username, role, email, ssn FROM users\").fetchall()",
+        "    return jsonify([dict(u) for u in users])"
+      ],
+      "reasoning": "The route is intended for admin use only, but the role check does nothing (passes) when the role is not admin, allowing any authenticated user (or even unauthenticated if session lacks role) to retrieve the full user list, including sensitive fields (email, ssn). This is an authorization bypass.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "source_citation_reanchored:entry_point:app.py:243->244",
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "app.py",
+        "line": 244,
+        "code": "def admin_panel():"
+      },
+      "sensitive_operation": {
+        "path": "app.py",
+        "line": 249,
+        "code": "users = db.execute(\"SELECT id, username, role, email, ssn FROM users\").fetchall()"
+      },
+      "missing_check": {
+        "path": "app.py",
+        "line": 246,
+        "expected_check": "abort with 403 or redirect when role != \"admin\"",
+        "observation": "The block contains only \"pass\", so execution continues"
+      },
+      "remaining_questions": [
+        "Is there any surrounding middleware that might enforce admin checks globally?",
+        "Are there any tests that verify admin-only behavior?",
+        "Could the role be spoofed via query parameter \"role\"?"
+      ]
+    },
+    {
+      "candidate_id": "ai-2b3a1697da7140d6",
+      "title": "Insecure direct object reference on profile endpoint",
+      "category": "Authorization",
+      "severity": "medium",
+      "confidence": "medium",
+      "path": "app.py",
+      "start_line": 227,
+      "end_line": 237,
+      "evidence": [
+        "@app.route(\"/profile/<int:user_id>\")",
+        "def profile(user_id):",
+        "    if \"user_id\" not in session:",
+        "        return redirect(\"/login\")",
+        "    db = get_db()",
+        "    row = db.execute(",
+        "        \"SELECT id, username, email, ssn, role FROM users WHERE id = ?\", (user_id,)",
+        "    ).fetchone()"
+      ],
+      "reasoning": "The endpoint allows any logged\u2011in user to request any user_id, exposing personal data (email, ssn, role) of other users. No check ensures the requested user_id matches the session user or that the requester has admin privileges.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "app.py",
+        "line": 227,
+        "code": "@app.route(\"/profile/<int:user_id>\")"
+      },
+      "sensitive_operation": {
+        "path": "app.py",
+        "line": 233,
+        "code": "\"SELECT id, username, email, ssn, role FROM users WHERE id = ?\", (user_id,)"
+      },
+      "missing_check": {
+        "path": "app.py",
+        "line": 229,
+        "expected_check": "verify user_id == session[\"user_id\"] or session[\"role\"] == \"admin\"",
+        "observation": "Only a generic session presence check is performed"
+      },
+      "remaining_questions": [
+        "Is there any later middleware that restricts access based on user_id?",
+        "Are there audit logs that could detect abuse of this endpoint?"
+      ]
+    },
+    {
+      "candidate_id": "ai-ec881f01d33a5d56",
+      "title": "Insecure direct object reference on order view endpoint",
+      "category": "Authorization",
+      "severity": "medium",
+      "confidence": "medium",
+      "path": "app.py",
+      "start_line": 213,
+      "end_line": 221,
+      "evidence": [
+        "@app.route(\"/orders/<int:order_id>\")",
+        "def view_order(order_id):",
+        "    if \"user_id\" not in session:",
+        "        return redirect(\"/login\")",
+        "    db = get_db()",
+        "    row = db.execute(\"SELECT * FROM orders WHERE id = ?\", (order_id,)).fetchone()",
+        "    if not row:",
+        "        return \"Not found\", 404"
+      ],
+      "reasoning": "Authenticated users can retrieve any order by supplying an arbitrary order_id, without verification that the order belongs to them or that they have admin rights. This leaks potentially sensitive order details.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "app.py",
+        "line": 213,
+        "code": "@app.route(\"/orders/<int:order_id>\")"
+      },
+      "sensitive_operation": {
+        "path": "app.py",
+        "line": 218,
+        "code": "row = db.execute(\"SELECT * FROM orders WHERE id = ?\", (order_id,)).fetchone()"
+      },
+      "missing_check": {
+        "path": "app.py",
+        "line": 215,
+        "expected_check": "verify order belongs to session[\"user_id\"] or role == \"admin\"",
+        "observation": "Only a generic session presence check is performed"
+      },
+      "remaining_questions": [
+        "Does the orders table contain payment information that should be protected?",
+        "Are there any later filters that might restrict the result set?"
+      ]
+    },
+    {
+      "candidate_id": "ai-f460633f26012558",
+      "title": "Potential command injection via subprocess usage",
+      "category": "Command Injection",
+      "severity": "high",
+      "confidence": "low",
+      "path": "app.py",
+      "start_line": 5,
+      "end_line": 5,
+      "evidence": [
+        "import subprocess"
+      ],
+      "reasoning": "The module imports subprocess, suggesting that later code may execute shell commands. Without seeing the usage, there is a risk that user\u2011controlled input could be passed to subprocess functions.",
+      "source": "ai_discovery",
+      "verification": "inconclusive",
+      "verification_notes": [
+        "Structured entry point, sensitive operation, missing-check location, or remaining questions are incomplete."
+      ],
+      "entry_point": {
+        "path": "app.py",
+        "line": 5,
+        "code": "import subprocess"
+      },
+      "sensitive_operation": null,
+      "missing_check": null,
+      "remaining_questions": [
+        "Where in the code is subprocess used?",
+        "Are any request parameters passed to subprocess calls without validation?"
+      ]
+    },
+    {
+      "candidate_id": "ai-a3e7c1aa99e8b687",
+      "title": "Potential insecure file download without authentication",
+      "category": "Authorization",
+      "severity": "low",
+      "confidence": "low",
+      "path": "app.py",
+      "start_line": 327,
+      "end_line": 329,
+      "evidence": [
+        "@app.route(\"/uploads/<path:filename>\")",
+        "def serve_upload(filename):"
+      ],
+      "reasoning": "The route serves uploaded files directly based on a path parameter. No authentication check is present, allowing any visitor to download arbitrary uploaded files, which may contain sensitive data.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "app.py",
+        "line": 327,
+        "code": "@app.route(\"/uploads/<path:filename>\")"
+      },
+      "sensitive_operation": {
+        "path": "app.py",
+        "line": 328,
+        "code": "def serve_upload(filename):"
+      },
+      "missing_check": {
+        "path": "app.py",
+        "line": 327,
+        "expected_check": "require authentication or ownership verification before serving file",
+        "observation": "No such check is visible"
+      },
+      "remaining_questions": [
+        "Does send_from_directory or similar logic enforce any access control later in the function?",
+        "Are uploaded files ever sanitized or restricted in type?"
+      ]
+    }
+  ],
+  "warnings": [],
+  "coverage_gaps": [
+    "30 known findings were omitted from the discovery prompt's duplicate-avoidance list.",
+    "4 background coverage gaps were omitted from the discovery prompt budget.",
+    "5 risk evidence excerpts were shortened by the prompt character budget.",
+    "Discovery batch 2 context request rejected: Start line is outside the source file.",
+    "Discovery batch 2 context request unavailable: Symbol is absent or ambiguous in the requested Python file.",
+    "Discovery batch 2 omitted 4 context requests by budget.",
+    "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile.",
+    "gitleaks task task-510db4138e2f did not complete: failed (Command gitleaks-detect ended with failed).",
+    "semgrep-ce normalization was partial; some scanner results may be unavailable. Scanner reported: semgrep_scan_error: Syntax error at line Dockerfile:3:.",
+    "trivy task task-45e5f84af47a did not complete: prerequisite_unverified (Unverified prerequisites: trivy_databases)."
+  ],
+  "usage": {
+    "retry_count": 14,
+    "rate_limit_wait_seconds": 242.0,
+    "format_fallback_count": 1,
+    "queue_time": 0.8145437710000001,
+    "prompt_tokens": 13051,
+    "prompt_time": 0.8077741380000001,
+    "completion_tokens": 7091,
+    "completion_time": 14.773775365999999,
+    "total_tokens": 20142,
+    "total_time": 15.581549503999998,
+    "targets": 12,
+    "planned_targets": 12,
+    "batches": 2,
+    "provider_calls": 3,
+    "estimated_cost_usd": null,
+    "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+  },
+  "target_plan": [
+    {
+      "target_id": "file:app.py#L213-221",
+      "kind": "unflagged_hotspot",
+      "path": "app.py",
+      "start_line": 213,
+      "end_line": 221,
+      "reasons": [
+        "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-134617a3d0aad53ab237",
+      "kind": "risk_finding",
+      "path": "app.py",
+      "start_line": 275,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 1; score 100; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:app.py#L227-237",
+      "kind": "unflagged_hotspot",
+      "path": "app.py",
+      "start_line": 227,
+      "end_line": 237,
+      "reasons": [
+        "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-aff4a97275f541026c63",
+      "kind": "risk_finding",
+      "path": "app.py",
+      "start_line": 152,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 2; score 90; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:app.py#L243-250",
+      "kind": "unflagged_hotspot",
+      "path": "app.py",
+      "start_line": 243,
+      "end_line": 250,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-b151286667cab3988485",
+      "kind": "risk_finding",
+      "path": "app.py",
+      "start_line": 174,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 3; score 90; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "merged-5b028c5d5e2211edf809",
+      "kind": "risk_finding",
+      "path": "app.py",
+      "start_line": 179,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 4; score 90; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "merged-c72dd6bc5b84ce4d23ec",
+      "kind": "risk_finding",
+      "path": "app.py",
+      "start_line": 150,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 5; score 86; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "merged-00c3ef613187b77ed9e6",
+      "kind": "risk_finding",
+      "path": "app.py",
+      "start_line": 172,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 6; score 86; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "merged-99f14e50a31b9cf4f31b",
+      "kind": "risk_finding",
+      "path": "app.py",
+      "start_line": 324,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 7; score 78; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "merged-553fc2269771ce1811f3",
+      "kind": "risk_finding",
+      "path": "app.py",
+      "start_line": 260,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 8; score 70; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "merged-6f060dba31974b8f9989",
+      "kind": "risk_finding",
+      "path": "app.py",
+      "start_line": 323,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 9; score 70; selected for deep review."
+      ]
+    }
+  ],
+  "batches": [
+    {
+      "batch_index": 1,
+      "target_ids": [
+        "file:app.py#L213-221",
+        "merged-134617a3d0aad53ab237",
+        "file:app.py#L227-237",
+        "merged-aff4a97275f541026c63",
+        "file:app.py#L243-250",
+        "merged-b151286667cab3988485",
+        "merged-5b028c5d5e2211edf809",
+        "merged-c72dd6bc5b84ce4d23ec",
+        "merged-00c3ef613187b77ed9e6"
+      ],
+      "status": "completed",
+      "prompt_chars": 15506,
+      "provider_calls": 1,
+      "candidate_count": 5,
+      "context_requests": 0,
+      "usage": {
+        "retry_count": 2,
+        "rate_limit_wait_seconds": 24.0,
+        "format_fallback_count": 0,
+        "queue_time": 0.300719587,
+        "prompt_tokens": 5388,
+        "prompt_time": 0.265944241,
+        "completion_tokens": 2710,
+        "completion_time": 5.655802049,
+        "total_tokens": 8098,
+        "total_time": 5.92174629,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-6fb1063526db509e",
+        "ai-b03ac219cba40435",
+        "ai-1e3619ff05668110",
+        "ai-4454203f9e8a35f7",
+        "ai-db4ade143a09457d"
+      ]
+    },
+    {
+      "batch_index": 2,
+      "target_ids": [
+        "merged-99f14e50a31b9cf4f31b",
+        "merged-553fc2269771ce1811f3",
+        "merged-6f060dba31974b8f9989"
+      ],
+      "status": "completed",
+      "prompt_chars": 23004,
+      "provider_calls": 2,
+      "candidate_count": 5,
+      "context_requests": 4,
+      "usage": {
+        "retry_count": 12,
+        "rate_limit_wait_seconds": 218.0,
+        "format_fallback_count": 1,
+        "queue_time": 0.513824184,
+        "prompt_tokens": 7663,
+        "prompt_time": 0.5418298970000001,
+        "completion_tokens": 4381,
+        "completion_time": 9.117973317,
+        "total_tokens": 12044,
+        "total_time": 9.659803214,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-7be8937ff6225bb6",
+        "ai-2b3a1697da7140d6",
+        "ai-ec881f01d33a5d56",
+        "ai-f460633f26012558",
+        "ai-a3e7c1aa99e8b687"
+      ]
+    }
+  ],
+  "context_exchanges": [
+    {
+      "batch_index": 2,
+      "round_index": 1,
+      "requested_path": "app.py",
+      "symbol": null,
+      "requested_start_line": 1,
+      "requested_end_line": 200,
+      "status": "collected",
+      "resolved_path": "app.py",
+      "resolved_start_line": 1,
+      "resolved_end_line": 80,
+      "code": "1: \"\"\"Local educational web fixture. Never deploy it on a public network.\"\"\"\n2: \n3: import sqlite3\n4: import os\n5: import subprocess\n6: import uuid\n7: from flask import Flask, request, g, redirect, session, jsonify, make_response, send_from_directory\n8: \n9: APP_DIR = os.path.dirname(os.path.abspath(__file__))\n10: DB_PATH = os.path.join(APP_DIR, \"vulnshop.db\")\n11: UPLOAD_DIR = os.path.join(APP_DIR, \"uploads\")\n12: FILES_DIR = os.path.join(APP_DIR, \"files\")\n13: \n14: os.makedirs(UPLOAD_DIR, exist_ok=True)\n15: os.makedirs(FILES_DIR, exist_ok=True)\n16: \n17: app = Flask(__name__)\n18: [REDACTED]\n19: \n20: \n21: # ---------------------------------------------------------------------------\n22: # DB helpers\n23: # ---------------------------------------------------------------------------\n24: def get_db():\n25:     db = getattr(g, \"_db\", None)\n26:     if db is None:\n27:         db = g._db = sqlite3.connect(DB_PATH)\n28:         db.row_factory = sqlite3.Row\n29:     return db\n30: \n31: \n32: @app.teardown_appcontext\n33: def close_db(exc):\n34:     db = getattr(g, \"_db\", None)\n35:     if db is not None:\n36:         db.close()\n37: \n38: \n39: def init_db():\n40:     if os.path.exists(DB_PATH):\n41:         return\n42:     db = sqlite3.connect(DB_PATH)\n43:     db.executescript(\n44:         \"\"\"\n45:         CREATE TABLE users (\n46:             id INTEGER PRIMARY KEY,\n47:             username TEXT UNIQUE,\n48:             password TEXT,\n49:             role TEXT,\n50:             email TEXT,\n51:             ssn TEXT\n52:         );\n53:         CREATE TABLE orders (\n54:             id INTEGER PRIMARY KEY,\n55:             user_id INTEGER,\n56:             item TEXT,\n57:             total TEXT,\n58:             card_last4 TEXT\n59:         );\n60:         CREATE TABLE comments (\n61:             id INTEGER PRIMARY KEY,\n62:             author TEXT,\n63:             body TEXT\n64:         );\n65:         \"\"\"\n66:     )\n67:     db.executemany(\n68:         \"INSERT INTO users (id, username, password, role, email, ssn",
+      "note": "Context was truncated by line or character budget."
+    },
+    {
+      "batch_index": 2,
+      "round_index": 1,
+      "requested_path": "app.py",
+      "symbol": null,
+      "requested_start_line": 200,
+      "requested_end_line": 400,
+      "status": "collected",
+      "resolved_path": "app.py",
+      "resolved_start_line": 200,
+      "resolved_end_line": 279,
+      "code": "200:       <button type=\"submit\">Post</button>\n201:     </form>\n202:     <ul>\n203:     \"\"\"\n204:     for r in rows:\n205:         html += f\"<li><b>{r['author']}</b>: {r['body']}</li>\"\n206:     html += \"</ul>\"\n207:     return html\n208: \n209: \n210: # ---------------------------------------------------------------------------\n211: # Orders\n212: # ---------------------------------------------------------------------------\n213: @app.route(\"/orders/<int:order_id>\")\n214: def view_order(order_id):\n215:     if \"user_id\" not in session:\n216:         return redirect(\"/login\")\n217:     db = get_db()\n218:     row = db.execute(\"SELECT * FROM orders WHERE id = ?\", (order_id,)).fetchone()\n219:     if not row:\n220:         return \"Not found\", 404\n221:     return jsonify(dict(row))\n222: \n223: \n224: # ---------------------------------------------------------------------------\n225: # Profiles\n226: # ---------------------------------------------------------------------------\n227: @app.route(\"/profile/<int:user_id>\")\n228: def profile(user_id):\n229:     if \"user_id\" not in session:\n230:         return redirect(\"/login\")\n231:     db = get_db()\n232:     row = db.execute(\n233:         \"SELECT id, username, email, ssn, role FROM users WHERE id = ?\", (user_id,)\n234:     ).fetchone()\n235:     if not row:\n236:         return \"Not found\", 404\n237:     return jsonify(dict(row))\n238: \n239: \n240: # ---------------------------------------------------------------------------\n241: # Admin panel\n242: # ---------------------------------------------------------------------------\n243: @app.route(\"/admin\")\n244: def admin_panel():\n245:     role = request.args.get(\"role\") or session.get(\"role\")\n246:     if role != \"admin\":\n247:         pass\n248:     db = get_db()\n249:     users = db.execute(\"SELECT id, username, role, email, ssn FROM users\").fetchall()\n250:     return jsonify([dict(u) for u in users])\n251: \n252: \n253: # ---------------------------------------------------------------------------\n254: # Files\n255",
+      "note": "Context was truncated by line or character budget."
+    },
+    {
+      "batch_index": 2,
+      "round_index": 1,
+      "requested_path": "app.py",
+      "symbol": null,
+      "requested_start_line": 400,
+      "requested_end_line": 800,
+      "status": "rejected",
+      "resolved_path": null,
+      "resolved_start_line": null,
+      "resolved_end_line": null,
+      "code": null,
+      "note": "Start line is outside the source file."
+    },
+    {
+      "batch_index": 2,
+      "round_index": 1,
+      "requested_path": "app.py",
+      "symbol": "run_cmd",
+      "requested_start_line": null,
+      "requested_end_line": null,
+      "status": "unavailable",
+      "resolved_path": null,
+      "resolved_start_line": null,
+      "resolved_end_line": null,
+      "code": null,
+      "note": "Symbol is absent or ambiguous in the requested Python file."
+    }
+  ]
+}

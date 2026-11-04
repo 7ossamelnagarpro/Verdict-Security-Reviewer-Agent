@@ -1,0 +1,325 @@
+{
+  "schema_version": "1.1",
+  "status": "failed",
+  "blocking": true,
+  "decisions": [
+    {
+      "candidate_id": "merged-134617a3d0aad53ab237",
+      "action": "block",
+      "severity": "critical",
+      "verdict": "confirmed_vulnerability",
+      "reason": "RG-001: critical confirmed vulnerability is corroborated by a critical scanner finding; blocking severities are critical, high.",
+      "rule_id": "RG-001",
+      "evidence_basis": "scanner_corroborated",
+      "evidence": [
+        "scanner codeql-cli,semgrep-ce critical at app.py:275 rules=py/command-line-injection|subprocess-injection|subprocess-shell-true|dangerous-subprocess-use"
+      ],
+      "blocking_reason": "RG-001: critical confirmed vulnerability is corroborated by a critical scanner finding; blocking severities are critical, high."
+    },
+    {
+      "candidate_id": "merged-553fc2269771ce1811f3",
+      "action": "block",
+      "severity": "high",
+      "verdict": "confirmed_vulnerability",
+      "reason": "RG-001: high confirmed vulnerability is corroborated by a high scanner finding; blocking severities are critical, high.",
+      "rule_id": "RG-001",
+      "evidence_basis": "scanner_corroborated",
+      "evidence": [
+        "scanner codeql-cli high at app.py:260 rules=py/path-injection"
+      ],
+      "blocking_reason": "RG-001: high confirmed vulnerability is corroborated by a high scanner finding; blocking severities are critical, high."
+    },
+    {
+      "candidate_id": "merged-5b028c5d5e2211edf809",
+      "action": "block",
+      "severity": "high",
+      "verdict": "confirmed_vulnerability",
+      "reason": "RG-001: high confirmed vulnerability is corroborated by a high scanner finding; blocking severities are critical, high.",
+      "rule_id": "RG-001",
+      "evidence_basis": "scanner_corroborated",
+      "evidence": [
+        "scanner semgrep-ce medium at app.py:175 rules=raw-html-format|raw-html-format",
+        "scanner codeql-cli,semgrep-ce high at app.py:179 rules=py/reflective-xss|directly-returned-format-string"
+      ],
+      "blocking_reason": "RG-001: high confirmed vulnerability is corroborated by a high scanner finding; blocking severities are critical, high."
+    },
+    {
+      "candidate_id": "merged-6f060dba31974b8f9989",
+      "action": "warn",
+      "severity": "high",
+      "verdict": "likely_vulnerability",
+      "reason": "RG-003: high likely vulnerability requires manual review; not auto-confirmed.",
+      "rule_id": "RG-003",
+      "evidence_basis": "scanner_corroborated",
+      "evidence": [
+        "scanner codeql-cli high at app.py:323 rules=py/path-injection"
+      ],
+      "blocking_reason": ""
+    },
+    {
+      "candidate_id": "merged-99f14e50a31b9cf4f31b",
+      "action": "warn",
+      "severity": "high",
+      "verdict": "likely_vulnerability",
+      "reason": "RG-003: high likely vulnerability requires manual review; not auto-confirmed.",
+      "rule_id": "RG-003",
+      "evidence_basis": "scanner_corroborated",
+      "evidence": [
+        "scanner codeql-cli,semgrep-ce high at app.py:324 rules=py/reflective-xss|directly-returned-format-string"
+      ],
+      "blocking_reason": ""
+    },
+    {
+      "candidate_id": "merged-a037400847a3044fa997",
+      "action": "block",
+      "severity": "high",
+      "verdict": "confirmed_vulnerability",
+      "reason": "RG-001: high confirmed vulnerability is corroborated by a high scanner finding; blocking severities are critical, high.",
+      "rule_id": "RG-001",
+      "evidence_basis": "scanner_corroborated",
+      "evidence": [
+        "scanner codeql-cli,semgrep-ce high at app.py:150 rules=py/sql-injection|sql-injection-db-cursor-execute|tainted-sql-string"
+      ],
+      "blocking_reason": "RG-001: high confirmed vulnerability is corroborated by a high scanner finding; blocking severities are critical, high."
+    },
+    {
+      "candidate_id": "merged-aff4a97275f541026c63",
+      "action": "block",
+      "severity": "high",
+      "verdict": "confirmed_vulnerability",
+      "reason": "RG-001: high confirmed vulnerability is corroborated by a high scanner finding; blocking severities are critical, high.",
+      "rule_id": "RG-001",
+      "evidence_basis": "scanner_corroborated",
+      "evidence": [
+        "scanner codeql-cli,semgrep-ce high at app.py:152 rules=py/reflective-xss|raw-html-format|raw-html-format"
+      ],
+      "blocking_reason": "RG-001: high confirmed vulnerability is corroborated by a high scanner finding; blocking severities are critical, high."
+    },
+    {
+      "candidate_id": "merged-b151286667cab3988485",
+      "action": "warn",
+      "severity": "high",
+      "verdict": "likely_vulnerability",
+      "reason": "RG-003: high likely vulnerability requires manual review; not auto-confirmed.",
+      "rule_id": "RG-003",
+      "evidence_basis": "scanner_corroborated",
+      "evidence": [
+        "scanner codeql-cli,semgrep-ce high at app.py:174 rules=py/reflective-xss|raw-html-format|raw-html-format"
+      ],
+      "blocking_reason": ""
+    },
+    {
+      "candidate_id": "merged-fb37d47708f7012cf065",
+      "action": "block",
+      "severity": "high",
+      "verdict": "confirmed_vulnerability",
+      "reason": "RG-001: high confirmed vulnerability is corroborated by a high scanner finding; blocking severities are critical, high.",
+      "rule_id": "RG-001",
+      "evidence_basis": "scanner_corroborated",
+      "evidence": [
+        "scanner codeql-cli,semgrep-ce high at app.py:172 rules=py/sql-injection|sql-injection-db-cursor-execute|tainted-sql-string"
+      ],
+      "blocking_reason": "RG-001: high confirmed vulnerability is corroborated by a high scanner finding; blocking severities are critical, high."
+    },
+    {
+      "candidate_id": "merged-17c0fe057fe00d448dc0",
+      "action": "warn",
+      "severity": "medium",
+      "verdict": "likely_vulnerability",
+      "reason": "RG-006: medium likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "rule_id": "RG-006",
+      "evidence_basis": "scanner_corroborated",
+      "evidence": [
+        "scanner semgrep-ce medium at app.py:177 rules=raw-html-format|raw-html-format"
+      ],
+      "blocking_reason": ""
+    },
+    {
+      "candidate_id": "merged-18fdf86aa7d23d61739a",
+      "action": "warn",
+      "severity": "medium",
+      "verdict": "likely_vulnerability",
+      "reason": "RG-006: medium likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "rule_id": "RG-006",
+      "evidence_basis": "scanner_corroborated",
+      "evidence": [
+        "scanner semgrep-ce medium at app.py:262 rules=directly-returned-format-string|raw-html-format"
+      ],
+      "blocking_reason": ""
+    },
+    {
+      "candidate_id": "merged-22b91784ed0a4c4c0e8d",
+      "action": "warn",
+      "severity": "medium",
+      "verdict": "confirmed_vulnerability",
+      "reason": "RG-006: medium confirmed vulnerability is not sufficiently confirmed for an automatic block.",
+      "rule_id": "RG-006",
+      "evidence_basis": "scanner_corroborated",
+      "evidence": [
+        "scanner codeql-cli medium at app.py:264 rules=py/stack-trace-exposure"
+      ],
+      "blocking_reason": ""
+    },
+    {
+      "candidate_id": "merged-38162fc20ad34e340aee",
+      "action": "warn",
+      "severity": "medium",
+      "verdict": "confirmed_vulnerability",
+      "reason": "RG-006: medium confirmed vulnerability is not sufficiently confirmed for an automatic block.",
+      "rule_id": "RG-006",
+      "evidence_basis": "scanner_corroborated",
+      "evidence": [
+        "scanner codeql-cli medium at app.py:174 rules=py/stack-trace-exposure"
+      ],
+      "blocking_reason": ""
+    },
+    {
+      "candidate_id": "merged-3f43ef4aa5bccc5eab46",
+      "action": "warn",
+      "severity": "medium",
+      "verdict": "confirmed_vulnerability",
+      "reason": "RG-006: medium confirmed vulnerability is not sufficiently confirmed for an automatic block.",
+      "rule_id": "RG-006",
+      "evidence_basis": "scanner_corroborated",
+      "evidence": [
+        "scanner codeql-cli medium at app.py:152 rules=py/stack-trace-exposure"
+      ],
+      "blocking_reason": ""
+    },
+    {
+      "candidate_id": "merged-4cd628d693c0b6f18fcf",
+      "action": "block",
+      "severity": "high",
+      "verdict": "confirmed_vulnerability",
+      "reason": "RG-001: high confirmed vulnerability is corroborated by a high scanner finding; blocking severities are critical, high.",
+      "rule_id": "RG-001",
+      "evidence_basis": "scanner_corroborated",
+      "evidence": [
+        "scanner codeql-cli,semgrep-ce high at app.py:344 rules=py/flask-debug|debug-enabled"
+      ],
+      "blocking_reason": "RG-001: high confirmed vulnerability is corroborated by a high scanner finding; blocking severities are critical, high."
+    },
+    {
+      "candidate_id": "merged-79b112036e28ecb71fef",
+      "action": "warn",
+      "severity": "low",
+      "verdict": "confirmed_vulnerability",
+      "reason": "RG-006: low confirmed vulnerability is not sufficiently confirmed for an automatic block.",
+      "rule_id": "RG-006",
+      "evidence_basis": "ai_assertion_only",
+      "evidence": [
+        "scanner semgrep-ce low at app.py:158 rules=secure-set-cookie"
+      ],
+      "blocking_reason": ""
+    },
+    {
+      "candidate_id": "merged-8c68cc81cf85054f52bb",
+      "action": "warn",
+      "severity": "high",
+      "verdict": "likely_vulnerability",
+      "reason": "RG-003: high likely vulnerability requires manual review; not auto-confirmed.",
+      "rule_id": "RG-003",
+      "evidence_basis": "scanner_corroborated",
+      "evidence": [
+        "scanner semgrep-ce medium at app.py:276 rules=raw-html-format|directly-returned-format-string|raw-html-format"
+      ],
+      "blocking_reason": ""
+    },
+    {
+      "candidate_id": "merged-ec51e3b63c20f593bdbb",
+      "action": "warn",
+      "severity": "medium",
+      "verdict": "likely_vulnerability",
+      "reason": "RG-006: medium likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "rule_id": "RG-006",
+      "evidence_basis": "scanner_corroborated",
+      "evidence": [
+        "scanner codeql-cli medium at app.py:278 rules=py/stack-trace-exposure"
+      ],
+      "blocking_reason": ""
+    },
+    {
+      "candidate_id": "merged-180ea469b34df4efd073",
+      "action": "allow",
+      "severity": "low",
+      "verdict": "false_positive",
+      "reason": "RG-004: classified as a false positive; no high/critical scanner finding contradicts it.",
+      "rule_id": "RG-004",
+      "evidence_basis": "ai_assertion_only",
+      "evidence": [
+        "scanner trivy low at Dockerfile:? rules=DS-0026"
+      ],
+      "blocking_reason": ""
+    },
+    {
+      "candidate_id": "ai-b80a38bb3d85978d",
+      "action": "warn",
+      "severity": "high",
+      "verdict": "likely_vulnerability",
+      "reason": "RG-003: high likely vulnerability requires manual review; not auto-confirmed.",
+      "rule_id": "RG-003",
+      "evidence_basis": "source_verified",
+      "evidence": [
+        "source verification confirmed app.py:243 (file_exists, line_range_valid, evidence_present_in_excerpt, candidate_context_snapshot_matches)"
+      ],
+      "blocking_reason": ""
+    },
+    {
+      "candidate_id": "ai-cbd8eb5475f77e99",
+      "action": "block",
+      "severity": "high",
+      "verdict": "confirmed_vulnerability",
+      "reason": "RG-001: high confirmed vulnerability is AI claim confirmed against the cited source by deterministic checks; blocking severities are critical, high.",
+      "rule_id": "RG-001",
+      "evidence_basis": "source_verified",
+      "evidence": [
+        "source verification confirmed app.py:227 (file_exists, line_range_valid, evidence_present_in_excerpt, candidate_context_snapshot_matches)"
+      ],
+      "blocking_reason": "RG-001: high confirmed vulnerability is AI claim confirmed against the cited source by deterministic checks; blocking severities are critical, high."
+    },
+    {
+      "candidate_id": "ai-251ad373f28c68f1",
+      "action": "warn",
+      "severity": "high",
+      "verdict": "likely_vulnerability",
+      "reason": "RG-003: high likely vulnerability requires manual review; not auto-confirmed.",
+      "rule_id": "RG-003",
+      "evidence_basis": "source_verified",
+      "evidence": [
+        "source verification confirmed app.py:213 (file_exists, line_range_valid, evidence_present_in_excerpt, candidate_context_snapshot_matches)"
+      ],
+      "blocking_reason": ""
+    },
+    {
+      "candidate_id": "ai-17f9aed0443e286f",
+      "action": "warn",
+      "severity": "medium",
+      "verdict": "likely_vulnerability",
+      "reason": "RG-006: medium likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "rule_id": "RG-006",
+      "evidence_basis": "source_verified",
+      "evidence": [
+        "source verification confirmed app.py:318 (file_exists, line_range_valid, evidence_present_in_excerpt, candidate_context_snapshot_matches)"
+      ],
+      "blocking_reason": ""
+    }
+  ],
+  "warnings": [
+    "RG-003: high likely vulnerability requires manual review; not auto-confirmed.",
+    "RG-003: high likely vulnerability requires manual review; not auto-confirmed.",
+    "RG-003: high likely vulnerability requires manual review; not auto-confirmed.",
+    "RG-006: medium likely vulnerability is not sufficiently confirmed for an automatic block.",
+    "RG-006: medium likely vulnerability is not sufficiently confirmed for an automatic block.",
+    "RG-006: medium confirmed vulnerability is not sufficiently confirmed for an automatic block.",
+    "RG-006: medium confirmed vulnerability is not sufficiently confirmed for an automatic block.",
+    "RG-006: medium confirmed vulnerability is not sufficiently confirmed for an automatic block.",
+    "RG-006: low confirmed vulnerability is not sufficiently confirmed for an automatic block.",
+    "RG-003: high likely vulnerability requires manual review; not auto-confirmed.",
+    "RG-006: medium likely vulnerability is not sufficiently confirmed for an automatic block.",
+    "RG-003: high likely vulnerability requires manual review; not auto-confirmed.",
+    "RG-003: high likely vulnerability requires manual review; not auto-confirmed.",
+    "RG-006: medium likely vulnerability is not sufficiently confirmed for an automatic block.",
+    "5 AI candidates remain unresolved; they are not confirmed vulnerabilities."
+  ],
+  "rule_set": "release-gate-rules/2"
+}

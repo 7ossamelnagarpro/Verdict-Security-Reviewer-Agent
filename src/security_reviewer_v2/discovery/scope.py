@@ -23,6 +23,9 @@ SKIP_DIRS = {".git", ".venv", "node_modules", "vendor", "dist", "build", "covera
 PATH_HINT = re.compile(r"auth|user|profile|order|admin|route|controller|api|coupon|checkout|payment|upload|file|session|access", re.I)
 AUTH_HINT = re.compile(r"\b(?:auth|authoriz\w*|permission\w*|owner\w*|user_id|users?|role|admin|profile|orders?|coupon|checkout|session|accounts?)\b", re.I)
 INPUT_HINT = re.compile(r"\brequest\b|\breq\.|\bparams\b|\bquery\b|\bbody\b|@\w+\.route|@\w+\.(?:get|post|put|delete)|\b(?:app|router)\.(?:get|post|put|patch|delete)\s*\(|\broute\s*\(", re.I)
+RISK_CONTEXT_BEFORE = 12      # source lines shown before a scanner-flagged line
+RISK_CONTEXT_AFTER = 25       # ... and after it
+RISK_CONTEXT_MAX_LINES = 60
 SENSITIVE_HINT = re.compile(r"secret|debug|environ|password|token|credential", re.I)
 
 
@@ -82,6 +85,7 @@ def plan_discovery_scope(
     no_finding_targets: list[DiscoveryTarget] = []
     hotspot_targets: list[DiscoveryTarget] = []
     snippets: dict[str, str] = {}
+    read_cache: dict[str, tuple[str, ...]] = {}   # files already read, so risk targets do not re-read (or re-count) them
     bytes_read = 0
     for relative in considered:
         try:
@@ -93,15 +97,16 @@ def plan_discovery_scope(
         bytes_read += size
         if not lines:
             continue
+        read_cache[relative] = lines
         hotspots = _hotspots(relative, lines, finding_lines.get(relative, set()))
         matched_gaps = tuple(gap[:240] for gap in gap_evidence if relative in gap)
         if matched_gaps:
-            start, end = hotspots[0][:2] if hotspots else (1, min(len(lines), 40))
+            start, end = hotspots[0][:2] if hotspots else _fallback_window(lines)
             target = _file_target("coverage_gap", relative, start, end, matched_gaps)
             gap_targets.append(target)
             snippets[target.target_id] = _numbered_window(lines, start, end)
         if relative not in finding_lines:
-            start, end = hotspots[0][:2] if hotspots else (1, min(len(lines), 40))
+            start, end = hotspots[0][:2] if hotspots else _fallback_window(lines)
             reasons = ("No scanner finding has a primary location in this source file; this is not proof it was unscanned.",)
             target = _file_target("no_findings", relative, start, end, reasons)
             no_finding_targets.append(target)
@@ -120,6 +125,28 @@ def plan_discovery_scope(
                         (f"Risk rank {getattr(item, 'rank', '?')}; score {getattr(item, 'risk_score', '?')}; selected for deep review.",))
         for item in risk.findings if item.selected_for_deep_review
     ]
+    # A risk target used to carry only the merged scanner excerpt, so the model re-read the merge result and never
+    # saw the surrounding source.  Give it the real code window around the finding as well.
+    for target in high:
+        if not target.path or target.start_line is None:
+            continue
+        relative = target.path.replace("\\", "/")
+        lines = read_cache.get(relative)
+        if lines is None:
+            try:
+                lines, size = _read_source(root, relative, expected_hashes, config, bytes_read)
+            except ValueError as error:
+                warnings.append(f"{relative}: {error}")
+                continue
+            bytes_read += size
+            read_cache[relative] = lines
+        if not lines:
+            continue
+        end_line = target.end_line if target.end_line is not None else target.start_line
+        start = max(1, min(target.start_line, len(lines)) - RISK_CONTEXT_BEFORE)
+        end = min(len(lines), max(end_line, target.start_line) + RISK_CONTEXT_AFTER)
+        snippets[target.target_id] = _numbered_window(lines, start, min(end, start + RISK_CONTEXT_MAX_LINES - 1))
+
     interleaved: list[DiscoveryTarget] = []
     for index in range(max((len(gap_targets), len(no_finding_targets), len(hotspot_targets)), default=0)):
         for category in (gap_targets, no_finding_targets, hotspot_targets):
@@ -243,6 +270,16 @@ def _hotspots(relative: str, lines: tuple[str, ...], finding_lines: set[int]) ->
         score = 3 * auth + 2 * boundary + sink + sensitive + bool(route and "<" in signals)
         scored.append((start, min(end, start + 79), score))
     return sorted(set(scored), key=lambda item: (-item[2], item[0]))
+
+
+def _fallback_window(lines: tuple[str, ...]) -> tuple[int, int]:
+    """Window for a file with no scored hotspot: the first line with an input/authorization/sensitive signal, so the
+    model is not shown only the import header (the old behaviour was always lines 1-40)."""
+    for number, text in enumerate(lines, 1):
+        if INPUT_HINT.search(text) or AUTH_HINT.search(text) or SENSITIVE_HINT.search(text):
+            start = max(1, number - 8)
+            return start, min(len(lines), start + 59)
+    return 1, min(len(lines), 40)
 
 
 def _file_target(kind: str, path: str, start: int, end: int, reasons: tuple[str, ...]) -> DiscoveryTarget:

@@ -1,0 +1,311 @@
+{
+  "schema_version": "1.2",
+  "status": "partial",
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "scope": [
+    "file:helpers/db_sqlite.py#L1-40",
+    "merged-cd88912f8146c062dacf",
+    "file:testcode/BenchmarkTest00011.py#L34-56",
+    "merged-93ccb9cb7ebc9422e31c",
+    "file:helpers/ldap.py#L1-21",
+    "merged-050536f628fbddaf1e1c",
+    "file:testcode/BenchmarkTest00063.py#L34-71",
+    "merged-a1b9777f103958f5ab7e",
+    "file:helpers/separate_request.py#L1-19",
+    "merged-009e23ebbe55e21c6bf6"
+  ],
+  "candidates": [
+    {
+      "candidate_id": "ai-1ccb6c253af51157",
+      "title": "Missing authorization check before using user\u2011supplied cookie in SQL query",
+      "category": "Authorization",
+      "severity": "Medium",
+      "confidence": "Medium",
+      "path": "testcode/BenchmarkTest00011.py",
+      "start_line": 34,
+      "end_line": 56,
+      "evidence": [
+        "34: \t@app.route('/benchmark/sqli-00/BenchmarkTest00011', methods=['POST'])",
+        "38: \t\timport urllib.parse",
+        "39: \t\tparam = urllib.parse.unquote_plus(request.cookies.get(\"BenchmarkTest00011\", \"noCookieValueSupplied\"))",
+        "42: \t\tif 'should' in bar:",
+        "43: \t\t\tbar = param",
+        "50: \t\tcur.execute(sql, (bar,))"
+      ],
+      "reasoning": "The endpoint extracts a value from a client\u2011controlled cookie (line 39) and, after a condition that is never true (lines 42\u201143), assigns it to the variable `bar` which is then used as a parameter in a SQL query (line 50). No authentication or authorization checks are performed before this operation, allowing an unauthenticated user to influence the query and potentially retrieve data they should not have access to (IDOR/authorization bypass).",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "testcode/BenchmarkTest00011.py",
+        "line": 34,
+        "code": "@app.route('/benchmark/sqli-00/BenchmarkTest00011', methods=['POST'])"
+      },
+      "sensitive_operation": {
+        "path": "testcode/BenchmarkTest00011.py",
+        "line": 50,
+        "code": "cur.execute(sql, (bar,))"
+      },
+      "missing_check": {
+        "path": "testcode/BenchmarkTest00011.py",
+        "line": 39,
+        "expected_check": "Authentication/authorization verification before using user\u2011controlled data in a database query",
+        "observation": "No such check is present; the code proceeds directly to the query."
+      },
+      "remaining_questions": [
+        "Is there a global authentication decorator applied to the Flask app that might protect this route?",
+        "Does the `sql` string contain additional constraints that could mitigate unauthorized data access?",
+        "Are there any downstream checks on the query result that enforce user\u2011level permissions?"
+      ]
+    },
+    {
+      "candidate_id": "ai-a433cd9eabd54f61",
+      "title": "Potential reflected XSS via unescaped database values in HTML response",
+      "category": "Cross\u2011Site Scripting",
+      "severity": "Low",
+      "confidence": "Medium",
+      "path": "helpers/db_sqlite.py",
+      "start_line": 33,
+      "end_line": 40,
+      "evidence": [
+        "33: def results(cur, sql: str):",
+        "34: \tret = '''<!DOCTYPE html PUBLIC \\\"-//W3C//DTD HTML 4.01 Transitional//EN\\\" \\\"http://www.w3.org/TR/html4/loose.dtd\\'>",
+        "35: <html>",
+        "36: <head>",
+        "37: <meta http-equiv=\\\"Content-Type\\\" content=\\\"text/html; charset=UTF-8\\\">",
+        "38: </head>",
+        "39: <body>",
+        "40: <p>"
+      ],
+      "reasoning": "The `results` helper builds an HTML document by concatenating raw database values (returned via the cursor) into the response without any HTML escaping. If an attacker can insert malicious payloads into the database (e.g., via other endpoints), those payloads will be reflected back to the client when this function is used (as seen in BenchmarkTest00011 at line 52). This constitutes a reflected XSS risk.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "testcode/BenchmarkTest00011.py",
+        "line": 52,
+        "code": "helpers.db_sqlite.results(cur, sql)"
+      },
+      "sensitive_operation": {
+        "path": "helpers/db_sqlite.py",
+        "line": 33,
+        "code": "def results(cur, sql: str):"
+      },
+      "missing_check": {
+        "path": "helpers/db_sqlite.py",
+        "line": 33,
+        "expected_check": "HTML\u2011escaping or sanitisation of data before embedding into the response",
+        "observation": "The function directly inserts data into an HTML template without escaping."
+      },
+      "remaining_questions": [
+        "Are any of the database fields ever populated with user\u2011controlled input elsewhere in the application?",
+        "Is there a downstream sanitisation step applied to the output of `helpers.db_sqlite.results` before it is sent to the client?",
+        "Does the Flask response handling automatically escape the returned string, or is it sent verbatim?"
+      ]
+    }
+  ],
+  "warnings": [
+    "Discovery batch 2: AI provider request failed with HTTP 413 (rate_limit_exceeded)"
+  ],
+  "coverage_gaps": [
+    "2 source windows were shortened by the prompt character budget.",
+    "25 planned discovery targets were not inspected; batch or candidate budget was exhausted: file:testcode/BenchmarkTest00271.py#L1-40, merged-1970d12d68ceaafba0e8, file:testcode/BenchmarkTest00280.py#L1-40, merged-d9a3103e3b61f4dae4ce, file:testcode/BenchmarkTest00283.py#L21-55, merged-9d738fad026bef853071, file:testcode/BenchmarkTest00284.py#L21-53, file:testcode/BenchmarkTest00338.py#L21-56, file:testcode/BenchmarkTest00365.py#L1-40, file:testcode/BenchmarkTest00395.py#L21-59, file:testcode/BenchmarkTest00427.py#L1-40, file:testcode/BenchmarkTest00428.py#L1-40, file:testcode/BenchmarkTest00554.py#L21-69, file:testcode/BenchmarkTest00664.py#L1-40, file:testcode/BenchmarkTest00731.py#L1-40, file:testcode/BenchmarkTest00782.py#L21-60, file:testcode/BenchmarkTest00814.py#L1-40, file:testcode/BenchmarkTest00945.py#L21-71, file:testcode/BenchmarkTest00984.py#L21-56, file:testcode/BenchmarkTest00996.py#L1-40",
+    "38 known findings were omitted from the discovery prompt's duplicate-avoidance list.",
+    "39 known findings were omitted from the discovery prompt's duplicate-avoidance list.",
+    "Dependency/SCA coverage is unknown for component component-cdb4ee2aea: no supported manifest or lockfile was found.",
+    "Discovery batch 2 did not complete; targets: file:helpers/ThingFactory.py#L1-21, merged-e3541edd3a1bee97e935, file:helpers/utils.py#L1-40, merged-400abf28dca80b22eac6, file:testcode/BenchmarkTest00155.py#L21-57, merged-45c2e411890b332b06f9, file:testcode/BenchmarkTest00169.py#L1-40, merged-919caa004fdbceac06f2, file:testcode/BenchmarkTest00246.py#L21-67, merged-c0e018ebfac46ce99f7a."
+  ],
+  "usage": {
+    "retry_count": 4,
+    "rate_limit_wait_seconds": 62.0,
+    "format_fallback_count": 1,
+    "queue_time": 0.294407894,
+    "prompt_tokens": 5463,
+    "prompt_time": 0.011412514,
+    "completion_tokens": 2143,
+    "completion_time": 4.709586833,
+    "total_tokens": 7606,
+    "total_time": 4.720999347,
+    "targets": 10,
+    "planned_targets": 45,
+    "batches": 2,
+    "provider_calls": 2,
+    "estimated_cost_usd": null,
+    "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+  },
+  "target_plan": [
+    {
+      "target_id": "file:helpers/db_sqlite.py#L1-40",
+      "kind": "no_findings",
+      "path": "helpers/db_sqlite.py",
+      "start_line": 1,
+      "end_line": 40,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "merged-cd88912f8146c062dacf",
+      "kind": "risk_finding",
+      "path": "testcode/BenchmarkTest00157.py",
+      "start_line": 50,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 1; score 100; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00011.py#L34-56",
+      "kind": "unflagged_hotspot",
+      "path": "testcode/BenchmarkTest00011.py",
+      "start_line": 34,
+      "end_line": 56,
+      "reasons": [
+        "Security-relevant function/window scored 3 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-93ccb9cb7ebc9422e31c",
+      "kind": "risk_finding",
+      "path": "testcode/BenchmarkTest00158.py",
+      "start_line": 56,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 2; score 100; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:helpers/ldap.py#L1-21",
+      "kind": "no_findings",
+      "path": "helpers/ldap.py",
+      "start_line": 1,
+      "end_line": 21,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "merged-050536f628fbddaf1e1c",
+      "kind": "risk_finding",
+      "path": "testcode/BenchmarkTest00161.py",
+      "start_line": 40,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 3; score 100; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00063.py#L34-71",
+      "kind": "unflagged_hotspot",
+      "path": "testcode/BenchmarkTest00063.py",
+      "start_line": 34,
+      "end_line": 71,
+      "reasons": [
+        "Security-relevant function/window scored 3 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-a1b9777f103958f5ab7e",
+      "kind": "risk_finding",
+      "path": "testcode/BenchmarkTest00431.py",
+      "start_line": 51,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 4; score 100; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:helpers/separate_request.py#L1-19",
+      "kind": "no_findings",
+      "path": "helpers/separate_request.py",
+      "start_line": 1,
+      "end_line": 19,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "merged-009e23ebbe55e21c6bf6",
+      "kind": "risk_finding",
+      "path": "testcode/BenchmarkTest00607.py",
+      "start_line": 54,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 5; score 96; selected for deep review."
+      ]
+    }
+  ],
+  "batches": [
+    {
+      "batch_index": 1,
+      "target_ids": [
+        "file:helpers/db_sqlite.py#L1-40",
+        "merged-cd88912f8146c062dacf",
+        "file:testcode/BenchmarkTest00011.py#L34-56",
+        "merged-93ccb9cb7ebc9422e31c",
+        "file:helpers/ldap.py#L1-21",
+        "merged-050536f628fbddaf1e1c",
+        "file:testcode/BenchmarkTest00063.py#L34-71",
+        "merged-a1b9777f103958f5ab7e",
+        "file:helpers/separate_request.py#L1-19",
+        "merged-009e23ebbe55e21c6bf6"
+      ],
+      "status": "completed",
+      "prompt_chars": 15934,
+      "provider_calls": 1,
+      "candidate_count": 2,
+      "context_requests": 0,
+      "usage": {
+        "retry_count": 4,
+        "rate_limit_wait_seconds": 62.0,
+        "format_fallback_count": 1,
+        "queue_time": 0.294407894,
+        "prompt_tokens": 5463,
+        "prompt_time": 0.011412514,
+        "completion_tokens": 2143,
+        "completion_time": 4.709586833,
+        "total_tokens": 7606,
+        "total_time": 4.720999347,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-1ccb6c253af51157",
+        "ai-a433cd9eabd54f61"
+      ]
+    },
+    {
+      "batch_index": 2,
+      "target_ids": [
+        "file:helpers/ThingFactory.py#L1-21",
+        "merged-e3541edd3a1bee97e935",
+        "file:helpers/utils.py#L1-40",
+        "merged-400abf28dca80b22eac6",
+        "file:testcode/BenchmarkTest00155.py#L21-57",
+        "merged-45c2e411890b332b06f9",
+        "file:testcode/BenchmarkTest00169.py#L1-40",
+        "merged-919caa004fdbceac06f2",
+        "file:testcode/BenchmarkTest00246.py#L21-67",
+        "merged-c0e018ebfac46ce99f7a"
+      ],
+      "status": "failed",
+      "prompt_chars": 15894,
+      "provider_calls": 1,
+      "candidate_count": 0,
+      "context_requests": 0,
+      "usage": {
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": "AI provider request failed with HTTP 413 (rate_limit_exceeded)",
+      "candidate_ids": []
+    }
+  ],
+  "context_exchanges": []
+}

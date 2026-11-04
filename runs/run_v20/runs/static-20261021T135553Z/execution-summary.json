@@ -1,0 +1,186 @@
+{
+  "coverage_gaps": [
+    "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile.",
+    "codeql-cli task task-e01e4c2db2dc did not complete: prerequisite_unverified (Unverified prerequisites: codeql_executable).",
+    "gitleaks task task-510db4138e2f did not complete: prerequisite_unverified (Unverified prerequisites: gitleaks_executable).",
+    "semgrep-ce task task-dcae5d188e58 did not complete: prerequisite_unverified (Unverified prerequisites: semgrep_executable).",
+    "trivy task task-45e5f84af47a did not complete: prerequisite_unverified (Unverified prerequisites: trivy_executable, trivy_databases).",
+    "trivy task task-f535ab2d488a did not complete: prerequisite_unverified (Unverified prerequisites: trivy_executable)."
+  ],
+  "finished_at": "2026-10-21T13:56:10.918302+00:00",
+  "project_root_name": "security-lab-web",
+  "run_id": "static-20261021T135553Z",
+  "schema_version": "1.0",
+  "started_at": "2026-10-21T13:55:53.796406+00:00",
+  "status": "failed",
+  "tasks": [
+    {
+      "commands": [],
+      "finished_at": null,
+      "prerequisite_checks": [
+        {
+          "detail": "Trivy runtime version 0.71.2 does not match verified version 0.75.0",
+          "name": "trivy_executable",
+          "status": "unverified",
+          "version": "0.71.2"
+        },
+        {
+          "detail": "All Trivy targets are inside the project root",
+          "name": "target_paths",
+          "status": "available",
+          "version": null
+        },
+        {
+          "detail": "SCA requires a verified Trivy vulnerability database; run trivy fs --download-db-only",
+          "name": "trivy_databases",
+          "status": "unverified",
+          "version": null
+        }
+      ],
+      "raw_outputs": [],
+      "reason": "Unverified prerequisites: trivy_executable, trivy_databases",
+      "scanner_id": "trivy",
+      "started_at": null,
+      "status": "prerequisite_unverified",
+      "task_id": "task-45e5f84af47a"
+    },
+    {
+      "commands": [],
+      "finished_at": null,
+      "prerequisite_checks": [
+        {
+          "detail": "Gitleaks executable exists, but its runtime version could not be verified",
+          "name": "gitleaks_executable",
+          "status": "unverified",
+          "version": null
+        },
+        {
+          "detail": "All Gitleaks targets are inside the project root",
+          "name": "target_paths",
+          "status": "available",
+          "version": null
+        },
+        {
+          "detail": "Git-history mode is not requested",
+          "name": "git_metadata",
+          "status": "available",
+          "version": null
+        }
+      ],
+      "raw_outputs": [],
+      "reason": "Unverified prerequisites: gitleaks_executable",
+      "scanner_id": "gitleaks",
+      "started_at": null,
+      "status": "prerequisite_unverified",
+      "task_id": "task-510db4138e2f"
+    },
+    {
+      "commands": [],
+      "finished_at": null,
+      "prerequisite_checks": [],
+      "raw_outputs": [],
+      "reason": "Planning status is not_applicable",
+      "scanner_id": "trivy",
+      "started_at": null,
+      "status": "skipped",
+      "task_id": "task-9f00818366ac"
+    },
+    {
+      "commands": [],
+      "finished_at": null,
+      "prerequisite_checks": [
+        {
+          "detail": "Semgrep executable exists, but its runtime version could not be verified",
+          "name": "semgrep_executable",
+          "status": "unverified",
+          "version": null
+        },
+        {
+          "detail": "Trusted Semgrep configs are configured; registry availability is verified during execution",
+          "name": "semgrep_rules",
+          "status": "available",
+          "version": null
+        },
+        {
+          "detail": "All Semgrep targets are inside the project root",
+          "name": "target_paths",
+          "status": "available",
+          "version": null
+        }
+      ],
+      "raw_outputs": [],
+      "reason": "Unverified prerequisites: semgrep_executable",
+      "scanner_id": "semgrep-ce",
+      "started_at": null,
+      "status": "prerequisite_unverified",
+      "task_id": "task-dcae5d188e58"
+    },
+    {
+      "commands": [],
+      "finished_at": null,
+      "prerequisite_checks": [
+        {
+          "detail": "CodeQL runtime version 2.27.2 does not match verified version 2.27.1",
+          "name": "codeql_executable",
+          "status": "unverified",
+          "version": "2.27.2"
+        },
+        {
+          "detail": "Configured python standard query suite exists",
+          "name": "language_query_pack",
+          "status": "available",
+          "version": null
+        },
+        {
+          "detail": "All CodeQL targets are inside the project root",
+          "name": "target_paths",
+          "status": "available",
+          "version": null
+        },
+        {
+          "detail": "Configured CodeQL search path exists",
+          "name": "codeql_search_path",
+          "status": "available",
+          "version": null
+        }
+      ],
+      "raw_outputs": [],
+      "reason": "Unverified prerequisites: codeql_executable",
+      "scanner_id": "codeql-cli",
+      "started_at": null,
+      "status": "prerequisite_unverified",
+      "task_id": "task-e01e4c2db2dc"
+    },
+    {
+      "commands": [],
+      "finished_at": null,
+      "prerequisite_checks": [
+        {
+          "detail": "Trivy runtime version 0.71.2 does not match verified version 0.75.0",
+          "name": "trivy_executable",
+          "status": "unverified",
+          "version": "0.71.2"
+        },
+        {
+          "detail": "All Trivy targets are inside the project root",
+          "name": "target_paths",
+          "status": "available",
+          "version": null
+        },
+        {
+          "detail": "This Trivy scan type does not require a vulnerability database",
+          "name": "trivy_databases",
+          "status": "available",
+          "version": null
+        }
+      ],
+      "raw_outputs": [],
+      "reason": "Unverified prerequisites: trivy_executable",
+      "scanner_id": "trivy",
+      "started_at": null,
+      "status": "prerequisite_unverified",
+      "task_id": "task-f535ab2d488a"
+    }
+  ],
+  "warnings": []
+}

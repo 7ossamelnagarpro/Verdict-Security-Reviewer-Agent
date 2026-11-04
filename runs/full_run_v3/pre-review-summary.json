@@ -1,0 +1,352 @@
+{
+  "status": "completed",
+  "pre_review": false,
+  "review_agent_ran": true,
+  "project": "/mnt/c/Users/ASUS/Downloads/2update/verdict-integrated/targets/security-lab-web",
+  "adapter_ids": [
+    "gitleaks",
+    "semgrep-ce",
+    "trivy"
+  ],
+  "test_environment": {
+    "status": "not_requested"
+  },
+  "dast_requirement": {
+    "requested": false,
+    "satisfied": false
+  },
+  "sast_requirement": {
+    "requested": true,
+    "satisfied": true
+  },
+  "scanner_requirement": {
+    "requested": false,
+    "required": [],
+    "satisfied": true,
+    "failures": []
+  },
+  "isolated_pilot": {
+    "status": "not_requested"
+  },
+  "isolated_runtime": {
+    "status": "not_requested"
+  },
+  "docker_runtime": {
+    "status": "not_requested"
+  },
+  "runtime_evidence": {
+    "status": "not_requested"
+  },
+  "execution": {
+    "schema_version": "1.0",
+    "run_id": "static-20261021T103838Z",
+    "status": "partial",
+    "project_root_name": "security-lab-web",
+    "started_at": "2026-10-21T10:38:38.511864+00:00",
+    "finished_at": "2026-10-21T10:39:14.615019+00:00",
+    "tasks": [
+      {
+        "task_id": "task-45e5f84af47a",
+        "scanner_id": "trivy",
+        "status": "prerequisite_unverified",
+        "reason": "Unverified prerequisites: trivy_executable, trivy_databases",
+        "prerequisite_checks": [
+          {
+            "name": "trivy_executable",
+            "status": "unverified",
+            "detail": "Trivy runtime version 0.71.2 does not match verified version 0.75.0",
+            "version": "0.71.2"
+          },
+          {
+            "name": "target_paths",
+            "status": "available",
+            "detail": "All Trivy targets are inside the project root",
+            "version": null
+          },
+          {
+            "name": "trivy_databases",
+            "status": "unverified",
+            "detail": "SCA requires a verified Trivy vulnerability database; run trivy fs --download-db-only",
+            "version": null
+          }
+        ],
+        "commands": [],
+        "raw_outputs": [],
+        "started_at": null,
+        "finished_at": null
+      },
+      {
+        "task_id": "task-510db4138e2f",
+        "scanner_id": "gitleaks",
+        "status": "prerequisite_unverified",
+        "reason": "Unverified prerequisites: gitleaks_executable",
+        "prerequisite_checks": [
+          {
+            "name": "gitleaks_executable",
+            "status": "unverified",
+            "detail": "Gitleaks executable exists, but its runtime version could not be verified",
+            "version": null
+          },
+          {
+            "name": "target_paths",
+            "status": "available",
+            "detail": "All Gitleaks targets are inside the project root",
+            "version": null
+          },
+          {
+            "name": "git_metadata",
+            "status": "available",
+            "detail": "Git-history mode is not requested",
+            "version": null
+          }
+        ],
+        "commands": [],
+        "raw_outputs": [],
+        "started_at": null,
+        "finished_at": null
+      },
+      {
+        "task_id": "task-9f00818366ac",
+        "scanner_id": "trivy",
+        "status": "skipped",
+        "reason": "Planning status is not_applicable",
+        "prerequisite_checks": [],
+        "commands": [],
+        "raw_outputs": [],
+        "started_at": null,
+        "finished_at": null
+      },
+      {
+        "task_id": "task-dcae5d188e58",
+        "scanner_id": "semgrep-ce",
+        "status": "completed",
+        "reason": "Semgrep produced valid JSON output",
+        "prerequisite_checks": [
+          {
+            "name": "semgrep_executable",
+            "status": "available",
+            "detail": "Semgrep executable and runtime version were verified",
+            "version": "1.178.0"
+          },
+          {
+            "name": "semgrep_rules",
+            "status": "available",
+            "detail": "Trusted Semgrep configs are configured; registry availability is verified during execution",
+            "version": null
+          },
+          {
+            "name": "target_paths",
+            "status": "available",
+            "detail": "All Semgrep targets are inside the project root",
+            "version": null
+          }
+        ],
+        "commands": [
+          {
+            "name": "semgrep-scan",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 22.539932,
+            "stdout_log": "semgrep-ce/task-dcae5d188e58/logs/semgrep-scan.stdout.log",
+            "stderr_log": "semgrep-ce/task-dcae5d188e58/logs/semgrep-scan.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          }
+        ],
+        "raw_outputs": [
+          "semgrep-ce/task-dcae5d188e58/result.json"
+        ],
+        "started_at": "2026-10-21T10:38:51.884606+00:00",
+        "finished_at": "2026-10-21T10:39:14.508882+00:00"
+      },
+      {
+        "task_id": "task-e01e4c2db2dc",
+        "scanner_id": "codeql-cli",
+        "status": "adapter_unavailable",
+        "reason": "No runtime adapter is registered for this scanner",
+        "prerequisite_checks": [],
+        "commands": [],
+        "raw_outputs": [],
+        "started_at": null,
+        "finished_at": null
+      },
+      {
+        "task_id": "task-f535ab2d488a",
+        "scanner_id": "trivy",
+        "status": "prerequisite_unverified",
+        "reason": "Unverified prerequisites: trivy_executable",
+        "prerequisite_checks": [
+          {
+            "name": "trivy_executable",
+            "status": "unverified",
+            "detail": "Trivy runtime version 0.71.2 does not match verified version 0.75.0",
+            "version": "0.71.2"
+          },
+          {
+            "name": "target_paths",
+            "status": "available",
+            "detail": "All Trivy targets are inside the project root",
+            "version": null
+          },
+          {
+            "name": "trivy_databases",
+            "status": "available",
+            "detail": "This Trivy scan type does not require a vulnerability database",
+            "version": null
+          }
+        ],
+        "commands": [],
+        "raw_outputs": [],
+        "started_at": null,
+        "finished_at": null
+      }
+    ],
+    "coverage_gaps": [
+      "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile.",
+      "codeql-cli task task-e01e4c2db2dc did not complete: adapter_unavailable (No runtime adapter is registered for this scanner).",
+      "gitleaks task task-510db4138e2f did not complete: prerequisite_unverified (Unverified prerequisites: gitleaks_executable).",
+      "trivy task task-45e5f84af47a did not complete: prerequisite_unverified (Unverified prerequisites: trivy_executable, trivy_databases).",
+      "trivy task task-f535ab2d488a did not complete: prerequisite_unverified (Unverified prerequisites: trivy_executable)."
+    ],
+    "warnings": []
+  },
+  "merge_summary": {
+    "input_batches": 1,
+    "input_findings": 25,
+    "merged_findings": 25,
+    "duplicates_collapsed": 0
+  },
+  "endpoint_coverage": {
+    "status": "not_run",
+    "endpoint_count": null,
+    "probe_count": null,
+    "probed_count": 0,
+    "authentication": null,
+    "workflows": null,
+    "coverage_gaps": []
+  },
+  "ai_discovery": {
+    "required": true,
+    "satisfied": true,
+    "status": "partial",
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "provider_calls": 1,
+    "planned_targets": 3,
+    "inspected_targets": 3,
+    "failed_batches": 0,
+    "candidate_count": 3,
+    "supported_candidates": 3,
+    "coverage_gaps": [
+      "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile.",
+      "codeql-cli task task-e01e4c2db2dc did not complete: adapter_unavailable (No runtime adapter is registered for this scanner).",
+      "gitleaks task task-510db4138e2f did not complete: prerequisite_unverified (Unverified prerequisites: gitleaks_executable).",
+      "semgrep-ce normalization was partial; some scanner results may be unavailable.",
+      "trivy task task-45e5f84af47a did not complete: prerequisite_unverified (Unverified prerequisites: trivy_executable, trivy_databases).",
+      "trivy task task-f535ab2d488a did not complete: prerequisite_unverified (Unverified prerequisites: trivy_executable)."
+    ],
+    "warnings": []
+  },
+  "candidate_context": {
+    "status": "partial",
+    "summary": {
+      "input_candidates": 3,
+      "contexts_created": 3,
+      "evidence_locations": 15,
+      "excerpts_collected": 15,
+      "unavailable_locations": 0,
+      "files_read": 1,
+      "bytes_read": 11473
+    },
+    "coverage_gaps": [
+      "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile.",
+      "codeql-cli task task-e01e4c2db2dc did not complete: adapter_unavailable (No runtime adapter is registered for this scanner).",
+      "gitleaks task task-510db4138e2f did not complete: prerequisite_unverified (Unverified prerequisites: gitleaks_executable).",
+      "semgrep-ce normalization was partial; some scanner results may be unavailable.",
+      "trivy task task-45e5f84af47a did not complete: prerequisite_unverified (Unverified prerequisites: trivy_executable, trivy_databases).",
+      "trivy task task-f535ab2d488a did not complete: prerequisite_unverified (Unverified prerequisites: trivy_executable)."
+    ],
+    "warnings": []
+  },
+  "verification": {
+    "status": "partial",
+    "record_count": 3,
+    "confirmed": 2,
+    "needs_more_evidence": 1,
+    "rejected": 0,
+    "warnings": []
+  },
+  "candidate_triage": {
+    "status": "partial",
+    "summary": {
+      "input_scanner_findings": 25,
+      "input_ai_candidates": 3,
+      "review_groups": 18,
+      "scanner_overlap": 0,
+      "candidate_overlap": 0,
+      "novel_candidates": 2,
+      "uncertain_overlap": 0,
+      "needs_more_evidence": 1,
+      "rejected": 0
+    },
+    "warnings": []
+  },
+  "security_review": {
+    "status": "completed",
+    "satisfied": true,
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "review_count": 18,
+    "pending_ids": [],
+    "warnings": []
+  },
+  "policy_gate": {
+    "status": "failed",
+    "blocking": true,
+    "decision_count": 18,
+    "warnings": [
+      "Finding is not sufficiently confirmed for an automatic block.",
+      "high likely vulnerability requires manual review; not auto-confirmed.",
+      "Finding is not sufficiently confirmed for an automatic block.",
+      "Finding is not sufficiently confirmed for an automatic block.",
+      "Finding is not sufficiently confirmed for an automatic block.",
+      "Finding is not sufficiently confirmed for an automatic block.",
+      "Finding is not sufficiently confirmed for an automatic block.",
+      "Finding is not sufficiently confirmed for an automatic block.",
+      "Finding is not sufficiently confirmed for an automatic block.",
+      "Finding is not sufficiently confirmed for an automatic block.",
+      "Finding is not sufficiently confirmed for an automatic block.",
+      "1 AI candidates remain unresolved; they are not confirmed vulnerabilities."
+    ]
+  },
+  "context_summary": {
+    "input_findings": 25,
+    "contexts_created": 25,
+    "evidence_locations": 25,
+    "excerpts_collected": 25,
+    "files_read": 1,
+    "bytes_read": 11473,
+    "unavailable_locations": 0
+  },
+  "risk_summary": {
+    "input_findings": 25,
+    "ranked_findings": 25,
+    "selected_for_deep_review": 0,
+    "queued_for_deep_review": 0,
+    "standard_report": 25,
+    "needs_verification": 0
+  },
+  "coverage_gaps": [
+    "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile.",
+    "codeql-cli task task-e01e4c2db2dc did not complete: adapter_unavailable (No runtime adapter is registered for this scanner).",
+    "gitleaks task task-510db4138e2f did not complete: prerequisite_unverified (Unverified prerequisites: gitleaks_executable).",
+    "semgrep-ce normalization was partial; some scanner results may be unavailable.",
+    "trivy task task-45e5f84af47a did not complete: prerequisite_unverified (Unverified prerequisites: trivy_executable, trivy_databases).",
+    "trivy task task-f535ab2d488a did not complete: prerequisite_unverified (Unverified prerequisites: trivy_executable)."
+  ],
+  "limitations": [
+    "Scanner silence is not proof of safety.",
+    "Runtime checks require an authorized target URL or completed Runtime Contract evidence.",
+    "Mutating workflows remain opt-in and are not executed by this run."
+  ]
+}

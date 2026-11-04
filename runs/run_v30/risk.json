@@ -1,0 +1,1252 @@
+{
+  "schema_version": "1.0",
+  "policy_version": "heuristic-v1",
+  "status": "partial",
+  "policy": {
+    "deep_review_threshold": 65,
+    "max_deep_reviews": 20
+  },
+  "findings": [
+    {
+      "rank": 1,
+      "merged_finding_id": "merged-134617a3d0aad53ab237",
+      "title": "Uncontrolled command line",
+      "primary_location": {
+        "path": "app.py",
+        "start_line": 275,
+        "start_column": 39,
+        "end_line": null,
+        "end_column": 42,
+        "snippet": null
+      },
+      "scanner_severity": "critical",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-78",
+        "CWE-88"
+      ],
+      "scanners": [
+        "codeql-cli",
+        "semgrep-ce"
+      ],
+      "risk_score": 100,
+      "priority_band": "critical",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 50,
+          "evidence": [
+            "critical"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 16,
+          "evidence": [
+            "CWE-78"
+          ]
+        },
+        {
+          "factor_id": "scanner_corroboration",
+          "label": "Independent scanner support",
+          "points": 8,
+          "evidence": [
+            "codeql-cli",
+            "semgrep-ce"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "8 steps",
+            "1 files"
+          ]
+        },
+        {
+          "factor_id": "external_input",
+          "label": "External input signal in collected flow",
+          "points": 12,
+          "evidence": [
+            "flask_request_args"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 2,
+      "merged_finding_id": "merged-a037400847a3044fa997",
+      "title": "SQL query built from user-controlled sources",
+      "primary_location": {
+        "path": "app.py",
+        "start_line": 150,
+        "start_column": 26,
+        "end_line": null,
+        "end_column": 31,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-89",
+        "CWE-704"
+      ],
+      "scanners": [
+        "codeql-cli",
+        "semgrep-ce"
+      ],
+      "risk_score": 94,
+      "priority_band": "critical",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 12,
+          "evidence": [
+            "CWE-89"
+          ]
+        },
+        {
+          "factor_id": "scanner_corroboration",
+          "label": "Independent scanner support",
+          "points": 8,
+          "evidence": [
+            "codeql-cli",
+            "semgrep-ce"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "32 steps",
+            "1 files"
+          ]
+        },
+        {
+          "factor_id": "external_input",
+          "label": "External input signal in collected flow",
+          "points": 12,
+          "evidence": [
+            "flask_request_form"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 3,
+      "merged_finding_id": "merged-fb37d47708f7012cf065",
+      "title": "SQL query built from user-controlled sources",
+      "primary_location": {
+        "path": "app.py",
+        "start_line": 172,
+        "start_column": 27,
+        "end_line": null,
+        "end_column": 32,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-89",
+        "CWE-704"
+      ],
+      "scanners": [
+        "codeql-cli",
+        "semgrep-ce"
+      ],
+      "risk_score": 94,
+      "priority_band": "critical",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 12,
+          "evidence": [
+            "CWE-89"
+          ]
+        },
+        {
+          "factor_id": "scanner_corroboration",
+          "label": "Independent scanner support",
+          "points": 8,
+          "evidence": [
+            "codeql-cli",
+            "semgrep-ce"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "8 steps",
+            "1 files"
+          ]
+        },
+        {
+          "factor_id": "external_input",
+          "label": "External input signal in collected flow",
+          "points": 12,
+          "evidence": [
+            "flask_request_args"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 4,
+      "merged_finding_id": "merged-aff4a97275f541026c63",
+      "title": "Reflected server-side cross-site scripting",
+      "primary_location": {
+        "path": "app.py",
+        "start_line": 152,
+        "start_column": 16,
+        "end_line": null,
+        "end_column": 68,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-79",
+        "CWE-116"
+      ],
+      "scanners": [
+        "codeql-cli",
+        "semgrep-ce"
+      ],
+      "risk_score": 90,
+      "priority_band": "critical",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-79"
+          ]
+        },
+        {
+          "factor_id": "scanner_corroboration",
+          "label": "Independent scanner support",
+          "points": 8,
+          "evidence": [
+            "codeql-cli",
+            "semgrep-ce"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "36 steps",
+            "1 files"
+          ]
+        },
+        {
+          "factor_id": "external_input",
+          "label": "External input signal in collected flow",
+          "points": 12,
+          "evidence": [
+            "flask_request_form"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 5,
+      "merged_finding_id": "merged-b151286667cab3988485",
+      "title": "Reflected server-side cross-site scripting",
+      "primary_location": {
+        "path": "app.py",
+        "start_line": 174,
+        "start_column": 16,
+        "end_line": null,
+        "end_column": 64,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-79",
+        "CWE-116"
+      ],
+      "scanners": [
+        "codeql-cli",
+        "semgrep-ce"
+      ],
+      "risk_score": 90,
+      "priority_band": "critical",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-79"
+          ]
+        },
+        {
+          "factor_id": "scanner_corroboration",
+          "label": "Independent scanner support",
+          "points": 8,
+          "evidence": [
+            "codeql-cli",
+            "semgrep-ce"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "9 steps",
+            "1 files"
+          ]
+        },
+        {
+          "factor_id": "external_input",
+          "label": "External input signal in collected flow",
+          "points": 12,
+          "evidence": [
+            "flask_request_args"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 6,
+      "merged_finding_id": "merged-5b028c5d5e2211edf809",
+      "title": "Reflected server-side cross-site scripting",
+      "primary_location": {
+        "path": "app.py",
+        "start_line": 179,
+        "start_column": 12,
+        "end_line": null,
+        "end_column": 16,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-79",
+        "CWE-116"
+      ],
+      "scanners": [
+        "codeql-cli",
+        "semgrep-ce"
+      ],
+      "risk_score": 90,
+      "priority_band": "critical",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-79"
+          ]
+        },
+        {
+          "factor_id": "scanner_corroboration",
+          "label": "Independent scanner support",
+          "points": 8,
+          "evidence": [
+            "codeql-cli",
+            "semgrep-ce"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "19 steps",
+            "1 files"
+          ]
+        },
+        {
+          "factor_id": "external_input",
+          "label": "External input signal in collected flow",
+          "points": 12,
+          "evidence": [
+            "flask_request_args"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 7,
+      "merged_finding_id": "merged-99f14e50a31b9cf4f31b",
+      "title": "Reflected server-side cross-site scripting",
+      "primary_location": {
+        "path": "app.py",
+        "start_line": 324,
+        "start_column": 12,
+        "end_line": null,
+        "end_column": 45,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-79",
+        "CWE-116"
+      ],
+      "scanners": [
+        "codeql-cli",
+        "semgrep-ce"
+      ],
+      "risk_score": 78,
+      "priority_band": "high",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-79"
+          ]
+        },
+        {
+          "factor_id": "scanner_corroboration",
+          "label": "Independent scanner support",
+          "points": 8,
+          "evidence": [
+            "codeql-cli",
+            "semgrep-ce"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "14 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 8,
+      "merged_finding_id": "merged-553fc2269771ce1811f3",
+      "title": "Uncontrolled data used in path expression",
+      "primary_location": {
+        "path": "app.py",
+        "start_line": 260,
+        "start_column": 19,
+        "end_line": null,
+        "end_column": 28,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-22",
+        "CWE-23",
+        "CWE-36",
+        "CWE-73",
+        "CWE-99"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 70,
+      "priority_band": "high",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-22"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "3 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 9,
+      "merged_finding_id": "merged-6f060dba31974b8f9989",
+      "title": "Uncontrolled data used in path expression",
+      "primary_location": {
+        "path": "app.py",
+        "start_line": 323,
+        "start_column": 12,
+        "end_line": null,
+        "end_column": 16,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-22",
+        "CWE-23",
+        "CWE-36",
+        "CWE-73",
+        "CWE-99"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 70,
+      "priority_band": "high",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-22"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "16 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 10,
+      "merged_finding_id": "merged-4cd628d693c0b6f18fcf",
+      "title": "Flask app is run in debug mode",
+      "primary_location": {
+        "path": "app.py",
+        "start_line": 344,
+        "start_column": 5,
+        "end_line": null,
+        "end_column": 53,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-215",
+        "CWE-489"
+      ],
+      "scanners": [
+        "codeql-cli",
+        "semgrep-ce"
+      ],
+      "risk_score": 60,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_corroboration",
+          "label": "Independent scanner support",
+          "points": 8,
+          "evidence": [
+            "codeql-cli",
+            "semgrep-ce"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 11,
+      "merged_finding_id": "merged-3f43ef4aa5bccc5eab46",
+      "title": "Information exposure through an exception",
+      "primary_location": {
+        "path": "app.py",
+        "start_line": 152,
+        "start_column": 16,
+        "end_line": null,
+        "end_column": 68,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-209",
+        "CWE-497"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 47,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "3 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 12,
+      "merged_finding_id": "merged-38162fc20ad34e340aee",
+      "title": "Information exposure through an exception",
+      "primary_location": {
+        "path": "app.py",
+        "start_line": 174,
+        "start_column": 16,
+        "end_line": null,
+        "end_column": 64,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-209",
+        "CWE-497"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 47,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "3 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 13,
+      "merged_finding_id": "merged-22b91784ed0a4c4c0e8d",
+      "title": "Information exposure through an exception",
+      "primary_location": {
+        "path": "app.py",
+        "start_line": 264,
+        "start_column": 16,
+        "end_line": null,
+        "end_column": 45,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-209",
+        "CWE-497"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 47,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "3 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 14,
+      "merged_finding_id": "merged-ec51e3b63c20f593bdbb",
+      "title": "Information exposure through an exception",
+      "primary_location": {
+        "path": "app.py",
+        "start_line": 278,
+        "start_column": 16,
+        "end_line": null,
+        "end_column": 33,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-209",
+        "CWE-497"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 47,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "2 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 15,
+      "merged_finding_id": "merged-5dca87bd1b02d9634e3c",
+      "title": "Raw Html Format",
+      "primary_location": {
+        "path": "app.py",
+        "start_line": 175,
+        "start_column": 12,
+        "end_line": 175,
+        "end_column": 44,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "medium",
+      "cwes": [
+        "CWE-79"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 40,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-79"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 16,
+      "merged_finding_id": "merged-17c0fe057fe00d448dc0",
+      "title": "Raw Html Format",
+      "primary_location": {
+        "path": "app.py",
+        "start_line": 177,
+        "start_column": 17,
+        "end_line": 177,
+        "end_column": 67,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "medium",
+      "cwes": [
+        "CWE-79"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 40,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-79"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 17,
+      "merged_finding_id": "merged-18fdf86aa7d23d61739a",
+      "title": "Raw Html Format",
+      "primary_location": {
+        "path": "app.py",
+        "start_line": 262,
+        "start_column": 16,
+        "end_line": 262,
+        "end_column": 39,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "medium",
+      "cwes": [
+        "CWE-79"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 40,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-79"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 18,
+      "merged_finding_id": "merged-8c68cc81cf85054f52bb",
+      "title": "Directly Returned Format String",
+      "primary_location": {
+        "path": "app.py",
+        "start_line": 276,
+        "start_column": 9,
+        "end_line": 276,
+        "end_column": 60,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "medium",
+      "cwes": [
+        "CWE-79"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 40,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-79"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 19,
+      "merged_finding_id": "merged-180ea469b34df4efd073",
+      "title": "No HEALTHCHECK defined",
+      "primary_location": {
+        "path": "Dockerfile",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "low",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "trivy"
+      ],
+      "risk_score": 17,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 10,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 20,
+      "merged_finding_id": "merged-79b112036e28ecb71fef",
+      "title": "Secure Set Cookie",
+      "primary_location": {
+        "path": "app.py",
+        "start_line": 158,
+        "start_column": 9,
+        "end_line": 158,
+        "end_column": 56,
+        "snippet": null
+      },
+      "scanner_severity": "low",
+      "scanner_confidence": "low",
+      "cwes": [
+        "CWE-614"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 12,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 10,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 2,
+          "evidence": [
+            "low"
+          ]
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    "semgrep-ce:semgrep_scan_error: Syntax error at line Dockerfile:3:\n `=1 \\\r\n    PYTHONUNBUFFERED` was unexpected"
+  ],
+  "coverage_gaps": [
+    "semgrep-ce normalization was partial; some scanner results may be unavailable. Scanner reported: semgrep_scan_error: Syntax error at line Dockerfile:3:."
+  ],
+  "summary": {
+    "input_findings": 20,
+    "ranked_findings": 20,
+    "selected_for_deep_review": 9,
+    "queued_for_deep_review": 0,
+    "standard_report": 11,
+    "needs_verification": 0
+  }
+}

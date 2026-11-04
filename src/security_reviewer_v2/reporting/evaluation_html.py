@@ -7,6 +7,8 @@ Every string is HTML-escaped; the page is static, self-contained and sends no ne
 
 from __future__ import annotations
 
+import math
+
 from typing import Any, Iterable, Sequence
 
 from .html_report import _CSS, _JS, _THEME_BOOT, _e, _svg
@@ -18,6 +20,10 @@ _EXTRA_CSS = """
 .g2{display:grid;grid-template-columns:minmax(260px,1fr) 2fr;gap:16px;margin-top:16px}
 dl.prov{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:7px 18px;margin:0}dl.prov dt{color:var(--mut)}dl.prov dd{margin:0;overflow-wrap:anywhere}
 @media(max-width:1000px){.g2{grid-template-columns:1fr}}
+.banner.has-gauge{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:24px;align-items:center}
+.gauge{width:100%;text-align:center}.gauge svg{width:100%;height:auto;display:block}
+.gauge .gt{stroke:var(--ln2)}.gauge .gv{stroke:var(--mint)}.gauge text{fill:currentColor;font-family:var(--serif)}.gauge .gs{font-family:var(--sans);opacity:.65}
+@media(max-width:760px){.banner.has-gauge{grid-template-columns:1fr}}
 """
 _STATUS_CLASS = {"detected": "allow", "needs_review": "warn", "not_detected": "block"}
 _SUN_MOON = ('<svg class="moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg>'
@@ -75,8 +81,23 @@ def _section(heading: str, items: Iterable[Any]) -> str:
     return f'<div class="panel"><b>{_e(heading)}</b><ul class="tight">{lis}</ul></div>'
 
 
-def render_evaluation(*, title: str, intro: str, headline: str, cards: Sequence[tuple[Any, str]],
-                      table_title: str, columns: Sequence[str], outcome_header: str, rows: Sequence[dict[str, Any]],
+def _gauge(value: int, total: int, label: str) -> str:
+    """Semicircle gauge: ``value`` of ``total``, with the share as a percentage."""
+    if total <= 0:
+        return ""
+    frac = max(0.0, min(1.0, value / total))
+    x, y = 100 - 80 * math.cos(math.pi * frac), 100 - 80 * math.sin(math.pi * frac)
+    arc = f'<path class="gv" d="M20 100 A80 80 0 0 1 {x:.2f} {y:.2f}" fill="none" stroke-width="16" stroke-linecap="round"/>' if value > 0 else ""
+    return (f'<div class="gauge"><svg viewBox="0 0 200 128" role="img" aria-label="{value} of {total} {_e(label)} ({frac:.1%})">'
+            f'<path class="gt" d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke-width="16" stroke-linecap="round"/>{arc}'
+            f'<text x="100" y="86" text-anchor="middle" font-size="34" font-weight="700">{value}/{total}</text>'
+            f'<text class="gs" x="100" y="106" text-anchor="middle" font-size="13">{frac:.1%}</text>'
+            f'<text class="gs" x="20" y="123" text-anchor="middle" font-size="10">0</text><text class="gs" x="180" y="123" text-anchor="middle" font-size="10">{total}</text></svg>'
+            f'<small class="mut">{_e(label)}</small></div>')
+
+
+def render_evaluation(*, title: str, intro: str, headline: str, cards: Sequence[tuple[Any, str]] = (),
+                      gauge: tuple[int, int, str] | None = None, table_title: str, columns: Sequence[str], outcome_header: str, rows: Sequence[dict[str, Any]],
                       donut: Sequence[tuple[str, int, str]] = (), donut_unit: str = "cases",
                       notes: Sequence[str] = (), provenance: Sequence[tuple[str, Any]] = (),
                       sections: Sequence[tuple[str, Iterable[Any]]] = ()) -> str:
@@ -93,9 +114,11 @@ def render_evaluation(*, title: str, intro: str, headline: str, cards: Sequence[
         f"<title>Verdict · {_e(title)}</title><script>{_THEME_BOOT}</script><style>{_CSS}{_EXTRA_CSS}</style></head><body><div class=\"app\">{rail}",
         f'<div><header class="top"><div class="t"><small>Held-out evaluation</small><h1>{_e(title)}</h1></div>'
         '<button class="theme" id="theme" aria-label="Toggle dark / light mode" title="Dark / light mode">' + _SUN_MOON + "</button></header><main>",
-        f'<section id="overview"><div class="banner clear"><h2>{_e(headline)}</h2><p>{_e(intro)}</p></div>',
-        '<div class="kpis">' + "".join(f"<div class=\"kpi\"><strong>{_e(v)}</strong><span>{_e(l)}</span></div>" for v, l in cards) + "</div>",
+        f'<section id="overview"><div class="banner clear{" has-gauge" if gauge else ""}"><div><h2>{_e(headline)}</h2><p>{_e(intro)}</p></div>'
+        f'{_gauge(*gauge) if gauge else ""}</div>',
     ]
+    if cards and not any(p[1] for p in donut):  # the donut legend already lists every outcome count; cards only fill in when there is no donut
+        parts.append('<div class="kpis">' + "".join(f"<div class=\"kpi\"><strong>{_e(v)}</strong><span>{_e(l)}</span></div>" for v, l in cards) + "</div>")
     parts += [f'<div class="note">{_e(n)}</div>' for n in notes]
     side = f'<div class="card"><h3>Outcomes</h3>{_donut(donut, donut_unit)}</div>' if any(p[1] for p in donut) else ""
     prov = ('<div class="card"><h3>Scan provenance</h3><dl class="prov">'

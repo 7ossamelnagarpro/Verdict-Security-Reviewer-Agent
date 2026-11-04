@@ -196,12 +196,10 @@ def html_report(result: dict[str, Any]) -> str:
              "details": [("Reason", row["reason"]), ("Reviewed signal(s)", [item["group_id"] for item in row["signals"]] or ["None"])]}
             for row in result["scenarios"]]
     return render_evaluation(
-        title="Multi-service evaluation",
-        headline=f"{s['detected']}/{s['confirmed_ground_truth']} confirmed cases detected · recall {s['positive_case_recall']:.1%}",
+        title="Multi-service",
+        headline="Confirmed cases found by the saved scan",
         intro="Held-out comparison after scanning. Ground truth was not supplied to scanners or AI.",
-        cards=[(f"{s['detected']}/{s['confirmed_ground_truth']}", "Detected confirmed cases"),
-               (f"{s['positive_case_recall']:.1%}", "Positive-case recall"), (s["needs_review_confirmed"], "Needs review"),
-               (s["not_detected_confirmed"], "Not detected"), (s["candidate_only"], "Candidate-only, excluded")],
+        gauge=(s["detected"], s["confirmed_ground_truth"], "confirmed cases detected"),
         donut=[("Detected", s["detected"], "var(--mint)"), ("Needs review", s["needs_review_confirmed"], "var(--medium)"),
                ("Not detected", s["not_detected_confirmed"], "var(--high)"), ("Excluded", s["candidate_only"], "var(--ln)")],
         donut_unit="scenarios", table_title=f"All {len(result['scenarios'])} scenarios",

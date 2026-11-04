@@ -74,9 +74,13 @@ def _request(client: urllib.request.OpenerDirector, base: str, path: str, *,
 
 
 def _check(rule_id: str, title: str, path: str, vulnerable: bool, *,
-           evidence: dict[str, Any], severity: str = "medium", confidence: str = "high") -> dict[str, Any]:
-    return {"rule_id": rule_id, "title": title, "path": path, "vulnerable": vulnerable,
-            "severity": severity, "confidence": confidence, "evidence": evidence}
+           evidence: dict[str, Any], severity: str = "medium", confidence: str = "high",
+           request: list[dict[str, str]] | None = None) -> dict[str, Any]:
+    result = {"rule_id": rule_id, "title": title, "path": path, "vulnerable": vulnerable,
+              "severity": severity, "confidence": confidence, "evidence": evidence}
+    if request:  # The probe's own fixed request shape (never target data); credentials are written as <redacted>.
+        result["request"] = request
+    return result
 
 
 def run_checks(config: RuntimeConfig) -> dict[str, Any]:
@@ -93,7 +97,8 @@ def run_checks(config: RuntimeConfig) -> dict[str, Any]:
     status, _, body = _request(client, base, "/search?q=" + urllib.parse.quote(payload), timeout=config.timeout_seconds)
     reflected = payload.encode() in body
     checks.append(_check("web.reflected-xss", "Reflected XSS", "/search", reflected,
-                         evidence={"status": status, "payload_reflected": reflected}))
+                         evidence={"status": status, "payload_reflected": reflected},
+                         request=[{"method": "GET", "path": "/search", "query": "q=" + payload}]))
 
     # Token check: retain only shape, never the cookie value.
     login, headers, _ = _request(client, base, "/login", data={"username": "alice", "password": "alice123"}, timeout=config.timeout_seconds)
@@ -102,7 +107,9 @@ def run_checks(config: RuntimeConfig) -> dict[str, Any]:
     token_value = token_match.group(1) if token_match else ""
     predictable = bool(re.fullmatch(r"tok-\d+-staticsalt", token_value))
     checks.append(_check("web.predictable-session-token", "Predictable session token", "/login", predictable,
-                         evidence={"login_status": login, "token_shape": "tok-<numeric-id>-staticsalt" if predictable else "not-observed"}, severity="high"))
+                         evidence={"login_status": login, "token_shape": "tok-<numeric-id>-staticsalt" if predictable else "not-observed"}, severity="high",
+                         request=[{"method": "POST", "path": "/login", "content_type": "application/x-www-form-urlencoded",
+                                   "body": "username=alice&password=<redacted>"}]))
 
     # Debug exposure: report keys and types only, never secret values.
     status, _, body = _request(client, base, "/debug", timeout=config.timeout_seconds)
@@ -113,14 +120,16 @@ def run_checks(config: RuntimeConfig) -> dict[str, Any]:
     keys = sorted(str(key) for key in debug) if isinstance(debug, dict) else []
     exposed = status == 200 and any(key in keys for key in ("secret_key", "env"))
     checks.append(_check("web.sensitive-data-exposure", "Sensitive data exposed by debug endpoint", "/debug", exposed,
-                         evidence={"status": status, "response_keys": keys, "values_redacted": True}, severity="high"))
+                         evidence={"status": status, "response_keys": keys, "values_redacted": True}, severity="high",
+                         request=[{"method": "GET", "path": "/debug"}]))
 
     # Verbose errors: inspect markers only, do not retain the query or secret data.
     status, _, body = _request(client, base, "/search?q=%27%22%22%22", timeout=config.timeout_seconds)
     text = body.decode("utf-8", errors="replace").lower()
     verbose = status >= 500 and any(marker in text for marker in ("db error", "query:", "traceback", "sqlite"))
     checks.append(_check("web.verbose-error", "Verbose database error returned to client", "/search", verbose,
-                         evidence={"status": status, "error_marker_present": verbose}, severity="medium"))
+                         evidence={"status": status, "error_marker_present": verbose}, severity="medium",
+                         request=[{"method": "GET", "path": "/search", "query": "q=%27%22%22%22"}]))
 
     # Bounded rate-limit check: five invalid requests, no password spraying.
     statuses = []
@@ -129,7 +138,9 @@ def run_checks(config: RuntimeConfig) -> dict[str, Any]:
         statuses.append(code)
     rate_limited = any(code in {429, 423} for code in statuses)
     checks.append(_check("web.missing-brute-force-protection", "No rate-limit response observed on login", "/login", not rate_limited,
-                         evidence={"attempt_count": len(statuses), "statuses": statuses}, severity="medium", confidence="medium"))
+                         evidence={"attempt_count": len(statuses), "statuses": statuses}, severity="medium", confidence="medium",
+                         request=[{"method": "POST", "path": "/login", "content_type": "application/x-www-form-urlencoded",
+                                   "body": "username=alice&password=<redacted: invalid>", "repeat": "5"}]))
 
     if config.mutating:
         xss = "<img src=x onerror=alert(1)>"
@@ -137,7 +148,10 @@ def run_checks(config: RuntimeConfig) -> dict[str, Any]:
         get_status, _, body = _request(client, base, "/comments", timeout=config.timeout_seconds)
         stored = post_status in {200, 302} and get_status == 200 and xss.encode() in body
         checks.append(_check("web.stored-xss", "Stored XSS in comments", "/comments", stored,
-                             evidence={"post_status": post_status, "get_status": get_status, "payload_reflected": stored}, severity="high"))
+                             evidence={"post_status": post_status, "get_status": get_status, "payload_reflected": stored}, severity="high",
+                             request=[{"method": "POST", "path": "/comments", "content_type": "application/x-www-form-urlencoded",
+                                       "body": "author=security-test&body=" + xss},
+                                      {"method": "GET", "path": "/comments"}]))
 
         filename = "security-reviewer-test.html"
         upload_status, _, upload_body = _request(client, base, "/upload", files=(filename, b"<script>security_test_marker</script>", "text/html"), timeout=config.timeout_seconds)
@@ -146,7 +160,10 @@ def run_checks(config: RuntimeConfig) -> dict[str, Any]:
         checks.append(_check("web.insecure-file-upload", "Uploaded HTML is served back to clients", "/upload", upload_vulnerable,
                              evidence={"upload_status": upload_status, "serve_status": serve_status,
                                        "marker_present": b"security_test_marker" in served,
-                                       "content_type": serve_headers.get("Content-Type", "")}, severity="high"))
+                                       "content_type": serve_headers.get("Content-Type", "")}, severity="high",
+                             request=[{"method": "POST", "path": "/upload", "content_type": "multipart/form-data",
+                                       "body": f"file={filename} (text/html): <script>security_test_marker</script>"},
+                                      {"method": "GET", "path": "/uploads/" + filename}]))
 
     payload = {"schema_version": "1.0", "source": "web-runtime", "target": base,
                "status": "completed", "mutating_checks_enabled": config.mutating,

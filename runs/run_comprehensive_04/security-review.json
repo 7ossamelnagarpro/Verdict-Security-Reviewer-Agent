@@ -1,0 +1,944 @@
+{
+  "schema_version": "1.0",
+  "status": "completed",
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "reviews": [
+    {
+      "candidate_id": "merged-18f1abe978f9fdaad8e6",
+      "verdict": "confirmed_vulnerability",
+      "severity": "high",
+      "confidence": "high",
+      "title": "SQL query built from user-controlled sources",
+      "explanation": "The function `legacy_login` constructs an SQL statement by directly interpolating `body.username` and `body.password` into the query string using an f\u2011string. This allows an attacker to inject arbitrary SQL syntax via the `username` or `password` fields, leading to a classic SQL injection vulnerability.",
+      "impact": "An attacker can bypass authentication, retrieve or modify user records, and potentially execute arbitrary SQL commands against the database, compromising confidentiality, integrity, and availability of the application data.",
+      "remediation": "Replace the string interpolation with a parameterized query or prepared statement (e.g., using `?` placeholders with the DB\u2011API's `execute` method) and let the database driver handle proper escaping of user input. Also consider hashing passwords instead of storing them in plain text.",
+      "evidence": [
+        "Line 117: `query = f\"SELECT id,username,role FROM users WHERE username='{body.username}' AND password='{body.password}'\"`",
+        "The query string directly embeds `body.username` and `body.password` without sanitization."
+      ],
+      "limitations": [
+        "No runtime probe data is available to confirm exploitation, but the code pattern is a well\u2011known injection vector."
+      ],
+      "source_ids": [
+        "merged-18f1abe978f9fdaad8e6"
+      ]
+    },
+    {
+      "candidate_id": "merged-24d14609e3893220ea16",
+      "verdict": "false_positive",
+      "severity": "info",
+      "confidence": "high",
+      "title": "Uncontrolled data used in path expression",
+      "explanation": "The endpoint constructs a file path from a user\u2011provided \"name\" but immediately resolves the path and verifies that the resulting path is a descendant of the intended root directory using `is_relative_to(root)`. This check prevents directory traversal attacks, and the subsequent `is_file()` guard ensures only existing files are served. Therefore the reported uncontrolled data usage does not constitute a vulnerability in this context.",
+      "impact": "No impact; the code safely restricts file access to the intended directory.",
+      "remediation": "No remediation required; the existing path validation is sufficient.",
+      "evidence": [
+        "source excerpt shows `root = (FILES / \"public\").resolve()` and `file = (root / name).resolve()` followed by `if not file.is_relative_to(root) or not file.is_file(): raise HTTPException(404, \"File not found\")` which enforces a proper containment check."
+      ],
+      "limitations": [
+        "No runtime probe data was provided to confirm behavior under edge cases such as symlink attacks; analysis is based solely on static code review."
+      ],
+      "source_ids": [
+        "merged-24d14609e3893220ea16"
+      ]
+    },
+    {
+      "candidate_id": "merged-794dcb4921076779cef0",
+      "verdict": "false_positive",
+      "severity": "info",
+      "confidence": "high",
+      "title": "Path traversal check mitigates uncontrolled path usage",
+      "explanation": "The endpoint constructs the file path using the user\u2011provided `name` parameter, but it immediately resolves the path and verifies that the resulting path is a descendant of the intended `root` directory via `file.is_relative_to(root)`. This check prevents directory traversal attacks, and the subsequent `file.is_file()` ensures only regular files are served. Consequently, the reported uncontrolled data usage does not constitute a vulnerability in this context.",
+      "impact": "No impact; the application correctly restricts file access to the intended directory.",
+      "remediation": "No remediation required for this finding; the existing checks are sufficient.",
+      "evidence": [
+        "api/extra.py:220-223 shows the resolution of the user\u2011provided path and the `is_relative_to` check that blocks traversal."
+      ],
+      "limitations": [
+        "Static analysis cannot guarantee that `FILES` is correctly set to a safe directory at runtime. Additional runtime validation may be needed if `FILES` can be altered."
+      ],
+      "source_ids": [
+        "merged-794dcb4921076779cef0"
+      ]
+    },
+    {
+      "candidate_id": "merged-83d97da4516adf20e20f",
+      "verdict": "false_positive",
+      "severity": "info",
+      "confidence": "high",
+      "title": "Path traversal check appears sufficient",
+      "explanation": "The endpoint resolves the user\u2011provided filename and then verifies that the resulting path is both a file and resides within the configured public directory using `is_relative_to(FILES.resolve())`. This check prevents directory\u2011traversal attacks, so the scanner\u2019s uncontrolled\u2011data\u2011in\u2011path warning is likely a false positive.",
+      "impact": "If the check were absent, an attacker could read arbitrary files on the server. The existing check mitigates that risk, so no impact is present under normal operation.",
+      "remediation": "No remediation required beyond ensuring the runtime Python version supports `Path.is_relative_to` (Python\u00a03.9+) and that `FILES` is correctly defined. Optionally add explicit validation of the `name` parameter (e.g., whitelist allowed filenames).",
+      "evidence": [
+        "Line 212 constructs the path with `(FILES / \"public\" / name).resolve()`",
+        "Line 213 checks `if not file.is_relative_to(FILES.resolve()) or not file.is_file(): raise HTTPException(404, \"File not found\")`"
+      ],
+      "limitations": [
+        "The analysis assumes the code runs on Python\u00a03.9+ where `Path.is_relative_to` is available and behaves as documented. If an older Python version is used, the check may not exist, potentially re\u2011introducing a traversal risk."
+      ],
+      "source_ids": [
+        "merged-83d97da4516adf20e20f"
+      ]
+    },
+    {
+      "candidate_id": "merged-b3c734b4cef8dd70fce0",
+      "verdict": "false_positive",
+      "severity": "info",
+      "confidence": "high",
+      "title": "Uncontrolled data used in path expression",
+      "explanation": "The code resolves the requested filename against a fixed root directory and then checks both that the resolved path is a sub\u2011path of that root (using Path.is_relative_to) and that the target is an existing file. If either check fails, a 404 error is raised. This validation prevents directory\u2011traversal attacks, so the scanner\u2019s finding is a false positive.",
+      "impact": "No impact; the path traversal vector is mitigated by the explicit checks.",
+      "remediation": "No remediation required beyond maintaining the existing validation logic. Ensure the runtime Python version supports Path.is_relative_to and that resolve() correctly follows symlinks.",
+      "evidence": [
+        "root = (FILES / \"public\").resolve()",
+        "file = (root / name).resolve()",
+        "if not file.is_relative_to(root) or not file.is_file(): raise HTTPException(404, \"File not found\")",
+        "return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")"
+      ],
+      "limitations": [
+        "The analysis assumes the Python version provides Path.is_relative_to (Python\u00a03.9+). If symbolic links inside the public directory point outside the root, resolve() will follow them and the is_relative_to check may still pass; additional checks may be needed in such environments."
+      ],
+      "source_ids": [
+        "merged-b3c734b4cef8dd70fce0"
+      ]
+    },
+    {
+      "candidate_id": "merged-b527b3ed30e57aac5ec5",
+      "verdict": "false_positive",
+      "severity": "info",
+      "confidence": "high",
+      "title": "Uncontrolled data used in path expression",
+      "explanation": "The scanner flagged a potential path traversal because the file path is built from a user\u2011provided value. However, the implementation resolves the path and then checks `is_relative_to(FILES.resolve())` and `is_file()`. These checks ensure the resolved path remains within the intended `public` directory and points to an existing file, effectively preventing directory traversal attacks.",
+      "impact": "If the check were missing, an attacker could read arbitrary files on the server, leading to information disclosure. The current checks mitigate this risk, so no impact is present.",
+      "remediation": "No remediation is required for the reported issue. As a best practice, continue to validate and resolve user\u2011supplied paths and consider adding explicit whitelist validation if additional constraints are needed.",
+      "evidence": [
+        "def file_read(name: str) -> Response:",
+        "    file = (FILES / \"public\" / name).resolve()",
+        "    if not file.is_relative_to(FILES.resolve()) or not file.is_file():",
+        "        raise HTTPException(404, \"File not found\")",
+        "    return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")"
+      ],
+      "limitations": [
+        "Analysis is based solely on static code review; no runtime probing was performed. The safety relies on the correctness of `Path.is_relative_to` and `Path.resolve` in the deployed Python version."
+      ],
+      "source_ids": [
+        "merged-b527b3ed30e57aac5ec5"
+      ]
+    },
+    {
+      "candidate_id": "merged-ea527a7d7441e2b11700",
+      "verdict": "confirmed_vulnerability",
+      "severity": "high",
+      "confidence": "high",
+      "title": "Reflected server-side cross-site scripting",
+      "explanation": "The `catalog_search` endpoint directly interpolates the user\u2011controlled query parameter `q` into an HTML response without any escaping or sanitisation. The returned string `<h1>Results for {q}</h1>` will render any HTML/JavaScript supplied in `q`, enabling a reflected XSS attack. Additionally, `q` is concatenated into a raw SQL statement, which could also lead to SQL injection, but the primary confirmed issue is the reflected XSS.",
+      "impact": "An attacker can craft a URL such as `/catalog/search?q=<script>maliciousCode()</script>` and trick a victim into visiting it. The injected script runs in the victim's browser context, allowing theft of session cookies, credential harvesting, defacement, or further malicious actions against the user or the application.",
+      "remediation": "* Use a proper templating engine (e.g., Jinja2) that automatically escapes variables.\n* Explicitly HTML\u2011escape the `q` value before embedding it in the response (e.g., `html.escape(q)`).\n* Switch to parameterised queries for the database call to prevent SQL injection.\n* Set a strict Content\u2011Security\u2011Policy header to mitigate script execution.\n* Consider returning JSON data and letting the client render it safely instead of raw HTML strings.",
+      "evidence": [
+        "Source excerpt lines 141\u2011145 show the endpoint definition and the direct insertion of `q` into the HTML response: `return f\"<h1>Results for {q}</h1>\" + \"\".join(f\"<p>{row['name']}</p>\" for row in rows)`",
+        "The SQL query also concatenates `q` without parameters: `SELECT name FROM products WHERE name ILIKE '%{q}%'`"
+      ],
+      "limitations": [
+        "No runtime execution was observed; the assessment is based solely on static code analysis.\nWe assume FastAPI's `HTMLResponse` does not perform automatic HTML escaping, which is typical for raw string responses.\nPotential mitigations (e.g., upstream middleware sanitising inputs) were not identified in the provided code."
+      ],
+      "source_ids": [
+        "merged-ea527a7d7441e2b11700"
+      ]
+    },
+    {
+      "candidate_id": "merged-f4eaf141df049c63545d",
+      "verdict": "false_positive",
+      "severity": "low",
+      "confidence": "high",
+      "title": "Path traversal check appears sufficient",
+      "explanation": "The endpoint resolves the user\u2011provided filename against the public directory and then verifies that the resolved path is still within the base directory using Path.is_relative_to(). This prevents directory\u2011traversal attacks such as \"../\" sequences from escaping the intended folder.",
+      "impact": "No impact; the check blocks malicious path traversal attempts.",
+      "remediation": "No remediation required for the path traversal check, though consider hardening against symlink abuse if the public directory is writable by untrusted users.",
+      "evidence": [
+        "api/extra.py:212 \u2013 file = (FILES / \"public\" / name).resolve()",
+        "api/extra.py:213 \u2013 if not file.is_relative_to(FILES.resolve()) or not file.is_file(): raise HTTPException(404, \"File not found\")"
+      ],
+      "limitations": [
+        "The check relies on Path.is_relative_to() (Python\u00a03.9+); older runtimes would not have this method.",
+        "If an attacker can place a symlink inside the public directory that points outside, resolve() will follow it and the subsequent is_relative_to() may still return true, potentially allowing indirect traversal."
+      ],
+      "source_ids": [
+        "merged-f4eaf141df049c63545d"
+      ]
+    },
+    {
+      "candidate_id": "merged-f60fee7d82fbca512208",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "high",
+      "title": "SQL Injection in catalog_search endpoint",
+      "explanation": "The function catalog_search constructs an SQL query using an f\u2011string that directly interpolates the user\u2011controlled parameter `q` into the statement (`SELECT name FROM products WHERE name ILIKE '%{q}%'`). No parameterization or sanitization is applied, allowing an attacker to inject arbitrary SQL syntax via the `q` query parameter.",
+      "impact": "An attacker can manipulate the SQL query to retrieve unauthorized data, modify or delete records, or execute database commands, potentially leading to data breach, data loss, or privilege escalation.",
+      "remediation": "Refactor the query to use parameterized statements provided by the database driver (e.g., `conn.execute(\"SELECT name FROM products WHERE name ILIKE %s\", (f\"%{q}%\",))`). Additionally, validate and whitelist allowed characters for `q` and enforce least\u2011privilege database permissions.",
+      "evidence": [
+        "api/extra.py:144 \u2013 rows = conn.execute(f\\\"SELECT name FROM products WHERE name ILIKE '%{q}%'\\\").fetchall()"
+      ],
+      "limitations": [
+        "No runtime probe data confirming exploitation",
+        "Static analysis only; actual DB driver behavior not verified",
+        "No evidence of additional input validation elsewhere in the code"
+      ],
+      "source_ids": [
+        "merged-f60fee7d82fbca512208"
+      ]
+    },
+    {
+      "candidate_id": "merged-17a5197f906426a224ef",
+      "verdict": "needs_more_evidence",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Job listing requires admin role",
+      "explanation": "The scanner reports that the /admin/jobs endpoint requires an admin role, but the only runtime observation is a 200 response with redacted values. No information is provided about whether the request was authenticated or what role was used, so it cannot be confirmed whether access control is missing or correctly enforced.",
+      "impact": "If the endpoint is accessible without proper admin privileges, an attacker could view, modify, or delete job listings, leading to data leakage or unauthorized actions.",
+      "remediation": "Implement and verify strict role\u2011based access control on the /admin/jobs endpoint, ensuring that only authenticated users with the admin role can receive a successful response. Add explicit authorization checks and return appropriate error codes for unauthorized requests.",
+      "evidence": [
+        "runtime_probe_facts: scanner_id=web-runtime, rule_id=workflow.admin_jobs.2, path=/admin/jobs, facts={status:200, values_redacted:true}"
+      ],
+      "limitations": [
+        "No evidence whether the probe request was made with authentication or admin credentials",
+        "The scanner\u2019s textual finding is not proof of missing access control",
+        "Only a single HTTP status observation is available, lacking context about authorization checks"
+      ],
+      "source_ids": [
+        "merged-17a5197f906426a224ef"
+      ]
+    },
+    {
+      "candidate_id": "merged-da0f922505b4c0c7fed1",
+      "verdict": "needs_more_evidence",
+      "severity": "high",
+      "confidence": "low",
+      "title": "A demoted administrator must lose administrative access",
+      "explanation": "The scanner flagged the /admin/token-report endpoint as potentially accessible to a demoted administrator, but the only runtime observation is an HTTP 200 response with redacted values. No evidence is provided that the requester is a demoted admin, nor that the endpoint actually grants privileged functionality. Without confirmation of role state or access control enforcement, the finding cannot be confirmed as a vulnerability.",
+      "impact": "If a demoted administrator retained access, they could perform privileged actions, leading to unauthorized data exposure or system manipulation.",
+      "remediation": "Ensure that role changes are immediately reflected in access control checks for all admin endpoints, and verify that revoked privileges result in appropriate denial responses (e.g., 403).",
+      "evidence": [
+        "Scanner evidence: \"A demoted administrator must lose administrative access\"",
+        "Runtime probe fact: status 200 returned from /admin/token-report (values redacted)"
+      ],
+      "limitations": [
+        "No proof that the request originated from a demoted administrator",
+        "Endpoint response content is redacted, preventing verification of privileged data exposure",
+        "Single source observation; no additional scans or logs confirming improper access"
+      ],
+      "source_ids": [
+        "merged-da0f922505b4c0c7fed1"
+      ]
+    },
+    {
+      "candidate_id": "merged-38e7cf77bdf9145d2ae4",
+      "verdict": "false_positive",
+      "severity": "info",
+      "confidence": "low",
+      "title": "User listing requires admin role",
+      "explanation": "The scanner report states that the /admin/users endpoint \"requires admin role\" and returns HTTP 200 with redacted values. No evidence is provided that the endpoint is accessible without proper authentication or that it leaks sensitive user data to unauthorized parties. Without proof of unauthorized access, the finding does not constitute a vulnerability.",
+      "impact": "None confirmed, as the endpoint appears to be protected by an admin role requirement.",
+      "remediation": "No remediation needed unless further testing reveals unauthorized access; ensure proper access controls are enforced and verified.",
+      "evidence": [
+        "Scanner evidence: User listing requires admin role",
+        "Runtime probe fact: status 200, values_redacted true for path /admin/users"
+      ],
+      "limitations": [
+        "No authentication context provided; cannot confirm whether the request was made as an admin or unauthenticated user",
+        "Absence of proof that sensitive user data is exposed to non\u2011admin principals",
+        "Single runtime probe without additional guard checks"
+      ],
+      "source_ids": [
+        "merged-38e7cf77bdf9145d2ae4"
+      ]
+    },
+    {
+      "candidate_id": "merged-d9421dbfc4162d6dea91",
+      "verdict": "needs_more_evidence",
+      "severity": "high",
+      "confidence": "low",
+      "title": "Password reset tokens must be single use",
+      "explanation": "The scanner flagged the reset endpoint as potentially allowing token reuse, but the only runtime observation is a 200 response without token values. No direct evidence that a token can be used multiple times is present.",
+      "impact": "If reset tokens are reusable, an attacker who obtains a token could reset a user's password multiple times, leading to account takeover.",
+      "remediation": "Implement server\u2011side enforcement that each password\u2011reset token is invalidated after a single successful use. Return an error for subsequent uses.",
+      "evidence": [
+        "Scanner finding: Password reset tokens must be single use",
+        "Runtime probe fact: web-runtime rule workflow.reset_replay.3 returned HTTP 200 on /auth/reset/confirm (values redacted)"
+      ],
+      "limitations": [
+        "No concrete demonstration of token reuse; only a successful request observed.",
+        "Token values were redacted, preventing verification of replay.",
+        "Single request does not prove absence of rate limiting or other mitigations."
+      ],
+      "source_ids": [
+        "merged-d9421dbfc4162d6dea91"
+      ]
+    },
+    {
+      "candidate_id": "merged-e7caea540245938b275b",
+      "verdict": "needs_more_evidence",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Debug configuration is unavailable anonymously",
+      "explanation": "A runtime probe accessed /debug/config and received an HTTP 200 response, but the response body was redacted. The scanner report claims the debug configuration is unavailable anonymously, yet the successful status code indicates the endpoint is reachable. Without seeing the actual configuration data, it cannot be determined whether sensitive information is exposed or if the endpoint is properly protected.",
+      "impact": "If the debug configuration contains sensitive settings (e.g., credentials, internal URLs, feature flags), exposure could aid attackers in further exploitation or reconnaissance.",
+      "remediation": "Restrict access to the /debug/config endpoint to authenticated and authorized users only. Ensure that any debug or configuration data is not exposed in production environments, and verify that the endpoint returns appropriate authorization errors (e.g., 401/403) when accessed anonymously.",
+      "evidence": [
+        "runtime_probe_facts: scanner_id=web-runtime, rule_id=workflow.debug_access.1, path=/debug/config, facts={status:200, values_redacted:true}"
+      ],
+      "limitations": [
+        "The response body was redacted, so the actual content of the debug configuration is unknown.",
+        "No additional evidence (e.g., source code, configuration files) confirming whether the endpoint leaks sensitive data."
+      ],
+      "source_ids": [
+        "merged-e7caea540245938b275b"
+      ]
+    },
+    {
+      "candidate_id": "merged-19f4a13e0b2d4f7413d0",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "high",
+      "title": "Missing Content-Security-Policy header on /healthz",
+      "explanation": "The runtime probe observed an HTTP 200 response from the /healthz endpoint that did not include a Content\u2011Security\u2011Policy (CSP) header. CSP is a defense\u2011in\u2011depth mechanism that mitigates a range of client\u2011side attacks such as cross\u2011site scripting (XSS). Its absence does not guarantee an exploit but reduces the security posture of the application.",
+      "impact": "Without CSP, browsers are free to execute inline scripts or load resources from untrusted origins, increasing the risk of XSS or data\u2011exfiltration attacks if other vulnerabilities exist in the client\u2011side code.",
+      "remediation": "Configure the web server or application framework to send a restrictive CSP header for all responses, including health\u2011check endpoints. Example: `Content-Security-Policy: default-src 'self'; script-src 'self'; object-src 'none';` Adjust directives as needed for legitimate resource loading.",
+      "evidence": [
+        "runtime_probe_facts: scanner_id=web-runtime, rule_id=web.missing-content-security-policy, path=/healthz, facts={\"status\":200} \u2013 header CSP missing"
+      ],
+      "limitations": [
+        "Only the /healthz endpoint was probed; other endpoints may already include CSP.",
+        "The finding is based on a single request; transient configuration or middleware ordering could affect header presence.",
+        "Low severity reflects that CSP is a mitigation, not a direct exploit vector."
+      ],
+      "source_ids": [
+        "merged-19f4a13e0b2d4f7413d0"
+      ]
+    },
+    {
+      "candidate_id": "merged-87e0399272a390813ea5",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "high",
+      "title": "Missing clickjacking protection header",
+      "explanation": "The /healthz endpoint returns HTTP 200 without an X-Frame-Options header or an equivalent Content\u2011Security\u2011Policy frame\u2011ancestors directive, allowing the page to be embedded in a foreign frame and potentially used for clickjacking attacks.",
+      "impact": "An attacker could embed the health endpoint in a malicious page and trick users into interacting with it, leading to UI redressing. While the endpoint typically returns minimal data, the lack of protection is a security weakness that could be leveraged in broader attacks.",
+      "remediation": "Configure the web server or application to send an appropriate clickjacking protection header for all responses, e.g., `X-Frame-Options: SAMEORIGIN` or `DENY`, or add a CSP `frame-ancestors 'self'` directive. Ensure the header is applied to the /healthz endpoint as well as other public endpoints.",
+      "evidence": [
+        "Runtime probe (web-runtime) observed HTTP 200 for /healthz and reported missing clickjacking protection header"
+      ],
+      "limitations": [
+        "Evidence is limited to a single automated probe of the /healthz endpoint; no manual verification was performed. The health endpoint may have low sensitivity, so the practical impact is limited. No confirmation that the header is absent on other endpoints."
+      ],
+      "source_ids": [
+        "merged-87e0399272a390813ea5"
+      ]
+    },
+    {
+      "candidate_id": "merged-bbf1646deeb18d1e95db",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "high",
+      "title": "Missing X-Content-Type-Options header",
+      "explanation": "The /healthz endpoint responded with HTTP 200 but did not include the X-Content-Type-Options header, as indicated by the runtime probe and scanner rule. Absence of this header can allow browsers to perform MIME type sniffing, potentially leading to content injection attacks.",
+      "impact": "An attacker could exploit MIME sniffing to execute malicious scripts if the endpoint ever serves user\u2011controlled content, increasing the risk of cross\u2011site scripting or data leakage.",
+      "remediation": "Configure the web server or application to always send the X-Content-Type-Options: nosniff header for all responses, including the health\u2011check endpoint.",
+      "evidence": [
+        "Runtime probe (web-runtime) observed status 200 on /healthz without X-Content-Type-Options header (rule web.missing-content-type-protection)"
+      ],
+      "limitations": [
+        "Evidence is limited to the /healthz endpoint; other endpoints were not examined. No direct exploitation was observed, only the missing header."
+      ],
+      "source_ids": [
+        "merged-bbf1646deeb18d1e95db"
+      ]
+    },
+    {
+      "candidate_id": "merged-8e21db3fe42adbf58979",
+      "verdict": "needs_more_evidence",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Incoming webhook events require a valid signature",
+      "explanation": "The scanner flagged the /integrations/hook endpoint as lacking a required signature for incoming webhook events. The only runtime probe fact provided is a 200 response with redacted values, which does not demonstrate whether signature validation is performed or omitted. No code or configuration evidence confirming the absence of signature checks is available, so the finding cannot be confirmed nor dismissed without further investigation.",
+      "impact": "If webhook signatures are not validated, an attacker could craft malicious webhook payloads that the application would accept, potentially leading to unauthorized actions, data exfiltration, or service disruption.",
+      "remediation": "Implement strict verification of webhook signatures using a shared secret or public key, reject requests with missing or invalid signatures, and log verification failures. Ensure the verification logic is exercised in tests and documented in the integration documentation.",
+      "evidence": [
+        "Scanner finding: Incoming webhook events require a valid signature",
+        "Runtime probe fact (web-runtime, rule workflow.unsigned_hook.1) returned status 200 with values redacted"
+      ],
+      "limitations": [
+        "No source code or configuration review confirming the presence or absence of signature verification",
+        "Redacted runtime values prevent assessment of actual request handling",
+        "Single runtime probe does not cover all possible request variations"
+      ],
+      "source_ids": [
+        "merged-8e21db3fe42adbf58979"
+      ]
+    },
+    {
+      "candidate_id": "merged-d5c3b6b8d8dad90c4d3c",
+      "verdict": "false_positive",
+      "severity": "info",
+      "confidence": "high",
+      "title": "Access control correctly enforced for invoice endpoint",
+      "explanation": "The scanner flagged the \"/invoices/{{invoice_id}}\" endpoint with the message \"Only the owner can read an invoice\". This message describes the intended security behavior (owner\u2011only access) rather than a flaw. Runtime probing shows a 200 response with values redacted, indicating the endpoint returns data only when the requester is authorized and otherwise hides sensitive information. No evidence of unauthorized data exposure or bypass was observed.",
+      "impact": "None \u2013 the endpoint appears to enforce proper access controls, so no confidentiality or integrity breach is implied.",
+      "remediation": "No remediation required; the current owner\u2011only access control is appropriate. Continue to monitor for any changes that might unintentionally expose invoice data.",
+      "evidence": [
+        "Scanner evidence: \"Only the owner can read an invoice\"",
+        "Runtime probe fact (web-runtime, rule workflow.invoice_owner.3): status 200, values_redacted true"
+      ],
+      "limitations": [
+        "Evidence is limited to scanner output and a single runtime probe; no source code review was performed.",
+        "The probe did not test unauthorized access attempts, so the absence of a breach is inferred from the redacted response rather than demonstrated."
+      ],
+      "source_ids": [
+        "merged-d5c3b6b8d8dad90c4d3c"
+      ]
+    },
+    {
+      "candidate_id": "merged-a5ea8ca4c36bd6c25e2a",
+      "verdict": "needs_more_evidence",
+      "severity": "high",
+      "confidence": "low",
+      "title": "Users cannot submit an admin job",
+      "explanation": "The scanner reported that users are unable to submit an admin job at the /jobs endpoint. The only evidence is the scanner's generic finding and a runtime probe indicating a 200 response with redacted values. No concrete request/response details, error messages, or proof of unintended privilege escalation are provided, so the security impact cannot be confirmed.",
+      "impact": "If this were an unintended permission bypass, an attacker could potentially submit privileged jobs, leading to privilege escalation or unauthorized actions. However, the current evidence does not demonstrate such a scenario.",
+      "remediation": "Review the application's role\u2011based access control for the /jobs endpoint. Verify that the intended behavior (whether admin jobs should be restricted) is correctly implemented and that any error handling does not leak sensitive information. Add explicit tests to confirm the access control behavior and log attempts to submit admin jobs for audit.",
+      "evidence": [
+        "Scanner finding: Users cannot submit an admin job",
+        "Runtime probe fact (web-runtime, rule workflow.worker_role.1) at /jobs returned status 200 with values redacted"
+      ],
+      "limitations": [
+        "No detailed request/response data showing the failure reason",
+        "Values redacted in probe, preventing analysis of response content",
+        "No indication whether the restriction is intentional or a bug",
+        "No evidence of exploitation or impact"
+      ],
+      "source_ids": [
+        "merged-a5ea8ca4c36bd6c25e2a"
+      ]
+    },
+    {
+      "candidate_id": "merged-65c41e5a25b6337fec07",
+      "verdict": "false_positive",
+      "severity": "low",
+      "confidence": "high",
+      "title": "Identity response must not expose a social security number",
+      "explanation": "The scanner flagged a potential exposure of a social security number at the /me endpoint. However, the runtime probe for this endpoint returned a 200 status with values_redacted set to true, indicating that sensitive fields are being redacted and no SSN is disclosed in the response. Therefore, the finding does not represent an actual vulnerability.",
+      "impact": "No impact; sensitive data is not exposed to the client.",
+      "remediation": "Maintain the current redaction logic and ensure it remains in place for future changes to the /me endpoint response.",
+      "evidence": [
+        "Scanner evidence: Identity response must not expose a social security number",
+        "Runtime probe fact: status 200, values_redacted true for path /me"
+      ],
+      "limitations": [
+        "Evidence is limited to the observed /me endpoint; other endpoints were not examined for similar issues."
+      ],
+      "source_ids": [
+        "merged-65c41e5a25b6337fec07"
+      ]
+    },
+    {
+      "candidate_id": "merged-1ba9f8276fc6dae95df8",
+      "verdict": "false_positive",
+      "severity": "info",
+      "confidence": "medium",
+      "title": "Users cannot create orders for another owner",
+      "explanation": "The scanner reported that users are unable to create orders for another owner. This behavior aligns with proper access\u2011control enforcement and does not represent a security flaw. The runtime probe returned a 200 status with redacted values, indicating the request was processed without exposing cross\u2011owner data. No evidence suggests that unauthorized order creation is possible.",
+      "impact": "None \u2013 the application correctly prevents cross\u2011owner order creation, preserving data confidentiality and integrity.",
+      "remediation": "No remediation required; the current access\u2011control behavior is appropriate.",
+      "evidence": [
+        "Users cannot create orders for another owner",
+        "runtime_probe_facts: scanner_id=web-runtime, rule_id=workflow.owner_assignment.2, path=/orders, status=200, values_redacted=true"
+      ],
+      "limitations": [
+        "Evidence is limited to a single runtime probe and does not cover all possible request vectors or internal logic paths. The probe does not verify the full owner\u2011assignment implementation, only that the observed request returned a 200 response."
+      ],
+      "source_ids": [
+        "merged-1ba9f8276fc6dae95df8"
+      ]
+    },
+    {
+      "candidate_id": "merged-2d4a81712313b5f2f621",
+      "verdict": "needs_more_evidence",
+      "severity": "high",
+      "confidence": "low",
+      "title": "New orders cannot start as paid",
+      "explanation": "A scanner flagged that new orders cannot transition to a paid state, but the only supporting data are the scanner's generic finding and a runtime probe that returned HTTP 200 with redacted values. No concrete request/response details, business\u2011logic verification, or reproducible test steps are provided, so the presence of a vulnerability cannot be confirmed.",
+      "impact": "If orders truly cannot be marked as paid, customers may be unable to complete purchases, leading to revenue loss and a broken checkout experience.",
+      "remediation": "Manually test the order creation and payment workflow, review the server\u2011side order state transition logic, and add appropriate validation or state\u2011change handling. Deploy fixes and re\u2011run functional and security tests to verify the issue is resolved.",
+      "evidence": [
+        "New orders cannot start as paid (scanner evidence)",
+        "runtime_probe_facts: scanner_id=web-runtime, rule_id=workflow.order_initial_state.1, path=/orders, status=200 (values redacted)"
+      ],
+      "limitations": [
+        "Scanner finding provides no concrete proof of the defect",
+        "Runtime probe response redacted values, preventing verification of the order state",
+        "No request/response logs or error messages confirming the inability to mark orders as paid",
+        "No independent manual or automated test confirming the issue"
+      ],
+      "source_ids": [
+        "merged-2d4a81712313b5f2f621"
+      ]
+    },
+    {
+      "candidate_id": "merged-8946f8391fc9049cbb58",
+      "verdict": "needs_more_evidence",
+      "severity": "high",
+      "confidence": "low",
+      "title": "Negative order prices are rejected",
+      "explanation": "The scanner reports that negative order prices are rejected, but the runtime probe observed a HTTP 200 response for a request to /orders with a negative price (values redacted). The response status alone does not confirm whether the negative price was accepted or rejected, and no response body is available to verify the outcome. The evidence is contradictory and insufficient to confirm a vulnerability or to deem the finding a false positive.",
+      "impact": "If the application accepts negative order prices, an attacker could manipulate order totals, potentially leading to financial loss or unauthorized credit. Conversely, if the application correctly rejects them, no impact exists. The current evidence does not establish which case applies.",
+      "remediation": "Implement strict server\u2011side validation to ensure that order price fields are non\u2011negative and return an appropriate error status (e.g., 400 Bad Request) when a negative value is submitted. Log validation failures for monitoring.",
+      "evidence": [
+        "Scanner evidence: \"Negative order prices are rejected\"",
+        "Runtime probe fact: HTTP status 200 returned for /orders request with negative price (values redacted)"
+      ],
+      "limitations": [
+        "Contradictory evidence between scanner claim and runtime probe status",
+        "Response body was redacted, preventing verification of rejection or acceptance",
+        "No additional context (e.g., error messages, logs) to determine actual behavior"
+      ],
+      "source_ids": [
+        "merged-8946f8391fc9049cbb58"
+      ]
+    },
+    {
+      "candidate_id": "merged-cc8a9ed20905505868f0",
+      "verdict": "needs_more_evidence",
+      "severity": "high",
+      "confidence": "low",
+      "title": "Potential client-controlled price manipulation",
+      "explanation": "The scanner flagged that the catalog price must be set by the server, suggesting a possible client\u2011controlled price issue. The only runtime observation is a 200 response from /orders with values redacted; no request or response shows that a client\u2011supplied price is accepted or that the server fails to enforce its own pricing. Without concrete evidence of price manipulation, the finding cannot be confirmed.",
+      "impact": "If an attacker can set or modify the price of items in the catalog, they could purchase items at reduced cost or inflate prices for fraud, leading to financial loss and integrity issues.",
+      "remediation": "Ensure that the server exclusively determines item prices. Validate and ignore any price fields supplied by the client, and enforce server\u2011side pricing logic before persisting or processing orders.",
+      "evidence": [
+        "Scanner evidence: \"Catalog price must be set by the server\"",
+        "Runtime probe fact: status 200 from /orders (values redacted)"
+      ],
+      "limitations": [
+        "No actual price values observed; response data is redacted",
+        "No request showing client\u2011supplied price being accepted",
+        "Single runtime probe does not demonstrate a vulnerable code path"
+      ],
+      "source_ids": [
+        "merged-cc8a9ed20905505868f0"
+      ]
+    },
+    {
+      "candidate_id": "merged-b4c1c4d005665a5249a7",
+      "verdict": "needs_more_evidence",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "A note must belong to the order named in the URL",
+      "explanation": "The scanner reports that a note must belong to the order identified in the URL, but the only runtime observation is a successful 200 response for the specific path /orders/1/notes/2 with values redacted. No test was performed to verify whether notes from other orders can be accessed via a crafted URL, nor is there evidence of missing authorization checks in the code. Consequently, the presence of a vulnerability cannot be confirmed from the available data.",
+      "impact": "If the endpoint fails to enforce that a note belongs to the specified order, an attacker could retrieve or modify notes belonging to other orders, leading to unauthorized data exposure or tampering.",
+      "remediation": "Implement strict authorization checks that validate the note's order association against the order ID provided in the URL before returning or modifying the note. Return an appropriate error (e.g., 403 Forbidden) when the association does not match.",
+      "evidence": [
+        "Scanner evidence: A note must belong to the order named in the URL",
+        "Runtime probe: GET /orders/1/notes/2 returned status 200 with values redacted"
+      ],
+      "limitations": [
+        "Only a single successful request was observed; no cross\u2011order access attempts were made",
+        "Response body values were redacted, preventing verification of note ownership",
+        "No source code or configuration review was provided to confirm missing authorization logic"
+      ],
+      "source_ids": [
+        "merged-b4c1c4d005665a5249a7"
+      ]
+    },
+    {
+      "candidate_id": "merged-a9e9047867c909f567ad",
+      "verdict": "false_positive",
+      "severity": "info",
+      "confidence": "high",
+      "title": "Only the owner can read an order",
+      "explanation": "The finding reports that the endpoint /orders/{{order_id}} returns a 200 status only when accessed by the order owner. This behavior enforces proper access control and does not constitute a vulnerability. The scanner\u2019s wording may be misinterpreted as a flaw, but the observed runtime probe confirms the intended restriction.",
+      "impact": "No impact; the access control works as designed, preventing unauthorized reads of orders.",
+      "remediation": "No remediation required; the current owner\u2011only read restriction is appropriate.",
+      "evidence": [
+        "runtime_probe_facts: scanner_id=web-runtime, rule_id=workflow.order_owner.3, path=/orders/{{order_id}}, facts={status:200, values_redacted:true}"
+      ],
+      "limitations": [
+        "Evidence is limited to a single successful request observed for an authorized user; no tests were performed for unauthorized access attempts. The finding relies on the scanner\u2019s description without additional context."
+      ],
+      "source_ids": [
+        "merged-a9e9047867c909f567ad"
+      ]
+    },
+    {
+      "candidate_id": "merged-7da23d65adeef42d71a6",
+      "verdict": "false_positive",
+      "severity": "info",
+      "confidence": "high",
+      "title": "Excessive coupon discounts are rejected",
+      "explanation": "The scanner reported that attempts to apply excessive coupon discounts are rejected with a 200 response. Rejection of overly large discounts is expected correct behavior, not a security flaw. No evidence of privilege escalation, unauthorized discount application, or bypass is present.",
+      "impact": "No impact; the application correctly prevents abuse of coupon discounts.",
+      "remediation": "No remediation required.",
+      "evidence": [
+        "Scanner evidence: Excessive coupon discounts are rejected",
+        "Runtime probe fact: request to /orders/{{order_id}}/apply-coupon returned status 200"
+      ],
+      "limitations": [
+        "Only a single runtime probe observed; does not demonstrate a vulnerability.",
+        "No proof of bypass or unintended discount application."
+      ],
+      "source_ids": [
+        "merged-7da23d65adeef42d71a6"
+      ]
+    },
+    {
+      "candidate_id": "merged-e683a977084f2bbcee2e",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Paid orders require a refund before cancellation",
+      "explanation": "The scanner flagged the /orders/{{order_id}}/cancel endpoint as requiring a refund before an order can be cancelled. This behavior suggests a business\u2011logic flaw that could prevent legitimate cancellations or be abused to force refunds before cancellation, potentially leading to financial loss or denial\u2011of\u2011service for users.",
+      "impact": "Users may be unable to cancel paid orders without first issuing a refund, which can cause financial inconvenience, loss of trust, and could be leveraged by an attacker to manipulate order states or cause denial\u2011of\u2011service.",
+      "remediation": "Review the cancellation workflow and adjust the logic to allow order cancellation without mandating a prior refund, or implement explicit authorization checks that distinguish legitimate refund\u2011then\u2011cancel flows from abuse. Ensure that business rules are clearly documented and enforced consistently.",
+      "evidence": [
+        "Paid orders require a refund before cancellation (scanner evidence)",
+        "Runtime probe fact: status 200 returned from /orders/{{order_id}}/cancel (values redacted)"
+      ],
+      "limitations": [
+        "Evidence is limited to scanner output and a single runtime probe showing a 200 response; no payload details or functional testing were performed",
+        "Values were redacted, preventing verification of the exact response behavior",
+        "No direct observation of the refund\u2011then\u2011cancel requirement beyond the scanner rule"
+      ],
+      "source_ids": [
+        "merged-e683a977084f2bbcee2e"
+      ]
+    },
+    {
+      "candidate_id": "merged-dd64ece99563dbbb173a",
+      "verdict": "false_positive",
+      "severity": "high",
+      "confidence": "high",
+      "title": "Second payment attempt correctly rejected \u2013 no vulnerability",
+      "explanation": "The runtime probe shows that when a payment is attempted on an order that is already marked as paid, the system rejects the request. The scanner\u2019s evidence \"An already paid order rejects a second payment\" aligns with expected behavior to prevent double charging. No indication of insecure handling or exploitable flaw is present.",
+      "impact": "None \u2013 the application correctly prevents duplicate payments.",
+      "remediation": "No remediation required; the current behavior is appropriate.",
+      "evidence": [
+        "Scanner evidence: An already paid order rejects a second payment",
+        "Runtime probe fact (web-runtime, rule workflow.payment_replay.3) at /orders/{{order_id}}/pay returned status 200 with values redacted"
+      ],
+      "limitations": [
+        "Evidence is limited to the observed HTTP response; internal logic and exact error handling are not visible.",
+        "The status code 200 may be unconventional for a rejection, but without further context it does not constitute a vulnerability."
+      ],
+      "source_ids": [
+        "merged-dd64ece99563dbbb173a"
+      ]
+    },
+    {
+      "candidate_id": "merged-2b80ed0c48c0c70a93a4",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Unauthorized read of another user profile",
+      "explanation": "The runtime probe fact from the web-runtime scanner shows a HTTP 200 response when accessing the endpoint \"/profiles/{{other_id}}\", indicating that the request succeeded and the profile data was returned despite the target being another user's account. This suggests that the application does not enforce proper ownership checks for profile access, allowing an authenticated user to read another user's profile.",
+      "impact": "An attacker who can authenticate as any user could retrieve personal information, settings, or other sensitive data belonging to other users, leading to privacy breaches and potential further exploitation.",
+      "remediation": "Implement strict authorization checks on the profile endpoint to verify that the requesting user is the owner of the profile being accessed. Return a 403 Forbidden or 404 Not Found for unauthorized attempts. Add unit and integration tests to verify access control enforcement.",
+      "evidence": [
+        "runtime_probe_facts: scanner_id=web-runtime, rule_id=workflow.profile_owner.2, path=/profiles/{{other_id}}, facts={\"status\":200,\"values_redacted\":true}"
+      ],
+      "limitations": [
+        "Only a single request was observed; does not confirm whether the same behavior occurs across different roles or under varying conditions.",
+        "The probe does not show the response body; it is assumed that the profile data was returned based on the 200 status.",
+        "No additional guard checks (e.g., rate limiting, logging) were observed to mitigate the issue."
+      ],
+      "source_ids": [
+        "merged-2b80ed0c48c0c70a93a4"
+      ]
+    },
+    {
+      "candidate_id": "merged-65f25bcf14fa2ab91271",
+      "verdict": "needs_more_evidence",
+      "severity": "high",
+      "confidence": "low",
+      "title": "Webhook destination must match the approved internal host exactly",
+      "explanation": "A scanner flagged the /webhooks endpoint as potentially misconfigured, but the only runtime observation is an HTTP 200 response with redacted values. No concrete evidence of the actual webhook destination or a mismatch with the approved internal host is available, so the vulnerability cannot be confirmed.",
+      "impact": "If the webhook were pointing to an external or unapproved host, sensitive data could be exfiltrated or unauthorized actions could be triggered.",
+      "remediation": "Validate the webhook configuration to ensure the destination URL exactly matches the approved internal host. Implement strict allow\u2011list checks and reject any non\u2011matching URLs at deployment time.",
+      "evidence": [
+        "Webhook destination must match the approved internal host exactly",
+        "runtime_probe_facts: scanner_id=web-runtime, rule_id=workflow.webhook_destination.1, path=/webhooks, status=200, values_redacted=true"
+      ],
+      "limitations": [
+        "The actual webhook URL is redacted and not observable in the probe data",
+        "Only a successful HTTP 200 response was observed, which does not indicate misdirection",
+        "No additional context or guard checks were provided to confirm the issue"
+      ],
+      "source_ids": [
+        "merged-65f25bcf14fa2ab91271"
+      ]
+    },
+    {
+      "candidate_id": "merged-3202e1e1074cfd44b9bf",
+      "verdict": "confirmed_vulnerability",
+      "severity": "high",
+      "confidence": "high",
+      "title": "Clear-text logging of sensitive information",
+      "explanation": "The code logs the application secret (APP_SECRET) in clear text at INFO level each time a user logs in. This creates an audit trail that contains a credential that should remain confidential, enabling an attacker with access to logs to retrieve the secret and potentially impersonate the application or access other protected resources.",
+      "impact": "Exposure of the application secret can lead to credential theft, unauthorized access to internal services, token forgery, and full compromise of the application\u2019s security posture.",
+      "remediation": "Remove the secret from the log statement. Either omit the APP_SECRET entirely, mask it (e.g., replace with ***), or log only non\u2011sensitive identifiers. Ensure that logging configuration does not output sensitive data at any level in production.",
+      "evidence": [
+        "log.info(\"login user=%s app_secret=%s\", username, os.environ.get(\"APP_SECRET\", \"lab-only\")) (line 137 in api/app.py)",
+        "Scanner finding (semgrep-ce) rule python.lang.security.audit.logging.logger-credential-leak.python-logger-credential-disclosure flagged line 137 as logging credential"
+      ],
+      "limitations": [
+        "The finding assumes the INFO log level is enabled in production; if logging is disabled or redirected, exposure may be reduced, but the code still contains the insecure pattern. No runtime probe confirms whether logs are actually persisted or protected."
+      ],
+      "source_ids": [
+        "merged-3202e1e1074cfd44b9bf"
+      ]
+    },
+    {
+      "candidate_id": "merged-70f8087c412d06924742",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "medium",
+      "title": "Wildcard CORS configuration allows any origin",
+      "explanation": "The FastAPI application adds CORSMiddleware with allow_origins set to \"*\" while also allowing credentials. This configuration permits any origin to make cross\u2011origin requests and receive credentials, which is a known security misconfiguration. Although browsers may block credentialed requests with a wildcard origin, the server still advertises permissive CORS headers, potentially exposing data to malicious sites if the client does not enforce stricter checks.",
+      "impact": "An attacker-controlled website could issue cross\u2011origin requests to the API and, if the client\u2019s browser does not enforce the credential\u2011origin restriction, could gain access to sensitive data or perform actions on behalf of an authenticated user.",
+      "remediation": "Restrict allow_origins to a whitelist of trusted domains. If credentials must be allowed, do not use a wildcard; instead enumerate specific origins. Alternatively, set allow_credentials to false when using a wildcard origin.",
+      "evidence": [
+        "api/app.py:26-29 shows allow_origins=[\"*\"], allow_credentials=True, allow_methods=[\"*\"], allow_headers=[\"*\"]"
+      ],
+      "limitations": [
+        "The actual exploitability depends on client\u2011side behavior; browsers may reject credentialed requests with a wildcard origin, reducing practical risk. No runtime observations confirm that malicious cross\u2011origin requests are being processed."
+      ],
+      "source_ids": [
+        "merged-70f8087c412d06924742"
+      ]
+    },
+    {
+      "candidate_id": "merged-9c6fcf61fc01168b15e2",
+      "verdict": "confirmed_vulnerability",
+      "severity": "medium",
+      "confidence": "high",
+      "title": "Log Injection and Secret Exposure",
+      "explanation": "The login handler logs both a user\u2011controlled value (username) and the application secret (APP_SECRET) directly via log.info. Logging unsanitized user input can enable log injection attacks, and logging the secret discloses sensitive configuration data in clear text.",
+      "impact": "An attacker can inject malicious log entries that may corrupt log parsing, trigger log\u2011based attacks, or obscure forensic evidence. Exposure of the APP_SECRET can allow credential reuse or other privileged actions if the logs are accessed by unauthorized parties.",
+      "remediation": "Remove the APP_SECRET from log statements, avoid logging raw user input, or sanitize/escape it before logging. Use structured logging with proper redaction for sensitive fields and ensure logs are stored securely with restricted access.",
+      "evidence": [
+        "api/app.py line 137: log.info(\"login user=%s app_secret=%s\", username, os.environ.get(\"APP_SECRET\", \"lab-only\"))"
+      ],
+      "limitations": [
+        "Static analysis only; does not confirm whether logs are parsed by vulnerable log processors. The severity of secret exposure depends on the actual value of APP_SECRET and log access controls."
+      ],
+      "source_ids": [
+        "merged-9c6fcf61fc01168b15e2"
+      ]
+    },
+    {
+      "candidate_id": "merged-51bf51abe866bf8d3d67",
+      "verdict": "confirmed_vulnerability",
+      "severity": "medium",
+      "confidence": "high",
+      "title": "URL redirection from remote source",
+      "explanation": "The /auth/continue endpoint accepts a query parameter \"next\" (default \"/\") and immediately returns a RedirectResponse to that value without any validation or whitelist. This allows an attacker to supply an arbitrary URL and cause the application to redirect victims to malicious sites, constituting an open redirect vulnerability.",
+      "impact": "An attacker can craft URLs that appear to originate from the trusted domain but redirect users to phishing pages, malware distribution sites, or other malicious destinations, facilitating credential theft and drive\u2011by attacks.",
+      "remediation": "Validate the \"next\" parameter against a whitelist of allowed internal paths or URLs, or restrict redirects to relative paths only. If a redirect is required, use a safe mapping of identifiers to destinations rather than accepting arbitrary URLs from the request.",
+      "evidence": [
+        "Source line 616\u2011617 defines continue_to(next: str = \"/\") -> RedirectResponse that returns RedirectResponse(next, status_code=302) without validation.",
+        "Untrusted URL redirection depends on a user-provided value (scanner evidence)."
+      ],
+      "limitations": [
+        "No runtime probe confirming the endpoint is exposed in the deployed environment.",
+        "No evidence of additional guard checks or whitelist logic elsewhere in the codebase.",
+        "The finding is based solely on static analysis; actual exploitability depends on whether the endpoint is reachable by external users."
+      ],
+      "source_ids": [
+        "merged-51bf51abe866bf8d3d67"
+      ]
+    },
+    {
+      "candidate_id": "merged-f41fd10802e7c4dd22bb",
+      "verdict": "false_positive",
+      "severity": "info",
+      "confidence": "high",
+      "title": "URL redirection from remote source",
+      "explanation": "The function\u202fverified_continue\u202fexplicitly validates the\u202fnext\u202fparameter, ensuring it starts with a leading slash, does not start with a double slash, and contains no scheme or network location. If any of these conditions are violated, an HTTP 400 error is raised, preventing redirection to external URLs. Consequently, the reported open\u2011redirect risk is mitigated by this logic.",
+      "impact": "No open\u2011redirect vulnerability is present; an attacker cannot cause the application to redirect a victim to an arbitrary external site via this endpoint.",
+      "remediation": "No remediation required for this finding. Maintain the existing validation and ensure any future changes preserve these checks.",
+      "evidence": [
+        "def verified_continue(next: str = \"/\") -> RedirectResponse:",
+        "    parts = urlsplit(next)",
+        "    if not next.startswith(\"/\") or next.startswith(\"//\") or parts.scheme or parts.netloc:",
+        "        raise HTTPException(400, \"Local path required\")",
+        "    return RedirectResponse(next, status_code=302)"
+      ],
+      "limitations": [
+        "The analysis assumes that all redirects in the application use\u202fverified_continue. If other code paths perform redirects without similar validation, they could still be vulnerable. The review is limited to the provided source excerpt."
+      ],
+      "source_ids": [
+        "merged-f41fd10802e7c4dd22bb"
+      ]
+    },
+    {
+      "candidate_id": "merged-58377a692410b6446bbd",
+      "verdict": "false_positive",
+      "severity": "low",
+      "confidence": "medium",
+      "title": "No HEALTHCHECK defined",
+      "explanation": "The Dockerfile does not contain a HEALTHCHECK instruction. While adding a health check is a recommended best practice for container observability and reliability, its absence does not directly constitute a security vulnerability. No evidence is provided that the lack of a health check leads to exploitable conditions such as denial\u2011of\u2011service or unauthorized access.",
+      "impact": "Minimal. The container may not be automatically monitored for liveness, potentially delaying detection of failures, but this does not expose the application to a direct security breach.",
+      "remediation": "Add a HEALTHCHECK instruction to the Dockerfile that periodically verifies the service is responsive, e.g., `HEALTHCHECK --interval=30s --timeout=5s CMD curl -f http://localhost:8091/health || exit 1`.",
+      "evidence": [
+        "Dockerfile excerpt shows no HEALTHCHECK line"
+      ],
+      "limitations": [
+        "The assessment is based solely on the Dockerfile content; no runtime behavior or exploitation evidence is available. The finding is a best\u2011practice recommendation rather than a confirmed security flaw."
+      ],
+      "source_ids": [
+        "merged-58377a692410b6446bbd"
+      ]
+    },
+    {
+      "candidate_id": "merged-0de42012099941c48e01",
+      "verdict": "false_positive",
+      "severity": "low",
+      "confidence": "medium",
+      "title": "No HEALTHCHECK defined",
+      "explanation": "The Dockerfile does not contain a HEALTHCHECK instruction, which is a best\u2011practice recommendation for container health monitoring but does not constitute a direct security vulnerability. Absence of a health check may affect orchestration reliability rather than expose a concrete exploit path.",
+      "impact": "Limited to reduced observability and potential service disruption; no direct attack vector is introduced by the missing HEALTHCHECK.",
+      "remediation": "Add a HEALTHCHECK instruction to the Dockerfile that periodically verifies the container\u2019s functionality, e.g., `HEALTHCHECK --interval=30s --timeout=5s CMD curl -f http://localhost:9000/health || exit 1`.",
+      "evidence": [
+        "Source excerpt shows Dockerfile lines 1\u20116 with no HEALTHCHECK instruction."
+      ],
+      "limitations": [
+        "Assessment based solely on static Dockerfile content; no runtime behavior or orchestration context was examined."
+      ],
+      "source_ids": [
+        "merged-0de42012099941c48e01"
+      ]
+    },
+    {
+      "candidate_id": "merged-df83daf10f817c7aa965",
+      "verdict": "false_positive",
+      "severity": "low",
+      "confidence": "medium",
+      "title": "No HEALTHCHECK defined",
+      "explanation": "The Dockerfile for the worker service does not contain a HEALTHCHECK instruction. While adding a health check is a best practice for container orchestration and can improve reliability, the absence of a health check does not constitute a direct security vulnerability. The finding is based on static analysis of the Dockerfile and does not indicate an exploitable condition.",
+      "impact": "Without a HEALTHCHECK, orchestration platforms cannot automatically detect and remediate unhealthy containers, which may lead to prolonged service outages or degraded performance. This impacts availability rather than confidentiality or integrity.",
+      "remediation": "Add a HEALTHCHECK instruction to the Dockerfile, e.g.,\n\nHEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD curl -f http://localhost/health || exit 1\n\nadjusting the command to suit the application's health endpoint.",
+      "evidence": [
+        "Dockerfile excerpt shows no HEALTHCHECK line:\\n1 | FROM python:3.12-slim\\n2 | WORKDIR /app\\n3 | COPY requirements.txt .\\n4 | RUN pip install --no-cache-dir -r requirements.txt\\n5 | COPY worker ./worker\\n6 | USER 10001:10001\\n7 | CMD [\\\"python\\\", \\\"-m\\\", \\\"worker.worker\\\"]"
+      ],
+      "limitations": [
+        "Assessment is based solely on static Dockerfile content; external monitoring solutions may provide health checks outside the container. The finding does not prove a security flaw, only a potential reliability improvement."
+      ],
+      "source_ids": [
+        "merged-df83daf10f817c7aa965"
+      ]
+    },
+    {
+      "candidate_id": "merged-7711056ee3332442a201",
+      "verdict": "needs_more_evidence",
+      "severity": "low",
+      "confidence": "low",
+      "title": "Dynamic Urllib Use Detected",
+      "explanation": "The scanner flagged a dynamic value (the `path` argument) being concatenated with a constant `BASE` and passed to `urllib.request.urlopen`. If an attacker can influence `path`, they could craft a URL with a `file://` scheme or otherwise perform SSRF, potentially reading arbitrary files or accessing internal services. However, the provided repository code does not show how `path` is sourced, and no runtime probe facts or additional evidence confirm attacker control. Consequently, the presence of a vulnerability cannot be confirmed nor dismissed.",
+      "impact": "If exploitable, an attacker could read arbitrary files on the server or perform server\u2011side request forgery, leading to information disclosure or further compromise.",
+      "remediation": "Validate and sanitize the `path` argument to ensure it cannot contain dangerous schemes (e.g., `file://`). Prefer using a higher\u2011level HTTP library such as `requests` that does not support `file://` URLs, or enforce a whitelist of allowed endpoints. Consider constructing URLs with proper URL\u2011joining utilities rather than string concatenation.",
+      "evidence": [
+        "Line 20\u201121: `urllib.request.urlopen(urllib.request.Request(BASE + path, ...)` \u2013 dynamic `path` is concatenated with `BASE` and used as the request URL."
+      ],
+      "limitations": [
+        "No evidence that `path` is derived from user input or otherwise attacker\u2011controlled.",
+        "No runtime probe data confirming exploitation.",
+        "The finding is based solely on static analysis; actual risk depends on how `request` is used elsewhere in the codebase."
+      ],
+      "source_ids": [
+        "merged-7711056ee3332442a201"
+      ]
+    },
+    {
+      "candidate_id": "merged-c150b78349615dd9bc2d",
+      "verdict": "needs_more_evidence",
+      "severity": "low",
+      "confidence": "low",
+      "title": "Dynamic Urllib Use Detected",
+      "explanation": "The code constructs a urllib.request.Request using a URL taken directly from the job payload (payload[\"target_url\"]). Because the URL is not validated, an attacker who can control the payload could supply a malicious scheme such as \"file://\" or an internal network address, potentially leading to server\u2011side request forgery (SSRF) or arbitrary file reads. The scanner flagged this as a possible issue, but no additional runtime evidence or validation logic is present in the provided excerpt to confirm exploitation.",
+      "impact": "If an attacker can influence the target_url, they may cause the service to make arbitrary HTTP requests or read local files via the file:// scheme, leading to information disclosure or further compromise of the host environment.",
+      "remediation": "Validate and whitelist the URL scheme (e.g., allow only http and https) and the host before making the request. Consider using a higher\u2011level library such as `requests` with explicit timeout and redirect handling. If external URLs are not required, reject or sanitize any non\u2011trusted URLs. Add logging and monitoring for unexpected URL patterns.",
+      "evidence": [
+        "with urllib.request.urlopen(request, timeout=3) as response:",
+        "payload[\"target_url\"] is passed directly to urllib.request.Request without validation"
+      ],
+      "limitations": [
+        "No runtime probe data confirming that an attacker can control payload[\"target_url\"]",
+        "No evidence that the application restricts schemes or validates the URL",
+        "Severity and confidence are based solely on static analysis; actual exploitability depends on surrounding code not provided"
+      ],
+      "source_ids": [
+        "merged-c150b78349615dd9bc2d"
+      ]
+    },
+    {
+      "candidate_id": "ai-d40782fbc8de084b",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "medium",
+      "title": "Missing authorization on public file read endpoint",
+      "explanation": "The GET /files endpoint defined in api/extra.py resolves a user\u2011controlled filename within the server's public directory and returns its contents without any authentication or authorization check. The code only verifies that the resolved path stays inside the public folder and that the file exists, but it does not enforce that the caller is permitted to read the file. If the public directory contains files that are not intended for unrestricted access, any unauthenticated client can retrieve them, leading to information disclosure.",
+      "impact": "Unauthenticated users can read arbitrary files from the public directory, potentially exposing configuration files, internal data, or other sensitive information. This can aid attackers in reconnaissance, credential harvesting, or further exploitation of the system.",
+      "remediation": "Add an authentication/authorization guard before resolving the file (e.g., require a valid token or specific role). Limit the endpoint to serve only files that are explicitly intended to be public, or move sensitive files out of the public folder. Consider implementing additional controls such as rate limiting and input validation to prevent enumeration attacks.",
+      "evidence": [
+        "@router.get(\"/files\") definition at api/extra.py line 210",
+        "def file_read(name: str) -> Response: line 211",
+        "file = (FILES / \"public\" / name).resolve() line 212",
+        "No authentication or role check appears before line 212",
+        "if not file.is_relative_to(FILES.resolve()) or not file.is_file(): line 213"
+      ],
+      "limitations": [
+        "We lack knowledge of the intended contents of the public directory; it may be deliberately public",
+        "No runtime evidence shows that sensitive files are actually present in the public folder",
+        "The scan does not reveal any external access control mechanisms that might be applied elsewhere (e.g., API gateway)"
+      ],
+      "source_ids": [
+        "ai-d40782fbc8de084b"
+      ]
+    },
+    {
+      "candidate_id": "ai-e8f12316dd8aae3b",
+      "verdict": "needs_more_evidence",
+      "severity": "low",
+      "confidence": "low",
+      "title": "Potential information leakage in error messages for duplicate registration",
+      "explanation": "The code re\u2011raises a database UniqueViolation as an HTTPException while preserving the original exception via `from error`. If the application runs with debug mode enabled or propagates exception details in responses or logs, an attacker could infer internal schema information (e.g., table and column names). However, FastAPI (or similar frameworks) typically suppresses the chained exception in production responses unless debug is on. Without concrete evidence of the runtime configuration or logging exposure, the risk cannot be confirmed.",
+      "impact": "An attacker who can trigger a duplicate\u2011username registration might obtain internal database error details, revealing schema elements such as table names and column structures, which could aid further attacks.",
+      "remediation": "Configure the application to run with debug disabled in production. Avoid chaining the original database exception when raising HTTP errors; instead log the detailed error internally and raise a generic `HTTPException(409, \"username already exists\")` without the `from error` clause. Ensure that logs containing exception traces are not publicly accessible.",
+      "evidence": [
+        "api/app.py:184-185: except psycopg.errors.UniqueViolation as error:",
+        "api/app.py:185: raise HTTPException(409, \"username already exists\") from error"
+      ],
+      "limitations": [
+        "The deployment context does not specify whether the FastAPI app runs with debug=True or False.",
+        "No information is provided about how exception traces are logged or whether log files are exposed to unauthenticated users.",
+        "The behavior of the framework regarding exception chaining in production responses is assumed but not verified for this specific setup."
+      ],
+      "source_ids": [
+        "ai-e8f12316dd8aae3b"
+      ]
+    }
+  ],
+  "warnings": [],
+  "usage": {
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "calls": 44,
+    "expected_groups": 44,
+    "reused_groups": 0,
+    "prompt_tokens": 37706,
+    "completion_tokens": 29701,
+    "total_tokens": 67407,
+    "reviewed_groups": 44,
+    "pending_groups": 0
+  },
+  "pending_ids": []
+}

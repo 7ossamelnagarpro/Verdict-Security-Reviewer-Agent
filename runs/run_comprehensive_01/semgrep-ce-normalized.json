@@ -1,0 +1,183 @@
+{
+  "schema_version": "1.0",
+  "source_format": "semgrep-json",
+  "status": "complete",
+  "findings": [
+    {
+      "finding_id": "finding-4a0087fbbf81ab67cbbd",
+      "schema_version": "1.0",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 0,
+        "automation_id": null
+      },
+      "rule_id": "python.fastapi.security.wildcard-cors.wildcard-cors",
+      "title": "Wildcard Cors",
+      "description": "CORS policy allows any origin (using wildcard '*'). This is insecure and should be avoided.",
+      "message": "CORS policy allows any origin (using wildcard '*'). This is insecure and should be avoided.",
+      "severity": "low",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [
+        "CWE-942"
+      ],
+      "categories": [
+        "security",
+        "technology:fastapi",
+        "technology:python"
+      ],
+      "primary_location": {
+        "path": "api/app.py",
+        "start_line": 26,
+        "start_column": 19,
+        "end_line": 26,
+        "end_column": 24,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "semgrep": "requires login"
+      },
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/KxApY",
+      "runtime_evidence": null
+    },
+    {
+      "finding_id": "finding-2d9cdb7bd9957eab26bc",
+      "schema_version": "1.0",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 1,
+        "automation_id": null
+      },
+      "rule_id": "python.lang.security.audit.logging.logger-credential-leak.python-logger-credential-disclosure",
+      "title": "Python Logger Credential Disclosure",
+      "description": "Detected a python logger call with a potential hardcoded secret \"login user=%s app_secret=%s\" being logged. This may lead to secret credentials being exposed. Make sure that the logger is not logging  sensitive information.",
+      "message": "Detected a python logger call with a potential hardcoded secret \"login user=%s app_secret=%s\" being logged. This may lead to secret credentials being exposed. Make sure that the logger is not logging  sensitive information.",
+      "severity": "medium",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [
+        "CWE-532"
+      ],
+      "categories": [
+        "security",
+        "technology:python"
+      ],
+      "primary_location": {
+        "path": "api/app.py",
+        "start_line": 137,
+        "start_column": 5,
+        "end_line": 137,
+        "end_column": 96,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "semgrep": "requires login"
+      },
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/ydNx",
+      "runtime_evidence": null
+    },
+    {
+      "finding_id": "finding-8bd8ccd219fbcbd5e5fe",
+      "schema_version": "1.0",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 2,
+        "automation_id": null
+      },
+      "rule_id": "python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected",
+      "title": "Dynamic Urllib Use Detected",
+      "description": "Detected a dynamic value being used with urllib. urllib supports 'file://' schemes, so a dynamic value controlled by a malicious actor may allow them to read arbitrary files. Audit uses of urllib calls to ensure user data cannot control the URLs, or consider using the 'requests' library instead.",
+      "message": "Detected a dynamic value being used with urllib. urllib supports 'file://' schemes, so a dynamic value controlled by a malicious actor may allow them to read arbitrary files. Audit uses of urllib calls to ensure user data cannot control the URLs, or consider using the 'requests' library instead.",
+      "severity": "low",
+      "security_severity_score": null,
+      "confidence": "low",
+      "cwes": [
+        "CWE-939"
+      ],
+      "categories": [
+        "security",
+        "technology:python"
+      ],
+      "primary_location": {
+        "path": "tests/test_smoke.py",
+        "start_line": 20,
+        "start_column": 10,
+        "end_line": 22,
+        "end_column": 6,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "semgrep": "requires login"
+      },
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/dKZZ",
+      "runtime_evidence": null
+    },
+    {
+      "finding_id": "finding-9722bc2aeabd517d3559",
+      "schema_version": "1.0",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 3,
+        "automation_id": null
+      },
+      "rule_id": "python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected",
+      "title": "Dynamic Urllib Use Detected",
+      "description": "Detected a dynamic value being used with urllib. urllib supports 'file://' schemes, so a dynamic value controlled by a malicious actor may allow them to read arbitrary files. Audit uses of urllib calls to ensure user data cannot control the URLs, or consider using the 'requests' library instead.",
+      "message": "Detected a dynamic value being used with urllib. urllib supports 'file://' schemes, so a dynamic value controlled by a malicious actor may allow them to read arbitrary files. Audit uses of urllib calls to ensure user data cannot control the URLs, or consider using the 'requests' library instead.",
+      "severity": "low",
+      "security_severity_score": null,
+      "confidence": "low",
+      "cwes": [
+        "CWE-939"
+      ],
+      "categories": [
+        "security",
+        "technology:python"
+      ],
+      "primary_location": {
+        "path": "worker/worker.py",
+        "start_line": 23,
+        "start_column": 14,
+        "end_line": 23,
+        "end_column": 56,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "semgrep": "requires login"
+      },
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/dKZZ",
+      "runtime_evidence": null
+    }
+  ],
+  "warnings": [],
+  "summary": {
+    "input_runs": 1,
+    "input_results": 4,
+    "normalized_findings": 4,
+    "skipped_results": 0
+  }
+}

@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from security_reviewer_v2.reporting.evaluation_html import render_evaluation
+from security_reviewer_v2.reporting.view import friendly_name
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -239,19 +240,17 @@ def html_report(result: dict[str, Any]) -> str:
             ],
         })
     return render_evaluation(
-        title="Comprehensive lab · held-out evaluation",
-        headline=f"{summary['detected']}/{summary['known_positive_cases']} known-positive cases detected",
+        title="Comprehensive lab",
+        headline="Known vulnerabilities found by the saved scan",
         intro="Ground truth was used only after the saved scan and review were complete. This is not a claim of exhaustive vulnerability coverage.",
-        cards=[(f"{summary['detected']}/{summary['known_positive_cases']}", "Detected known-positive cases"),
-               (summary["needs_review"], "Need review"), (summary["not_detected"], "No exact reviewed signal"),
-               (summary["safe_controls_not_assessed"], "Safe controls not audited")],
+        gauge=(summary["detected"], summary["known_positive_cases"], "known-positive cases detected"),
         notes=["Precision and F1 are not calculated: safe controls and unmatched findings require manual adjudication. "
                "A missing exact match does not prove the application is safe."],
-        provenance=[("Project", provenance["project"]), ("Scan status", provenance["scan_status"]),
+        provenance=[("Project", friendly_name(provenance["project"])), ("Scan status", provenance["scan_status"]),
                     ("Scanners", ", ".join(provenance["adapters"])),
                     ("Findings", f"{provenance['merged_findings']} merged · {provenance['reviewed_groups']} reviewed groups"),
                     ("AI discovery", f"{discovery.get('provider', 'unknown')} / {discovery.get('model', 'unknown')}"),
-                    ("AI review", review.get("status", "unknown")), ("Coverage gaps", len(provenance["coverage_gaps"]))],
+                    ("AI review", review.get("status", "unknown"))],
         donut=[("Detected", summary["detected"], "var(--mint)"), ("Needs review", summary["needs_review"], "var(--medium)"),
                ("No exact signal", summary["not_detected"], "var(--high)"),
                ("Safe controls", summary["safe_controls_not_assessed"], "var(--low)"),
