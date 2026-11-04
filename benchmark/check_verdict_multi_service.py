@@ -1,4 +1,5 @@
 """Read-only benchmark shape check; it never runs target code or reveals ground truth to scanners."""
+
 from __future__ import annotations
 
 import json

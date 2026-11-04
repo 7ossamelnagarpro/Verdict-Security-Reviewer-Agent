@@ -19,6 +19,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8,<9",
+    "ruff>=0.17,<0.18",
 ]
 scanners = [
     "semgrep==1.178.0",
@@ -42,8 +43,23 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "security_reviewer_v2.web" = ["templates/*.html", "static/*.css", "static/*.js"]
+"security_reviewer_v2.scanners" = ["rules/*.yml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = [".", "src"]
 addopts = "-ra"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E4", "E7", "E9", "F", "I",
+    "C405", "C408", "C409", "FLY002", "FURB167",
+    "ISC004", "RUF022", "RUF059",
+]
+# These rules require case-by-case exception design and can change runtime
+# error handling or failure boundaries when applied mechanically.
+ignore = ["BLE001", "E402", "SIM102", "SIM117", "TRY004"]

@@ -8,12 +8,11 @@ from pathlib import Path
 from .analysis import analyze_discovery
 from .discovery import discover_project
 from .models import (
-    Completeness,
+    SCHEMA_VERSION,
     ProfileResult,
     ProfilerLimits,
     ProfilerPolicy,
     ProjectProfile,
-    SCHEMA_VERSION,
 )
 from .planner import create_scan_plan
 from .registry import REGISTRY_VERSION, load_builtin_registry
@@ -56,7 +55,9 @@ def profile_project(
         targets=targets,
         exclusions=exclusions,
         skipped=discovery.skipped,
-        warnings=tuple(sorted(set(discovery.warnings + analysis_warnings + reader_warnings))),
+        warnings=tuple(
+            sorted(set(discovery.warnings + analysis_warnings + reader_warnings))
+        ),
         coverage_gaps=gaps,
         policy_version=selected_policy.version,
         registry_version=REGISTRY_VERSION,
@@ -81,22 +82,41 @@ def _profile_coverage_gaps(components, discovery, warnings) -> tuple[str, ...]:
                 f"Dependency/SCA coverage is unknown for component {component.component_id}: "
                 "no supported manifest or lockfile was found."
             )
-        manifests = tuple(item for item in component.dependency_files if item.kind == "manifest")
-        has_lockfile = any(item.kind == "lockfile" for item in component.dependency_files)
-        if manifests and not has_lockfile and any(item.dependencies for item in manifests):
+        manifests = tuple(
+            item for item in component.dependency_files if item.kind == "manifest"
+        )
+        has_lockfile = any(
+            item.kind == "lockfile" for item in component.dependency_files
+        )
+        if (
+            manifests
+            and not has_lockfile
+            and any(item.dependencies for item in manifests)
+        ):
             gaps.append(
                 f"Resolved transitive dependency versions are unverified for component "
                 f"{component.component_id}: a manifest was found, but no supported lockfile."
             )
         for dependency_file in component.dependency_files:
-            if dependency_file.parse_status in {"invalid", "unreadable", "detected_only"}:
+            if dependency_file.parse_status in {
+                "invalid",
+                "unreadable",
+                "detected_only",
+            }:
                 gaps.append(
                     f"Dependency metadata is incomplete for {dependency_file.path} "
                     f"({dependency_file.parse_status})."
                 )
     for item in discovery.skipped:
-        if item.cause.value in {"resource_limit", "read_error", "disappeared", "outside_root"}:
+        if item.cause.value in {
+            "resource_limit",
+            "read_error",
+            "disappeared",
+            "outside_root",
+        }:
             gaps.append(f"Discovery skipped {item.path}: {item.reason}")
     if discovery.reader.resource_limit_hit:
-        gaps.append("Content-reading limits reduced framework or dependency evidence coverage.")
+        gaps.append(
+            "Content-reading limits reduced framework or dependency evidence coverage."
+        )
     return tuple(sorted(set(gaps)))

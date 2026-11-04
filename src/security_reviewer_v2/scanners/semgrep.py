@@ -6,8 +6,8 @@ import json
 import os
 import re
 import subprocess
-from fnmatch import fnmatch
 from dataclasses import dataclass
+from fnmatch import fnmatch
 from pathlib import Path
 
 from security_reviewer_v2.profiler.models import ScanTask, ScanType
@@ -26,7 +26,12 @@ from .models import (
 class SemgrepConfig:
     executable: str
     # High-recall default: language rules plus security and OWASP coverage.
-    configs: tuple[str, ...] = ("p/python", "p/security-audit", "p/owasp-top-ten")
+    configs: tuple[str, ...] = (
+        "p/python",
+        "p/security-audit",
+        "p/owasp-top-ten",
+        str(Path(__file__).resolve().parent / "rules" / "verdict-security.yml"),
+    )
     expected_version: str = "1.178.0"
     metrics: str = "off"
     max_target_bytes: int = 2_000_000
@@ -35,9 +40,20 @@ class SemgrepConfig:
     # Generated/dependency trees create very large, low-value scans. These
     # remain visible in the profiler inventory and coverage gaps.
     default_exclusions: tuple[str, ...] = (
-        ".git", ".git/**", "node_modules", "**/node_modules/**",
-        "dist", "**/dist/**", "build", "**/build/**", "coverage", "**/coverage/**",
-        ".cache", "**/.cache/**", ".pytest_cache", "**/.pytest_cache/**",
+        ".git",
+        ".git/**",
+        "node_modules",
+        "**/node_modules/**",
+        "dist",
+        "**/dist/**",
+        "build",
+        "**/build/**",
+        "coverage",
+        "**/coverage/**",
+        ".cache",
+        "**/.cache/**",
+        ".pytest_cache",
+        "**/.pytest_cache/**",
     )
 
     def validate(self) -> None:
@@ -58,7 +74,9 @@ class SemgrepConfig:
                 if not re.fullmatch(r"p/[A-Za-z0-9_.-]+", config):
                     raise ValueError(f"Unsafe Semgrep registry config: {config}")
             elif not Path(config).is_absolute():
-                raise ValueError("Local Semgrep configs must use trusted absolute paths")
+                raise ValueError(
+                    "Local Semgrep configs must use trusted absolute paths"
+                )
 
 
 class SemgrepAdapter(ScannerAdapter):
@@ -129,7 +147,14 @@ class SemgrepAdapter(ScannerAdapter):
             target = (root / relative).resolve()
             if not target.is_relative_to(root):
                 raise ValueError("Semgrep target escaped the project root")
-            targets.extend(_expand_target_files(root, target, request.task.exclusions, self.config.default_exclusions))
+            targets.extend(
+                _expand_target_files(
+                    root,
+                    target,
+                    request.task.exclusions,
+                    self.config.default_exclusions,
+                )
+            )
         # A task may point only at generated/ignored content. An empty target
         # is a valid no-op result and avoids handing a directory to Semgrep's
         # ignore parser.
@@ -205,12 +230,21 @@ def _read_json_text(path: Path) -> str:
         return raw.decode("cp1252")
 
 
-def _expand_target_files(root: Path, target: Path, task_exclusions: tuple[str, ...], default_exclusions: tuple[str, ...]) -> list[str]:
+def _expand_target_files(
+    root: Path,
+    target: Path,
+    task_exclusions: tuple[str, ...],
+    default_exclusions: tuple[str, ...],
+) -> list[str]:
     """Expand directories to files so Semgrep never parses repository ignore files."""
     if not target.exists():
         return []
     patterns = tuple(task_exclusions) + tuple(default_exclusions)
-    candidates = [target] if target.is_file() else (item for item in target.rglob("*") if item.is_file())
+    candidates = (
+        [target]
+        if target.is_file()
+        else (item for item in target.rglob("*") if item.is_file())
+    )
     expanded: list[str] = []
     for candidate in candidates:
         try:
@@ -218,9 +252,26 @@ def _expand_target_files(root: Path, target: Path, task_exclusions: tuple[str, .
         except ValueError:
             continue
         parts = relative.split("/")
-        if any(part in {".git", "node_modules", "dist", "build", "coverage", ".cache", ".pytest_cache", ".venv", "vendor"} for part in parts):
+        if any(
+            part
+            in {
+                ".git",
+                "node_modules",
+                "dist",
+                "build",
+                "coverage",
+                ".cache",
+                ".pytest_cache",
+                ".venv",
+                "vendor",
+            }
+            for part in parts
+        ):
             continue
-        if any(fnmatch(relative, pattern) or fnmatch(candidate.name, pattern) for pattern in patterns):
+        if any(
+            fnmatch(relative, pattern) or fnmatch(candidate.name, pattern)
+            for pattern in patterns
+        ):
             continue
         try:
             if candidate.stat().st_size > 2_000_000:

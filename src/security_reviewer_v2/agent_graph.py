@@ -7,13 +7,18 @@ provider objects are placed in graph state or persisted as checkpoints.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Callable, TypedDict
+from typing import Any, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
-from security_reviewer_v2.context import CandidateContextResult, ContextResult, collect_candidate_context
+from security_reviewer_v2.context import (
+    CandidateContextResult,
+    ContextResult,
+    collect_candidate_context,
+)
 from security_reviewer_v2.discovery.agent import DiscoveryAgent
 from security_reviewer_v2.discovery.completion import required_discovery_satisfied
 from security_reviewer_v2.discovery.models import DiscoveryConfig, DiscoveryResult
@@ -54,6 +59,7 @@ def run_agent_review_graph(
     max_reviews: int,
     write_artifact: Callable[[str, dict[str, Any]], None],
     review_runner: Callable[..., Any],
+    application_map: dict[str, Any] | None = None,
 ) -> AgentReviewState:
     """Run Discovery through Policy Gate using the existing stage implementations.
 
@@ -65,17 +71,26 @@ def run_agent_review_graph(
     def discovery_node(_state: AgentReviewState) -> AgentReviewState:
         try:
             discovery = DiscoveryAgent(provider, discovery_config).run(
-                merged, context, risk, project_root=project_root,
+                merged,
+                context,
+                risk,
+                project_root=project_root,
                 profile_artifact=profile_artifact,
                 additional_coverage_gaps=additional_coverage_gaps,
+                application_map=application_map,
             )
             payload = discovery.to_dict()
         except (RuntimeError, ValueError) as error:
             discovery = None
             payload = {
-                "schema_version": "1.0", "status": "blocked",
-                "provider": discovery_config.provider, "model": discovery_config.model,
-                "candidates": [], "usage": {}, "batches": [], "warnings": [str(error)],
+                "schema_version": "1.0",
+                "status": "blocked",
+                "provider": discovery_config.provider,
+                "model": discovery_config.model,
+                "candidates": [],
+                "usage": {},
+                "batches": [],
+                "warnings": [str(error)],
             }
         write_artifact("ai-discovery.json", payload)
         return {
@@ -86,18 +101,25 @@ def run_agent_review_graph(
 
     def candidate_context_node(state: AgentReviewState) -> AgentReviewState:
         result = collect_candidate_context(
-            state["discovery"], project_root=project_root,
+            state["discovery"],
+            project_root=project_root,
             profile_artifact=profile_artifact,
         )
         payload = result.to_dict()
         write_artifact("candidate-context.json", payload)
-        if any(warning.startswith("source_changed_since_profile:") for warning in result.warnings):
-            raise SystemExit("Source files changed since profiling; rerun the pipeline before AI review")
+        if any(
+            warning.startswith("source_changed_since_profile:")
+            for warning in result.warnings
+        ):
+            raise SystemExit(
+                "Source files changed since profiling; rerun the pipeline before AI review"
+            )
         return {"candidate_context": result, "candidate_context_payload": payload}
 
     def verification_node(state: AgentReviewState) -> AgentReviewState:
         result = verify_discovery(
-            state["discovery"], project_root=project_root,
+            state["discovery"],
+            project_root=project_root,
             candidate_context=state["candidate_context"],
         )
         payload = result.to_dict()
@@ -105,24 +127,37 @@ def run_agent_review_graph(
         return {"verification": result, "verification_payload": payload}
 
     def triage_node(state: AgentReviewState) -> AgentReviewState:
-        result = triage_candidates(state["discovery"], state["verification"], merged,
-                                   project_root=project_root)
+        result = triage_candidates(
+            state["discovery"], state["verification"], merged, project_root=project_root
+        )
         payload = result.to_dict()
         write_artifact("candidate-triage.json", payload)
         return {"triage": result, "triage_payload": payload}
 
     def missing_discovery_node(_state: AgentReviewState) -> AgentReviewState:
         candidate_context = {
-            "schema_version": "1.0", "status": "not_run", "candidates": [],
+            "schema_version": "1.0",
+            "status": "not_run",
+            "candidates": [],
             "warnings": ["AI Discovery did not produce a result."],
         }
         verification = {
-            "schema_version": "1.0", "status": "not_run", "project_root": str(project_root),
-            "records": [], "warnings": ["AI Discovery did not produce a result; verification was not run."],
+            "schema_version": "1.0",
+            "status": "not_run",
+            "project_root": str(project_root),
+            "records": [],
+            "warnings": [
+                "AI Discovery did not produce a result; verification was not run."
+            ],
         }
         triage = {
-            "schema_version": "1.0", "status": "not_run", "groups": [], "records": [],
-            "warnings": ["AI Discovery did not produce a result; candidate triage was not run."],
+            "schema_version": "1.0",
+            "status": "not_run",
+            "groups": [],
+            "records": [],
+            "warnings": [
+                "AI Discovery did not produce a result; candidate triage was not run."
+            ],
         }
         write_artifact("candidate-context.json", candidate_context)
         write_artifact("verification.json", verification)
@@ -134,15 +169,34 @@ def run_agent_review_graph(
         }
 
     def review_node(state: AgentReviewState) -> AgentReviewState:
-        selected_ids = {item.merged_finding_id for item in risk.findings if item.selected_for_deep_review}
-        ordered_groups = tuple(sorted(state["triage"].groups, key=lambda group: not any(
-            source_id in selected_ids for source_id in group.scanner_finding_ids)))
+        selected_ids = {
+            item.merged_finding_id
+            for item in risk.findings
+            if item.selected_for_deep_review
+        }
+        ordered_groups = tuple(
+            sorted(
+                state["triage"].groups,
+                key=lambda group: (
+                    not any(
+                        source_id in selected_ids
+                        for source_id in group.scanner_finding_ids
+                    )
+                ),
+            )
+        )
         review_triage = replace(state["triage"], groups=ordered_groups)
         result = review_runner(
-            state["discovery"], state["verification"], provider=provider,
-            project_root=project_root, merged=merged, context=context,
-            candidate_context=state["candidate_context"], triage=review_triage,
-            timeout_seconds=None, deployment_context=deployment_context,
+            state["discovery"],
+            state["verification"],
+            provider=provider,
+            project_root=project_root,
+            merged=merged,
+            context=context,
+            candidate_context=state["candidate_context"],
+            triage=review_triage,
+            timeout_seconds=None,
+            deployment_context=deployment_context,
             max_reviews=max(1, max_reviews),
         )
         payload = result.to_dict()
@@ -151,9 +205,14 @@ def run_agent_review_graph(
 
     def skipped_review_node(_state: AgentReviewState) -> AgentReviewState:
         payload = {
-            "schema_version": "1.0", "status": "not_run", "provider": None,
-            "model": None, "reviews": [],
-            "warnings": ["Security Review Agent was not run because required AI Discovery did not complete its planned inspection."],
+            "schema_version": "1.0",
+            "status": "not_run",
+            "provider": None,
+            "model": None,
+            "reviews": [],
+            "warnings": [
+                "Security Review Agent was not run because required AI Discovery did not complete its planned inspection."
+            ],
             "usage": {},
         }
         write_artifact("security-review.json", payload)

@@ -3,11 +3,23 @@
 from security_reviewer_v2.discovery.completion import required_discovery_satisfied
 
 
-def _result(*, status: str = "completed", planned: int = 2, inspected: int = 2,
-            calls: int = 1, batch_status: str = "completed") -> dict:
-    return {"status": status,
-            "usage": {"planned_targets": planned, "targets": inspected, "provider_calls": calls},
-            "batches": [{"status": batch_status}]}
+def _result(
+    *,
+    status: str = "completed",
+    planned: int = 2,
+    inspected: int = 2,
+    calls: int = 1,
+    batch_status: str = "completed",
+) -> dict:
+    return {
+        "status": status,
+        "usage": {
+            "planned_targets": planned,
+            "targets": inspected,
+            "provider_calls": calls,
+        },
+        "batches": [{"status": batch_status}],
+    }
 
 
 def test_all_targets_and_successful_model_call_satisfy_required_stage() -> None:

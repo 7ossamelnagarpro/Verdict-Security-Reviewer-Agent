@@ -8,11 +8,10 @@ import json
 import re
 import tomllib
 from collections import Counter, defaultdict
-from dataclasses import replace
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from .discovery import DiscoveryResult, LOCKFILE_NAMES, language_for_file
+from .discovery import LOCKFILE_NAMES, DiscoveryResult, language_for_file
 from .models import (
     ComponentProfile,
     Confidence,
@@ -26,7 +25,6 @@ from .models import (
     ProfilerPolicy,
     TargetMetadata,
 )
-
 
 COMPONENT_MANIFESTS = {
     "pyproject.toml",
@@ -47,9 +45,18 @@ FRAMEWORK_RULES = {
         "fastapi": ("fastapi", ("import fastapi", "from fastapi")),
     },
     "javascript": {
-        "express": ("express", ("require('express", 'require("express', "from 'express", 'from "express')),
-        "react": ("react", ("from 'react", 'from "react', "require('react", 'require("react')),
-        "next.js": ("next", ("from 'next", 'from "next', "require('next", 'require("next')),
+        "express": (
+            "express",
+            ("require('express", 'require("express', "from 'express", 'from "express'),
+        ),
+        "react": (
+            "react",
+            ("from 'react", 'from "react', "require('react", 'require("react'),
+        ),
+        "next.js": (
+            "next",
+            ("from 'next", 'from "next', "require('next", 'require("next'),
+        ),
         "vue": ("vue", ("from 'vue", 'from "vue', "require('vue", 'require("vue')),
     },
     "typescript": {
@@ -114,12 +121,16 @@ def analyze_discovery(
         kind = "workspace" if _is_workspace_root(discovery, root) else "application"
         if not manifest_evidence and iac_evidence and not languages:
             kind = "infrastructure"
-        evidence = manifest_evidence or iac_evidence or (
-            Evidence(
-                path=root,
-                evidence_type="conservative_root",
-                detail="No stronger component boundary was available",
-            ),
+        evidence = (
+            manifest_evidence
+            or iac_evidence
+            or (
+                Evidence(
+                    path=root,
+                    evidence_type="conservative_root",
+                    detail="No stronger component boundary was available",
+                ),
+            )
         )
         if not manifest_evidence and not iac_evidence:
             warnings.append(
@@ -168,7 +179,9 @@ def _discover_component_roots(discovery: DiscoveryResult) -> tuple[str, ...]:
             roots.add(iac_root)
     if not roots:
         roots.add(".")
-    return tuple(sorted(roots, key=lambda value: (_root_depth(value), value.casefold())))
+    return tuple(
+        sorted(roots, key=lambda value: (_root_depth(value), value.casefold()))
+    )
 
 
 def _assign_files(
@@ -176,7 +189,9 @@ def _assign_files(
     roots: tuple[str, ...],
 ) -> dict[str, tuple[Any, ...]]:
     assigned: dict[str, list[Any]] = {root: [] for root in roots}
-    by_specificity = sorted(roots, key=lambda value: (-_root_depth(value), value.casefold()))
+    by_specificity = sorted(
+        roots, key=lambda value: (-_root_depth(value), value.casefold())
+    )
     for item in discovery.files:
         parent = str(PurePosixPath(item.path).parent)
         for root in by_specificity:
@@ -189,7 +204,9 @@ def _assign_files(
     }
 
 
-def _detect_languages(files: tuple[Any, ...], component_id: str) -> tuple[Detection, ...]:
+def _detect_languages(
+    files: tuple[Any, ...], component_id: str
+) -> tuple[Detection, ...]:
     evidence_by_language: dict[str, list[Evidence]] = defaultdict(list)
     counts: Counter[str] = Counter()
     for item in files:
@@ -241,12 +258,17 @@ def _detect_frameworks(
     results: list[Detection] = []
     seen: set[tuple[str, str]] = set()
     for language in sorted(language_names):
-        for framework, (dependency_name, markers) in FRAMEWORK_RULES.get(language, {}).items():
+        for framework, (dependency_name, markers) in FRAMEWORK_RULES.get(
+            language, {}
+        ).items():
             dependency_paths = declared.get(dependency_name.casefold(), [])
             import_paths: list[str] = []
             for source_file in source_files:
                 source_language = language_for_file(source_file)
-                if source_language not in {language, "javascript" if language == "typescript" else language}:
+                if source_language not in {
+                    language,
+                    "javascript" if language == "typescript" else language,
+                }:
                     continue
                 content = discovery.reader.read(source_file.path)
                 if content is not None and _source_uses_dependency(
@@ -310,11 +332,20 @@ def _source_uses_dependency(
             return False
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
-                if any(alias.name.split(".", 1)[0].casefold() == dependency_name.casefold() for alias in node.names):
+                if any(
+                    alias.name.split(".", 1)[0].casefold() == dependency_name.casefold()
+                    for alias in node.names
+                ):
                     return True
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                if node.module.split(".", 1)[0].casefold() == dependency_name.casefold():
-                    return True
+            elif (
+                isinstance(node, ast.ImportFrom)
+                and node.module
+                and (
+                    node.module.split(".", 1)[0].casefold()
+                    == dependency_name.casefold()
+                )
+            ):
+                return True
         return False
     if language in {"javascript", "typescript"}:
         escaped = re.escape(dependency_name)
@@ -380,7 +411,12 @@ def _detect_dependencies(
                 local_warnings.append(
                     "File type is detected, but full dependency parsing is not implemented"
                 )
-        except (json.JSONDecodeError, tomllib.TOMLDecodeError, ValueError, TypeError) as error:
+        except (
+            json.JSONDecodeError,
+            tomllib.TOMLDecodeError,
+            ValueError,
+            TypeError,
+        ) as error:
             parse_status = "invalid"
             local_warnings.append(f"Invalid dependency file: {type(error).__name__}")
         linked = _find_linked_dependency_file(item.path, paths)
@@ -412,7 +448,9 @@ def _parse_pyproject(content: str) -> tuple[DependencyRecord, ...]:
     for group, values in (project.get("optional-dependencies", {}) or {}).items():
         for value in values or []:
             name, version = _split_python_requirement(str(value))
-            records.append(DependencyRecord(name, version, "constraint", f"optional:{group}"))
+            records.append(
+                DependencyRecord(name, version, "constraint", f"optional:{group}")
+            )
     poetry = data.get("tool", {}).get("poetry", {}).get("dependencies", {}) or {}
     for name, value in poetry.items():
         if name.casefold() == "python":
@@ -434,7 +472,9 @@ def _parse_requirements(content: str) -> tuple[DependencyRecord, ...]:
     return _unique_dependencies(records)
 
 
-def _parse_package_json(content: str, *, resolved: bool) -> tuple[DependencyRecord, ...]:
+def _parse_package_json(
+    content: str, *, resolved: bool
+) -> tuple[DependencyRecord, ...]:
     data = json.loads(content)
     records: list[DependencyRecord] = []
     for key, scope in (
@@ -469,12 +509,16 @@ def _parse_package_lock(content: str) -> tuple[DependencyRecord, ...]:
             name = metadata.get("name") or str(path).split("node_modules/")[-1]
             version = metadata.get("version")
             if name and version:
-                records.append(DependencyRecord(str(name), str(version), "resolved", "resolved"))
+                records.append(
+                    DependencyRecord(str(name), str(version), "resolved", "resolved")
+                )
     elif isinstance(data.get("dependencies"), dict):
         for name, metadata in data["dependencies"].items():
             if isinstance(metadata, dict) and metadata.get("version"):
                 records.append(
-                    DependencyRecord(str(name), str(metadata["version"]), "resolved", "resolved")
+                    DependencyRecord(
+                        str(name), str(metadata["version"]), "resolved", "resolved"
+                    )
                 )
     return _unique_dependencies(records)
 
@@ -488,7 +532,11 @@ def _parse_pipfile_lock(content: str) -> tuple[DependencyRecord, ...]:
                 version = metadata.get("version")
             else:
                 version = metadata
-            records.append(DependencyRecord(str(name), str(version) if version else None, "resolved", scope))
+            records.append(
+                DependencyRecord(
+                    str(name), str(version) if version else None, "resolved", scope
+                )
+            )
     return _unique_dependencies(records)
 
 
@@ -501,12 +549,16 @@ def _split_python_requirement(value: str) -> tuple[str, str | None]:
     return name, version
 
 
-def _unique_dependencies(records: list[DependencyRecord]) -> tuple[DependencyRecord, ...]:
+def _unique_dependencies(
+    records: list[DependencyRecord],
+) -> tuple[DependencyRecord, ...]:
     unique = {
         (item.name.casefold(), item.version or "", item.scope, item.version_kind): item
         for item in records
     }
-    return tuple(sorted(unique.values(), key=lambda item: (item.name.casefold(), item.scope)))
+    return tuple(
+        sorted(unique.values(), key=lambda item: (item.name.casefold(), item.scope))
+    )
 
 
 def _find_linked_dependency_file(path: str, all_paths: set[str]) -> str | None:
@@ -515,22 +567,33 @@ def _find_linked_dependency_file(path: str, all_paths: set[str]) -> str | None:
     parent = pure.parent
     candidates: tuple[str, ...]
     if name == "package.json":
-        candidates = ("package-lock.json", "npm-shrinkwrap.json", "yarn.lock", "pnpm-lock.yaml")
+        candidates = (
+            "package-lock.json",
+            "npm-shrinkwrap.json",
+            "yarn.lock",
+            "pnpm-lock.yaml",
+        )
     elif name == "pyproject.toml":
         candidates = ("poetry.lock", "uv.lock", "pipfile.lock")
     else:
         candidates = ()
     for candidate in candidates:
         linked = str(parent / candidate).replace("\\", "/")
-        if linked.startswith("./"):
-            linked = linked[2:]
+        linked = linked.removeprefix("./")
         if linked in all_paths:
             return linked
     return None
 
 
 def _ecosystem_for(name: str) -> str:
-    if name in {"pyproject.toml", "requirements.txt", "poetry.lock", "uv.lock", "pipfile", "pipfile.lock"} or name.startswith("requirements"):
+    if name in {
+        "pyproject.toml",
+        "requirements.txt",
+        "poetry.lock",
+        "uv.lock",
+        "pipfile",
+        "pipfile.lock",
+    } or name.startswith("requirements"):
         return "python"
     if name in {"package.json", "package-lock.json", "npm-shrinkwrap.json"}:
         return "npm"
@@ -581,7 +644,11 @@ def _manager_for(name: str) -> str:
 def _detect_git(root: Path) -> GitMetadata:
     marker = root / ".git"
     if marker.is_dir():
-        history = "shallow" if (marker / "shallow").exists() else "metadata_present_unverified"
+        history = (
+            "shallow"
+            if (marker / "shallow").exists()
+            else "metadata_present_unverified"
+        )
         return GitMetadata(True, "directory", ".git", history)
     if marker.is_file():
         try:
@@ -611,15 +678,28 @@ def _detect_targets(discovery: DiscoveryResult) -> TargetMetadata:
         lower_path = item.path.casefold()
         if name == "dockerfile" or name.startswith("dockerfile."):
             dockerfiles.append(item.path)
-        if name in {"compose.yml", "compose.yaml", "docker-compose.yml", "docker-compose.yaml"}:
+        if name in {
+            "compose.yml",
+            "compose.yaml",
+            "docker-compose.yml",
+            "docker-compose.yaml",
+        }:
             compose.append(item.path)
-        if item.extension in {".tf", ".tfvars"} or name in {"template.yaml", "template.yml"}:
+        if item.extension in {".tf", ".tfvars"} or name in {
+            "template.yaml",
+            "template.yml",
+        }:
             iac.append(item.path)
         if (
-            lower_path.startswith(".github/workflows/") and item.extension in {".yml", ".yaml"}
+            lower_path.startswith(".github/workflows/")
+            and item.extension in {".yml", ".yaml"}
         ) or name in {".gitlab-ci.yml", "azure-pipelines.yml", "circle.yml"}:
             ci.append(item.path)
-        if item.category not in {FileCategory.BINARY, FileCategory.VENDOR, FileCategory.GENERATED}:
+        if item.category not in {
+            FileCategory.BINARY,
+            FileCategory.VENDOR,
+            FileCategory.GENERATED,
+        }:
             secret_candidates.append(item.path)
         if name in {"security-review-runtime.json", "idor-dast.json"}:
             runtime_manifests.append(item.path)

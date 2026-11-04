@@ -3,4 +3,10 @@
 from .engine import triage_candidates
 from .models import IssueGroup, TriageDisposition, TriageRecord, TriageResult
 
-__all__ = ["IssueGroup", "TriageDisposition", "TriageRecord", "TriageResult", "triage_candidates"]
+__all__ = [
+    "IssueGroup",
+    "TriageDisposition",
+    "TriageRecord",
+    "TriageResult",
+    "triage_candidates",
+]

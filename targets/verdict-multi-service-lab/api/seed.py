@@ -5,7 +5,9 @@ import time
 
 import psycopg
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://lab:lab-only@localhost:5432/lab")
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL", "postgresql://lab:lab-only@localhost:5432/lab"
+)
 
 
 def reset() -> None:
@@ -14,7 +16,9 @@ def reset() -> None:
     for _ in range(30):
         try:
             with psycopg.connect(DATABASE_URL) as conn:
-                conn.execute("DROP TABLE IF EXISTS refresh_tokens, invoices, jobs, orders, coupons, users CASCADE")
+                conn.execute(
+                    "DROP TABLE IF EXISTS refresh_tokens, invoices, jobs, orders, coupons, users CASCADE"
+                )
                 conn.commit()
             init_db()
             return

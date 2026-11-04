@@ -17,13 +17,29 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("target", type=Path)
     parser.add_argument("--semgrep", default="semgrep")
-    parser.add_argument("--output", type=Path, default=Path("scans/semgrep-rule-cache-warmup.json"))
+    parser.add_argument(
+        "--output", type=Path, default=Path("scans/semgrep-rule-cache-warmup.json")
+    )
     args = parser.parse_args()
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    command = [sys.executable, "-m", "semgrep", "scan", "--config", "p/python",
-               "--config", "p/security-audit", "--config", "p/owasp-top-ten",
-               "--dryrun", "--metrics=off", "--disable-version-check", "--json",
-               f"--output={args.output}", str(args.target)]
+    command = [
+        sys.executable,
+        "-m",
+        "semgrep",
+        "scan",
+        "--config",
+        "p/python",
+        "--config",
+        "p/security-audit",
+        "--config",
+        "p/owasp-top-ten",
+        "--dryrun",
+        "--metrics=off",
+        "--disable-version-check",
+        "--json",
+        f"--output={args.output}",
+        str(args.target),
+    ]
     # Prefer the explicitly configured executable when it is not the module interpreter.
     if args.semgrep != "semgrep":
         command = [args.semgrep, *command[3:]]

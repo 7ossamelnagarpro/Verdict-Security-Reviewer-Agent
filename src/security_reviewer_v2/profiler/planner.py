@@ -13,8 +13,8 @@ from .models import (
     PrerequisiteState,
     ProfilerPolicy,
     ProjectProfile,
-    ScanPlan,
     ScannerCapability,
+    ScanPlan,
     ScanTask,
     ScanType,
 )
@@ -89,7 +89,9 @@ def create_scan_plan(
         for dependency_file in component.dependency_files:
             capability = capabilities.get("trivy")
             if capability is None:
-                gaps.append("Trivy capability is absent; dependency targets are uncovered.")
+                gaps.append(
+                    "Trivy capability is absent; dependency targets are uncovered."
+                )
                 continue
             if dependency_file.ecosystem not in capability.ecosystems:
                 gaps.append(
@@ -129,7 +131,11 @@ def create_scan_plan(
                     policy=policy,
                 )
             )
-            if dependency_file.parse_status in {"invalid", "unreadable", "detected_only"}:
+            if dependency_file.parse_status in {
+                "invalid",
+                "unreadable",
+                "detected_only",
+            }:
                 gaps.append(
                     f"Dependency coverage for {dependency_file.path} is limited "
                     f"because its profile status is {dependency_file.parse_status}."
@@ -138,7 +144,10 @@ def create_scan_plan(
     gitleaks = capabilities.get("gitleaks")
     trivy = capabilities.get("trivy")
     secret_scanner = gitleaks
-    if "gitleaks" in policy.disabled_scanners or "gitleaks" not in policy.enabled_scanners:
+    if (
+        "gitleaks" in policy.disabled_scanners
+        or "gitleaks" not in policy.enabled_scanners
+    ):
         secret_scanner = trivy
     if secret_scanner is not None and profile.targets.secret_candidate_files:
         tasks.append(
@@ -148,7 +157,9 @@ def create_scan_plan(
                 component=None,
                 target_paths=(".",),
                 language_or_ecosystem=None,
-                mode="directory" if secret_scanner.scanner_id == "gitleaks" else "filesystem",
+                mode="directory"
+                if secret_scanner.scanner_id == "gitleaks"
+                else "filesystem",
                 exclusions=policy.secret_exclusions,
                 evidence=(
                     Evidence(
@@ -217,7 +228,11 @@ def create_scan_plan(
                 mode="filesystem",
                 exclusions=policy.configuration_exclusions,
                 evidence=tuple(
-                    Evidence(path=path, evidence_type="configuration_target", detail="Supported configuration target")
+                    Evidence(
+                        path=path,
+                        evidence_type="configuration_target",
+                        detail="Supported configuration target",
+                    )
                     for path in misconfiguration_targets
                 ),
                 reasons=(
@@ -269,11 +284,13 @@ def create_scan_plan(
                     language_or_ecosystem=None,
                     mode="differential_authorization",
                     exclusions=(),
-                    evidence=(Evidence(
-                        path=manifest,
-                        evidence_type="runtime_manifest",
-                        detail="Explicit runtime manifest opts the project into read-only authorization probing.",
-                    ),),
+                    evidence=(
+                        Evidence(
+                            path=manifest,
+                            evidence_type="runtime_manifest",
+                            detail="Explicit runtime manifest opts the project into read-only authorization probing.",
+                        ),
+                    ),
                     reasons=(
                         "Project explicitly declares a runtime authorization test target.",
                         "Execution remains blocked until the adapter verifies the target and synthetic identities.",
@@ -318,7 +335,10 @@ def _task(
         prerequisite_state = PrerequisiteState.UNVERIFIED
     if explicit_status is not None:
         status = explicit_status
-    elif scanner.scanner_id in policy.disabled_scanners or scanner.scanner_id not in policy.enabled_scanners:
+    elif (
+        scanner.scanner_id in policy.disabled_scanners
+        or scanner.scanner_id not in policy.enabled_scanners
+    ):
         status = PlanStatus.DISABLED_BY_POLICY
     elif prerequisite_state == PrerequisiteState.MISSING:
         status = PlanStatus.BLOCKED
@@ -348,7 +368,9 @@ def _task(
         mode=mode,
         rule_references=scanner.rule_references,
         exclusions=tuple(sorted(exclusions)),
-        evidence=tuple(sorted(evidence, key=lambda item: (item.path, item.evidence_type))),
+        evidence=tuple(
+            sorted(evidence, key=lambda item: (item.path, item.evidence_type))
+        ),
         reasons=reasons,
         prerequisites=scanner.prerequisites,
         prerequisite_status=prerequisite_state,
@@ -391,7 +413,9 @@ def _sast_targets(
             candidates.add(path.as_posix())
         else:
             first = relative.parts[0]
-            candidates.add((root / first).as_posix() if component.root != "." else first)
+            candidates.add(
+                (root / first).as_posix() if component.root != "." else first
+            )
     if not candidates:
         return ((component.root,),)
     ordered = sorted(candidates, key=str.casefold)
@@ -410,24 +434,60 @@ def _coalesce_codeql(tasks: list[ScanTask]) -> list[ScanTask]:
     """Reuse a covering source root; keep evidence of every covered component."""
     output = [t for t in tasks if t.scanner_id != "codeql-cli"]
     selected: list[ScanTask] = []
-    for task in sorted((t for t in tasks if t.scanner_id == "codeql-cli"),
-                       key=lambda t: (len(PurePosixPath(t.target_paths[0]).parts), t.task_id)):
-        language = "javascript" if task.language_or_ecosystem in {"javascript", "typescript"} else task.language_or_ecosystem
+    for task in sorted(
+        (t for t in tasks if t.scanner_id == "codeql-cli"),
+        key=lambda t: (len(PurePosixPath(t.target_paths[0]).parts), t.task_id),
+    ):
+        language = (
+            "javascript"
+            if task.language_or_ecosystem in {"javascript", "typescript"}
+            else task.language_or_ecosystem
+        )
         task = replace(task, language_or_ecosystem=language)
         for index, parent in enumerate(selected):
-            same_policy = (parent.language_or_ecosystem, parent.status, parent.exclusions,
-                           parent.rule_references, parent.prerequisites, parent.mode) == (
-                           task.language_or_ecosystem, task.status, task.exclusions,
-                           task.rule_references, task.prerequisites, task.mode)
+            same_policy = (
+                parent.language_or_ecosystem,
+                parent.status,
+                parent.exclusions,
+                parent.rule_references,
+                parent.prerequisites,
+                parent.mode,
+            ) == (
+                task.language_or_ecosystem,
+                task.status,
+                task.exclusions,
+                task.rule_references,
+                task.prerequisites,
+                task.mode,
+            )
             covers = parent.target_paths[0] == "." or _path_within(
-                PurePosixPath(task.target_paths[0]), PurePosixPath(parent.target_paths[0]))
+                PurePosixPath(task.target_paths[0]),
+                PurePosixPath(parent.target_paths[0]),
+            )
             # Custom path-sensitive exclusions must not silently remove child
             # coverage. Keep separate scopes unless policy is the standard one.
             standard_exclusions = set(ProfilerPolicy().sast_exclusions)
-            if same_policy and covers and (parent.target_paths == task.target_paths or set(task.exclusions) <= standard_exclusions):
-                selected[index] = replace(parent,
-                    evidence=tuple(sorted(set(parent.evidence + task.evidence), key=lambda e: (e.path, e.evidence_type, e.detail))),
-                    reasons=parent.reasons + (f"Also covers {task.component_id} at {task.target_paths[0]} ({language}); shared database avoids duplicate extraction.",))
+            if (
+                same_policy
+                and covers
+                and (
+                    parent.target_paths == task.target_paths
+                    or set(task.exclusions) <= standard_exclusions
+                )
+            ):
+                selected[index] = replace(
+                    parent,
+                    evidence=tuple(
+                        sorted(
+                            set(parent.evidence + task.evidence),
+                            key=lambda e: (e.path, e.evidence_type, e.detail),
+                        )
+                    ),
+                    reasons=parent.reasons
+                    + (
+                        f"Also covers {task.component_id} at {task.target_paths[0]} ({language}); shared database avoids duplicate extraction.",
+                    ),
+                )
                 break
         else:
             selected.append(task)

@@ -6,6 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
+from scripts.run_pre_review_pipeline import _build_registry
 from security_reviewer_v2.orchestrator import OrchestratorPolicy, ScannerOrchestrator
 from security_reviewer_v2.profiler.artifact import validate_saved_profile_artifact
 from security_reviewer_v2.profiler.models import (
@@ -16,8 +17,6 @@ from security_reviewer_v2.profiler.models import (
     ScanTask,
     ScanType,
 )
-
-from scripts.run_pre_review_pipeline import _build_registry
 
 
 def load_saved_plan(path: Path, *, project_root: Path) -> ScanPlan:
@@ -68,7 +67,9 @@ def load_saved_plan_with_fingerprint(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run only the scanner-orchestration stage")
+    parser = argparse.ArgumentParser(
+        description="Run only the scanner-orchestration stage"
+    )
     parser.add_argument("project", type=Path)
     parser.add_argument("--profile", type=Path, required=True)
     parser.add_argument("--runs-root", type=Path, required=True)
@@ -107,7 +108,11 @@ def main() -> int:
                 "status": summary.status.value,
                 "run_directory": str(args.runs_root.resolve() / summary.run_id),
                 "tasks": [
-                    {"scanner": item.scanner_id, "status": item.status.value, "reason": item.reason}
+                    {
+                        "scanner": item.scanner_id,
+                        "status": item.status.value,
+                        "reason": item.reason,
+                    }
                     for item in summary.tasks
                 ],
                 "coverage_gaps": list(summary.coverage_gaps),

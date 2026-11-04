@@ -106,7 +106,9 @@ def test_different_cwes_do_not_merge_even_when_locations_are_close() -> None:
     left = finding("codeql-cli", finding_id="one", cwes=("CWE-89",))
     right = finding("semgrep-ce", finding_id="two", cwes=("CWE-78",), line=21)
 
-    result = merge_normalized_findings((batch("codeql-cli", left), batch("semgrep-ce", right)))
+    result = merge_normalized_findings(
+        (batch("codeql-cli", left), batch("semgrep-ce", right))
+    )
 
     assert result.summary.merged_findings == 2
     assert result.summary.duplicates_collapsed == 0
@@ -116,7 +118,9 @@ def test_different_files_do_not_merge() -> None:
     left = finding("codeql-cli", finding_id="one", path="a.py")
     right = finding("semgrep-ce", finding_id="two", path="b.py")
 
-    result = merge_normalized_findings((batch("codeql-cli", left), batch("semgrep-ce", right)))
+    result = merge_normalized_findings(
+        (batch("codeql-cli", left), batch("semgrep-ce", right))
+    )
 
     assert result.summary.merged_findings == 2
 
@@ -142,9 +146,9 @@ def test_default_policy_does_not_merge_nearby_but_distinct_lines() -> None:
     left = finding("codeql-cli", finding_id="one", line=20)
     right = finding("semgrep-ce", finding_id="two", line=21)
 
-    result = merge_normalized_findings((
-        batch("codeql-cli", left), batch("semgrep-ce", right)
-    ))
+    result = merge_normalized_findings(
+        (batch("codeql-cli", left), batch("semgrep-ce", right))
+    )
 
     assert result.summary.merged_findings == 2
 
@@ -169,11 +173,23 @@ def test_same_scanner_reliable_fingerprint_deduplicates_exact_repeat() -> None:
 
 def test_codeql_column_fingerprint_does_not_merge_unrelated_results() -> None:
     first = replace(
-        finding("codeql-cli", finding_id="one", line=20, rule_id="py/reflective-xss", cwes=("CWE-79",)),
+        finding(
+            "codeql-cli",
+            finding_id="one",
+            line=20,
+            rule_id="py/reflective-xss",
+            cwes=("CWE-79",),
+        ),
         fingerprints={"primaryLocationStartColumnFingerprint": "7"},
     )
     second = replace(
-        finding("codeql-cli", finding_id="two", line=80, rule_id="py/reflective-xss", cwes=("CWE-79",)),
+        finding(
+            "codeql-cli",
+            finding_id="two",
+            line=80,
+            rule_id="py/reflective-xss",
+            cwes=("CWE-79",),
+        ),
         fingerprints={"primaryLocationStartColumnFingerprint": "7"},
     )
 
@@ -187,9 +203,10 @@ def test_cross_scanner_chain_cannot_exceed_total_line_tolerance() -> None:
     bridge = finding("semgrep-ce", finding_id="two", line=14)
     last = finding("codeql-cli", finding_id="three", line=18)
 
-    result = merge_normalized_findings((
-        batch("codeql-cli", first, last), batch("semgrep-ce", bridge)
-    ), policy=DeduplicationPolicy(line_tolerance=5))
+    result = merge_normalized_findings(
+        (batch("codeql-cli", first, last), batch("semgrep-ce", bridge)),
+        policy=DeduplicationPolicy(line_tolerance=5),
+    )
 
     assert result.summary.merged_findings == 2
     assert max(len(item.source_findings) for item in result.findings) == 2
@@ -197,11 +214,21 @@ def test_cross_scanner_chain_cannot_exceed_total_line_tolerance() -> None:
 
 def test_different_security_families_at_same_line_remain_separate() -> None:
     xss = replace(
-        finding("codeql-cli", finding_id="xss", rule_id="py/reflective-xss", cwes=("CWE-79",)),
+        finding(
+            "codeql-cli",
+            finding_id="xss",
+            rule_id="py/reflective-xss",
+            cwes=("CWE-79",),
+        ),
         fingerprints={"primaryLocationLineHash": "same-line"},
     )
     stacktrace = replace(
-        finding("codeql-cli", finding_id="trace", rule_id="py/stack-trace-exposure", cwes=("CWE-209",)),
+        finding(
+            "codeql-cli",
+            finding_id="trace",
+            rule_id="py/stack-trace-exposure",
+            cwes=("CWE-209",),
+        ),
         fingerprints={"primaryLocationLineHash": "same-line"},
     )
 
@@ -211,8 +238,12 @@ def test_different_security_families_at_same_line_remain_separate() -> None:
 
 
 def test_separate_findings_at_same_location_have_distinct_merged_ids() -> None:
-    first = finding("semgrep-ce", finding_id="one", line=20, rule_id="xss-rule-a", cwes=("CWE-79",))
-    second = finding("semgrep-ce", finding_id="two", line=20, rule_id="xss-rule-b", cwes=("CWE-79",))
+    first = finding(
+        "semgrep-ce", finding_id="one", line=20, rule_id="xss-rule-a", cwes=("CWE-79",)
+    )
+    second = finding(
+        "semgrep-ce", finding_id="two", line=20, rule_id="xss-rule-b", cwes=("CWE-79",)
+    )
 
     result = merge_normalized_findings((batch("semgrep-ce", first, second),))
 
@@ -246,7 +277,9 @@ def test_merged_fields_use_strongest_severity_confidence_and_union_metadata() ->
 
 def test_zero_finding_scanner_is_retained_in_source_coverage() -> None:
     codeql = finding("codeql-cli", finding_id="one")
-    result = merge_normalized_findings((batch("codeql-cli", codeql), batch("semgrep-ce")))
+    result = merge_normalized_findings(
+        (batch("codeql-cli", codeql), batch("semgrep-ce"))
+    )
 
     assert result.summary.merged_findings == 1
     coverage = {item.scanner_id: item.findings for item in result.source_coverage}
@@ -283,8 +316,12 @@ def test_merge_output_is_deterministic_across_input_order() -> None:
     codeql = finding("codeql-cli", finding_id="one", flow_steps=2)
     semgrep = finding("semgrep-ce", finding_id="two")
 
-    first = merge_normalized_findings((batch("codeql-cli", codeql), batch("semgrep-ce", semgrep))).to_dict()
-    second = merge_normalized_findings((batch("semgrep-ce", semgrep), batch("codeql-cli", codeql))).to_dict()
+    first = merge_normalized_findings(
+        (batch("codeql-cli", codeql), batch("semgrep-ce", semgrep))
+    ).to_dict()
+    second = merge_normalized_findings(
+        (batch("semgrep-ce", semgrep), batch("codeql-cli", codeql))
+    ).to_dict()
 
     assert first == second
 

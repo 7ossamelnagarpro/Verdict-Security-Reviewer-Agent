@@ -24,4 +24,3 @@ class AdapterRegistry:
 
     def scanner_ids(self) -> tuple[str, ...]:
         return tuple(sorted(self._adapters))
-

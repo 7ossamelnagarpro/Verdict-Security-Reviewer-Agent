@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from enum import Enum
-from typing import Callable
 
 from .models import ProfileResult
 
@@ -35,7 +35,9 @@ class ReviewDecision:
         return payload
 
 
-def create_review_decision(result: ProfileResult, action: ReviewAction) -> ReviewDecision:
+def create_review_decision(
+    result: ProfileResult, action: ReviewAction
+) -> ReviewDecision:
     """Create a decision from a profile without changing the profile or scan plan."""
     scope = {
         ReviewAction.APPROVE_PLAN: "planned",
@@ -47,7 +49,9 @@ def create_review_decision(result: ProfileResult, action: ReviewAction) -> Revie
         execution_scope=scope,
         profile_status=result.profile.completeness.value,
         coverage_gaps=result.profile.coverage_gaps,
-        warnings=tuple(sorted(set(result.profile.warnings + result.scan_plan.warnings))),
+        warnings=tuple(
+            sorted(set(result.profile.warnings + result.scan_plan.warnings))
+        ),
     )
 
 
@@ -63,7 +67,9 @@ def prompt_for_review(
     output_fn("\nProject profile review")
     output_fn(f"Project: {profile.root_name}")
     output_fn(f"Status: {profile.completeness.value}")
-    output_fn(f"Components: {len(profile.components)} | Planned tasks: {len(plan.tasks)}")
+    output_fn(
+        f"Components: {len(profile.components)} | Planned tasks: {len(plan.tasks)}"
+    )
     if profile.coverage_gaps:
         output_fn("Coverage gaps:")
         for gap in profile.coverage_gaps:

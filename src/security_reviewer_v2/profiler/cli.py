@@ -15,9 +15,13 @@ from .service import profile_project
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Profile a local project and build a scan plan")
+    parser = argparse.ArgumentParser(
+        description="Profile a local project and build a scan plan"
+    )
     parser.add_argument("project_path", type=Path)
-    parser.add_argument("--output", type=Path, help="Write JSON to this file instead of stdout")
+    parser.add_argument(
+        "--output", type=Path, help="Write JSON to this file instead of stdout"
+    )
     parser.add_argument(
         "--markdown-output",
         type=Path,
@@ -93,14 +97,18 @@ def main(argv: list[str] | None = None) -> int:
         decision = prompt_for_review(result)
         decision_output = args.review_decision_output
         if decision_output is None and args.output is not None:
-            decision_output = args.output.with_name(f"{args.output.stem}-review-decision.json")
+            decision_output = args.output.with_name(
+                f"{args.output.stem}-review-decision.json"
+            )
         if decision_output is not None:
             decision_output.parent.mkdir(parents=True, exist_ok=True)
             decision_output.write_text(
                 json.dumps(decision.to_dict(), indent=2, sort_keys=True) + "\n",
                 encoding="utf-8",
             )
-        print(f"Review decision: {decision.action.value} (scope: {decision.execution_scope})")
+        print(
+            f"Review decision: {decision.action.value} (scope: {decision.execution_scope})"
+        )
         if not decision.approved:
             return 3
     return 0

@@ -79,7 +79,9 @@ def normalize_semgrep_json(payload: dict[str, Any]) -> NormalizationResult:
             )
             continue
         try:
-            findings.append(_normalize_result(result, version=version, result_index=result_index))
+            findings.append(
+                _normalize_result(result, version=version, result_index=result_index)
+            )
         except ValueError as error:
             skipped += 1
             warnings.append(
@@ -207,7 +209,9 @@ def _dataflow_trace(value: Any) -> tuple[CodeFlowStep, ...]:
                     thread_index=0,
                     step_index=len(steps),
                     location=location,
-                    message=_optional_text(candidate.get("content") or candidate.get("message")),
+                    message=_optional_text(
+                        candidate.get("content") or candidate.get("message")
+                    ),
                     role=role,
                 )
             )
@@ -328,7 +332,9 @@ def _finding_id(
     fingerprints: dict[str, str],
     message: str,
 ) -> str:
-    fingerprint = "|".join(f"{key}={value}" for key, value in sorted(fingerprints.items()))
+    fingerprint = "|".join(
+        f"{key}={value}" for key, value in sorted(fingerprints.items())
+    )
     material = "|".join(
         (
             "semgrep-ce",
@@ -345,7 +351,11 @@ def _finding_id(
 
 def _semgrep_error_message(value: Any) -> str:
     if isinstance(value, dict):
-        return str(value.get("message") or value.get("type") or "Semgrep reported an unspecified error")
+        return str(
+            value.get("message")
+            or value.get("type")
+            or "Semgrep reported an unspecified error"
+        )
     return str(value or "Semgrep reported an unspecified error")
 
 

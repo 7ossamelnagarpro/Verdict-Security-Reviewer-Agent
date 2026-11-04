@@ -11,6 +11,5 @@ if str(source_root) not in sys.path:
 
 from security_reviewer_v2.web.app import main
 
-
 if __name__ == "__main__":
     raise SystemExit(main())

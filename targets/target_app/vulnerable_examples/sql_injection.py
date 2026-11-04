@@ -10,10 +10,6 @@ def find_users_vulnerable(
     username: str,
 ) -> list[dict[str, object]]:
     """Return matching users using deliberately unsafe string concatenation."""
-    query = (
-        "SELECT id, username, email FROM users "
-        f"WHERE username = '{username}'"
-    )
+    query = f"SELECT id, username, email FROM users WHERE username = '{username}'"
     rows = connection.execute(query).fetchall()
     return [dict(row) for row in rows]
-

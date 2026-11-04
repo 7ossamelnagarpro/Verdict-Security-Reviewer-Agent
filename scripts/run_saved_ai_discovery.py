@@ -31,10 +31,17 @@ def main() -> int:
     parser.add_argument("--max-planned-targets", type=int, default=128)
     parser.add_argument("--max-enrichment-rounds", type=int, default=2)
     parser.add_argument("--timeout-seconds", type=int, default=None)
-    parser.add_argument("--target-id", action="append", default=None, help="rerun one or more IDs from the deterministic target plan")
+    parser.add_argument(
+        "--target-id",
+        action="append",
+        default=None,
+        help="rerun one or more IDs from the deterministic target plan",
+    )
     args = parser.parse_args()
     if args.model is None:
-        args.model = "openai/gpt-oss-120b" if args.provider == "groq" else "qwen2.5-coder:7b"
+        args.model = (
+            "openai/gpt-oss-120b" if args.provider == "groq" else "qwen2.5-coder:7b"
+        )
 
     profile = json.loads(args.profile.read_text(encoding="utf-8"))
     merged = load_merge_result(args.merged)
@@ -53,20 +60,48 @@ def main() -> int:
         timeout_seconds=args.timeout_seconds,
     )
     result = DiscoveryAgent(provider, config).run(
-        merged, context, risk, project_root=args.project.resolve(), profile_artifact=profile,
-        on_batch=lambda batch: print(json.dumps({"batch": batch.batch_index, "status": batch.status,
-            "targets": len(batch.target_ids), "candidates": batch.candidate_count,
-            "provider_calls": batch.provider_calls, "usage": batch.usage}, ensure_ascii=False), flush=True),
+        merged,
+        context,
+        risk,
+        project_root=args.project.resolve(),
+        profile_artifact=profile,
+        on_batch=lambda batch: print(
+            json.dumps(
+                {
+                    "batch": batch.batch_index,
+                    "status": batch.status,
+                    "targets": len(batch.target_ids),
+                    "candidates": batch.candidate_count,
+                    "provider_calls": batch.provider_calls,
+                    "usage": batch.usage,
+                },
+                ensure_ascii=False,
+            ),
+            flush=True,
+        ),
         target_ids=tuple(args.target_id) if args.target_id is not None else None,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(result.to_dict(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    args.output.write_text(
+        json.dumps(result.to_dict(), ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
     satisfied = required_discovery_satisfied(result.to_dict())
-    print(json.dumps({"status": result.status.value, "required_stage_satisfied": satisfied,
-                      "planned_targets": result.usage["planned_targets"],
-                      "inspected_targets": result.usage["targets"], "batches": len(result.batches),
-                      "candidates": len(result.candidates), "context_exchanges": len(result.context_exchanges),
-                      "output": str(args.output)}, ensure_ascii=False))
+    print(
+        json.dumps(
+            {
+                "status": result.status.value,
+                "required_stage_satisfied": satisfied,
+                "planned_targets": result.usage["planned_targets"],
+                "inspected_targets": result.usage["targets"],
+                "batches": len(result.batches),
+                "candidates": len(result.candidates),
+                "context_exchanges": len(result.context_exchanges),
+                "output": str(args.output),
+            },
+            ensure_ascii=False,
+        )
+    )
     return 0 if satisfied else 1
 
 

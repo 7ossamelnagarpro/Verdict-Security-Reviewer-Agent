@@ -42,13 +42,23 @@ class CodeQLConfig:
 
     def validate(self) -> None:
         executable = Path(self.executable)
-        if min(self.threads, self.ram_mb, self.extraction_timeout_seconds, self.analysis_timeout_seconds) <= 0:
+        if (
+            min(
+                self.threads,
+                self.ram_mb,
+                self.extraction_timeout_seconds,
+                self.analysis_timeout_seconds,
+            )
+            <= 0
+        ):
             raise ValueError("CodeQL resources and stage timeouts must be positive")
         if not executable.is_absolute():
             raise ValueError("CodeQL executable path must be absolute")
         for language, suite in self.query_suites.items():
             if not language or not Path(suite).is_absolute():
-                raise ValueError("CodeQL query suite paths must be absolute and keyed by language")
+                raise ValueError(
+                    "CodeQL query suite paths must be absolute and keyed by language"
+                )
         if self.search_path is not None and not Path(self.search_path).is_absolute():
             raise ValueError("CodeQL search path must be absolute")
 
@@ -85,7 +95,9 @@ class CodeQLAdapter(ScannerAdapter):
         )
         suite_check = PrerequisiteCheck(
             name="language_query_pack",
-            status=CheckStatus.AVAILABLE if suite and suite.is_file() else CheckStatus.MISSING,
+            status=CheckStatus.AVAILABLE
+            if suite and suite.is_file()
+            else CheckStatus.MISSING,
             detail=(
                 f"Configured {language} standard query suite exists"
                 if suite and suite.is_file()
@@ -108,7 +120,9 @@ class CodeQLAdapter(ScannerAdapter):
         search_detail = "CodeQL search path is not required for this configured suite"
         if self.config.search_path:
             search = Path(self.config.search_path)
-            search_status = CheckStatus.AVAILABLE if search.is_dir() else CheckStatus.MISSING
+            search_status = (
+                CheckStatus.AVAILABLE if search.is_dir() else CheckStatus.MISSING
+            )
             search_detail = (
                 "Configured CodeQL search path exists"
                 if search.is_dir()
@@ -139,8 +153,12 @@ class CodeQLAdapter(ScannerAdapter):
         # JSON is a YAML subset accepted by CodeQL. This configuration is
         # generated from trusted policy, never loaded from the target project.
         extraction_config = task_directory / "extraction-config.json"
-        ignored = tuple(dict.fromkeys((*task.exclusions, *self.config.default_paths_ignore)))
-        extraction_config.write_text(json.dumps({"paths-ignore": list(ignored)}), encoding="utf-8")
+        ignored = tuple(
+            dict.fromkeys((*task.exclusions, *self.config.default_paths_ignore))
+        )
+        extraction_config.write_text(
+            json.dumps({"paths-ignore": list(ignored)}), encoding="utf-8"
+        )
         create_arguments = [
             "database",
             "create",
@@ -164,24 +182,32 @@ class CodeQLAdapter(ScannerAdapter):
             f"--ram={self.config.ram_mb}",
         ]
         if self.config.search_path:
-            analyze_arguments.append(f"--search-path={Path(self.config.search_path).resolve()}")
+            analyze_arguments.append(
+                f"--search-path={Path(self.config.search_path).resolve()}"
+            )
         commands = (
             CommandSpec(
                 name="database-create",
                 executable=str(Path(self.config.executable).resolve()),
                 arguments=tuple(create_arguments),
                 working_directory=str(project_root),
-                timeout_seconds=min(request.timeout_seconds, self.config.extraction_timeout_seconds),
+                timeout_seconds=min(
+                    request.timeout_seconds, self.config.extraction_timeout_seconds
+                ),
             ),
             CommandSpec(
                 name="database-analyze",
                 executable=str(Path(self.config.executable).resolve()),
                 arguments=tuple(analyze_arguments),
                 working_directory=str(project_root),
-                timeout_seconds=min(request.timeout_seconds, self.config.analysis_timeout_seconds),
+                timeout_seconds=min(
+                    request.timeout_seconds, self.config.analysis_timeout_seconds
+                ),
             ),
         )
-        return AdapterExecutionPlan(commands=commands, expected_outputs=("result.sarif",))
+        return AdapterExecutionPlan(
+            commands=commands, expected_outputs=("result.sarif",)
+        )
 
     def validate_outputs(
         self,

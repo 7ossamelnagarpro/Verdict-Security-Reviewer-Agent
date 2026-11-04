@@ -7,8 +7,15 @@ from pathlib import Path
 from typing import Any
 
 from .models import (
-    CandidateAnchor, CandidateDisposition, CandidateFinding, CandidateMissingCheck,
-    ContextExchange, DiscoveryBatch, DiscoveryResult, DiscoveryStatus, DiscoveryTarget,
+    CandidateAnchor,
+    CandidateDisposition,
+    CandidateFinding,
+    CandidateMissingCheck,
+    ContextExchange,
+    DiscoveryBatch,
+    DiscoveryResult,
+    DiscoveryStatus,
+    DiscoveryTarget,
 )
 
 
@@ -21,10 +28,19 @@ def load_discovery_result(path: str | Path) -> DiscoveryResult:
     try:
         payload = json.loads(source.read_text(encoding="utf-8"))
         return discovery_result_from_dict(payload)
-    except (OSError, UnicodeError, json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
+    except (
+        OSError,
+        UnicodeError,
+        json.JSONDecodeError,
+        KeyError,
+        TypeError,
+        ValueError,
+    ) as error:
         if isinstance(error, DiscoveryArtifactError):
             raise
-        raise DiscoveryArtifactError(f"Invalid Discovery artifact: {source} ({type(error).__name__})") from error
+        raise DiscoveryArtifactError(
+            f"Invalid Discovery artifact: {source} ({type(error).__name__})"
+        ) from error
 
 
 def discovery_result_from_dict(payload: dict[str, Any]) -> DiscoveryResult:
@@ -47,11 +63,21 @@ def discovery_result_from_dict(payload: dict[str, Any]) -> DiscoveryResult:
                 reasoning=str(item.get("reasoning", "")),
                 source=str(item.get("source", "ai_discovery")),
                 verification=CandidateDisposition(item["verification"]),
-                verification_notes=tuple(str(value) for value in item.get("verification_notes", [])),
-                entry_point=CandidateAnchor(**item["entry_point"]) if isinstance(item.get("entry_point"), dict) else None,
-                sensitive_operation=CandidateAnchor(**item["sensitive_operation"]) if isinstance(item.get("sensitive_operation"), dict) else None,
-                missing_check=CandidateMissingCheck(**item["missing_check"]) if isinstance(item.get("missing_check"), dict) else None,
-                remaining_questions=tuple(str(value) for value in item.get("remaining_questions", [])),
+                verification_notes=tuple(
+                    str(value) for value in item.get("verification_notes", [])
+                ),
+                entry_point=CandidateAnchor(**item["entry_point"])
+                if isinstance(item.get("entry_point"), dict)
+                else None,
+                sensitive_operation=CandidateAnchor(**item["sensitive_operation"])
+                if isinstance(item.get("sensitive_operation"), dict)
+                else None,
+                missing_check=CandidateMissingCheck(**item["missing_check"])
+                if isinstance(item.get("missing_check"), dict)
+                else None,
+                remaining_questions=tuple(
+                    str(value) for value in item.get("remaining_questions", [])
+                ),
             )
             for item in payload.get("candidates", [])
         )
@@ -63,11 +89,31 @@ def discovery_result_from_dict(payload: dict[str, Any]) -> DiscoveryResult:
             scope=tuple(str(value) for value in payload.get("scope", [])),
             candidates=candidates,
             warnings=tuple(str(value) for value in payload.get("warnings", [])),
-            coverage_gaps=tuple(str(value) for value in payload.get("coverage_gaps", [])),
+            coverage_gaps=tuple(
+                str(value) for value in payload.get("coverage_gaps", [])
+            ),
             usage=dict(payload.get("usage", {})),
-            target_plan=tuple(DiscoveryTarget(**item) for item in payload.get("target_plan", [])),
-            batches=tuple(DiscoveryBatch(**item) for item in payload.get("batches", [])),
-            context_exchanges=tuple(ContextExchange(**item) for item in payload.get("context_exchanges", [])),
+            target_plan=tuple(
+                DiscoveryTarget(**item) for item in payload.get("target_plan", [])
+            ),
+            batches=tuple(
+                DiscoveryBatch(**item) for item in payload.get("batches", [])
+            ),
+            context_exchanges=tuple(
+                ContextExchange(**item) for item in payload.get("context_exchanges", [])
+            ),
+            application_map_guidance=(
+                dict(payload["application_map_guidance"])
+                if isinstance(payload.get("application_map_guidance"), dict)
+                else None
+            ),
+            coverage_accounting=(
+                dict(payload["coverage_accounting"])
+                if isinstance(payload.get("coverage_accounting"), dict)
+                else None
+            ),
         )
     except (KeyError, TypeError, ValueError) as error:
-        raise DiscoveryArtifactError(f"Malformed Discovery artifact ({type(error).__name__})") from error
+        raise DiscoveryArtifactError(
+            f"Malformed Discovery artifact ({type(error).__name__})"
+        ) from error

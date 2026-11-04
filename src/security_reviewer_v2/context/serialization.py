@@ -30,7 +30,14 @@ def load_context_result(path: str | Path) -> ContextResult:
     try:
         payload = json.loads(source.read_text(encoding="utf-8"))
         return context_result_from_dict(payload)
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
+    except (
+        OSError,
+        UnicodeDecodeError,
+        json.JSONDecodeError,
+        KeyError,
+        TypeError,
+        ValueError,
+    ) as error:
         if isinstance(error, ContextArtifactError):
             raise
         raise ContextArtifactError(
@@ -50,7 +57,9 @@ def context_result_from_dict(payload: dict[str, Any]) -> ContextResult:
         schema_version=str(payload["schema_version"]),
         status=ContextStatus(str(payload["status"])),
         project_root=str(payload["project_root"]),
-        findings=tuple(_finding(item, excerpts, symbols) for item in _list(payload, "findings")),
+        findings=tuple(
+            _finding(item, excerpts, symbols) for item in _list(payload, "findings")
+        ),
         warnings=tuple(str(item) for item in _list(payload, "warnings")),
         coverage_gaps=tuple(str(item) for item in _list(payload, "coverage_gaps")),
         summary=ContextSummary(
@@ -65,7 +74,9 @@ def context_result_from_dict(payload: dict[str, Any]) -> ContextResult:
     )
 
 
-def _finding(value: Any, excerpts: dict[str, Any], symbols: dict[str, Any]) -> FindingContext:
+def _finding(
+    value: Any, excerpts: dict[str, Any], symbols: dict[str, Any]
+) -> FindingContext:
     item = _object(value, "finding context")
     return FindingContext(
         merged_finding_id=str(item["merged_finding_id"]),
@@ -75,14 +86,23 @@ def _finding(value: Any, excerpts: dict[str, Any], symbols: dict[str, Any]) -> F
         cwes=tuple(str(part) for part in _list(item, "cwes")),
         scanners=tuple(str(part) for part in _list(item, "scanners")),
         primary=_evidence(_dict(item, "primary"), excerpts, symbols),
-        code_flow=tuple(_evidence(part, excerpts, symbols) for part in _list(item, "code_flow")),
-        related=tuple(_evidence(part, excerpts, symbols) for part in _list(item, "related")),
+        code_flow=tuple(
+            _evidence(part, excerpts, symbols) for part in _list(item, "code_flow")
+        ),
+        related=tuple(
+            _evidence(part, excerpts, symbols) for part in _list(item, "related")
+        ),
         warnings=tuple(str(part) for part in _list(item, "warnings")),
-        additional_primaries=tuple(_evidence(part, excerpts, symbols) for part in _list(item, "additional_primaries")),
+        additional_primaries=tuple(
+            _evidence(part, excerpts, symbols)
+            for part in _list(item, "additional_primaries")
+        ),
     )
 
 
-def _evidence(value: Any, excerpts: dict[str, Any], symbols: dict[str, Any]) -> EvidenceContext:
+def _evidence(
+    value: Any, excerpts: dict[str, Any], symbols: dict[str, Any]
+) -> EvidenceContext:
     item = _object(value, "evidence context")
     excerpt_value = item.get("excerpt")
     symbol_value = item.get("enclosing_symbol")
@@ -90,7 +110,9 @@ def _evidence(value: Any, excerpts: dict[str, Any], symbols: dict[str, Any]) -> 
         excerpt_value = _reference(excerpts, item["excerpt_ref"], "excerpt")
     if "symbol_ref" in item:
         symbol_value = dict(_reference(symbols, item["symbol_ref"], "symbol"))
-        symbol_value["excerpt"] = _reference(excerpts, symbol_value.pop("excerpt_ref"), "excerpt")
+        symbol_value["excerpt"] = _reference(
+            excerpts, symbol_value.pop("excerpt_ref"), "excerpt"
+        )
     return EvidenceContext(
         evidence_type=str(item["evidence_type"]),
         scanner_id=str(item["scanner_id"]),
@@ -100,7 +122,9 @@ def _evidence(value: Any, excerpts: dict[str, Any], symbols: dict[str, Any]) -> 
         flow_index=_optional_int(item.get("flow_index")),
         thread_index=_optional_int(item.get("thread_index")),
         step_index=_optional_int(item.get("step_index")),
-        excerpt=None if excerpt_value is None else _excerpt(_object(excerpt_value, "excerpt")),
+        excerpt=None
+        if excerpt_value is None
+        else _excerpt(_object(excerpt_value, "excerpt")),
         enclosing_symbol=None
         if symbol_value is None
         else _symbol(_object(symbol_value, "enclosing symbol")),

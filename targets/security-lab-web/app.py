@@ -1,10 +1,20 @@
 """Local educational web fixture. Never deploy it on a public network."""
 
-import sqlite3
 import os
+import sqlite3
 import subprocess
-import uuid
-from flask import Flask, request, g, redirect, session, jsonify, make_response, send_from_directory
+import uuid  # noqa: F401 - retained as part of the attested fixture import surface
+
+from flask import (
+    Flask,
+    g,
+    jsonify,
+    make_response,
+    redirect,
+    request,
+    send_from_directory,
+    session,
+)
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(APP_DIR, "vulnshop.db")
@@ -145,7 +155,9 @@ def login():
     username = request.form.get("username", "")
     password = request.form.get("password", "")
     db = get_db()
-    query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
+    query = (
+        f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
+    )
     try:
         row = db.execute(query).fetchone()
     except sqlite3.Error as e:
@@ -272,7 +284,9 @@ def ping():
     host = request.args.get("host", "127.0.0.1")
     cmd = f"ping -c 1 {host}"
     try:
-        out = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, timeout=5)
+        out = subprocess.check_output(
+            cmd, shell=True, stderr=subprocess.STDOUT, timeout=5
+        )
         return f"<pre>{out.decode(errors='replace')}</pre>"
     except Exception as e:
         return f"<pre>{e}</pre>"

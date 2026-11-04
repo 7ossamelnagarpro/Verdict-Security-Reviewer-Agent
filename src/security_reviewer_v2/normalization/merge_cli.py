@@ -12,7 +12,9 @@ from .serialization import NormalizedArtifactError, load_normalization_result
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Merge and deduplicate normalized scanner findings")
+    parser = argparse.ArgumentParser(
+        description="Merge and deduplicate normalized scanner findings"
+    )
     parser.add_argument("output", type=Path)
     parser.add_argument("inputs", type=Path, nargs="+")
     parser.add_argument("--line-tolerance", type=int, default=0)

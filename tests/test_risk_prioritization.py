@@ -14,10 +14,10 @@ from security_reviewer_v2.context.models import (
     SourceExcerpt,
 )
 from security_reviewer_v2.normalization.merge_models import (
+    MergedFinding,
     MergeResult,
     MergeStatus,
     MergeSummary,
-    MergedFinding,
     SourceCoverage,
 )
 from security_reviewer_v2.normalization.models import (
@@ -87,7 +87,11 @@ def merge_result(*findings: MergedFinding) -> MergeResult:
         schema_version="1.0",
         status=MergeStatus.COMPLETE,
         findings=findings,
-        source_coverage=(SourceCoverage("codeql-cli", "codeql-sarif-2.1", "complete", len(findings), 0, 0),),
+        source_coverage=(
+            SourceCoverage(
+                "codeql-cli", "codeql-sarif-2.1", "complete", len(findings), 0, 0
+            ),
+        ),
         warnings=(),
         coverage_gaps=(),
         summary=MergeSummary(1, len(findings), len(findings), 0),
@@ -130,8 +134,20 @@ def finding_context(
     flow = ()
     if external_flow:
         flow = (
-            evidence("app.py", 5, code='5 | username = request.args.get("username")', evidence_type="code_flow", step=0),
-            evidence(finding.primary_location.path, 10, code="10 | execute(query)", evidence_type="code_flow", step=1),
+            evidence(
+                "app.py",
+                5,
+                code='5 | username = request.args.get("username")',
+                evidence_type="code_flow",
+                step=0,
+            ),
+            evidence(
+                finding.primary_location.path,
+                10,
+                code="10 | execute(query)",
+                evidence_type="code_flow",
+                step=1,
+            ),
         )
     return FindingContext(
         merged_finding_id=finding.merged_finding_id,
@@ -153,7 +169,9 @@ def finding_context(
     )
 
 
-def context_result(*contexts: FindingContext, status: ContextStatus = ContextStatus.COMPLETE) -> ContextResult:
+def context_result(
+    *contexts: FindingContext, status: ContextStatus = ContextStatus.COMPLETE
+) -> ContextResult:
     return ContextResult(
         schema_version="1.0",
         status=status,
@@ -168,7 +186,9 @@ def context_result(*contexts: FindingContext, status: ContextStatus = ContextSta
 def test_high_confidence_external_sql_flow_is_selected_for_deep_review() -> None:
     finding = merged_finding("high", path="db.py")
 
-    result = prioritize_findings(merge_result(finding), context_result(finding_context(finding)))
+    result = prioritize_findings(
+        merge_result(finding), context_result(finding_context(finding))
+    )
 
     item = result.findings[0]
     assert result.status == RiskStatus.COMPLETE
@@ -267,7 +287,9 @@ def test_unknown_cwe_does_not_receive_invented_impact_points() -> None:
         context_result(finding_context(finding, external_flow=False)),
     )
 
-    assert "cwe_impact" not in {factor.factor_id for factor in result.findings[0].factors}
+    assert "cwe_impact" not in {
+        factor.factor_id for factor in result.findings[0].factors
+    }
 
 
 def test_ranking_is_deterministic_for_equal_scores() -> None:

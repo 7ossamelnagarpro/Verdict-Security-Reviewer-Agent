@@ -15,7 +15,6 @@ from security_reviewer_v2.scanners.models import (
     ExecutionStatus,
 )
 
-
 SAFE_ENVIRONMENT_KEYS = {
     "SYSTEMROOT",
     "WINDIR",
@@ -61,7 +60,9 @@ class ProcessRunner:
         if not executable.is_file():
             raise FileNotFoundError(f"Scanner executable is unavailable: {executable}")
         if not working_directory.is_dir():
-            raise FileNotFoundError(f"Command working directory is unavailable: {working_directory}")
+            raise FileNotFoundError(
+                f"Command working directory is unavailable: {working_directory}"
+            )
         log_directory.mkdir(parents=True, exist_ok=True)
         stdout_path = log_directory / f"{_safe_name(spec.name)}.stdout.log"
         stderr_path = log_directory / f"{_safe_name(spec.name)}.stderr.log"
@@ -158,7 +159,9 @@ def _terminate_process_tree(process: subprocess.Popen) -> None:
     process.terminate()
 
 
-def _drain_stream(stream, destination: Path, limit: int, state: dict[str, int | bool]) -> None:
+def _drain_stream(
+    stream, destination: Path, limit: int, state: dict[str, int | bool]
+) -> None:
     with destination.open("w", encoding="utf-8", newline="\n") as output:
         while True:
             chunk = stream.read(8192)
@@ -183,7 +186,9 @@ def _redact(text: str) -> str:
     redacted = text
     for pattern in REDACTION_PATTERNS:
         if pattern.groups >= 2:
-            redacted = pattern.sub(lambda match: f"{match.group(1)}=[REDACTED]", redacted)
+            redacted = pattern.sub(
+                lambda match: f"{match.group(1)}=[REDACTED]", redacted
+            )
         else:
             redacted = pattern.sub("[REDACTED]", redacted)
     return redacted

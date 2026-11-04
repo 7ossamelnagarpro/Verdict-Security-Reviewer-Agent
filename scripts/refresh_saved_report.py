@@ -11,7 +11,9 @@ from typing import Any
 from security_reviewer_v2.reporting import write_final_report
 
 
-def _read(directory: Path, name: str, *, required: bool = False) -> dict[str, Any] | None:
+def _read(
+    directory: Path, name: str, *, required: bool = False
+) -> dict[str, Any] | None:
     path = directory / name
     if not path.is_file():
         if required:
@@ -36,22 +38,33 @@ def refresh(directory: Path) -> Path:
     if report.is_file() and not backup.exists():
         shutil.copy2(report, backup)
     write_final_report(
-        report, project=summary["project"], review=review, policy=policy,
+        report,
+        project=summary["project"],
+        review=review,
+        policy=policy,
         triage=_read(directory, "candidate-triage.json"),
         verification=_read(directory, "verification.json"),
         discovery=_read(directory, "ai-discovery.json"),
-        discovery_required_satisfied=(summary.get("ai_discovery") or {}).get("satisfied"),
+        discovery_required_satisfied=(summary.get("ai_discovery") or {}).get(
+            "satisfied"
+        ),
         docker_runtime=_read(directory, "docker-runtime-evidence.json"),
-        merged=merged, risk=_read(directory, "risk.json"),
-        execution=_read(directory, "execution.json"),
+        runtime_evidence=_read(directory, "runtime.json"),
+        merged=merged,
+        risk=_read(directory, "risk.json"),
+        execution=_read(directory, "execution.json") or summary.get("execution"),
+        scanner_requirement=summary.get("scanner_requirement"),
         coverage_gaps=summary.get("coverage_gaps", []),
+        scan_status=summary.get("status"),
     )
     return report
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("output", type=Path, help="directory of one completed saved run")
+    parser.add_argument(
+        "output", type=Path, help="directory of one completed saved run"
+    )
     args = parser.parse_args()
     path = refresh(args.output)
     print(json.dumps({"status": "rendered", "report": str(path)}))

@@ -8,7 +8,6 @@ from typing import Any
 
 from security_reviewer_v2.normalization.models import FindingLocation
 
-
 RISK_SCHEMA_VERSION = "1.0"
 RISK_POLICY_VERSION = "heuristic-v1"
 

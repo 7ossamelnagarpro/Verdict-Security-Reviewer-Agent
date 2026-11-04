@@ -13,7 +13,6 @@ from .models import (
     UnifiedFinding,
 )
 
-
 MERGE_SCHEMA_VERSION = "1.0"
 
 

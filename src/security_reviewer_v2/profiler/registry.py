@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from .models import ScanType, ScannerCapability
-
+from .models import ScannerCapability, ScanType
 
 REGISTRY_VERSION = "2026.10.03-1"
 
@@ -175,9 +174,13 @@ def _validate_registry(capabilities: tuple[ScannerCapability, ...]) -> None:
     seen: set[str] = set()
     for capability in capabilities:
         if not capability.scanner_id or capability.scanner_id in seen:
-            raise ValueError(f"Invalid or duplicate scanner id: {capability.scanner_id!r}")
+            raise ValueError(
+                f"Invalid or duplicate scanner id: {capability.scanner_id!r}"
+            )
         if not capability.scan_types:
             raise ValueError(f"Scanner {capability.scanner_id} has no scan type")
         if not capability.official_reference.startswith("https://"):
-            raise ValueError(f"Scanner {capability.scanner_id} lacks an HTTPS reference")
+            raise ValueError(
+                f"Scanner {capability.scanner_id} lacks an HTTPS reference"
+            )
         seen.add(capability.scanner_id)

@@ -47,8 +47,10 @@ class ScannerAdapter(ABC):
         for relative in plan.expected_outputs:
             candidate = (task_directory / relative).resolve(strict=False)
             if not candidate.is_relative_to(task_directory):
-                return False, f"Adapter declared output outside task directory: {relative}"
+                return (
+                    False,
+                    f"Adapter declared output outside task directory: {relative}",
+                )
             if not candidate.is_file():
                 return False, f"Expected scanner output is missing: {relative}"
         return True, "Expected scanner outputs are present"
-

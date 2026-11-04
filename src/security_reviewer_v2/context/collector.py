@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from security_reviewer_v2.normalization.merge_models import MergeResult, MergedFinding
+from security_reviewer_v2.normalization.merge_models import MergedFinding, MergeResult
 from security_reviewer_v2.normalization.models import FindingLocation, UnifiedFinding
 
 from .models import (
@@ -40,13 +40,16 @@ class _LoadedFile:
 
 
 class _SourceReader:
-    def __init__(self, root: Path, policy: ContextPolicy, profile_artifact: dict[str, Any] | None) -> None:
+    def __init__(
+        self, root: Path, policy: ContextPolicy, profile_artifact: dict[str, Any] | None
+    ) -> None:
         self.root = root
         self.policy = policy
         self.cache: dict[str, _LoadedFile] = {}
         self.bytes_read = 0
         self.expected_hashes: dict[str, str] | None = None
         self.index: tuple[str, ...] | None = None
+        self.runtime_routes: tuple[tuple[str, str | None, str, int], ...] | None = None
         if profile_artifact is not None:
             snapshot = profile_artifact.get("project_snapshot")
             profile = profile_artifact.get("profile")
@@ -59,7 +62,9 @@ class _SourceReader:
             if not isinstance(records, list):
                 raise ContextCollectionError("profile_file_hashes_unavailable")
             try:
-                self.expected_hashes = {str(item["path"]): str(item["sha256"]) for item in records}
+                self.expected_hashes = {
+                    str(item["path"]): str(item["sha256"]) for item in records
+                }
                 self.index = tuple(sorted({str(item["path"]) for item in inventory}))
             except (KeyError, TypeError) as error:
                 raise ContextCollectionError("invalid_profile_inventory") from error
@@ -72,13 +77,17 @@ class _SourceReader:
             # one bounded walk, never an rglob for every unresolved finding.
             paths: list[str] = []
             for directory, names, files in os.walk(self.root, followlinks=False):
-                names[:] = sorted(name for name in names if not (Path(directory) / name).is_symlink())
+                names[:] = sorted(
+                    name for name in names if not (Path(directory) / name).is_symlink()
+                )
                 for name in sorted(files):
                     path = Path(directory) / name
                     if not path.is_symlink():
                         paths.append(path.relative_to(self.root).as_posix())
                     if len(paths) > 100_000:
-                        raise ContextCollectionError("fallback_file_index_limit_exceeded")
+                        raise ContextCollectionError(
+                            "fallback_file_index_limit_exceeded"
+                        )
             self.index = tuple(paths)
         return self.index
 
@@ -136,7 +145,9 @@ class _SourceReader:
             if expected is None:
                 raise ContextCollectionError(f"source_not_in_profile:{actual_relative}")
             if expected != digest:
-                raise ContextCollectionError(f"source_changed_since_profile:{actual_relative}")
+                raise ContextCollectionError(
+                    f"source_changed_since_profile:{actual_relative}"
+                )
         tree = None
         if actual_relative.casefold().endswith(".py"):
             try:
@@ -168,7 +179,9 @@ def collect_context(
     selected_policy.validate()
     root = Path(project_root)
     if not root.exists() or not root.is_dir():
-        raise ContextCollectionError(f"Project root is not a readable directory: {root}")
+        raise ContextCollectionError(
+            f"Project root is not a readable directory: {root}"
+        )
     try:
         root = root.resolve(strict=True)
         next(root.iterdir(), None)
@@ -186,7 +199,12 @@ def collect_context(
     for finding in merged.findings:
         context = _finding_context(finding, reader, selected_policy)
         contexts.append(context)
-        items = (context.primary, *context.additional_primaries, *context.code_flow, *context.related)
+        items = (
+            context.primary,
+            *context.additional_primaries,
+            *context.code_flow,
+            *context.related,
+        )
         evidence_count += len(items)
         excerpts_count += sum(item.excerpt is not None for item in items)
         unavailable_count += sum(item.excerpt is None for item in items)
@@ -197,7 +215,9 @@ def collect_context(
             )
         for item in context.additional_primaries:
             if item.excerpt is None:
-                gaps.append(f"{finding.merged_finding_id}: source {item.source_finding_id} primary context is unavailable.")
+                gaps.append(
+                    f"{finding.merged_finding_id}: source {item.source_finding_id} primary context is unavailable."
+                )
 
     if not merged.findings:
         status = {
@@ -240,7 +260,9 @@ def _finding_context(
     policy: ContextPolicy,
 ) -> FindingContext:
     canonical = finding.canonical_finding
-    primary_location = _runtime_source_location(canonical, reader) or finding.primary_location
+    primary_location = (
+        _runtime_source_location(canonical, reader) or finding.primary_location
+    )
     primary = _collect_evidence(
         reader,
         policy,
@@ -307,48 +329,111 @@ def _finding_context(
     )
 
 
-def _runtime_source_location(finding: UnifiedFinding, reader: _SourceReader) -> FindingLocation | None:
-    """Resolve a unique Flask route to source, without guessing from proximity.
+def _runtime_source_location(
+    finding: UnifiedFinding, reader: _SourceReader
+) -> FindingLocation | None:
+    """Resolve a unique Python HTTP route to source without importing target code.
 
     The original HTTP location remains in the normalized finding. This only
     supplies source context to review when an exact route-template match exists.
     """
     if "dast" not in finding.categories:
         return None
-    try:
-        loaded = reader.load("app.py")
-    except ContextCollectionError:
-        return None
-    if loaded.python_tree is None:
-        return None
-    path = finding.primary_location.path.split("?", 1)[0]
-    matches: list[int] = []
-    for node in ast.walk(loaded.python_tree):
-        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            continue
-        for decorator in node.decorator_list:
-            if (finding.rule_id == "web.cors-reflection" and isinstance(decorator, ast.Attribute)
-                    and decorator.attr == "after_request"):
-                matches.append(node.lineno)
-                continue
-            if not isinstance(decorator, ast.Call) or not decorator.args:
-                continue
-            if finding.rule_id == "web.cors-reflection":
-                continue
-            if not isinstance(decorator.func, ast.Attribute) or decorator.func.attr != "route":
-                continue
-            route = decorator.args[0]
-            if isinstance(route, ast.Constant) and isinstance(route.value, str):
-                pattern = re.escape(route.value)
-                pattern = re.sub(r"<int:[^>]+>", r"[0-9]+", pattern)
-                pattern = re.sub(r"<path:[^>]+>", r".+", pattern)
-                pattern = re.sub(r"<[^>]+>", r"[^/]+", pattern)
-                if re.fullmatch(pattern, path):
-                    matches.append(node.lineno)
+    routes = _runtime_routes(reader)
+    if finding.rule_id == "web.cors-reflection":
+        matches = [
+            (path, line) for route, _, path, line in routes if route == "@after_request"
+        ]
+    else:
+        path = finding.primary_location.path.split("?", 1)[0]
+        # Runtime contracts may retain capture placeholders rather than values.
+        path = re.sub(r"\{\{[A-Za-z_][A-Za-z0-9_]*\}\}", "1", path)
+        method = (finding.runtime_evidence or {}).get("method")
+        matches = [
+            (source_path, line)
+            for route, route_method, source_path, line in routes
+            if route != "@after_request"
+            and (not method or not route_method or route_method == method)
+            and re.fullmatch(_route_pattern(route), path)
+        ]
     if len(matches) != 1:
         return None
-    line = matches[0]
-    return FindingLocation(loaded.relative_path, line, None, line, None)
+    source_path, line = matches[0]
+    return FindingLocation(source_path, line, None, line, None)
+
+
+def _route_pattern(route: str) -> str:
+    parts = re.split(r"(\{[^{}]+\}|<[^<>]+>)", route)
+    return "".join(
+        ".+"
+        if part.startswith("<path:")
+        else "[^/]+"
+        if part.startswith(("{", "<"))
+        else re.escape(part)
+        for part in parts
+    )
+
+
+def _runtime_routes(
+    reader: _SourceReader,
+) -> tuple[tuple[str, str | None, str, int], ...]:
+    if reader.runtime_routes is not None:
+        return reader.runtime_routes
+    routes: list[tuple[str, str | None, str, int]] = []
+    inspected = 0
+    for path in reader._paths():
+        if not path.endswith(".py") or any(
+            part in {"tests", ".venv", "venv", "site-packages"}
+            for part in PurePosixPath(path).parts
+        ):
+            continue
+        if inspected >= 100 or reader.bytes_read >= 1_000_000:
+            break
+        inspected += 1
+        try:
+            loaded = reader.load(path)
+        except ContextCollectionError:
+            continue
+        if loaded.python_tree is None:
+            continue
+        for node in ast.walk(loaded.python_tree):
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            for decorator in node.decorator_list:
+                if (
+                    isinstance(decorator, ast.Attribute)
+                    and decorator.attr == "after_request"
+                ):
+                    routes.append(
+                        ("@after_request", None, loaded.relative_path, node.lineno)
+                    )
+                if not isinstance(decorator, ast.Call) or not isinstance(
+                    decorator.func, ast.Attribute
+                ):
+                    continue
+                verb = decorator.func.attr.lower()
+                if (
+                    verb
+                    not in {"route", "get", "post", "put", "patch", "delete", "head"}
+                    or not decorator.args
+                ):
+                    continue
+                route = decorator.args[0]
+                if (
+                    isinstance(route, ast.Constant)
+                    and isinstance(route.value, str)
+                    and route.value.startswith("/")
+                ):
+                    routes.append(
+                        (
+                            route.value,
+                            None if verb == "route" else verb.upper(),
+                            loaded.relative_path,
+                            node.lineno,
+                        )
+                    )
+    reader.runtime_routes = tuple(routes)
+    return reader.runtime_routes
 
 
 def _flow_contexts(
@@ -515,8 +600,8 @@ def _python_symbol(
     return SymbolContext(
         language="python",
         kind=kind,
-        name=str(getattr(node, "name")),
-        qualified_name=".".join((*parents, str(getattr(node, "name")))),
+        name=str(node.name),
+        qualified_name=".".join((*parents, str(node.name))),
         start_line=node.lineno,
         end_line=node_end,
         excerpt=_excerpt(loaded, node.lineno, excerpt_end),
@@ -527,7 +612,11 @@ def _python_symbol(
 def _normal_relative_path(raw_path: str) -> str:
     text = str(raw_path).replace("\\", "/").strip()
     path = PurePosixPath(text)
-    if not text or path.is_absolute() or any(part in {"", ".", ".."} for part in path.parts):
+    if (
+        not text
+        or path.is_absolute()
+        or any(part in {"", ".", ".."} for part in path.parts)
+    ):
         raise ContextCollectionError(f"unsafe_relative_path:{text or '<empty>'}")
     if path.parts and ":" in path.parts[0]:
         raise ContextCollectionError(f"unsafe_relative_path:{text}")

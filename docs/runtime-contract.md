@@ -21,21 +21,48 @@ health path, selected endpoint paths, common response security headers, cookie
 attributes, and server-error responses. It does not perform browser crawling,
 credentialed authorization workflows, or exploit confirmation by itself. The
 optional browser crawl renders same-origin JavaScript pages when Playwright is
-installed, but never submits forms or clicks controls. Choose
+installed, but never submits forms or clicks controls. For a trusted Compose
+workflow run it starts automatically, verifies each configured test account,
+and crawls with isolated bearer or cookie sessions. It records methods, paths,
+and status codes without storing credentials, tokens, query values, or response
+bodies. Choose
 paths that are safe to visit: HTTP GET is not proof that an application has no side effects.
+
+A reviewed `discovery-test-plan.json` from an earlier scan can be passed as
+`--approved-discovery-plan PATH` with an approved disposable Compose contract.
+The target snapshot must still match. Verdict probes at most 20 current,
+source-declared GET paths without parameters or query strings and writes
+`approved-discovery-probes.json` with observed statuses. This flag does not
+authorize write proposals or infer expected authorization outcomes; those
+remain explicit `workflow_suite` rules.
 
 An optional `workflow_suite` adds declarative multi-account and business-rule
 tests in the same runtime session, before teardown. It supports JSON/form login,
 bearer tokens or cookies, explicit identity verification, sequential HTTP steps,
-scalar captures, expected statuses and JSON assertions. Write steps require an
-explicitly approved disposable Compose environment. Existing local applications
+scalar captures, expected statuses, JSON assertions and literal response-header/text
+assertions. A step may use `wait_before_seconds` (0–10) before a bounded GET
+to allow an asynchronous worker to settle; it is not an unbounded poll.
+An explicit `lockout_after_failures` (2–10) on an anonymous POST security
+step checks a declared 423/429 response after that many identical prior
+401 login attempts. A 401 then means this declared threshold did not trigger;
+it is not proof that the endpoint has no rate limit under all conditions.
+On an explicitly approved disposable target only, a security step may declare
+`auth_probe` with `kind: numbered_cookie` (a bounded cookie name, prefix, and
+number) or `kind: unsigned_jwt` (bounded scalar test claims). The runner
+generates the synthetic credential in memory and records only the probe kind,
+not the generated cookie or token. This is a narrow negative test of the
+application's rejection behavior, not a general credential attack.
+Write steps run automatically when the selected trusted Compose target and
+workflow contract define them; the UI sets `allow_mutation` and `fresh_stack`
+from those steps. CLI contracts must still declare these fields explicitly.
+Existing local applications
 support read-only workflow steps (login requests are the necessary exception).
 
 The local UI can also create this contract from fields or generate a temporary
 Flask/FastAPI/Express startup template after explicit trust approval. Optional
 ZAP crawling/passive analysis and active scanning are separate engine selections,
 not changes to the baseline contract flags. Active ZAP requires a disposable
-Compose target and explicit approval. Simple form login is supported through
+Compose target. Simple form login is supported through
 separate settings and OS-vault test credentials; it is not generic IDOR testing.
 Route discovery recognizes common Python/Node declarations and OpenAPI
 JSON/YAML. **Generate a reviewable draft** turns safe discovered GET routes into
@@ -54,7 +81,7 @@ owned by, or explicitly authorized to, the person running the scan.
 - Guided workflows currently support existing URLs and explicitly trusted
   Compose projects, not generated startup recipes. OAuth/MFA, browser form
   actions, GraphQL/WebSocket protocols, arbitrary reset commands,
-  concurrency/race tests and file uploads are not implemented by this runner;
+  concurrency/race tests and multi-file or large-file uploads are not implemented by this runner;
   discovery records these as explicit coverage gaps when detected.
 - `fresh_stack` means one fresh stack per run, not per workflow. Create independent
   data in each workflow; cross-workflow contamination is otherwise possible.
@@ -83,11 +110,22 @@ owned by, or explicitly authorized to, the person running the scan.
 5. In **3. Workflows**, define setup steps and security assertions. For example:
    create an order as user A, capture its `id` as `order_id`, then GET
    `/orders/{{order_id}}` as user B expecting `403` or `404`. Request body, capture
-   mappings and JSON assertions are optional advanced fields. Captures belong to
+   mappings, JSON assertions and response assertions are optional advanced
+   fields. Captures belong to
    their workflow and must be declared before use.
-6. In **4. Limits & reset**, choose request/time limits and explicitly approve
-   data changes for write workflows. Use **Fresh disposable Compose stack per
-   run** for the lab. The runner cleans up only its own environment.
+   Response assertions accept `header_present`, `header_absent`,
+   `header_contains`, `header_not_contains`, `body_contains` and
+   `body_not_contains`. They compare literal text, not regular expressions.
+   For example, a `body_not_contains` check can assert that an inert database
+   column marker is absent from an error response. Do not put real secrets in
+   these saved rules.
+   A multipart step can upload one inline test file using `field`, `filename`,
+   `content_type` and `content` (at most 4 KiB), then capture its response ID
+   and check how the application serves it. This is available only for an
+   approved, disposable Compose run. It does not read arbitrary local files.
+6. In **4. Limits & reset**, choose request/time limits. Write steps on the
+   trusted disposable Compose target automatically use a fresh stack. The
+   runner cleans up only its own environment.
 7. In **5. Validate & save**, validate structure and save the project. Return to
    **Accounts** and save each username/password in the OS vault. Credentials are
    not stored in the project or exported contract. For this disposable lab the
@@ -108,7 +146,13 @@ The report's DAST panel shows declared/executed steps, rule violations, unresolv
 steps, and account verification. `workflow-evidence.json` is included in report
 exports, and its observations enter normalization and the ordinary review pipeline.
 Raw response bodies, bearer tokens, passwords and capture values are not saved
-in workflow evidence. Do not put secrets directly in request-body configuration.
+in workflow evidence. `assertion_checks` records each condition's type, field,
+operator and pass/fail/unknown result, but never its actual response value.
+The workflow title describes the desired safe rule; a `violation` means that
+at least one declared security expectation failed, not that the title happened.
+Do not put secrets directly in request-body configuration.
+Declared endpoint GETs also check cookie attributes and Content-Security-Policy
+on HTML responses; supplying only a health path does not cover other routes.
 
 Failed login, setup failures, unexpected server errors and exhausted budgets
 produce explicit incomplete coverage, not a security pass. A rule violation is

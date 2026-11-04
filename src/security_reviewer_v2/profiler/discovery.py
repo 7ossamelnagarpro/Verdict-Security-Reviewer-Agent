@@ -20,7 +20,6 @@ from .models import (
     SkippedItem,
 )
 
-
 SOURCE_EXTENSIONS = {
     ".py": "python",
     ".pyi": "python",
@@ -136,7 +135,7 @@ class DiscoveryResult:
     warnings: tuple[str, ...]
     completeness: Completeness
     summary: InventorySummary
-    reader: "BoundedTextReader"
+    reader: BoundedTextReader
 
 
 @dataclass
@@ -155,13 +154,17 @@ class BoundedTextReader:
             return self.cache[relative_path]
         absolute = (self.root / relative_path).resolve(strict=False)
         if not absolute.is_relative_to(self.root):
-            self.warnings.append(f"Refused to read outside project root: {relative_path}")
+            self.warnings.append(
+                f"Refused to read outside project root: {relative_path}"
+            )
             self.cache[relative_path] = None
             return None
         try:
             size = absolute.stat().st_size
         except (OSError, FileNotFoundError) as error:
-            self.warnings.append(f"Could not stat {relative_path}: {type(error).__name__}")
+            self.warnings.append(
+                f"Could not stat {relative_path}: {type(error).__name__}"
+            )
             self.cache[relative_path] = None
             return None
         allowed = min(size, self.limits.max_content_read_bytes)
@@ -176,7 +179,9 @@ class BoundedTextReader:
             with absolute.open("rb") as handle:
                 raw = handle.read(allowed)
         except (OSError, PermissionError) as error:
-            self.warnings.append(f"Could not read {relative_path}: {type(error).__name__}")
+            self.warnings.append(
+                f"Could not read {relative_path}: {type(error).__name__}"
+            )
             self.cache[relative_path] = None
             return None
         self.total_bytes_read += len(raw)
@@ -228,7 +233,11 @@ def discover_project(
     def add_skip(path: str, reason: str, cause: SkipCause) -> None:
         nonlocal partial
         skipped.append(SkippedItem(path=path, reason=reason, cause=cause))
-        if cause in {SkipCause.RESOURCE_LIMIT, SkipCause.READ_ERROR, SkipCause.DISAPPEARED}:
+        if cause in {
+            SkipCause.RESOURCE_LIMIT,
+            SkipCause.READ_ERROR,
+            SkipCause.DISAPPEARED,
+        }:
             partial = True
 
     def walk(directory: Path, relative_directory: str, depth: int) -> None:
@@ -236,16 +245,30 @@ def discover_project(
         if stop:
             return
         if time.monotonic() - start >= limits.timeout_seconds:
-            add_skip(relative_directory or ".", "Profiling timeout reached", SkipCause.RESOURCE_LIMIT)
+            add_skip(
+                relative_directory or ".",
+                "Profiling timeout reached",
+                SkipCause.RESOURCE_LIMIT,
+            )
             stop = True
             return
         if depth > limits.max_depth:
-            add_skip(relative_directory or ".", "Maximum traversal depth reached", SkipCause.RESOURCE_LIMIT)
+            add_skip(
+                relative_directory or ".",
+                "Maximum traversal depth reached",
+                SkipCause.RESOURCE_LIMIT,
+            )
             return
         try:
-            entries = sorted(os.scandir(directory), key=lambda item: item.name.casefold())
+            entries = sorted(
+                os.scandir(directory), key=lambda item: item.name.casefold()
+            )
         except FileNotFoundError:
-            add_skip(relative_directory or ".", "Directory disappeared during traversal", SkipCause.DISAPPEARED)
+            add_skip(
+                relative_directory or ".",
+                "Directory disappeared during traversal",
+                SkipCause.DISAPPEARED,
+            )
             return
         except (OSError, PermissionError) as error:
             add_skip(
@@ -258,31 +281,57 @@ def discover_project(
         for entry in entries:
             if stop:
                 return
-            relative = f"{relative_directory}/{entry.name}" if relative_directory else entry.name
+            relative = (
+                f"{relative_directory}/{entry.name}"
+                if relative_directory
+                else entry.name
+            )
             relative = relative.replace("\\", "/")
             if _matches_any(relative, policy.additional_discovery_exclusions):
-                add_skip(relative, "Explicit discovery policy exclusion", SkipCause.POLICY)
+                add_skip(
+                    relative, "Explicit discovery policy exclusion", SkipCause.POLICY
+                )
                 continue
             try:
                 is_link = entry.is_symlink()
             except OSError:
-                add_skip(relative, "Entry disappeared during traversal", SkipCause.DISAPPEARED)
+                add_skip(
+                    relative,
+                    "Entry disappeared during traversal",
+                    SkipCause.DISAPPEARED,
+                )
                 continue
             if is_link:
                 if not policy.allow_symlinks:
-                    add_skip(relative, "Symbolic links are disabled by policy", SkipCause.SYMLINK)
+                    add_skip(
+                        relative,
+                        "Symbolic links are disabled by policy",
+                        SkipCause.SYMLINK,
+                    )
                     continue
                 try:
                     resolved = Path(entry.path).resolve(strict=True)
                 except (OSError, RuntimeError):
-                    add_skip(relative, "Symbolic link target is unavailable", SkipCause.READ_ERROR)
+                    add_skip(
+                        relative,
+                        "Symbolic link target is unavailable",
+                        SkipCause.READ_ERROR,
+                    )
                     continue
                 if not resolved.is_relative_to(root):
-                    add_skip(relative, "Symbolic link resolves outside project root", SkipCause.OUTSIDE_ROOT)
+                    add_skip(
+                        relative,
+                        "Symbolic link resolves outside project root",
+                        SkipCause.OUTSIDE_ROOT,
+                    )
                     continue
                 if resolved.is_dir():
                     if resolved in visited_directories:
-                        add_skip(relative, "Symbolic link cycle or duplicate target", SkipCause.POLICY)
+                        add_skip(
+                            relative,
+                            "Symbolic link cycle or duplicate target",
+                            SkipCause.POLICY,
+                        )
                         continue
                     visited_directories.add(resolved)
                     walk(resolved, relative, depth + 1)
@@ -290,14 +339,24 @@ def discover_project(
             try:
                 if entry.is_dir(follow_symlinks=policy.allow_symlinks):
                     if entry.name.casefold() in DEFAULT_SKIPPED_DIRECTORIES:
-                        add_skip(relative, "Default discovery directory exclusion", SkipCause.POLICY)
+                        add_skip(
+                            relative,
+                            "Default discovery directory exclusion",
+                            SkipCause.POLICY,
+                        )
                         continue
                     resolved_dir = Path(entry.path).resolve(strict=False)
                     if not resolved_dir.is_relative_to(root):
-                        add_skip(relative, "Directory resolves outside project root", SkipCause.OUTSIDE_ROOT)
+                        add_skip(
+                            relative,
+                            "Directory resolves outside project root",
+                            SkipCause.OUTSIDE_ROOT,
+                        )
                         continue
                     if resolved_dir in visited_directories:
-                        add_skip(relative, "Duplicate directory target", SkipCause.POLICY)
+                        add_skip(
+                            relative, "Duplicate directory target", SkipCause.POLICY
+                        )
                         continue
                     visited_directories.add(resolved_dir)
                     walk(Path(entry.path), relative, depth + 1)
@@ -306,7 +365,9 @@ def discover_project(
                     add_skip(relative, "Entry is not a regular file", SkipCause.POLICY)
                     continue
                 if len(records) >= limits.max_files:
-                    add_skip(relative, "Maximum file count reached", SkipCause.RESOURCE_LIMIT)
+                    add_skip(
+                        relative, "Maximum file count reached", SkipCause.RESOURCE_LIMIT
+                    )
                     stop = True
                     return
                 stat = entry.stat(follow_symlinks=policy.allow_symlinks)
@@ -318,10 +379,16 @@ def discover_project(
                     )
                     continue
             except FileNotFoundError:
-                add_skip(relative, "File disappeared during traversal", SkipCause.DISAPPEARED)
+                add_skip(
+                    relative, "File disappeared during traversal", SkipCause.DISAPPEARED
+                )
                 continue
             except (OSError, PermissionError) as error:
-                add_skip(relative, f"File metadata unavailable: {type(error).__name__}", SkipCause.READ_ERROR)
+                add_skip(
+                    relative,
+                    f"File metadata unavailable: {type(error).__name__}",
+                    SkipCause.READ_ERROR,
+                )
                 continue
 
             category = classify_file(relative)
@@ -399,12 +466,13 @@ def language_for_file(record: FileRecord) -> str | None:
 def _is_test_path(path: Path) -> bool:
     parts = {part.casefold() for part in path.parts}
     name = path.name.casefold()
-    return bool(parts & {"test", "tests", "spec", "specs", "__tests__"}) or name.startswith(
-        ("test_", "spec_")
-    ) or name.endswith(("_test.py", ".test.js", ".test.ts", ".spec.js", ".spec.ts"))
+    return (
+        bool(parts & {"test", "tests", "spec", "specs", "__tests__"})
+        or name.startswith(("test_", "spec_"))
+        or name.endswith(("_test.py", ".test.js", ".test.ts", ".spec.js", ".spec.ts"))
+    )
 
 
 def _matches_any(path: str, patterns: tuple[str, ...]) -> bool:
     normalized = path.replace("\\", "/")
     return any(fnmatch.fnmatchcase(normalized, pattern) for pattern in patterns)
-

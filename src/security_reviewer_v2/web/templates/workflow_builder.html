@@ -28,9 +28,7 @@
 <div data-panel="3" hidden>
 <h3>4. Set limits and data lifecycle</h3>
 <div class="grid"><label>Maximum HTTP requests<input id="wf-max-requests" type="number" min="1" max="300" value="100"></label><label>Maximum workflow seconds<input id="wf-max-seconds" type="number" min="5" max="600" value="300"></label><label>Request timeout (seconds)<input id="wf-timeout" type="number" min="1" max="15" value="5"></label><label>Reset strategy<select id="wf-reset"><option value="fresh_stack">Fresh disposable Compose stack per run</option><option value="none">Existing app — no reset</option></select></label></div>
-<label class="check"><input id="wf-mutation" type="checkbox">Workflows include writes (POST / PUT / PATCH / DELETE)</label>
-<label class="check"><input name="workflow_mutation_approved" type="checkbox">I approve these workflow data changes in this disposable Compose application.</label>
-<p class="help">The runner removes only its own stack and volumes after the run. Each workflow should create independent data. Shared state is not reset between steps or workflows. Custom reset commands are not supported.</p>
+<p class="help">For a trusted disposable Compose target, approved workflow steps that write data run automatically. The runner removes its own stack and volumes after the run. Each workflow should create independent data; state is shared between steps until cleanup.</p>
 </div>
 <div data-panel="4" hidden>
 <h3>5. Validate, save and run</h3>

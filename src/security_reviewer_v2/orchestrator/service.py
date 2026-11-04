@@ -2,24 +2,23 @@
 
 from __future__ import annotations
 
-import json
 import hashlib
+import json
 import os
 import re
 import time
 import uuid
 from contextlib import contextmanager
-from dataclasses import asdict
-from dataclasses import dataclass, field, replace
-from datetime import datetime, timezone
+from dataclasses import asdict, dataclass, field, replace
+from datetime import UTC, datetime
 from pathlib import Path
 
 from security_reviewer_v2.profiler.models import PlanStatus, ScanPlan, ScanTask
 from security_reviewer_v2.scanners.models import (
+    EXECUTION_SCHEMA_VERSION,
     AdapterExecutionPlan,
     CheckStatus,
     CommandResult,
-    EXECUTION_SCHEMA_VERSION,
     ExecutionRequest,
     ExecutionStatus,
     ExecutionSummary,
@@ -81,7 +80,9 @@ class ScannerOrchestrator:
         selected_run_id = run_id or _new_run_id()
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,79}", selected_run_id):
             raise ValueError("run_id contains unsafe characters or is too long")
-        if input_fingerprint is not None and not re.fullmatch(r"[0-9a-f]{64}", input_fingerprint):
+        if input_fingerprint is not None and not re.fullmatch(
+            r"[0-9a-f]{64}", input_fingerprint
+        ):
             raise ValueError("input_fingerprint must be a SHA-256 hex digest")
         run_directory = (runs / selected_run_id).resolve()
         if not run_directory.is_relative_to(runs):
@@ -109,14 +110,20 @@ class ScannerOrchestrator:
             if resume:
                 saved_manifest = _read_json(manifest_path)
                 identity_fields = (
-                    "schema_version", "run_id", "project_root", "scan_plan_sha256",
-                    "input_fingerprint", "task_ids",
+                    "schema_version",
+                    "run_id",
+                    "project_root",
+                    "scan_plan_sha256",
+                    "input_fingerprint",
+                    "task_ids",
                 )
                 if any(
                     saved_manifest.get(field) != expected_manifest[field]
                     for field in identity_fields
                 ):
-                    raise ValueError("Run manifest does not match the project, plan, or input snapshot")
+                    raise ValueError(
+                        "Run manifest does not match the project, plan, or input snapshot"
+                    )
                 if checkpoint_path.exists():
                     checkpoint = _read_json(checkpoint_path)
                     if checkpoint.get("run_id") != selected_run_id:
@@ -140,7 +147,9 @@ class ScannerOrchestrator:
                 previous = {}
                 expected_manifest["started_at"] = started_at
                 _write_json(manifest_path, expected_manifest)
-                _write_checkpoint(checkpoint_path, selected_run_id, started_at, previous)
+                _write_checkpoint(
+                    checkpoint_path, selected_run_id, started_at, previous
+                )
 
             tasks = tuple(sorted(scan_plan.tasks, key=lambda item: item.task_id))
             results: dict[str, TaskExecutionResult] = dict(previous)
@@ -150,8 +159,10 @@ class ScannerOrchestrator:
             execution_order = sorted(
                 tasks,
                 key=lambda task: (
-                    0 if task.task_id not in previous
-                    or previous[task.task_id].reason == "Orchestrator task-count limit reached"
+                    0
+                    if task.task_id not in previous
+                    or previous[task.task_id].reason
+                    == "Orchestrator task-count limit reached"
                     else 1,
                     task.task_id,
                 ),
@@ -159,8 +170,12 @@ class ScannerOrchestrator:
             for task in execution_order:
                 old = results.get(task.task_id)
                 if old is not None and (
-                    (old.status == ExecutionStatus.COMPLETED and _outputs_available(old, run_directory))
-                    or task.status in {PlanStatus.NOT_APPLICABLE, PlanStatus.DISABLED_BY_POLICY}
+                    (
+                        old.status == ExecutionStatus.COMPLETED
+                        and _outputs_available(old, run_directory)
+                    )
+                    or task.status
+                    in {PlanStatus.NOT_APPLICABLE, PlanStatus.DISABLED_BY_POLICY}
                 ):
                     continue
                 if executed >= self.policy.max_tasks:
@@ -171,7 +186,9 @@ class ScannerOrchestrator:
                     ):
                         continue
                     result = _terminal_result(
-                        task, ExecutionStatus.SKIPPED, "Orchestrator task-count limit reached"
+                        task,
+                        ExecutionStatus.SKIPPED,
+                        "Orchestrator task-count limit reached",
                     )
                 else:
                     result = self._execute_task(
@@ -226,7 +243,9 @@ class ScannerOrchestrator:
                 f"Planning status is {task.status.value}",
             )
         if task.status == PlanStatus.UNSUPPORTED:
-            return _terminal_result(task, ExecutionStatus.UNSUPPORTED, "Task is unsupported")
+            return _terminal_result(
+                task, ExecutionStatus.UNSUPPORTED, "Task is unsupported"
+            )
         if task.status == PlanStatus.BLOCKED:
             return _terminal_result(
                 task,
@@ -248,7 +267,9 @@ class ScannerOrchestrator:
             )
         checks = adapter.check_prerequisites(task, project_root=str(project_root))
         if any(check.status == CheckStatus.MISSING for check in checks):
-            missing = ", ".join(check.name for check in checks if check.status == CheckStatus.MISSING)
+            missing = ", ".join(
+                check.name for check in checks if check.status == CheckStatus.MISSING
+            )
             return _terminal_result(
                 task,
                 ExecutionStatus.PREREQUISITE_MISSING,
@@ -256,7 +277,9 @@ class ScannerOrchestrator:
                 checks=checks,
             )
         if any(check.status == CheckStatus.UNVERIFIED for check in checks):
-            unknown = ", ".join(check.name for check in checks if check.status == CheckStatus.UNVERIFIED)
+            unknown = ", ".join(
+                check.name for check in checks if check.status == CheckStatus.UNVERIFIED
+            )
             return _terminal_result(
                 task,
                 ExecutionStatus.PREREQUISITE_UNVERIFIED,
@@ -266,14 +289,18 @@ class ScannerOrchestrator:
 
         task_directory = _next_attempt_directory(run_directory, task)
         if not task_directory.is_relative_to(run_directory):
-            return _terminal_result(task, ExecutionStatus.FAILED, "Unsafe task directory")
+            return _terminal_result(
+                task, ExecutionStatus.FAILED, "Unsafe task directory"
+            )
         task_directory.mkdir(parents=True)
         request = ExecutionRequest(
             run_id=run_id,
             task=task,
             project_root=str(project_root),
             task_directory=str(task_directory),
-            timeout_seconds=self.policy.scanner_timeouts.get(task.scanner_id, self.policy.task_timeout_seconds),
+            timeout_seconds=self.policy.scanner_timeouts.get(
+                task.scanner_id, self.policy.task_timeout_seconds
+            ),
         )
         started_at = _utc_now()
         start_clock = time.monotonic()
@@ -388,13 +415,17 @@ def _overall_status(results: list[TaskExecutionResult]) -> OverallRunStatus:
         and item.reason == "Orchestrator task-count limit reached"
         for item in results
     ):
-        return OverallRunStatus.PARTIAL if any(
-            item.status == ExecutionStatus.COMPLETED for item in results
-        ) else OverallRunStatus.FAILED
+        return (
+            OverallRunStatus.PARTIAL
+            if any(item.status == ExecutionStatus.COMPLETED for item in results)
+            else OverallRunStatus.FAILED
+        )
     actionable = [item for item in results if item.status != ExecutionStatus.SKIPPED]
     if not actionable:
         return OverallRunStatus.FAILED
-    completed = [item for item in actionable if item.status == ExecutionStatus.COMPLETED]
+    completed = [
+        item for item in actionable if item.status == ExecutionStatus.COMPLETED
+    ]
     if len(completed) == len(actionable):
         return OverallRunStatus.COMPLETED
     if completed:
@@ -436,12 +467,15 @@ def _write_checkpoint(
     started_at: str,
     results: dict[str, TaskExecutionResult],
 ) -> None:
-    _write_json(path, {
-        "schema_version": EXECUTION_SCHEMA_VERSION,
-        "run_id": run_id,
-        "started_at": started_at,
-        "tasks": [asdict(results[key]) for key in sorted(results)],
-    })
+    _write_json(
+        path,
+        {
+            "schema_version": EXECUTION_SCHEMA_VERSION,
+            "run_id": run_id,
+            "started_at": started_at,
+            "tasks": [asdict(results[key]) for key in sorted(results)],
+        },
+    )
 
 
 def _result_from_dict(item: dict) -> TaskExecutionResult:
@@ -452,18 +486,25 @@ def _result_from_dict(item: dict) -> TaskExecutionResult:
         reason=item["reason"],
         prerequisite_checks=tuple(
             PrerequisiteCheck(
-                name=check["name"], status=CheckStatus(check["status"]),
-                detail=check["detail"], version=check.get("version"),
-            ) for check in item["prerequisite_checks"]
+                name=check["name"],
+                status=CheckStatus(check["status"]),
+                detail=check["detail"],
+                version=check.get("version"),
+            )
+            for check in item["prerequisite_checks"]
         ),
         commands=tuple(
             CommandResult(
-                name=command["name"], status=ExecutionStatus(command["status"]),
-                exit_code=command["exit_code"], duration_seconds=command["duration_seconds"],
-                stdout_log=command["stdout_log"], stderr_log=command["stderr_log"],
+                name=command["name"],
+                status=ExecutionStatus(command["status"]),
+                exit_code=command["exit_code"],
+                duration_seconds=command["duration_seconds"],
+                stdout_log=command["stdout_log"],
+                stderr_log=command["stderr_log"],
                 stdout_truncated=command["stdout_truncated"],
                 stderr_truncated=command["stderr_truncated"],
-            ) for command in item["commands"]
+            )
+            for command in item["commands"]
         ),
         raw_outputs=tuple(item["raw_outputs"]),
         started_at=item["started_at"],
@@ -526,9 +567,9 @@ def _run_lock(run_directory: Path):
 
 
 def _utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _new_run_id() -> str:
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     return f"run-{stamp}-{uuid.uuid4().hex[:8]}"

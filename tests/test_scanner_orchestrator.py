@@ -18,7 +18,6 @@ from security_reviewer_v2.profiler.models import (
 )
 from security_reviewer_v2.scanners import AdapterRegistry, ScannerAdapter
 from security_reviewer_v2.scanners.codeql import CodeQLAdapter, CodeQLConfig
-from security_reviewer_v2.scanners.semgrep import SemgrepAdapter, SemgrepConfig
 from security_reviewer_v2.scanners.models import (
     AdapterExecutionPlan,
     CheckStatus,
@@ -27,6 +26,7 @@ from security_reviewer_v2.scanners.models import (
     ExecutionStatus,
     PrerequisiteCheck,
 )
+from security_reviewer_v2.scanners.semgrep import SemgrepAdapter, SemgrepConfig
 
 
 class FakeAdapter(ScannerAdapter):
@@ -159,7 +159,9 @@ def test_registry_rejects_duplicate_adapters() -> None:
 
 def test_successful_adapter_produces_raw_output_and_summary(tmp_path: Path) -> None:
     task = make_task("fake")
-    summary = execute(tmp_path, make_plan(task), AdapterRegistry((FakeAdapter("fake"),)))
+    summary = execute(
+        tmp_path, make_plan(task), AdapterRegistry((FakeAdapter("fake"),))
+    )
 
     assert summary.status.value == "completed"
     assert summary.tasks[0].status == ExecutionStatus.COMPLETED
@@ -191,7 +193,9 @@ def test_prerequisite_states_prevent_execution(
     expected: ExecutionStatus,
 ) -> None:
     adapter = FakeAdapter("fake", check_status=check_status)
-    summary = execute(tmp_path, make_plan(make_task("fake")), AdapterRegistry((adapter,)))
+    summary = execute(
+        tmp_path, make_plan(make_task("fake")), AdapterRegistry((adapter,))
+    )
 
     assert summary.tasks[0].status == expected
     assert summary.tasks[0].commands == ()
@@ -230,7 +234,9 @@ def test_timeout_is_bounded_and_reported(tmp_path: Path) -> None:
 
 def test_missing_expected_output_is_invalid_not_success(tmp_path: Path) -> None:
     adapter = FakeAdapter("fake", behavior="invalid_output")
-    summary = execute(tmp_path, make_plan(make_task("fake")), AdapterRegistry((adapter,)))
+    summary = execute(
+        tmp_path, make_plan(make_task("fake")), AdapterRegistry((adapter,))
+    )
 
     assert summary.tasks[0].status == ExecutionStatus.INVALID_OUTPUT
 
@@ -285,7 +291,9 @@ def test_task_limit_creates_explicit_skipped_result(tmp_path: Path) -> None:
     assert any("task limit" in gap for gap in summary.coverage_gaps)
 
 
-def test_task_limit_can_be_resumed_without_rerunning_completed_task(tmp_path: Path) -> None:
+def test_task_limit_can_be_resumed_without_rerunning_completed_task(
+    tmp_path: Path,
+) -> None:
     project = tmp_path / "project"
     project.mkdir()
     plan = make_plan(make_task("fake", suffix="one"), make_task("fake", suffix="two"))
@@ -300,8 +308,11 @@ def test_task_limit_can_be_resumed_without_rerunning_completed_task(tmp_path: Pa
     first_output.write_text("first result preserved", encoding="utf-8")
 
     resumed = orchestrator.execute(
-        plan, project_root=project, runs_root=tmp_path / "runs",
-        run_id="limited-run", resume=True,
+        plan,
+        project_root=project,
+        runs_root=tmp_path / "runs",
+        run_id="limited-run",
+        resume=True,
     )
 
     assert resumed.status.value == "completed"
@@ -310,13 +321,15 @@ def test_task_limit_can_be_resumed_without_rerunning_completed_task(tmp_path: Pa
     assert not any("task limit" in gap for gap in resumed.coverage_gaps)
 
 
-def test_resume_prioritizes_unattempted_task_over_repeated_failure(tmp_path: Path) -> None:
+def test_resume_prioritizes_unattempted_task_over_repeated_failure(
+    tmp_path: Path,
+) -> None:
     project = tmp_path / "project"
     project.mkdir()
     plan = make_plan(make_task("broken"), make_task("working"))
-    first_registry = AdapterRegistry((
-        FakeAdapter("broken", behavior="failure"), FakeAdapter("working")
-    ))
+    first_registry = AdapterRegistry(
+        (FakeAdapter("broken", behavior="failure"), FakeAdapter("working"))
+    )
     first_orchestrator = ScannerOrchestrator(
         first_registry, policy=OrchestratorPolicy(max_tasks=1)
     )
@@ -330,8 +343,11 @@ def test_resume_prioritizes_unattempted_task_over_repeated_failure(tmp_path: Pat
     }
 
     second = first_orchestrator.execute(
-        plan, project_root=project, runs_root=tmp_path / "runs",
-        run_id="starvation", resume=True,
+        plan,
+        project_root=project,
+        runs_root=tmp_path / "runs",
+        run_id="starvation",
+        resume=True,
     )
 
     assert second.status.value == "partial"
@@ -343,7 +359,9 @@ def test_resume_prioritizes_unattempted_task_over_repeated_failure(tmp_path: Pat
 
 def test_resume_after_interruption_reuses_checkpointed_success(tmp_path: Path) -> None:
     class InterruptSecond(FakeAdapter):
-        def build_execution_plan(self, request: ExecutionRequest) -> AdapterExecutionPlan:
+        def build_execution_plan(
+            self, request: ExecutionRequest
+        ) -> AdapterExecutionPlan:
             if request.task.task_id.endswith("two"):
                 raise KeyboardInterrupt
             return super().build_execution_plan(request)
@@ -353,7 +371,9 @@ def test_resume_after_interruption_reuses_checkpointed_success(tmp_path: Path) -
             super().__init__("fake")
             self.calls: list[str] = []
 
-        def build_execution_plan(self, request: ExecutionRequest) -> AdapterExecutionPlan:
+        def build_execution_plan(
+            self, request: ExecutionRequest
+        ) -> AdapterExecutionPlan:
             self.calls.append(request.task.task_id)
             return super().build_execution_plan(request)
 
@@ -363,8 +383,11 @@ def test_resume_after_interruption_reuses_checkpointed_success(tmp_path: Path) -
     first = ScannerOrchestrator(AdapterRegistry((InterruptSecond("fake"),)))
     with pytest.raises(KeyboardInterrupt):
         first.execute(
-            plan, project_root=project, runs_root=tmp_path / "runs",
-            run_id="interrupted-run", input_fingerprint="a" * 64,
+            plan,
+            project_root=project,
+            runs_root=tmp_path / "runs",
+            run_id="interrupted-run",
+            input_fingerprint="a" * 64,
         )
     checkpoint = json.loads(
         (tmp_path / "runs/interrupted-run/checkpoint.json").read_text(encoding="utf-8")
@@ -373,8 +396,12 @@ def test_resume_after_interruption_reuses_checkpointed_success(tmp_path: Path) -
 
     adapter = CountCalls()
     resumed = ScannerOrchestrator(AdapterRegistry((adapter,))).execute(
-        plan, project_root=project, runs_root=tmp_path / "runs",
-        run_id="interrupted-run", resume=True, input_fingerprint="a" * 64,
+        plan,
+        project_root=project,
+        runs_root=tmp_path / "runs",
+        run_id="interrupted-run",
+        resume=True,
+        input_fingerprint="a" * 64,
     )
 
     assert resumed.status.value == "completed"
@@ -388,22 +415,27 @@ def test_resume_retries_failed_task_in_new_attempt_directory(tmp_path: Path) -> 
     plan = make_plan(make_task("fake"))
     failed = ScannerOrchestrator(
         AdapterRegistry((FakeAdapter("fake", behavior="failure"),))
-    ).execute(plan, project_root=project, runs_root=tmp_path / "runs", run_id="retry-run")
+    ).execute(
+        plan, project_root=project, runs_root=tmp_path / "runs", run_id="retry-run"
+    )
     assert failed.status.value == "failed"
 
     resumed = ScannerOrchestrator(AdapterRegistry((FakeAdapter("fake"),))).execute(
-        plan, project_root=project, runs_root=tmp_path / "runs",
-        run_id="retry-run", resume=True,
+        plan,
+        project_root=project,
+        runs_root=tmp_path / "runs",
+        run_id="retry-run",
+        resume=True,
     )
 
     assert resumed.status.value == "completed"
-    assert resumed.tasks[0].raw_outputs == (
-        "fake/task-fake-one-attempt-2/result.json",
-    )
+    assert resumed.tasks[0].raw_outputs == ("fake/task-fake-one-attempt-2/result.json",)
     assert (tmp_path / "runs/retry-run/fake/task-fake-one/logs").is_dir()
 
 
-def test_resume_can_use_an_adapter_installed_after_first_attempt(tmp_path: Path) -> None:
+def test_resume_can_use_an_adapter_installed_after_first_attempt(
+    tmp_path: Path,
+) -> None:
     project = tmp_path / "project"
     project.mkdir()
     plan = make_plan(make_task("fake"))
@@ -412,11 +444,12 @@ def test_resume_can_use_an_adapter_installed_after_first_attempt(tmp_path: Path)
     )
     assert first.tasks[0].status == ExecutionStatus.ADAPTER_UNAVAILABLE
 
-    resumed = ScannerOrchestrator(
-        AdapterRegistry((FakeAdapter("fake"),))
-    ).execute(
-        plan, project_root=project, runs_root=tmp_path / "runs",
-        run_id="new-adapter", resume=True,
+    resumed = ScannerOrchestrator(AdapterRegistry((FakeAdapter("fake"),))).execute(
+        plan,
+        project_root=project,
+        runs_root=tmp_path / "runs",
+        run_id="new-adapter",
+        resume=True,
     )
 
     assert resumed.status.value == "completed"
@@ -429,20 +462,30 @@ def test_resume_rejects_changed_plan_or_input_fingerprint(tmp_path: Path) -> Non
     plan = make_plan(make_task("fake"))
     orchestrator = ScannerOrchestrator(AdapterRegistry((FakeAdapter("fake"),)))
     orchestrator.execute(
-        plan, project_root=project, runs_root=tmp_path / "runs",
-        run_id="bound-run", input_fingerprint="a" * 64,
+        plan,
+        project_root=project,
+        runs_root=tmp_path / "runs",
+        run_id="bound-run",
+        input_fingerprint="a" * 64,
     )
 
     with pytest.raises(ValueError, match="manifest does not match"):
         orchestrator.execute(
-            make_plan(make_task("fake", suffix="changed")), project_root=project,
-            runs_root=tmp_path / "runs", run_id="bound-run", resume=True,
+            make_plan(make_task("fake", suffix="changed")),
+            project_root=project,
+            runs_root=tmp_path / "runs",
+            run_id="bound-run",
+            resume=True,
             input_fingerprint="a" * 64,
         )
     with pytest.raises(ValueError, match="manifest does not match"):
         orchestrator.execute(
-            plan, project_root=project, runs_root=tmp_path / "runs",
-            run_id="bound-run", resume=True, input_fingerprint="b" * 64,
+            plan,
+            project_root=project,
+            runs_root=tmp_path / "runs",
+            run_id="bound-run",
+            resume=True,
+            input_fingerprint="b" * 64,
         )
 
 
@@ -458,14 +501,15 @@ def test_resume_reruns_completed_task_if_raw_output_is_missing(tmp_path: Path) -
     output.unlink()
 
     resumed = orchestrator.execute(
-        plan, project_root=project, runs_root=tmp_path / "runs",
-        run_id="missing-output", resume=True,
+        plan,
+        project_root=project,
+        runs_root=tmp_path / "runs",
+        run_id="missing-output",
+        resume=True,
     )
 
     assert resumed.status.value == "completed"
-    assert resumed.tasks[0].raw_outputs == (
-        "fake/task-fake-one-attempt-2/result.json",
-    )
+    assert resumed.tasks[0].raw_outputs == ("fake/task-fake-one-attempt-2/result.json",)
 
 
 def test_resume_after_manifest_before_first_checkpoint(tmp_path: Path) -> None:
@@ -475,24 +519,29 @@ def test_resume_after_manifest_before_first_checkpoint(tmp_path: Path) -> None:
     run_directory = tmp_path / "runs" / "early-interruption"
     orchestrator = ScannerOrchestrator(AdapterRegistry((FakeAdapter("fake"),)))
     orchestrator.execute(
-        plan, project_root=project, runs_root=tmp_path / "runs",
+        plan,
+        project_root=project,
+        runs_root=tmp_path / "runs",
         run_id="early-interruption",
     )
     (run_directory / "checkpoint.json").unlink()
     (run_directory / "fake/task-fake-one/result.json").unlink()
 
     resumed = orchestrator.execute(
-        plan, project_root=project, runs_root=tmp_path / "runs",
-        run_id="early-interruption", resume=True,
+        plan,
+        project_root=project,
+        runs_root=tmp_path / "runs",
+        run_id="early-interruption",
+        resume=True,
     )
 
     assert resumed.status.value == "completed"
-    assert resumed.tasks[0].raw_outputs == (
-        "fake/task-fake-one-attempt-2/result.json",
-    )
+    assert resumed.tasks[0].raw_outputs == ("fake/task-fake-one-attempt-2/result.json",)
 
 
-def test_codeql_adapter_builds_argument_vectors_without_shell_strings(tmp_path: Path) -> None:
+def test_codeql_adapter_builds_argument_vectors_without_shell_strings(
+    tmp_path: Path,
+) -> None:
     suite = tmp_path / "python-code-scanning.qls"
     suite.write_text("- description: fixture\n", encoding="utf-8")
     project = tmp_path / "project"
@@ -506,9 +555,7 @@ def test_codeql_adapter_builds_argument_vectors_without_shell_strings(tmp_path: 
         )
     )
     task = make_task("codeql-cli")
-    task = ScanTask(
-        **{**task.__dict__, "mode": "standard_query_suite"}
-    )
+    task = ScanTask(**{**task.__dict__, "mode": "standard_query_suite"})
     request = ExecutionRequest(
         run_id="codeql-test",
         task=task,
@@ -522,7 +569,10 @@ def test_codeql_adapter_builds_argument_vectors_without_shell_strings(tmp_path: 
     assert len(plan.commands) == 2
     assert plan.commands[0].arguments[:2] == ("database", "create")
     assert plan.commands[1].arguments[:2] == ("database", "analyze")
-    assert all(command.executable == str(Path(sys.executable).resolve()) for command in plan.commands)
+    assert all(
+        command.executable == str(Path(sys.executable).resolve())
+        for command in plan.commands
+    )
     assert plan.expected_outputs == ("result.sarif",)
 
 

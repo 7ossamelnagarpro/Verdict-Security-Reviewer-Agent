@@ -18,12 +18,25 @@ def main() -> int:
     base = json.loads(args.base.read_text(encoding="utf-8"))
     continuation = json.loads(args.continuation.read_text(encoding="utf-8"))
     result = combine_discovery_runs(base, continuation)
-    result["resumption"] = {"base": str(args.base), "continuation": str(args.continuation)}
+    result["resumption"] = {
+        "base": str(args.base),
+        "continuation": str(args.continuation),
+    }
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps({"status": result["status"], "targets": result["usage"]["targets"],
-                      "planned_targets": result["usage"]["planned_targets"],
-                      "candidates": len(result["candidates"]), "output": str(args.output)}))
+    args.output.write_text(
+        json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    print(
+        json.dumps(
+            {
+                "status": result["status"],
+                "targets": result["usage"]["targets"],
+                "planned_targets": result["usage"]["planned_targets"],
+                "candidates": len(result["candidates"]),
+                "output": str(args.output),
+            }
+        )
+    )
     return 0
 
 

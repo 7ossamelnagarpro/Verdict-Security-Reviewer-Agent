@@ -7,14 +7,16 @@ import json
 from pathlib import Path
 
 from .codeql import NormalizationInputError, normalize_codeql_sarif_file
-from .semgrep import normalize_semgrep_json_file
 from .gitleaks import normalize_gitleaks_json_file
-from .trivy import normalize_trivy_json_file
 from .idor import normalize_idor_json_file
+from .semgrep import normalize_semgrep_json_file
+from .trivy import normalize_trivy_json_file
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Normalize scanner output into V2 findings")
+    parser = argparse.ArgumentParser(
+        description="Normalize scanner output into V2 findings"
+    )
     parser.add_argument("input", type=Path, help="Scanner output input")
     parser.add_argument("output", type=Path, help="Normalized JSON output")
     parser.add_argument(

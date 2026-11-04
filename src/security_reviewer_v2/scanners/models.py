@@ -9,7 +9,6 @@ from typing import Any
 
 from security_reviewer_v2.profiler.models import ScanTask
 
-
 EXECUTION_SCHEMA_VERSION = "1.0"
 
 
@@ -142,4 +141,3 @@ def _to_primitive(value: Any) -> Any:
     if isinstance(value, (list, tuple)):
         return [_to_primitive(item) for item in value]
     return value
-

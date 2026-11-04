@@ -16,18 +16,41 @@ def fixture_inputs():
     source = {
         "rule_id": "workflow.negative_price.1",
         "primary_location": {"path": "/orders"},
-        "runtime_evidence": {"workflow_id": "negative_price", "method": "POST",
-                             "status": 200, "expected_statuses": [400, 422],
-                             "assertion_results": [False]},
+        "runtime_evidence": {
+            "workflow_id": "negative_price",
+            "method": "POST",
+            "status": 200,
+            "expected_statuses": [400, 422],
+            "assertion_results": [False],
+        },
     }
-    merged = {"status": "complete", "findings": [
-        {"merged_finding_id": "merged-price", "source_findings": [source]}]}
+    merged = {
+        "status": "complete",
+        "findings": [
+            {"merged_finding_id": "merged-price", "source_findings": [source]}
+        ],
+    }
     ai = {"candidates": []}
-    triage = {"groups": [{"group_id": "merged-price", "scanner_finding_ids": ["merged-price"],
-                          "candidate_ids": []}]}
-    review = {"status": "completed", "reviews": [{"candidate_id": "merged-price",
-              "source_ids": ["merged-price"], "verdict": "confirmed_vulnerability",
-              "evidence": ["Observed rejected-status mismatch"]}]}
+    triage = {
+        "groups": [
+            {
+                "group_id": "merged-price",
+                "scanner_finding_ids": ["merged-price"],
+                "candidate_ids": [],
+            }
+        ]
+    }
+    review = {
+        "status": "completed",
+        "reviews": [
+            {
+                "candidate_id": "merged-price",
+                "source_ids": ["merged-price"],
+                "verdict": "confirmed_vulnerability",
+                "evidence": ["Observed rejected-status mismatch"],
+            }
+        ],
+    }
     return truth, scan, merged, ai, triage, review
 
 
@@ -52,16 +75,22 @@ def test_false_positive_review_does_not_override_runtime_conflict():
     assert result["summary"]["detected"] == 0
 
 
-@pytest.mark.parametrize("change", [
-    lambda source: source["runtime_evidence"].update(status=422),
-    lambda source: source["runtime_evidence"].update(workflow_id="other"),
-    lambda source: source["primary_location"].update(path="/elsewhere"),
-    lambda source: source["runtime_evidence"].update(assertion_results=[True]),
-])
+@pytest.mark.parametrize(
+    "change",
+    [
+        lambda source: source["runtime_evidence"].update(status=422),
+        lambda source: source["runtime_evidence"].update(workflow_id="other"),
+        lambda source: source["primary_location"].update(path="/elsewhere"),
+        lambda source: source["runtime_evidence"].update(assertion_results=[True]),
+    ],
+)
 def test_runtime_match_requires_full_violation_facts(change):
     inputs = fixture_inputs()
     change(inputs[2]["findings"][0]["source_findings"][0])
-    assert result_row(audit.evaluate(*inputs), "vmsl-business-001")["status"] == "not_detected"
+    assert (
+        result_row(audit.evaluate(*inputs), "vmsl-business-001")["status"]
+        == "not_detected"
+    )
 
 
 def test_rejects_mixed_scan_and_review_or_wrong_target():

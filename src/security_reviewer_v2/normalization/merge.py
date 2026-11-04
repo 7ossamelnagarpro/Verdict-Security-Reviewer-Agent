@@ -9,10 +9,10 @@ from collections import defaultdict
 from .merge_models import (
     MERGE_SCHEMA_VERSION,
     DeduplicationPolicy,
+    MergedFinding,
     MergeResult,
     MergeStatus,
     MergeSummary,
-    MergedFinding,
     SourceCoverage,
 )
 from .models import (
@@ -22,7 +22,6 @@ from .models import (
     NormalizationStatus,
     UnifiedFinding,
 )
-
 
 SEVERITY_RANK = {
     FindingSeverity.UNKNOWN: 0,
@@ -43,11 +42,33 @@ CONFIDENCE_RANK = {
 FAMILY_PATTERNS = (
     (re.compile(r"\bsql[\s_-]*injection\b", re.IGNORECASE), "CWE-89"),
     (re.compile(r"\b(command|os)[\s_-]*injection\b", re.IGNORECASE), "CWE-78"),
-    (re.compile(r"\b(cross[\s_-]*site[\s_-]*scripting|xss)\b", re.IGNORECASE), "CWE-79"),
-    (re.compile(r"\b(path[\s_-]*traversal|directory[\s_-]*traversal)\b", re.IGNORECASE), "CWE-22"),
-    (re.compile(r"\bssrf\b|server[\s_-]*side[\s_-]*request[\s_-]*forgery", re.IGNORECASE), "CWE-918"),
-    (re.compile(r"\b(hardcoded|hard-coded)[\s_-]*(secret|credential|password)\b", re.IGNORECASE), "CWE-798"),
-    (re.compile(r"\b(insecure|unsafe)[\s_-]*deseriali[sz]ation\b", re.IGNORECASE), "CWE-502"),
+    (
+        re.compile(r"\b(cross[\s_-]*site[\s_-]*scripting|xss)\b", re.IGNORECASE),
+        "CWE-79",
+    ),
+    (
+        re.compile(
+            r"\b(path[\s_-]*traversal|directory[\s_-]*traversal)\b", re.IGNORECASE
+        ),
+        "CWE-22",
+    ),
+    (
+        re.compile(
+            r"\bssrf\b|server[\s_-]*side[\s_-]*request[\s_-]*forgery", re.IGNORECASE
+        ),
+        "CWE-918",
+    ),
+    (
+        re.compile(
+            r"\b(hardcoded|hard-coded)[\s_-]*(secret|credential|password)\b",
+            re.IGNORECASE,
+        ),
+        "CWE-798",
+    ),
+    (
+        re.compile(r"\b(insecure|unsafe)[\s_-]*deseriali[sz]ation\b", re.IGNORECASE),
+        "CWE-502",
+    ),
 )
 
 
@@ -60,7 +81,9 @@ def merge_normalized_findings(
     selected_policy = policy or DeduplicationPolicy()
     selected_policy.validate()
     normalized_batches = tuple(batches)
-    all_findings = [finding for batch in normalized_batches for finding in batch.findings]
+    all_findings = [
+        finding for batch in normalized_batches for finding in batch.findings
+    ]
     coverage = tuple(
         sorted(
             (_coverage(batch) for batch in normalized_batches),
@@ -72,9 +95,7 @@ def merge_normalized_findings(
     for batch in normalized_batches:
         scanner_id = _scanner_id(batch)
         for warning in batch.warnings:
-            warnings.append(
-                f"{scanner_id}:{warning.code}: {warning.message}"
-            )
+            warnings.append(f"{scanner_id}:{warning.code}: {warning.message}")
         if batch.status != NormalizationStatus.COMPLETE:
             coverage_gaps.append(
                 f"{scanner_id} normalization was {batch.status.value}; some scanner results may be unavailable."
@@ -94,9 +115,13 @@ def merge_normalized_findings(
     if not normalized_batches:
         status = MergeStatus.FAILED
         coverage_gaps.append("No normalized scanner batches were provided for merge.")
-    elif all(batch.status == NormalizationStatus.FAILED for batch in normalized_batches):
+    elif all(
+        batch.status == NormalizationStatus.FAILED for batch in normalized_batches
+    ):
         status = MergeStatus.FAILED
-    elif any(batch.status != NormalizationStatus.COMPLETE for batch in normalized_batches):
+    elif any(
+        batch.status != NormalizationStatus.COMPLETE for batch in normalized_batches
+    ):
         status = MergeStatus.PARTIAL
     else:
         status = MergeStatus.COMPLETE
@@ -145,7 +170,9 @@ def _cluster(
         right_root = find(right)
         if left_root != right_root:
             combined = members[left_root] | members[right_root]
-            if not _compatible_group(tuple(findings[index] for index in combined), policy):
+            if not _compatible_group(
+                tuple(findings[index] for index in combined), policy
+            ):
                 return
             root = min(left_root, right_root)
             absorbed = max(left_root, right_root)
@@ -176,7 +203,8 @@ def _same_vulnerability(
     if left.scanner.scanner_id == right.scanner.scanner_id:
         if (
             left.rule_id != right.rule_id
-            or left.primary_location.path.casefold() != right.primary_location.path.casefold()
+            or left.primary_location.path.casefold()
+            != right.primary_location.path.casefold()
         ):
             return False
         return _shared_reliable_fingerprint(left, right)
@@ -199,11 +227,19 @@ def _shared_reliable_fingerprint(left: UnifiedFinding, right: UnifiedFinding) ->
 
 def _reliable_fingerprints(finding: UnifiedFinding) -> set[tuple[str, str]]:
     ignored = {"", "requires login", "unknown", "none", "null"}
-    accepted_keys = {"primaryLocationLineHash", "semgrep", "gitleaks", "trivy", "scanner"}
+    accepted_keys = {
+        "primaryLocationLineHash",
+        "semgrep",
+        "gitleaks",
+        "trivy",
+        "scanner",
+    }
     return {
         (key, value.casefold())
         for key, value in finding.fingerprints.items()
-        if key in accepted_keys and isinstance(value, str) and value.casefold() not in ignored
+        if key in accepted_keys
+        and isinstance(value, str)
+        and value.casefold() not in ignored
     }
 
 
@@ -236,7 +272,7 @@ def _compatible_group(
 def _security_keys(finding: UnifiedFinding) -> set[str]:
     if finding.cwes:
         return {cwe.upper() for cwe in finding.cwes}
-    text = " ".join((finding.rule_id, finding.title, finding.message))
+    text = f"{finding.rule_id} {finding.title} {finding.message}"
     return {cwe for pattern, cwe in FAMILY_PATTERNS if pattern.search(text)}
 
 
@@ -245,10 +281,18 @@ def _merge_group(
     policy: DeduplicationPolicy,
 ) -> MergedFinding:
     canonical = max(group, key=_canonical_rank)
-    severity = max((item.severity for item in group), key=lambda item: SEVERITY_RANK[item])
-    confidence = max((item.confidence for item in group), key=lambda item: CONFIDENCE_RANK[item])
-    cwes = tuple(sorted({cwe for item in group for cwe in item.cwes}, key=_cwe_sort_key))
-    categories = tuple(sorted({category for item in group for category in item.categories}))
+    severity = max(
+        (item.severity for item in group), key=lambda item: SEVERITY_RANK[item]
+    )
+    confidence = max(
+        (item.confidence for item in group), key=lambda item: CONFIDENCE_RANK[item]
+    )
+    cwes = tuple(
+        sorted({cwe for item in group for cwe in item.cwes}, key=_cwe_sort_key)
+    )
+    categories = tuple(
+        sorted({category for item in group for category in item.categories})
+    )
     scanners = tuple(sorted({item.scanner.scanner_id for item in group}))
     rule_ids = tuple(sorted({item.rule_id for item in group}))
     reasons = _merge_reasons(group, policy)

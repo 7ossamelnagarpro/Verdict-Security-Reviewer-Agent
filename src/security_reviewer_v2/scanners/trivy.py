@@ -32,7 +32,10 @@ class TrivyConfig:
     def validate(self) -> None:
         if not Path(self.executable).is_absolute():
             raise ValueError("Trivy executable path must be absolute")
-        if self.database_path is not None and not Path(self.database_path).is_absolute():
+        if (
+            self.database_path is not None
+            and not Path(self.database_path).is_absolute()
+        ):
             raise ValueError("Trivy database_path must be absolute")
 
 
@@ -46,7 +49,8 @@ class TrivyAdapter(ScannerAdapter):
     def supports(self, task: ScanTask) -> bool:
         return (
             task.scanner_id == self.scanner_id
-            and task.scan_type in {ScanType.SCA, ScanType.SECRETS, ScanType.MISCONFIGURATION}
+            and task.scan_type
+            in {ScanType.SCA, ScanType.SECRETS, ScanType.MISCONFIGURATION}
             and task.mode == "filesystem"
         )
 
@@ -73,11 +77,15 @@ class TrivyAdapter(ScannerAdapter):
                     target_detail = f"Trivy target is unavailable or outside project root: {relative}"
                     break
         database = CheckStatus.AVAILABLE
-        database_detail = "This Trivy scan type does not require a vulnerability database"
+        database_detail = (
+            "This Trivy scan type does not require a vulnerability database"
+        )
         if task.scan_type == ScanType.SCA:
             cache_dir = _trivy_cache_dir(self.config)
             if cache_dir is not None and _has_vulnerability_db(cache_dir):
-                database_detail = f"Trivy vulnerability database is available at {cache_dir}"
+                database_detail = (
+                    f"Trivy vulnerability database is available at {cache_dir}"
+                )
             else:
                 database = CheckStatus.UNVERIFIED
                 database_detail = "SCA requires a verified Trivy vulnerability database; run trivy fs --download-db-only"
@@ -139,7 +147,9 @@ class TrivyAdapter(ScannerAdapter):
                 )
             )
             outputs.append(output_name)
-        return AdapterExecutionPlan(commands=tuple(commands), expected_outputs=tuple(outputs))
+        return AdapterExecutionPlan(
+            commands=tuple(commands), expected_outputs=tuple(outputs)
+        )
 
     def validate_outputs(
         self,
@@ -151,10 +161,16 @@ class TrivyAdapter(ScannerAdapter):
             return valid, reason
         for relative in plan.expected_outputs:
             try:
-                payload = json.loads((Path(request.task_directory) / relative).read_text(encoding="utf-8"))
+                payload = json.loads(
+                    (Path(request.task_directory) / relative).read_text(
+                        encoding="utf-8"
+                    )
+                )
             except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
                 return False, f"Trivy JSON could not be parsed: {type(error).__name__}"
-            if not isinstance(payload, dict) or not isinstance(payload.get("Results", []), list):
+            if not isinstance(payload, dict) or not isinstance(
+                payload.get("Results", []), list
+            ):
                 return False, f"Trivy output has no Results array: {relative}"
         return True, "Trivy produced valid JSON output"
 
@@ -173,7 +189,17 @@ def _check_trivy_executable(
     environment = {
         key: value
         for key, value in os.environ.items()
-        if key.upper() in {"SYSTEMROOT", "WINDIR", "PATH", "PATHEXT", "TEMP", "TMP", "USERPROFILE", "HOME"}
+        if key.upper()
+        in {
+            "SYSTEMROOT",
+            "WINDIR",
+            "PATH",
+            "PATHEXT",
+            "TEMP",
+            "TMP",
+            "USERPROFILE",
+            "HOME",
+        }
     }
     try:
         probe = subprocess.run(
@@ -231,7 +257,6 @@ def _trivy_cache_dir(config: TrivyConfig) -> Path | None:
 
 
 def _has_vulnerability_db(cache_dir: Path) -> bool:
-    return (
-        (cache_dir / "db" / "trivy.db").is_file()
-        and (cache_dir / "db" / "metadata.json").is_file()
-    )
+    return (cache_dir / "db" / "trivy.db").is_file() and (
+        cache_dir / "db" / "metadata.json"
+    ).is_file()

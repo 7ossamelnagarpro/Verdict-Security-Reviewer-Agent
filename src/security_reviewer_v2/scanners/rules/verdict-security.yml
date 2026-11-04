@@ -1,0 +1,46 @@
+rules:
+  - id: verdict.python.unsigned-jwt-algorithm
+    languages: [python]
+    severity: WARNING
+    message: A JWT header explicitly selects the none algorithm. Verify the token signature before trusting claims.
+    metadata:
+      category: security
+      confidence: HIGH
+      shortDescription: Unsigned JWT algorithm
+    pattern: '{"alg": "none", ...}'
+
+  - id: verdict.python.decoded-token-as-identity
+    languages: [python]
+    severity: WARNING
+    message: Base64-decoded JSON is returned as identity data. Review whether signature verification occurs before this return.
+    metadata:
+      category: security
+      confidence: MEDIUM
+      shortDescription: Decoded token used as identity candidate
+    pattern: return json.loads(base64.urlsafe_b64decode($RAW))
+
+  - id: verdict.python.cookie-without-httponly
+    languages: [python]
+    severity: WARNING
+    message: A cookie is set without an explicit HttpOnly attribute. Review whether scripts should be able to access it.
+    metadata:
+      category: security
+      confidence: HIGH
+      shortDescription: Cookie without HttpOnly
+    pattern: $RESPONSE.set_cookie($NAME, $VALUE)
+
+  - id: verdict.yaml.hardcoded-application-secret
+    languages: [yaml]
+    severity: WARNING
+    message: A Compose application secret is a literal value. Use an external secret or environment reference for non-lab deployments.
+    metadata:
+      category: security
+      confidence: MEDIUM
+      shortDescription: Hardcoded application secret in Compose
+    paths:
+      include:
+        - '**/compose.yaml'
+        - '**/compose.yml'
+        - '**/docker-compose.yaml'
+        - '**/docker-compose.yml'
+    pattern-regex: '(?im)^\s*(?:APP_SECRET|SECRET_KEY|JWT_SECRET|TOKEN_SECRET)\s*:\s*(?!["\x27]?\$)(?!["\x27]?\s*(?:#|$))["\x27]?[A-Za-z0-9_.-]{8,}["\x27]?\s*(?:#.*)?$'

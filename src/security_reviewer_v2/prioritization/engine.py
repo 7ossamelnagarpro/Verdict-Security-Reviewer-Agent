@@ -4,8 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from security_reviewer_v2.context.models import ContextResult, EvidenceContext, FindingContext
-from security_reviewer_v2.normalization.merge_models import MergeResult, MergedFinding
+from security_reviewer_v2.context.models import (
+    ContextResult,
+    EvidenceContext,
+    FindingContext,
+)
+from security_reviewer_v2.normalization.merge_models import MergedFinding, MergeResult
 
 from .models import (
     RISK_POLICY_VERSION,
@@ -19,7 +23,6 @@ from .models import (
     RiskStatus,
     RiskSummary,
 )
-
 
 SEVERITY_POINTS = {
     "critical": 50,
@@ -156,10 +159,12 @@ def prioritize_findings(
             for item in ranked
         ),
         standard_report=sum(
-            item.review_disposition == ReviewDisposition.STANDARD_REPORT for item in ranked
+            item.review_disposition == ReviewDisposition.STANDARD_REPORT
+            for item in ranked
         ),
         needs_verification=sum(
-            item.review_disposition == ReviewDisposition.NEEDS_VERIFICATION for item in ranked
+            item.review_disposition == ReviewDisposition.NEEDS_VERIFICATION
+            for item in ranked
         ),
     )
     return RiskResult(
@@ -184,10 +189,16 @@ def _assess(finding: MergedFinding, context: FindingContext | None) -> _Assessme
     confidence = finding.confidence.value
     confidence_points = CONFIDENCE_POINTS.get(confidence, 0)
     factors.append(
-        RiskFactor("scanner_confidence", "Scanner confidence", confidence_points, (confidence,))
+        RiskFactor(
+            "scanner_confidence", "Scanner confidence", confidence_points, (confidence,)
+        )
     )
 
-    matched_cwes = [(cwe, CWE_IMPACT_POINTS[cwe]) for cwe in finding.cwes if cwe in CWE_IMPACT_POINTS]
+    matched_cwes = [
+        (cwe, CWE_IMPACT_POINTS[cwe])
+        for cwe in finding.cwes
+        if cwe in CWE_IMPACT_POINTS
+    ]
     if matched_cwes:
         cwe, points = max(matched_cwes, key=lambda item: (item[1], item[0]))
         factors.append(RiskFactor("cwe_impact", "Known impact class", points, (cwe,)))
@@ -204,14 +215,23 @@ def _assess(finding: MergedFinding, context: FindingContext | None) -> _Assessme
     context_available = context is not None and context.primary.excerpt is not None
     if context is None:
         factors.append(
-            RiskFactor("missing_context", "Context unavailable", -15, ("no context package",))
+            RiskFactor(
+                "missing_context", "Context unavailable", -15, ("no context package",)
+            )
         )
     elif context.primary.excerpt is None:
         factors.append(
-            RiskFactor("missing_primary_context", "Primary context unavailable", -20, context.warnings)
+            RiskFactor(
+                "missing_primary_context",
+                "Primary context unavailable",
+                -20,
+                context.warnings,
+            )
         )
     else:
-        collected_flow = tuple(item for item in context.code_flow if item.excerpt is not None)
+        collected_flow = tuple(
+            item for item in context.code_flow if item.excerpt is not None
+        )
         if len(collected_flow) >= 2:
             flow_files = tuple(sorted({item.location.path for item in collected_flow}))
             factors.append(
@@ -234,7 +254,9 @@ def _assess(finding: MergedFinding, context: FindingContext | None) -> _Assessme
             )
 
     score = max(0, min(100, sum(item.points for item in factors)))
-    return _Assessment(finding, score, _priority_band(score), tuple(factors), context_available)
+    return _Assessment(
+        finding, score, _priority_band(score), tuple(factors), context_available
+    )
 
 
 def _external_signals(context: FindingContext) -> tuple[str, ...]:

@@ -48,7 +48,9 @@ def normalize_codeql_sarif(payload: dict[str, Any]) -> NormalizationResult:
     version = payload.get("version")
     runs = payload.get("runs")
     if version not in {"2.1.0", "2.1.0-rtm.5"} or not isinstance(runs, list):
-        raise NormalizationInputError("Input is not supported SARIF 2.1 with a runs array")
+        raise NormalizationInputError(
+            "Input is not supported SARIF 2.1 with a runs array"
+        )
 
     findings: list[UnifiedFinding] = []
     warnings: list[NormalizationWarning] = []
@@ -126,7 +128,9 @@ def normalize_codeql_sarif(payload: dict[str, Any]) -> NormalizationResult:
             item.code,
         )
     )
-    if skipped_results or any(item.code in {"invalid_run", "invalid_results"} for item in warnings):
+    if skipped_results or any(
+        item.code in {"invalid_run", "invalid_results"} for item in warnings
+    ):
         status = NormalizationStatus.PARTIAL
     else:
         status = NormalizationStatus.COMPLETE
@@ -156,7 +160,9 @@ def _normalize_result(
     run_index: int,
     result_index: int,
 ) -> UnifiedFinding:
-    rule_id = str(result.get("ruleId") or result.get("rule", {}).get("id") or "").strip()
+    rule_id = str(
+        result.get("ruleId") or result.get("rule", {}).get("id") or ""
+    ).strip()
     if not rule_id:
         raise ValueError("SARIF result has no rule id")
     rule = rules.get(rule_id, {})
@@ -166,7 +172,9 @@ def _normalize_result(
     message = _message(result.get("message"))
     if not message:
         raise ValueError(f"SARIF result {rule_id} has no message")
-    properties = rule.get("properties") if isinstance(rule.get("properties"), dict) else {}
+    properties = (
+        rule.get("properties") if isinstance(rule.get("properties"), dict) else {}
+    )
     tags = tuple(
         sorted(
             {
@@ -186,13 +194,21 @@ def _normalize_result(
         or str(properties.get("name") or "").strip()
         or rule_id
     )
-    description = _message(rule.get("fullDescription")) or _optional_text(properties.get("description"))
+    description = _message(rule.get("fullDescription")) or _optional_text(
+        properties.get("description")
+    )
     fingerprints = _fingerprints(result)
     code_flow = _code_flow(result)
     related = _related_locations(result)
     scanner_name = str(driver.get("name") or "CodeQL")
-    scanner_version = _optional_text(driver.get("semanticVersion") or driver.get("version"))
-    automation = run.get("automationDetails") if isinstance(run.get("automationDetails"), dict) else {}
+    scanner_version = _optional_text(
+        driver.get("semanticVersion") or driver.get("version")
+    )
+    automation = (
+        run.get("automationDetails")
+        if isinstance(run.get("automationDetails"), dict)
+        else {}
+    )
     automation_id = _optional_text(automation.get("id"))
     finding_id = _finding_id(
         scanner_id="codeql-cli",
@@ -325,7 +341,9 @@ def _code_flow(result: dict[str, Any]) -> tuple[CodeFlowStep, ...]:
                     for taxon in taxa:
                         if isinstance(taxon, dict):
                             properties = taxon.get("properties")
-                            if isinstance(properties, dict) and properties.get("CodeQL/DataflowRole"):
+                            if isinstance(properties, dict) and properties.get(
+                                "CodeQL/DataflowRole"
+                            ):
                                 role = str(properties["CodeQL/DataflowRole"])
                                 break
                 steps.append(
@@ -334,7 +352,9 @@ def _code_flow(result: dict[str, Any]) -> tuple[CodeFlowStep, ...]:
                         thread_index=thread_index,
                         step_index=step_index,
                         location=location,
-                        message=_message(location_value.get("message")) if isinstance(location_value, dict) else None,
+                        message=_message(location_value.get("message"))
+                        if isinstance(location_value, dict)
+                        else None,
                         role=role,
                     )
                 )
@@ -349,7 +369,11 @@ def _related_locations(result: dict[str, Any]) -> tuple[RelatedLocation, ...]:
     for value in values:
         location = _location(value)
         if location is not None:
-            related.append(RelatedLocation(location=location, message=_message(value.get("message"))))
+            related.append(
+                RelatedLocation(
+                    location=location, message=_message(value.get("message"))
+                )
+            )
     return tuple(related)
 
 
@@ -370,7 +394,9 @@ def _security_score(value: Any) -> float | None:
     return score if 0 <= score <= 10 else None
 
 
-def _severity(score: float | None, result_level: Any, rule_level: Any) -> FindingSeverity:
+def _severity(
+    score: float | None, result_level: Any, rule_level: Any
+) -> FindingSeverity:
     if score is not None:
         if score >= 9:
             return FindingSeverity.CRITICAL
@@ -420,7 +446,9 @@ def _finding_id(
     fingerprints: dict[str, str],
     message: str,
 ) -> str:
-    stable_fingerprint = "|".join(f"{key}={value}" for key, value in sorted(fingerprints.items()))
+    stable_fingerprint = "|".join(
+        f"{key}={value}" for key, value in sorted(fingerprints.items())
+    )
     material = "|".join(
         (
             scanner_id,
@@ -452,4 +480,3 @@ def _positive_int(value: Any) -> int | None:
     except (TypeError, ValueError):
         return None
     return integer if integer > 0 else None
-

@@ -6,7 +6,6 @@ from dataclasses import asdict, dataclass, field
 from enum import Enum
 from typing import Any
 
-
 SCHEMA_VERSION = "1.0"
 POLICY_VERSION = "1.0"
 
@@ -148,7 +147,11 @@ class ProfilerPolicy:
                 + ", ".join(sorted(overlap))
             )
         for pattern in self.additional_discovery_exclusions:
-            if not pattern or pattern.startswith(("/", "\\")) or ".." in pattern.split("/"):
+            if (
+                not pattern
+                or pattern.startswith(("/", "\\"))
+                or ".." in pattern.split("/")
+            ):
                 raise ValueError(f"Unsafe discovery exclusion: {pattern!r}")
         if self.large_component_file_threshold <= 0:
             raise ValueError("large_component_file_threshold must be greater than zero")

@@ -7,7 +7,10 @@ import json
 from pathlib import Path
 
 from security_reviewer_v2.context import ContextArtifactError, load_context_result
-from security_reviewer_v2.normalization import NormalizedArtifactError, load_merge_result
+from security_reviewer_v2.normalization import (
+    NormalizedArtifactError,
+    load_merge_result,
+)
 
 from .engine import prioritize_findings
 from .models import RiskPolicy

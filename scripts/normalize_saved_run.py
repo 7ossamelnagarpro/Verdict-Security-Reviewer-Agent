@@ -4,18 +4,17 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from security_reviewer_v2.normalization.codeql import (
     NormalizationInputError,
     normalize_codeql_sarif_file,
 )
 from security_reviewer_v2.normalization.gitleaks import normalize_gitleaks_json_file
+from security_reviewer_v2.normalization.models import NormalizationResult
 from security_reviewer_v2.normalization.semgrep import normalize_semgrep_json_file
 from security_reviewer_v2.normalization.trivy import normalize_trivy_json_file
-from security_reviewer_v2.normalization.models import NormalizationResult
-
 
 NORMALIZERS: dict[str, Callable[[Path], NormalizationResult]] = {
     "codeql-cli": normalize_codeql_sarif_file,
@@ -32,9 +31,13 @@ def normalize_run(run_directory: Path, output_directory: Path) -> dict:
     if not run.is_dir():
         raise ValueError(f"Scanner run directory is unavailable: {run}")
     try:
-        execution = json.loads((run / "execution-summary.json").read_text(encoding="utf-8"))
+        execution = json.loads(
+            (run / "execution-summary.json").read_text(encoding="utf-8")
+        )
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
-        raise ValueError("Scanner execution summary is unavailable or invalid") from error
+        raise ValueError(
+            "Scanner execution summary is unavailable or invalid"
+        ) from error
     if not isinstance(execution, dict) or execution.get("run_id") != run.name:
         raise ValueError("Execution summary does not match the selected run directory")
     if not isinstance(execution.get("tasks"), list):
@@ -47,23 +50,37 @@ def normalize_run(run_directory: Path, output_directory: Path) -> dict:
         task_id = task["task_id"]
         raw_outputs = task.get("raw_outputs", [])
         if task.get("status") != "completed":
-            records.append({
-                "scanner_id": scanner_id, "task_id": task_id,
-                "status": "not_normalized", "reason": f"Scanner task status: {task.get('status')}",
-                "raw_output": None, "normalized_output": None,
-                "input_results": 0, "normalized_findings": 0, "skipped_results": 0,
-                "warning_count": 0,
-            })
+            records.append(
+                {
+                    "scanner_id": scanner_id,
+                    "task_id": task_id,
+                    "status": "not_normalized",
+                    "reason": f"Scanner task status: {task.get('status')}",
+                    "raw_output": None,
+                    "normalized_output": None,
+                    "input_results": 0,
+                    "normalized_findings": 0,
+                    "skipped_results": 0,
+                    "warning_count": 0,
+                }
+            )
             continue
         normalizer = NORMALIZERS.get(scanner_id)
         if normalizer is None or not isinstance(raw_outputs, list) or not raw_outputs:
-            records.append({
-                "scanner_id": scanner_id, "task_id": task_id,
-                "status": "failed", "reason": "No supported normalizer or raw output",
-                "raw_output": None, "normalized_output": None,
-                "input_results": 0, "normalized_findings": 0, "skipped_results": 0,
-                "warning_count": 0,
-            })
+            records.append(
+                {
+                    "scanner_id": scanner_id,
+                    "task_id": task_id,
+                    "status": "failed",
+                    "reason": "No supported normalizer or raw output",
+                    "raw_output": None,
+                    "normalized_output": None,
+                    "input_results": 0,
+                    "normalized_findings": 0,
+                    "skipped_results": 0,
+                    "warning_count": 0,
+                }
+            )
             continue
         for index, relative in enumerate(raw_outputs):
             try:
@@ -83,29 +100,41 @@ def normalize_run(run_directory: Path, output_directory: Path) -> dict:
                     json.dumps(normalized.to_dict(), indent=2, sort_keys=True) + "\n",
                     encoding="utf-8",
                 )
-                records.append({
-                    "scanner_id": scanner_id, "task_id": task_id,
-                    "status": normalized.status.value,
-                    "reason": None,
-                    "raw_output": relative,
-                    "normalized_output": destination.relative_to(output).as_posix(),
-                    "input_results": normalized.summary.input_results,
-                    "normalized_findings": normalized.summary.normalized_findings,
-                    "skipped_results": normalized.summary.skipped_results,
-                    "warning_count": len(normalized.warnings),
-                })
+                records.append(
+                    {
+                        "scanner_id": scanner_id,
+                        "task_id": task_id,
+                        "status": normalized.status.value,
+                        "reason": None,
+                        "raw_output": relative,
+                        "normalized_output": destination.relative_to(output).as_posix(),
+                        "input_results": normalized.summary.input_results,
+                        "normalized_findings": normalized.summary.normalized_findings,
+                        "skipped_results": normalized.summary.skipped_results,
+                        "warning_count": len(normalized.warnings),
+                    }
+                )
             except (NormalizationInputError, OSError, ValueError) as error:
-                records.append({
-                    "scanner_id": scanner_id, "task_id": task_id,
-                    "status": "failed", "reason": str(error),
-                    "raw_output": relative, "normalized_output": None,
-                    "input_results": 0, "normalized_findings": 0, "skipped_results": 0,
-                    "warning_count": 0,
-                })
+                records.append(
+                    {
+                        "scanner_id": scanner_id,
+                        "task_id": task_id,
+                        "status": "failed",
+                        "reason": str(error),
+                        "raw_output": relative,
+                        "normalized_output": None,
+                        "input_results": 0,
+                        "normalized_findings": 0,
+                        "skipped_results": 0,
+                        "warning_count": 0,
+                    }
+                )
 
     complete = sum(item["status"] == "complete" for item in records)
-    status = "completed" if complete == len(records) and records else (
-        "partial" if complete else "failed"
+    status = (
+        "completed"
+        if complete == len(records) and records
+        else ("partial" if complete else "failed")
     )
     summary = {
         "schema_version": "1.0",

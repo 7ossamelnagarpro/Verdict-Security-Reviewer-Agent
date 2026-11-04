@@ -368,7 +368,22 @@ interpretation limits.
 The comprehensive lab has its own held-out evaluation in
 `scripts/evaluate_verdict_comprehensive.py`; see
 `docs/verdict-comprehensive-lab.md` for its confirmed cases and matched safe
-controls. These fixture audits are not a cross-project performance claim.
+controls. The evaluator requires a completed AI review by default. Use
+`--diagnostic-partial` only for a clearly labeled provisional audit when a
+saved review is incomplete; it separates unmapped cases from actual missing
+exact signals and never estimates precision or F1 from unassessed controls.
+These fixture audits are not a cross-project performance claim.
+
+Semgrep also runs bundled, review-oriented rules for explicit unsigned JWT
+headers, base64-decoded identity returns and cookies set without HttpOnly.
+These are candidate signals, not a substitute for runtime proof. The
+corresponding rule tests include safe code examples to guard against false
+positives. Generic DAST checks cookies on every declared GET endpoint and CSP
+on declared HTML endpoints; guided workflows can additionally assert bounded
+literal response text or headers without saving raw responses. One small inline
+multipart test file is supported for explicitly approved disposable Compose
+workflows; browser interactions, token tampering and concurrency still need
+dedicated adapters and cannot be claimed as covered generically.
 
 **Also planned:** a held-out secondary test set and failure analysis by error type: false positive, false negative, wrong classification and wrong reasoning. Neither is implied by one completed educational-target scan.
 

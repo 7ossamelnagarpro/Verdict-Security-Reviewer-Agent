@@ -6,7 +6,11 @@ from dataclasses import replace
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from security_reviewer_v2.discovery.models import CandidateFinding, DiscoveryResult, DiscoveryStatus
+from security_reviewer_v2.discovery.models import (
+    CandidateFinding,
+    DiscoveryResult,
+    DiscoveryStatus,
+)
 from security_reviewer_v2.normalization.models import FindingLocation
 from security_reviewer_v2.redaction import redact_source
 
@@ -16,7 +20,12 @@ from .candidate_models import (
     CandidateContextResult,
     CandidateContextSummary,
 )
-from .collector import ContextCollectionError, _SourceReader, _collect_evidence, _normal_relative_path
+from .collector import (
+    ContextCollectionError,
+    _collect_evidence,
+    _normal_relative_path,
+    _SourceReader,
+)
 from .models import ContextPolicy, ContextStatus, EvidenceContext, SourceExcerpt
 
 
@@ -44,13 +53,19 @@ def collect_candidate_context(
         raise ContextCollectionError(f"Project root is not readable: {root}") from error
 
     reader = _SourceReader(root, selected_policy, profile_artifact)
-    contexts = tuple(_candidate_context(candidate, reader, selected_policy) for candidate in discovery.candidates)
+    contexts = tuple(
+        _candidate_context(candidate, reader, selected_policy)
+        for candidate in discovery.candidates
+    )
     evidence = tuple(
         item
         for candidate in contexts
         for item in (
-            candidate.primary, candidate.entry_point, candidate.sensitive_operation,
-            candidate.claimed_missing_check, candidate.range_end,
+            candidate.primary,
+            candidate.entry_point,
+            candidate.sensitive_operation,
+            candidate.claimed_missing_check,
+            candidate.range_end,
         )
         if item is not None
     )
@@ -59,14 +74,23 @@ def collect_candidate_context(
     gaps = list(discovery.coverage_gaps)
     for candidate in contexts:
         for item in (
-            candidate.primary, candidate.entry_point, candidate.sensitive_operation,
-            candidate.claimed_missing_check, candidate.range_end,
+            candidate.primary,
+            candidate.entry_point,
+            candidate.sensitive_operation,
+            candidate.claimed_missing_check,
+            candidate.range_end,
         ):
             if item is not None and item.excerpt is None:
-                gaps.append(f"{candidate.candidate_id}: {item.evidence_type} context unavailable ({item.warning}).")
+                gaps.append(
+                    f"{candidate.candidate_id}: {item.evidence_type} context unavailable ({item.warning})."
+                )
 
     if not contexts:
-        status = ContextStatus.COMPLETE if discovery.status is DiscoveryStatus.COMPLETED else ContextStatus.PARTIAL
+        status = (
+            ContextStatus.COMPLETE
+            if discovery.status is DiscoveryStatus.COMPLETED
+            else ContextStatus.PARTIAL
+        )
     elif not collected:
         status = ContextStatus.FAILED
     elif unavailable or discovery.status is not DiscoveryStatus.COMPLETED:
@@ -78,7 +102,14 @@ def collect_candidate_context(
         status=status,
         project_root=root.as_posix(),
         candidates=contexts,
-        warnings=tuple(sorted(set((*discovery.warnings, *(warning for item in contexts for warning in item.warnings))))),
+        warnings=tuple(
+            sorted(
+                {
+                    *discovery.warnings,
+                    *(warning for item in contexts for warning in item.warnings),
+                }
+            )
+        ),
         coverage_gaps=tuple(sorted(set(gaps))),
         summary=CandidateContextSummary(
             input_candidates=len(discovery.candidates),
@@ -92,17 +123,44 @@ def collect_candidate_context(
     )
 
 
-def _candidate_context(candidate: CandidateFinding, reader: _SourceReader, policy: ContextPolicy) -> CandidateContext:
+def _candidate_context(
+    candidate: CandidateFinding, reader: _SourceReader, policy: ContextPolicy
+) -> CandidateContext:
     def collect(path: str | None, line: int | None, role: str) -> EvidenceContext:
         return _candidate_evidence(reader, policy, candidate, path, line, role)
 
     primary = collect(candidate.path, candidate.start_line, "primary")
-    entry = collect(candidate.entry_point.path, candidate.entry_point.line, "entry_point") if candidate.entry_point else None
-    sink = collect(candidate.sensitive_operation.path, candidate.sensitive_operation.line, "sensitive_operation") if candidate.sensitive_operation else None
-    missing = collect(candidate.missing_check.path, candidate.missing_check.line, "claimed_missing_check") if candidate.missing_check else None
+    entry = (
+        collect(candidate.entry_point.path, candidate.entry_point.line, "entry_point")
+        if candidate.entry_point
+        else None
+    )
+    sink = (
+        collect(
+            candidate.sensitive_operation.path,
+            candidate.sensitive_operation.line,
+            "sensitive_operation",
+        )
+        if candidate.sensitive_operation
+        else None
+    )
+    missing = (
+        collect(
+            candidate.missing_check.path,
+            candidate.missing_check.line,
+            "claimed_missing_check",
+        )
+        if candidate.missing_check
+        else None
+    )
     range_end = None
-    if (primary.excerpt is not None and candidate.path and type(candidate.start_line) is int and type(candidate.end_line) is int
-            and candidate.end_line > candidate.start_line + policy.window_after):
+    if (
+        primary.excerpt is not None
+        and candidate.path
+        and type(candidate.start_line) is int
+        and type(candidate.end_line) is int
+        and candidate.end_line > candidate.start_line + policy.window_after
+    ):
         range_end = collect(candidate.path, candidate.end_line, "range_end")
     items = (primary, entry, sink, missing, range_end)
     return CandidateContext(
@@ -114,7 +172,15 @@ def _candidate_context(candidate: CandidateFinding, reader: _SourceReader, polic
         sensitive_operation=sink,
         claimed_missing_check=missing,
         range_end=range_end,
-        warnings=tuple(sorted({item.warning for item in items if item is not None and item.warning is not None})),
+        warnings=tuple(
+            sorted(
+                {
+                    item.warning
+                    for item in items
+                    if item is not None and item.warning is not None
+                }
+            )
+        ),
     )
 
 
@@ -132,7 +198,9 @@ def _candidate_evidence(
             raise ContextCollectionError("candidate_path_missing")
         relative = _normal_relative_path(path)
         if type(line) is not int or line < 1:
-            raise ContextCollectionError(f"candidate_line_missing_or_invalid:{relative}")
+            raise ContextCollectionError(
+                f"candidate_line_missing_or_invalid:{relative}"
+            )
         # AI-cited paths must resolve exactly. A unique suffix is useful for
         # scanner output but must not silently remap an AI candidate's claim.
         if reader.index is not None and relative not in reader.index:
@@ -141,16 +209,29 @@ def _candidate_evidence(
         if not lexical.exists():
             raise ContextCollectionError(f"source_unavailable:{relative}")
         collected = _collect_evidence(
-            reader, policy, evidence_type=role, scanner_id="ai-discovery",
-            rule_id=candidate.category, location=location, message=None,
+            reader,
+            policy,
+            evidence_type=role,
+            scanner_id="ai-discovery",
+            rule_id=candidate.category,
+            location=location,
+            message=None,
             source_finding_id=candidate.candidate_id,
         )
     except ContextCollectionError as error:
         collected = EvidenceContext(
-            evidence_type=role, scanner_id="ai-discovery", rule_id=candidate.category,
-            location=location, message=None, flow_index=None, thread_index=None,
-            step_index=None, excerpt=None, enclosing_symbol=None,
-            collection_status="unavailable", warning=str(error),
+            evidence_type=role,
+            scanner_id="ai-discovery",
+            rule_id=candidate.category,
+            location=location,
+            message=None,
+            flow_index=None,
+            thread_index=None,
+            step_index=None,
+            excerpt=None,
+            enclosing_symbol=None,
+            collection_status="unavailable",
+            warning=str(error),
             source_finding_id=candidate.candidate_id,
         )
     if collected.excerpt is None:

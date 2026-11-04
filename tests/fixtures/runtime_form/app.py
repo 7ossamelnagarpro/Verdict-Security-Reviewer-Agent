@@ -1,5 +1,6 @@
 """Disposable form-login smoke fixture. Never deploy as an application."""
-from flask import Flask, request, session, redirect
+
+from flask import Flask, redirect, request, session
 
 app = Flask(__name__)
 app.secret_key = "non-secret-disposable-test-fixture"
@@ -15,7 +16,10 @@ def index():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        if request.form.get("username") == "demo" and request.form.get("password") == "demo-test-only":
+        if (
+            request.form.get("username") == "demo"
+            and request.form.get("password") == "demo-test-only"
+        ):
             session["test_user"] = True
             return redirect("/")
         return "Login failed", 401
@@ -24,4 +28,8 @@ def login():
 
 @app.get("/account")
 def account():
-    return ("Signed in successfully. Test account", 200) if session.get("test_user") else ("Login required", 401)
+    return (
+        ("Signed in successfully. Test account", 200)
+        if session.get("test_user")
+        else ("Login required", 401)
+    )

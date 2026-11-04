@@ -2,6 +2,7 @@
 
 This is a disposable fixture. It must never be exposed to a shared network.
 """
+
 from __future__ import annotations
 
 import base64
@@ -9,14 +10,15 @@ import json
 import logging
 import os
 import time
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Any, Iterator
+from typing import Any
 
 import psycopg
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
 from psycopg.rows import dict_row
+from pydantic import BaseModel, Field
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("verdict-lab")
@@ -92,7 +94,11 @@ def _b64(value: bytes) -> str:
 def make_token(user: dict[str, Any]) -> str:
     # Deliberately unsigned fixture token: candidate for authentication review.
     header = _b64(json.dumps({"alg": "none", "typ": "JWT"}).encode())
-    payload = _b64(json.dumps({"sub": user["id"], "username": user["username"], "role": user["role"]}).encode())
+    payload = _b64(
+        json.dumps(
+            {"sub": user["id"], "username": user["username"], "role": user["role"]}
+        ).encode()
+    )
     return f"{header}.{payload}."
 
 
@@ -134,13 +140,22 @@ class JobBody(BaseModel):
 def _login(username: str, password: str) -> dict[str, Any]:
     with connection() as conn:
         user = conn.execute(
-            "SELECT id,username,password,role,email FROM users WHERE username=%s", (username,)
+            "SELECT id,username,password,role,email FROM users WHERE username=%s",
+            (username,),
         ).fetchone()
     if not user or user["password"] != password:
         raise HTTPException(401, "Invalid credentials")
     # Candidate-only evidence: the fixture intentionally logs a fake value.
-    log.info("login user=%s app_secret=%s", username, os.environ.get("APP_SECRET", "lab-only"))
-    return {"access_token": make_token(user), "token_type": "bearer", "user": user["username"]}
+    log.info(
+        "login user=%s app_secret=%s",
+        username,
+        os.environ.get("APP_SECRET", "lab-only"),
+    )
+    return {
+        "access_token": make_token(user),
+        "token_type": "bearer",
+        "user": user["username"],
+    }
 
 
 @app.on_event("startup")
@@ -199,12 +214,16 @@ def refresh(authorization: str | None = Header(default=None)) -> dict[str, str]:
 def me(authorization: str | None = Header(default=None)) -> dict[str, Any]:
     user = principal(authorization)
     with connection() as conn:
-        row = conn.execute("SELECT id,username,role,email,ssn FROM users WHERE id=%s", (user["sub"],)).fetchone()
+        row = conn.execute(
+            "SELECT id,username,role,email,ssn FROM users WHERE id=%s", (user["sub"],)
+        ).fetchone()
     return dict(row or {})
 
 
 @app.post("/orders")
-def create_order(body: OrderBody, authorization: str | None = Header(default=None)) -> dict[str, Any]:
+def create_order(
+    body: OrderBody, authorization: str | None = Header(default=None)
+) -> dict[str, Any]:
     user = principal(authorization)
     # Intentional mass-assignment fixture: client-controlled owner/status/price are accepted.
     owner_id = body.owner_id or user["sub"]
@@ -218,7 +237,9 @@ def create_order(body: OrderBody, authorization: str | None = Header(default=Non
 
 
 @app.get("/orders/{order_id}")
-def get_order(order_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:
+def get_order(
+    order_id: int, authorization: str | None = Header(default=None)
+) -> dict[str, Any]:
     principal(authorization)
     with connection() as conn:
         row = conn.execute("SELECT * FROM orders WHERE id=%s", (order_id,)).fetchone()
@@ -228,24 +249,40 @@ def get_order(order_id: int, authorization: str | None = Header(default=None)) -
 
 
 @app.post("/orders/{order_id}/apply-coupon")
-def apply_coupon(order_id: int, body: CouponBody, authorization: str | None = Header(default=None)) -> dict[str, Any]:
+def apply_coupon(
+    order_id: int, body: CouponBody, authorization: str | None = Header(default=None)
+) -> dict[str, Any]:
     principal(authorization)
     with connection() as conn:
-        coupon = conn.execute("SELECT percent FROM coupons WHERE code=%s", (body.code,)).fetchone()
-        percent = body.discount if body.discount is not None else (coupon["percent"] if coupon else 0)
-        row = conn.execute("UPDATE orders SET discount=%s WHERE id=%s RETURNING *", (percent, order_id)).fetchone()
+        coupon = conn.execute(
+            "SELECT percent FROM coupons WHERE code=%s", (body.code,)
+        ).fetchone()
+        percent = (
+            body.discount
+            if body.discount is not None
+            else (coupon["percent"] if coupon else 0)
+        )
+        row = conn.execute(
+            "UPDATE orders SET discount=%s WHERE id=%s RETURNING *", (percent, order_id)
+        ).fetchone()
         conn.commit()
     return dict(row or {})
 
 
 @app.post("/orders/{order_id}/pay")
-def pay_order(order_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:
+def pay_order(
+    order_id: int, authorization: str | None = Header(default=None)
+) -> dict[str, Any]:
     principal(authorization)
     with connection() as conn:
         order = conn.execute("SELECT * FROM orders WHERE id=%s", (order_id,)).fetchone()
         if not order:
             raise HTTPException(404, "order not found")
-        amount = float(order["quantity"]) * float(order["unit_price"]) * (1 - float(order["discount"]) / 100)
+        amount = (
+            float(order["quantity"])
+            * float(order["unit_price"])
+            * (1 - float(order["discount"]) / 100)
+        )
         conn.execute("UPDATE orders SET status='paid' WHERE id=%s", (order_id,))
         invoice = conn.execute(
             "INSERT INTO invoices (order_id,amount,payment_reference) VALUES (%s,%s,%s) RETURNING *",
@@ -256,34 +293,48 @@ def pay_order(order_id: int, authorization: str | None = Header(default=None)) -
 
 
 @app.post("/orders/{order_id}/cancel")
-def cancel_order(order_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:
+def cancel_order(
+    order_id: int, authorization: str | None = Header(default=None)
+) -> dict[str, Any]:
     principal(authorization)
     with connection() as conn:
-        row = conn.execute("UPDATE orders SET status='cancelled' WHERE id=%s RETURNING *", (order_id,)).fetchone()
+        row = conn.execute(
+            "UPDATE orders SET status='cancelled' WHERE id=%s RETURNING *", (order_id,)
+        ).fetchone()
         conn.commit()
     return dict(row or {})
 
 
 @app.get("/invoices/{invoice_id}")
-def invoice(invoice_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:
+def invoice(
+    invoice_id: int, authorization: str | None = Header(default=None)
+) -> dict[str, Any]:
     principal(authorization)
     with connection() as conn:
-        row = conn.execute("SELECT * FROM invoices WHERE id=%s", (invoice_id,)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM invoices WHERE id=%s", (invoice_id,)
+        ).fetchone()
     if not row:
         raise HTTPException(404, "invoice not found")
     return dict(row)
 
 
 @app.get("/admin/users")
-def admin_users(authorization: str | None = Header(default=None)) -> list[dict[str, Any]]:
+def admin_users(
+    authorization: str | None = Header(default=None),
+) -> list[dict[str, Any]]:
     principal(authorization)
     with connection() as conn:
-        rows = conn.execute("SELECT id,username,email,role,ssn FROM users ORDER BY id").fetchall()
+        rows = conn.execute(
+            "SELECT id,username,email,role,ssn FROM users ORDER BY id"
+        ).fetchall()
     return [dict(row) for row in rows]
 
 
 @app.get("/admin/jobs")
-def admin_jobs(authorization: str | None = Header(default=None)) -> list[dict[str, Any]]:
+def admin_jobs(
+    authorization: str | None = Header(default=None),
+) -> list[dict[str, Any]]:
     principal(authorization)
     with connection() as conn:
         rows = conn.execute("SELECT * FROM jobs ORDER BY id DESC").fetchall()
@@ -291,7 +342,9 @@ def admin_jobs(authorization: str | None = Header(default=None)) -> list[dict[st
 
 
 @app.post("/webhooks")
-def create_webhook(body: dict[str, Any], authorization: str | None = Header(default=None)) -> dict[str, Any]:
+def create_webhook(
+    body: dict[str, Any], authorization: str | None = Header(default=None)
+) -> dict[str, Any]:
     principal(authorization)
     target_url = str(body.get("target_url", MOCK_EXTERNAL_URL + "/webhook"))
     # Deliberately weak destination validation, constrained to the lab network.
@@ -300,14 +353,19 @@ def create_webhook(body: dict[str, Any], authorization: str | None = Header(defa
     with connection() as conn:
         row = conn.execute(
             "INSERT INTO jobs (kind,payload,run_as) VALUES ('webhook',%s,%s) RETURNING *",
-            (json.dumps({"target_url": target_url, "body": body.get("body", {})}), str(body.get("run_as", "user"))),
+            (
+                json.dumps({"target_url": target_url, "body": body.get("body", {})}),
+                str(body.get("run_as", "user")),
+            ),
         ).fetchone()
         conn.commit()
     return dict(row)
 
 
 @app.post("/jobs")
-def create_job(body: JobBody, authorization: str | None = Header(default=None)) -> dict[str, Any]:
+def create_job(
+    body: JobBody, authorization: str | None = Header(default=None)
+) -> dict[str, Any]:
     principal(authorization)
     with connection() as conn:
         row = conn.execute(
@@ -320,7 +378,11 @@ def create_job(body: JobBody, authorization: str | None = Header(default=None)) 
 
 @app.get("/debug/config")
 def debug_config() -> dict[str, Any]:
-    return {"database_url": DATABASE_URL, "mock_external_url": MOCK_EXTERNAL_URL, "app_secret": os.environ.get("APP_SECRET")}
+    return {
+        "database_url": DATABASE_URL,
+        "mock_external_url": MOCK_EXTERNAL_URL,
+        "app_secret": os.environ.get("APP_SECRET"),
+    }
 
 
 @app.get("/logout")

@@ -7,10 +7,10 @@ from pathlib import Path
 from typing import Any
 
 from .merge_models import (
+    MergedFinding,
     MergeResult,
     MergeStatus,
     MergeSummary,
-    MergedFinding,
     SourceCoverage,
 )
 from .models import (
@@ -40,7 +40,14 @@ def load_merge_result(path: str | Path) -> MergeResult:
     try:
         payload = json.loads(source.read_text(encoding="utf-8"))
         return merge_result_from_dict(payload)
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
+    except (
+        OSError,
+        UnicodeDecodeError,
+        json.JSONDecodeError,
+        KeyError,
+        TypeError,
+        ValueError,
+    ) as error:
         if isinstance(error, NormalizedArtifactError):
             raise
         raise NormalizedArtifactError(
@@ -52,7 +59,9 @@ def merge_result_from_dict(payload: dict[str, Any]) -> MergeResult:
     if not isinstance(payload, dict):
         raise NormalizedArtifactError("Merged artifact root must be an object")
     findings = tuple(_merged_finding(item) for item in _list(payload, "findings"))
-    coverage = tuple(_source_coverage(item) for item in _list(payload, "source_coverage"))
+    coverage = tuple(
+        _source_coverage(item) for item in _list(payload, "source_coverage")
+    )
     summary = _dict(payload, "summary")
     return MergeResult(
         schema_version=str(payload["schema_version"]),
@@ -77,7 +86,14 @@ def load_normalization_result(path: str | Path) -> NormalizationResult:
     try:
         payload = json.loads(source.read_text(encoding="utf-8"))
         return normalization_result_from_dict(payload)
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
+    except (
+        OSError,
+        UnicodeDecodeError,
+        json.JSONDecodeError,
+        KeyError,
+        TypeError,
+        ValueError,
+    ) as error:
         if isinstance(error, NormalizedArtifactError):
             raise
         raise NormalizedArtifactError(
@@ -122,7 +138,9 @@ def _merged_finding(value: Any) -> MergedFinding:
         merged_finding_id=str(value["merged_finding_id"]),
         schema_version=str(value["schema_version"]),
         canonical_finding=_finding(_dict(value, "canonical_finding")),
-        source_findings=tuple(_finding(item) for item in _list(value, "source_findings")),
+        source_findings=tuple(
+            _finding(item) for item in _list(value, "source_findings")
+        ),
         scanners=tuple(str(item) for item in _list(value, "scanners")),
         rule_ids=tuple(str(item) for item in _list(value, "rule_ids")),
         severity=FindingSeverity(str(value["severity"])),
@@ -173,8 +191,12 @@ def _finding(value: Any) -> UnifiedFinding:
         categories=tuple(str(item) for item in _list(value, "categories")),
         primary_location=_location(_dict(value, "primary_location")),
         code_flow=tuple(_code_flow_step(item) for item in _list(value, "code_flow")),
-        related_locations=tuple(_related(item) for item in _list(value, "related_locations")),
-        fingerprints={str(key): str(item) for key, item in _dict(value, "fingerprints").items()},
+        related_locations=tuple(
+            _related(item) for item in _list(value, "related_locations")
+        ),
+        fingerprints={
+            str(key): str(item) for key, item in _dict(value, "fingerprints").items()
+        },
         rule_kind=_optional_text(value.get("rule_kind")),
         rule_help_uri=_optional_text(value.get("rule_help_uri")),
         runtime_evidence=bounded_runtime_evidence(value.get("runtime_evidence")),

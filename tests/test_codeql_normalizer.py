@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pytest
@@ -145,7 +144,9 @@ def test_empty_results_is_complete_not_a_security_claim() -> None:
 
 
 def test_invalid_result_is_skipped_and_makes_result_partial() -> None:
-    normalized = normalize_codeql_sarif(sarif_payload(results=[sarif_result(), {"message": {"text": "missing rule"}}]))
+    normalized = normalize_codeql_sarif(
+        sarif_payload(results=[sarif_result(), {"message": {"text": "missing rule"}}])
+    )
 
     assert normalized.status == NormalizationStatus.PARTIAL
     assert normalized.summary.normalized_findings == 1
@@ -208,4 +209,3 @@ def test_unknown_precision_and_level_remain_explicit() -> None:
 
     assert finding.severity == FindingSeverity.UNKNOWN
     assert finding.confidence == FindingConfidence.UNKNOWN
-

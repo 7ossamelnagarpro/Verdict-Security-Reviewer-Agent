@@ -14,7 +14,12 @@ from security_reviewer_v2.normalization import (
     normalize_gitleaks_json,
     normalize_trivy_json,
 )
-from security_reviewer_v2.profiler.models import ScanTask, ScanType, PlanStatus, PrerequisiteState
+from security_reviewer_v2.profiler.models import (
+    PlanStatus,
+    PrerequisiteState,
+    ScanTask,
+    ScanType,
+)
 from security_reviewer_v2.scanners.gitleaks import GitleaksAdapter, GitleaksConfig
 from security_reviewer_v2.scanners.models import ExecutionRequest
 from security_reviewer_v2.scanners.trivy import TrivyAdapter, TrivyConfig
@@ -60,8 +65,12 @@ def request(tmp_path: Path, scan_task: ScanTask) -> ExecutionRequest:
 
 
 def test_gitleaks_adapter_builds_redacted_directory_command(tmp_path: Path) -> None:
-    adapter = GitleaksAdapter(GitleaksConfig(executable=str(Path(sys.executable).resolve())))
-    plan = adapter.build_execution_plan(request(tmp_path, task("gitleaks", ScanType.SECRETS, mode="directory")))
+    adapter = GitleaksAdapter(
+        GitleaksConfig(executable=str(Path(sys.executable).resolve()))
+    )
+    plan = adapter.build_execution_plan(
+        request(tmp_path, task("gitleaks", ScanType.SECRETS, mode="directory"))
+    )
 
     command = plan.commands[0]
     assert command.arguments[0] == "dir"
@@ -76,21 +85,36 @@ def test_gitleaks_adapter_builds_redacted_directory_command(tmp_path: Path) -> N
 
 
 def test_gitleaks_adapter_supports_git_history_mode(tmp_path: Path) -> None:
-    adapter = GitleaksAdapter(GitleaksConfig(executable=str(Path(sys.executable).resolve())))
-    plan = adapter.build_execution_plan(request(tmp_path, task("gitleaks", ScanType.SECRETS, mode="git_history")))
+    adapter = GitleaksAdapter(
+        GitleaksConfig(executable=str(Path(sys.executable).resolve()))
+    )
+    plan = adapter.build_execution_plan(
+        request(tmp_path, task("gitleaks", ScanType.SECRETS, mode="git_history"))
+    )
 
     assert plan.commands[0].arguments[0] == "git"
 
 
 def test_gitleaks_adapter_rejects_unsupported_task(tmp_path: Path) -> None:
-    adapter = GitleaksAdapter(GitleaksConfig(executable=str(Path(sys.executable).resolve())))
+    adapter = GitleaksAdapter(
+        GitleaksConfig(executable=str(Path(sys.executable).resolve()))
+    )
     with pytest.raises(ValueError):
-        adapter.build_execution_plan(request(tmp_path, task("gitleaks", ScanType.SCA, mode="directory")))
+        adapter.build_execution_plan(
+            request(tmp_path, task("gitleaks", ScanType.SCA, mode="directory"))
+        )
 
 
-def test_trivy_adapter_builds_one_command_per_target_and_maps_exclusions(tmp_path: Path) -> None:
+def test_trivy_adapter_builds_one_command_per_target_and_maps_exclusions(
+    tmp_path: Path,
+) -> None:
     adapter = TrivyAdapter(TrivyConfig(executable=str(Path(sys.executable).resolve())))
-    scan_task = task("trivy", ScanType.SCA, mode="filesystem", targets=("requirements.txt", "package-lock.json"))
+    scan_task = task(
+        "trivy",
+        ScanType.SCA,
+        mode="filesystem",
+        targets=("requirements.txt", "package-lock.json"),
+    )
     plan = adapter.build_execution_plan(request(tmp_path, scan_task))
 
     assert len(plan.commands) == 2
@@ -108,9 +132,14 @@ def test_trivy_adapter_maps_scan_types() -> None:
         (ScanType.SECRETS, "--scanners=secret"),
         (ScanType.MISCONFIGURATION, "--scanners=misconfig"),
     ):
-        assert expected in adapter.build_execution_plan(
-            request_for_existing_tmp(task("trivy", scan_type, mode="filesystem"))
-        ).commands[0].arguments
+        assert (
+            expected
+            in adapter.build_execution_plan(
+                request_for_existing_tmp(task("trivy", scan_type, mode="filesystem"))
+            )
+            .commands[0]
+            .arguments
+        )
 
 
 def test_trivy_sca_requires_an_explicit_verified_database_path(tmp_path: Path) -> None:
@@ -129,7 +158,10 @@ def test_trivy_detects_configured_database_cache(tmp_path: Path) -> None:
     (cache / "trivy.db").write_bytes(b"fixture")
     (cache / "metadata.json").write_text("{}", encoding="utf-8")
     adapter = TrivyAdapter(
-        TrivyConfig(executable=str(Path(sys.executable).resolve()), database_path=str(cache.parent))
+        TrivyConfig(
+            executable=str(Path(sys.executable).resolve()),
+            database_path=str(cache.parent),
+        )
     )
 
     checks = adapter.check_prerequisites(
@@ -169,7 +201,9 @@ def test_gitleaks_normalizer_omits_secret_value() -> None:
 
 
 def test_gitleaks_normalizer_rejects_traversal() -> None:
-    result = normalize_gitleaks_json([{"RuleID": "x", "File": "../secret.env", "StartLine": 1}])
+    result = normalize_gitleaks_json(
+        [{"RuleID": "x", "File": "../secret.env", "StartLine": 1}]
+    )
 
     assert result.status.value == "failed"
     assert result.findings == ()
@@ -224,7 +258,12 @@ def test_trivy_normalizer_handles_vulnerabilities_misconfig_and_secrets() -> Non
         "generic-secret",
     }
     assert "HIDDEN-SECRET" not in json.dumps(result.to_dict())
-    assert next(item for item in result.findings if item.rule_id == "AVD-TEST-0001").primary_location.start_line == 3
+    assert (
+        next(
+            item for item in result.findings if item.rule_id == "AVD-TEST-0001"
+        ).primary_location.start_line
+        == 3
+    )
 
 
 def test_trivy_normalizer_rejects_unrecognized_root() -> None:
@@ -234,7 +273,11 @@ def test_trivy_normalizer_rejects_unrecognized_root() -> None:
 
 def test_trivy_normalizer_accepts_metadata_only_zero_findings_output() -> None:
     result = normalize_trivy_json(
-        {"SchemaVersion": 2, "Trivy": {"Version": "0.75.0"}, "ArtifactType": "filesystem"}
+        {
+            "SchemaVersion": 2,
+            "Trivy": {"Version": "0.75.0"},
+            "ArtifactType": "filesystem",
+        }
     )
 
     assert result.status.value == "complete"

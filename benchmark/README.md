@@ -14,6 +14,11 @@ as discovery input.
   for the comprehensive lab. Use it only after the scan.
 - `verdict-comprehensive-runtime-contract.example.json`: a reviewable baseline
   contract example, not the benchmark answer key.
+- `verdict-comprehensive-runtime-contract.full.example.json`: a bounded,
+  reviewable full-scan example with account, business-rule and matched safe
+  workflows. It contains no passwords and starts with testing authorization
+  disabled. Keep it outside the scanned target and review every rule before
+  enabling it; it is not a ground-truth label file.
 
 After a multi-service scan and final review have finished, run the evaluator
 against their saved output directories:

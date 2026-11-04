@@ -7,7 +7,6 @@ from pathlib import Path
 
 from scripts.normalize_saved_run import normalize_run
 
-
 RAW_PAYLOADS = {
     "semgrep-ce": {"version": "1.178.0", "results": [], "errors": []},
     "codeql-cli": {"version": "2.1.0", "runs": []},
@@ -25,22 +24,31 @@ def make_run(tmp_path: Path, scanners: tuple[str, ...]) -> Path:
         source = run / relative
         source.parent.mkdir(parents=True)
         source.write_text(json.dumps(RAW_PAYLOADS[scanner]), encoding="utf-8")
-        tasks.append({
-            "scanner_id": scanner,
-            "task_id": f"task-{scanner}",
-            "status": "completed",
-            "raw_outputs": [relative],
-        })
-    (run / "execution-summary.json").write_text(json.dumps({
-        "run_id": run.name,
-        "status": "completed",
-        "coverage_gaps": ["Missing lockfile"],
-        "tasks": tasks,
-    }), encoding="utf-8")
+        tasks.append(
+            {
+                "scanner_id": scanner,
+                "task_id": f"task-{scanner}",
+                "status": "completed",
+                "raw_outputs": [relative],
+            }
+        )
+    (run / "execution-summary.json").write_text(
+        json.dumps(
+            {
+                "run_id": run.name,
+                "status": "completed",
+                "coverage_gaps": ["Missing lockfile"],
+                "tasks": tasks,
+            }
+        ),
+        encoding="utf-8",
+    )
     return run
 
 
-def test_normalizes_each_scanner_separately_and_preserves_zero_results(tmp_path: Path) -> None:
+def test_normalizes_each_scanner_separately_and_preserves_zero_results(
+    tmp_path: Path,
+) -> None:
     run = make_run(tmp_path, tuple(RAW_PAYLOADS))
     output = tmp_path / "normalized"
 

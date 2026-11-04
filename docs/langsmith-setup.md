@@ -61,20 +61,19 @@ multiple workspaces, you may also need `LANGSMITH_WORKSPACE_ID`.
 
 ## Security and limitations
 
-The web launcher calls the enable script by default. That script sets `LANGSMITH_HIDE_INPUTS=true`,
-`LANGSMITH_HIDE_OUTPUTS=true`, and `LANGSMITH_HIDE_METADATA=true` **before**
-`LANGSMITH_TRACING=true`. This prevents graph state, source snippets, findings,
-prompts, responses and metadata from being sent as trace payloads. Run names,
-timing and error information may still be sent to LangSmith; do not enable
-cloud tracing if even those details are sensitive. With hidden payloads,
-LangSmith is useful for stage sequence and latency, but cannot inspect the
-full reasoning or evidence behind a verdict.
+The web launcher calls the enable script by default. That script sets
+`LANGSMITH_HIDE_INPUTS=true` and `LANGSMITH_HIDE_OUTPUTS=true` before
+`LANGSMITH_TRACING=true`. The provider integration sends only an allow-listed
+numeric `usage_metadata` object (input/output/total token counts plus provider
+and model); prompts, responses, source snippets, findings, and credentials are
+not sent. With hidden payloads, LangSmith is useful for stage sequence,
+latency, and token usage, but cannot inspect the full reasoning or evidence
+behind a verdict.
 
 The project's model provider calls are made by custom Python code, not a
-LangChain model wrapper. LangSmith will show the LangGraph stage spans, but
-not a detailed nested LLM-request trace unless a separately reviewed model
-wrapper is added later. Existing local JSON reports remain the source of
-truth for security evidence and evaluation metrics.
+LangChain model wrapper. Verdict creates a sanitized nested model-usage span
+when the provider returns token counts. Existing local JSON reports remain the
+source of truth for security evidence and evaluation metrics.
 
 To stop tracing in the current window:
 

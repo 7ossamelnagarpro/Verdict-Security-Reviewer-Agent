@@ -5,9 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 
 from security_reviewer_v2.profiler.models import PlanStatus, ScanPlan
-from security_reviewer_v2.scanners.models import CheckStatus, ExecutionStatus, ExecutionSummary
+from security_reviewer_v2.scanners.models import (
+    CheckStatus,
+    ExecutionStatus,
+    ExecutionSummary,
+)
 from security_reviewer_v2.scanners.registry import AdapterRegistry
-
 
 AUTOMATIC_REQUIRED_SCANNERS = ("semgrep-ce", "codeql-cli", "gitleaks", "trivy")
 
@@ -26,7 +29,9 @@ def preflight_required_scanners(
         if not tasks:
             failures.append(f"{scanner_id}: no task was planned")
             continue
-        applicable = [task for task in tasks if task.status != PlanStatus.NOT_APPLICABLE]
+        applicable = [
+            task for task in tasks if task.status != PlanStatus.NOT_APPLICABLE
+        ]
         if not applicable:
             failures.append(f"{scanner_id}: no applicable task was planned")
             continue
@@ -36,15 +41,23 @@ def preflight_required_scanners(
             continue
         for task in applicable:
             if task.status not in {PlanStatus.SELECTED, PlanStatus.NEEDS_VERIFICATION}:
-                failures.append(f"{scanner_id}/{task.task_id}: planning status is {task.status.value}")
+                failures.append(
+                    f"{scanner_id}/{task.task_id}: planning status is {task.status.value}"
+                )
                 continue
             if not adapter.supports(task):
-                failures.append(f"{scanner_id}/{task.task_id}: adapter does not support the task")
+                failures.append(
+                    f"{scanner_id}/{task.task_id}: adapter does not support the task"
+                )
                 continue
             try:
-                checks = adapter.check_prerequisites(task, project_root=str(project_root))
+                checks = adapter.check_prerequisites(
+                    task, project_root=str(project_root)
+                )
             except (OSError, ValueError) as error:
-                failures.append(f"{scanner_id}/{task.task_id}: prerequisite check failed: {error}")
+                failures.append(
+                    f"{scanner_id}/{task.task_id}: prerequisite check failed: {error}"
+                )
                 continue
             for check in checks:
                 if check.status != CheckStatus.AVAILABLE:
@@ -67,15 +80,24 @@ def required_scanner_execution_failures(
         if not tasks:
             failures.append(f"{scanner_id}: no task was executed")
             continue
-        applicable = [task for task in tasks if not (
-            task.status == ExecutionStatus.SKIPPED and task.reason == "Planning status is not_applicable"
-        )]
+        applicable = [
+            task
+            for task in tasks
+            if not (
+                task.status == ExecutionStatus.SKIPPED
+                and task.reason == "Planning status is not_applicable"
+            )
+        ]
         if not applicable:
             failures.append(f"{scanner_id}: no applicable task was executed")
             continue
         for task in applicable:
             if task.status != ExecutionStatus.COMPLETED:
-                failures.append(f"{scanner_id}/{task.task_id}: {task.status.value} ({task.reason})")
+                failures.append(
+                    f"{scanner_id}/{task.task_id}: {task.status.value} ({task.reason})"
+                )
             elif task.task_id not in normalized_task_ids:
-                failures.append(f"{scanner_id}/{task.task_id}: no normalized scanner output was produced")
+                failures.append(
+                    f"{scanner_id}/{task.task_id}: no normalized scanner output was produced"
+                )
     return tuple(failures)

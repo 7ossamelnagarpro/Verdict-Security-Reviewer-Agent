@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import json
 import hashlib
+import json
 import os
 from dataclasses import replace
 from pathlib import Path
@@ -19,10 +19,10 @@ from security_reviewer_v2.context import (
 )
 from security_reviewer_v2.normalization import load_merge_result
 from security_reviewer_v2.normalization.merge_models import (
+    MergedFinding,
     MergeResult,
     MergeStatus,
     MergeSummary,
-    MergedFinding,
     SourceCoverage,
 )
 from security_reviewer_v2.normalization.models import (
@@ -89,7 +89,11 @@ def merged(finding: UnifiedFinding | None = None) -> MergeResult:
         schema_version="1.0",
         status=MergeStatus.COMPLETE,
         findings=findings,
-        source_coverage=(SourceCoverage("codeql-cli", "codeql-sarif-2.1", "complete", len(findings), 0, 0),),
+        source_coverage=(
+            SourceCoverage(
+                "codeql-cli", "codeql-sarif-2.1", "complete", len(findings), 0, 0
+            ),
+        ),
         warnings=(),
         coverage_gaps=(),
         summary=MergeSummary(1, len(findings), len(findings), 0),
@@ -104,17 +108,22 @@ def test_collects_primary_flow_related_and_python_symbol(tmp_path: Path) -> None
         encoding="utf-8",
     )
     (tmp_path / "app.py").write_text(
-        "def route(connection, username):\n"
-        "    return unsafe(connection, username)\n",
+        "def route(connection, username):\n    return unsafe(connection, username)\n",
         encoding="utf-8",
     )
     flow = (
-        CodeFlowStep(0, 0, 0, FindingLocation("app.py", 2, 12, 2, 18), "source", "source"),
-        CodeFlowStep(0, 0, 1, FindingLocation("vulnerable.py", 3, 12, 3, 30), "sink", "sink"),
+        CodeFlowStep(
+            0, 0, 0, FindingLocation("app.py", 2, 12, 2, 18), "source", "source"
+        ),
+        CodeFlowStep(
+            0, 0, 1, FindingLocation("vulnerable.py", 3, 12, 3, 30), "sink", "sink"
+        ),
     )
     related = (RelatedLocation(FindingLocation("app.py", 2, 12, 2, 18), "input"),)
 
-    result = collect_context(merged(unified(flow=flow, related=related)), project_root=tmp_path)
+    result = collect_context(
+        merged(unified(flow=flow, related=related)), project_root=tmp_path
+    )
 
     assert result.status == ContextStatus.COMPLETE
     assert result.summary.files_read == 2
@@ -128,8 +137,12 @@ def test_collects_primary_flow_related_and_python_symbol(tmp_path: Path) -> None
     assert context.code_flow[0].enclosing_symbol.name == "route"
 
 
-def test_missing_flow_file_makes_result_partial_without_losing_primary(tmp_path: Path) -> None:
-    (tmp_path / "vulnerable.py").write_text("def unsafe():\n    value = 1\n    return value\n", encoding="utf-8")
+def test_missing_flow_file_makes_result_partial_without_losing_primary(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "vulnerable.py").write_text(
+        "def unsafe():\n    value = 1\n    return value\n", encoding="utf-8"
+    )
     flow = (
         CodeFlowStep(0, 0, 0, FindingLocation("missing.py", 1, 1, 1, 2), None, None),
     )
@@ -146,7 +159,9 @@ def test_path_traversal_is_rejected_as_unavailable_context(tmp_path: Path) -> No
     outside = tmp_path.parent / "outside.py"
     outside.write_text("secret = 'do not read'\n", encoding="utf-8")
 
-    result = collect_context(merged(unified(path="../outside.py", line=1)), project_root=tmp_path)
+    result = collect_context(
+        merged(unified(path="../outside.py", line=1)), project_root=tmp_path
+    )
 
     assert result.status == ContextStatus.FAILED
     assert result.summary.files_read == 0
@@ -167,9 +182,13 @@ def test_file_size_limit_is_visible(tmp_path: Path) -> None:
 
 
 def test_generic_text_context_does_not_claim_a_symbol(tmp_path: Path) -> None:
-    (tmp_path / "app.js").write_text("const input = request.query.q;\nrun(input);\n", encoding="utf-8")
+    (tmp_path / "app.js").write_text(
+        "const input = request.query.q;\nrun(input);\n", encoding="utf-8"
+    )
 
-    result = collect_context(merged(unified(path="app.js", line=2)), project_root=tmp_path)
+    result = collect_context(
+        merged(unified(path="app.js", line=2)), project_root=tmp_path
+    )
 
     primary = result.findings[0].primary
     assert result.status == ContextStatus.COMPLETE
@@ -180,9 +199,13 @@ def test_generic_text_context_does_not_claim_a_symbol(tmp_path: Path) -> None:
 def test_unique_suffix_path_from_scanner_subroot_is_resolved(tmp_path: Path) -> None:
     nested = tmp_path / "routes"
     nested.mkdir()
-    (nested / "login.ts").write_text("export const login = () => true;\n", encoding="utf-8")
+    (nested / "login.ts").write_text(
+        "export const login = () => true;\n", encoding="utf-8"
+    )
 
-    result = collect_context(merged(unified(path="login.ts", line=1)), project_root=tmp_path)
+    result = collect_context(
+        merged(unified(path="login.ts", line=1)), project_root=tmp_path
+    )
 
     assert result.status == ContextStatus.COMPLETE
     assert result.findings[0].primary.excerpt is not None
@@ -190,7 +213,9 @@ def test_unique_suffix_path_from_scanner_subroot_is_resolved(tmp_path: Path) -> 
 
 
 def test_symbol_excerpt_is_bounded_and_marked_truncated(tmp_path: Path) -> None:
-    source = "def long_function():\n" + "".join(f"    value_{i} = {i}\n" for i in range(10))
+    source = "def long_function():\n" + "".join(
+        f"    value_{i} = {i}\n" for i in range(10)
+    )
     (tmp_path / "vulnerable.py").write_text(source, encoding="utf-8")
 
     result = collect_context(
@@ -206,9 +231,13 @@ def test_symbol_excerpt_is_bounded_and_marked_truncated(tmp_path: Path) -> None:
 
 
 def test_repeated_locations_use_one_bounded_file_read(tmp_path: Path) -> None:
-    (tmp_path / "vulnerable.py").write_text("def unsafe():\n    a = 1\n    return a\n", encoding="utf-8")
+    (tmp_path / "vulnerable.py").write_text(
+        "def unsafe():\n    a = 1\n    return a\n", encoding="utf-8"
+    )
     flow = tuple(
-        CodeFlowStep(0, 0, index, FindingLocation("vulnerable.py", 2, 1, 2, 2), None, None)
+        CodeFlowStep(
+            0, 0, index, FindingLocation("vulnerable.py", 2, 1, 2, 2), None, None
+        )
         for index in range(5)
     )
 
@@ -239,12 +268,15 @@ def test_missing_project_root_is_a_startup_error(tmp_path: Path) -> None:
 
 
 def test_context_output_is_deterministic(tmp_path: Path) -> None:
-    (tmp_path / "vulnerable.py").write_text("def unsafe():\n    a = 1\n    return a\n", encoding="utf-8")
+    (tmp_path / "vulnerable.py").write_text(
+        "def unsafe():\n    a = 1\n    return a\n", encoding="utf-8"
+    )
     artifact = merged(unified())
 
-    assert collect_context(artifact, project_root=tmp_path).to_dict() == collect_context(
-        artifact, project_root=tmp_path
-    ).to_dict()
+    assert (
+        collect_context(artifact, project_root=tmp_path).to_dict()
+        == collect_context(artifact, project_root=tmp_path).to_dict()
+    )
 
 
 def test_file_level_finding_collects_bounded_file_context(tmp_path: Path) -> None:
@@ -277,15 +309,22 @@ def _profile_for(root: Path, *paths: str) -> dict:
         "project_snapshot": {
             "root_path": os.path.normcase(str(root.resolve())),
             "files": [
-                {"path": path, "sha256": hashlib.sha256((root / path).read_bytes()).hexdigest()}
+                {
+                    "path": path,
+                    "sha256": hashlib.sha256((root / path).read_bytes()).hexdigest(),
+                }
                 for path in paths
             ],
         },
     }
 
 
-def test_keeps_each_scanner_primary_and_compacts_without_losing_evidence(tmp_path: Path) -> None:
-    (tmp_path / "vulnerable.py").write_text("def unsafe():\n    a = 1\n    return a\n", encoding="utf-8")
+def test_keeps_each_scanner_primary_and_compacts_without_losing_evidence(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "vulnerable.py").write_text(
+        "def unsafe():\n    a = 1\n    return a\n", encoding="utf-8"
+    )
     first = unified()
     second = replace(
         first,
@@ -297,7 +336,13 @@ def test_keeps_each_scanner_primary_and_compacts_without_losing_evidence(tmp_pat
     one = merged(first)
     combined = replace(
         one,
-        findings=(replace(one.findings[0], source_findings=(first, second), scanners=("codeql-cli", "semgrep-ce")),),
+        findings=(
+            replace(
+                one.findings[0],
+                source_findings=(first, second),
+                scanners=("codeql-cli", "semgrep-ce"),
+            ),
+        ),
     )
     result = collect_context(combined, project_root=tmp_path)
     context = result.findings[0]
@@ -314,7 +359,9 @@ def test_keeps_each_scanner_primary_and_compacts_without_losing_evidence(tmp_pat
     assert restored == result
 
 
-def test_profile_index_resolves_suffix_and_rejects_changed_source(tmp_path: Path) -> None:
+def test_profile_index_resolves_suffix_and_rejects_changed_source(
+    tmp_path: Path,
+) -> None:
     nested = tmp_path / "routes"
     nested.mkdir()
     source = nested / "login.ts"
@@ -337,13 +384,17 @@ def test_profile_from_another_root_is_rejected(tmp_path: Path) -> None:
     profile = _profile_for(tmp_path, "vulnerable.py")
     profile["project_snapshot"]["root_path"] = "somewhere-else"
     with pytest.raises(ContextCollectionError, match="profile_root_mismatch"):
-        collect_context(merged(unified(line=1)), project_root=tmp_path, profile_artifact=profile)
+        collect_context(
+            merged(unified(line=1)), project_root=tmp_path, profile_artifact=profile
+        )
 
 
 def test_review_prompt_receives_additional_scanner_primary(tmp_path: Path) -> None:
     from security_reviewer_v2.reviewers.agent import _build_prompt
 
-    (tmp_path / "vulnerable.py").write_text("def unsafe():\n    a = 1\n    return a\n", encoding="utf-8")
+    (tmp_path / "vulnerable.py").write_text(
+        "def unsafe():\n    a = 1\n    return a\n", encoding="utf-8"
+    )
     first = unified()
     second = replace(
         first,
@@ -353,7 +404,9 @@ def test_review_prompt_receives_additional_scanner_primary(tmp_path: Path) -> No
         primary_location=FindingLocation("vulnerable.py", 2, 1, 2, 8),
     )
     one = merged(first)
-    combined = replace(one, findings=(replace(one.findings[0], source_findings=(first, second)),))
+    combined = replace(
+        one, findings=(replace(one.findings[0], source_findings=(first, second)),)
+    )
     context = collect_context(combined, project_root=tmp_path)
 
     prompt = _build_prompt([], {}, list(combined.findings), context, tmp_path, 1)

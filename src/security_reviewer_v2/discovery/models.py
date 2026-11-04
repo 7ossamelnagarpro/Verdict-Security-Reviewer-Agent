@@ -53,13 +53,17 @@ class DiscoveryConfig:
         if not 1_000 <= self.max_context_chars <= 500_000:
             raise ValueError("max_context_chars must be between 1000 and 500000")
         if self.timeout_seconds is not None and not 1 <= self.timeout_seconds <= 86_400:
-            raise ValueError("timeout_seconds must be between 1 and 86400 when configured")
+            raise ValueError(
+                "timeout_seconds must be between 1 and 86400 when configured"
+            )
         if not 1 <= self.max_files_considered <= 10_000:
             raise ValueError("max_files_considered must be between 1 and 10000")
         if not 1_000 <= self.max_source_file_bytes <= 10_000_000:
             raise ValueError("max_source_file_bytes must be between 1000 and 10000000")
         if self.max_total_source_bytes < self.max_source_file_bytes:
-            raise ValueError("max_total_source_bytes must cover at least one source file")
+            raise ValueError(
+                "max_total_source_bytes must cover at least one source file"
+            )
         if not 1 <= self.max_planned_targets <= 10_000:
             raise ValueError("max_planned_targets must be between 1 and 10000")
         if not 1 <= self.max_batches <= 1_000:
@@ -76,7 +80,13 @@ class DiscoveryConfig:
             raise ValueError("max_context_response_chars must be between 100 and 10000")
         if self.max_enrichment_total_bytes < 1:
             raise ValueError("max_enrichment_total_bytes must be positive")
-        if any(value is not None and value < 0 for value in (self.input_cost_per_million_tokens_usd, self.output_cost_per_million_tokens_usd)):
+        if any(
+            value is not None and value < 0
+            for value in (
+                self.input_cost_per_million_tokens_usd,
+                self.output_cost_per_million_tokens_usd,
+            )
+        ):
             raise ValueError("configured token rates must not be negative")
 
 
@@ -170,6 +180,8 @@ class DiscoveryResult:
     target_plan: tuple[DiscoveryTarget, ...] = ()
     batches: tuple[DiscoveryBatch, ...] = ()
     context_exchanges: tuple[ContextExchange, ...] = ()
+    application_map_guidance: dict[str, Any] | None = None
+    coverage_accounting: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return _primitive(self)

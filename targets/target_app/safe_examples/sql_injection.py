@@ -13,4 +13,3 @@ def find_users_safe(
     query = "SELECT id, username, email FROM users WHERE username = ?"
     rows = connection.execute(query, (username,)).fetchall()
     return [dict(row) for row in rows]
-

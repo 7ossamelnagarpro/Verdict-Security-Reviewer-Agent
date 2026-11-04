@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 
 def required_discovery_satisfied(payload: Mapping[str, Any]) -> bool:
@@ -20,9 +21,15 @@ def required_discovery_satisfied(payload: Mapping[str, Any]) -> bool:
     calls = usage.get("provider_calls")
     return (
         payload.get("status") in {"completed", "partial"}
-        and type(planned) is int and planned > 0
-        and type(inspected) is int and inspected == planned
-        and type(calls) is int and calls > 0
+        and type(planned) is int
+        and planned > 0
+        and type(inspected) is int
+        and inspected == planned
+        and type(calls) is int
+        and calls > 0
         and bool(batches)
-        and all(isinstance(batch, dict) and batch.get("status") == "completed" for batch in batches)
+        and all(
+            isinstance(batch, dict) and batch.get("status") == "completed"
+            for batch in batches
+        )
     )

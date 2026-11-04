@@ -155,7 +155,17 @@ def _check_gitleaks_executable(
     environment = {
         key: value
         for key, value in os.environ.items()
-        if key.upper() in {"SYSTEMROOT", "WINDIR", "PATH", "PATHEXT", "TEMP", "TMP", "USERPROFILE", "HOME"}
+        if key.upper()
+        in {
+            "SYSTEMROOT",
+            "WINDIR",
+            "PATH",
+            "PATHEXT",
+            "TEMP",
+            "TMP",
+            "USERPROFILE",
+            "HOME",
+        }
     }
     try:
         probe = subprocess.run(
@@ -197,13 +207,20 @@ def _write_scan_config(task_directory: Path, exclusions: tuple[str, ...]) -> Pat
     """Create a trusted, default-rule config with policy path exclusions."""
     patterns: list[str] = []
     for exclusion in exclusions:
-        if not exclusion or "\x00" in exclusion or "\n" in exclusion or "\r" in exclusion:
+        if (
+            not exclusion
+            or "\x00" in exclusion
+            or "\n" in exclusion
+            or "\r" in exclusion
+        ):
             raise ValueError("Unsafe Gitleaks exclusion pattern")
         patterns.append(_glob_to_regex(exclusion.replace("\\", "/")))
     config = task_directory / "gitleaks.generated.toml"
     lines = ["[extend]", "useDefault = true"]
     if patterns:
-        lines.extend(("", "[[allowlists]]", 'description = "V2 policy exclusions"', "paths = ["))
+        lines.extend(
+            ("", "[[allowlists]]", 'description = "V2 policy exclusions"', "paths = [")
+        )
         lines.extend(f"  {json.dumps(pattern)}," for pattern in patterns)
         lines.append("]")
     config.write_text("\n".join(lines) + "\n", encoding="utf-8")

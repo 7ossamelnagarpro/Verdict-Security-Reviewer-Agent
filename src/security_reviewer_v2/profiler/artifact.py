@@ -12,7 +12,6 @@ from typing import Any
 from .discovery import discover_project
 from .models import ProfileResult, ProfilerLimits, ProfilerPolicy
 
-
 SNAPSHOT_VERSION = "1.0"
 
 
@@ -67,9 +66,13 @@ def validate_saved_profile_artifact(
             discovery_exclusions=exclusions,
         )
     except (KeyError, TypeError, OSError) as error:
-        raise ValueError("Saved profile snapshot is invalid or cannot be checked") from error
+        raise ValueError(
+            "Saved profile snapshot is invalid or cannot be checked"
+        ) from error
     if current != saved:
-        raise ValueError("Saved profile is stale: project files or scan plan changed; rerun the profiler")
+        raise ValueError(
+            "Saved profile is stale: project files or scan plan changed; rerun the profiler"
+        )
     return current["fingerprint"]
 
 
@@ -88,7 +91,9 @@ def _make_snapshot(
     discovery = discover_project(root, limits=limits, policy=policy)
     actual_inventory = [asdict(record) for record in discovery.files]
     if actual_inventory != payload["profile"]["inventory"]:
-        raise ValueError("Project inventory changed since profiling; rerun the profiler")
+        raise ValueError(
+            "Project inventory changed since profiling; rerun the profiler"
+        )
     files = []
     for record in discovery.files:
         path = root / record.path

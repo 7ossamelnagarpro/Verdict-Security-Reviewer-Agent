@@ -11,11 +11,15 @@ from security_reviewer_v2.triage.models import TriageResult, TriageSummary
 
 
 @pytest.mark.parametrize("discovery_mode", ["complete", "incomplete", "blocked"])
-def test_agent_review_graph_routes_discovery_and_review(monkeypatch, tmp_path: Path, discovery_mode: str) -> None:
+def test_agent_review_graph_routes_discovery_and_review(
+    monkeypatch, tmp_path: Path, discovery_mode: str
+) -> None:
     calls: list[str] = []
     artifacts: dict[str, dict] = {}
     discovery_payload = {
-        "schema_version": "1.0", "status": "completed", "candidates": [],
+        "schema_version": "1.0",
+        "status": "completed",
+        "candidates": [],
         "usage": {"planned_targets": 1, "targets": 1, "provider_calls": 1},
         "batches": [{"status": "completed"}],
     }
@@ -42,7 +46,9 @@ def test_agent_review_graph_routes_discovery_and_review(monkeypatch, tmp_path: P
 
     def fake_triage(*_args, **_kwargs):
         calls.append("triage")
-        return TriageResult("1.0", "completed", (), (), TriageSummary(*(0 for _ in range(9))), ())
+        return TriageResult(
+            "1.0", "completed", (), (), TriageSummary(*(0 for _ in range(9))), ()
+        )
 
     def fake_review(*_args, **_kwargs):
         calls.append("review")
@@ -58,25 +64,55 @@ def test_agent_review_graph_routes_discovery_and_review(monkeypatch, tmp_path: P
     monkeypatch.setattr(agent_graph, "triage_candidates", fake_triage)
 
     state = agent_graph.run_agent_review_graph(
-        provider=object(), discovery_config=DiscoveryConfig(), project_root=tmp_path,
-        profile_artifact={}, merged=object(), context=object(),
-        risk=SimpleNamespace(findings=()), additional_coverage_gaps=(),
-        deployment_context=None, max_reviews=3, write_artifact=save_artifact,
+        provider=object(),
+        discovery_config=DiscoveryConfig(),
+        project_root=tmp_path,
+        profile_artifact={},
+        merged=object(),
+        context=object(),
+        risk=SimpleNamespace(findings=()),
+        additional_coverage_gaps=(),
+        deployment_context=None,
+        max_reviews=3,
+        write_artifact=save_artifact,
         review_runner=fake_review,
     )
 
     assert list(artifacts) == [
-        "ai-discovery.json", "candidate-context.json", "verification.json",
-        "candidate-triage.json", "security-review.json", "policy-gate.json",
+        "ai-discovery.json",
+        "candidate-context.json",
+        "verification.json",
+        "candidate-triage.json",
+        "security-review.json",
+        "policy-gate.json",
     ]
     assert state["discovery_satisfied"] is (discovery_mode == "complete")
-    assert state["review_payload"]["status"] == ("completed" if discovery_mode == "complete" else "not_run")
-    assert state["policy_payload"]["status"] == ("passed" if discovery_mode == "complete" else "incomplete")
+    assert state["review_payload"]["status"] == (
+        "completed" if discovery_mode == "complete" else "not_run"
+    )
+    assert state["policy_payload"]["status"] == (
+        "passed" if discovery_mode == "complete" else "incomplete"
+    )
     if discovery_mode == "blocked":
-        assert calls == ["discovery", "ai-discovery.json", "candidate-context.json",
-                         "verification.json", "candidate-triage.json", "security-review.json", "policy-gate.json"]
+        assert calls == [
+            "discovery",
+            "ai-discovery.json",
+            "candidate-context.json",
+            "verification.json",
+            "candidate-triage.json",
+            "security-review.json",
+            "policy-gate.json",
+        ]
         assert artifacts["ai-discovery.json"]["warnings"] == ["provider unavailable"]
     else:
-        assert calls[:8] == ["discovery", "ai-discovery.json", "context", "candidate-context.json",
-                             "verification", "verification.json", "triage", "candidate-triage.json"]
+        assert calls[:8] == [
+            "discovery",
+            "ai-discovery.json",
+            "context",
+            "candidate-context.json",
+            "verification",
+            "verification.json",
+            "triage",
+            "candidate-triage.json",
+        ]
         assert ("review" in calls) is (discovery_mode == "complete")

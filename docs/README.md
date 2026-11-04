@@ -28,6 +28,12 @@ safety boundaries.
   [AI Discovery](ai_discovery.md), and
   [Candidate triage](candidate-triage-review.md): bounded source context and
   evidence-gated AI candidates.
+- [Development roadmap](development-roadmap.md): planned codebase intelligence,
+  Discovery Agent, runtime coverage, and evaluation improvements.
+- [Default codebase-memory-mcp indexing](codebase-memory-integration.md): local
+  graph-index evidence and its limits.
+- [Application Map](application-map.md): source-backed entry-point inventory,
+  optional graph corroboration, and explicit unknowns.
 - [Risk Prioritization](risk-prioritization.md): review ordering and limits.
 - [IDOR DAST](idor-dast.md): authorization-probe scope.
 

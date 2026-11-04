@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pytest
@@ -104,7 +103,9 @@ def test_scan_errors_make_normalization_partial() -> None:
 
 
 def test_invalid_result_is_skipped_without_losing_valid_sibling() -> None:
-    result = normalize_semgrep_json(payload(results=[semgrep_finding(), {"path": "x.py"}]))
+    result = normalize_semgrep_json(
+        payload(results=[semgrep_finding(), {"path": "x.py"}])
+    )
 
     assert result.status == NormalizationStatus.PARTIAL
     assert result.summary.normalized_findings == 1
@@ -112,7 +113,9 @@ def test_invalid_result_is_skipped_without_losing_valid_sibling() -> None:
 
 
 def test_path_traversal_is_rejected() -> None:
-    result = normalize_semgrep_json(payload(results=[semgrep_finding(path="../outside.py")]))
+    result = normalize_semgrep_json(
+        payload(results=[semgrep_finding(path="../outside.py")])
+    )
 
     assert result.status == NormalizationStatus.FAILED
     assert result.findings == ()
@@ -136,4 +139,3 @@ def test_semgrep_normalization_is_stable() -> None:
 
     assert first == second
     assert first["findings"][0]["finding_id"].startswith("finding-")
-

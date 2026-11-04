@@ -57,7 +57,9 @@ def test_same_folder_name_at_another_location_is_rejected(tmp_path) -> None:
         load_saved_plan(saved, project_root=second)
 
 
-def test_same_size_source_change_even_with_original_timestamp_is_rejected(tmp_path) -> None:
+def test_same_size_source_change_even_with_original_timestamp_is_rejected(
+    tmp_path,
+) -> None:
     project = tmp_path / "project"
     project.mkdir()
     source = project / "app.py"

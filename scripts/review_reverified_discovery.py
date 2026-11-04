@@ -32,7 +32,11 @@ from security_reviewer_v2.verification import verify_discovery
 
 
 def review_reverified(
-    report_dir: Path, derivative_dir: Path, *, provider: Any, batch_size: int = 2,
+    report_dir: Path,
+    derivative_dir: Path,
+    *,
+    provider: Any,
+    batch_size: int = 2,
 ) -> dict[str, Any]:
     if batch_size < 1:
         raise ValueError("Review batch size must be positive")
@@ -42,7 +46,10 @@ def review_reverified(
         raise ValueError("Review output must be a separate derivative directory")
     original = _read_object(report_dir / "pre-review-summary.json")
     postscan = _read_object(derivative_dir / "postscan-summary.json")
-    if postscan.get("source_report") != str(report_dir) or postscan.get("source_sha256_attested") is not True:
+    if (
+        postscan.get("source_report") != str(report_dir)
+        or postscan.get("source_sha256_attested") is not True
+    ):
         raise ValueError("Derivative is not an attested re-verification of this report")
     project_name = original.get("project")
     if original.get("status") != "completed" or not isinstance(project_name, str):
@@ -55,14 +62,17 @@ def review_reverified(
 
     original_discovery = load_discovery_result(report_dir / "ai-discovery.json")
     merged = load_merge_result(report_dir / "merged.json")
-    discovery = reground_saved_discovery(original_discovery, project_root=project,
-                                           profile_artifact=profile)
-    candidate_context = collect_candidate_context(discovery, project_root=project,
-                                                   profile_artifact=profile)
+    discovery = reground_saved_discovery(
+        original_discovery, project_root=project, profile_artifact=profile
+    )
+    candidate_context = collect_candidate_context(
+        discovery, project_root=project, profile_artifact=profile
+    )
     if candidate_context.summary.unavailable_locations:
         raise ValueError("Source context is no longer fully available")
-    verification = verify_discovery(discovery, project_root=project,
-                                    candidate_context=candidate_context)
+    verification = verify_discovery(
+        discovery, project_root=project, candidate_context=candidate_context
+    )
     triage = triage_candidates(discovery, verification, merged, project_root=project)
     for filename, actual in (
         ("ai-discovery-regrounded.json", discovery.to_dict()),
@@ -71,21 +81,34 @@ def review_reverified(
         ("candidate-triage.json", triage.to_dict()),
     ):
         if _read_object(derivative_dir / filename) != actual:
-            raise ValueError(f"Derivative evidence differs from current attested source: {filename}")
+            raise ValueError(
+                f"Derivative evidence differs from current attested source: {filename}"
+            )
 
-    original_reviews = _load_matching_reviews(report_dir / "security-review.json",
-                                               provider.name, provider.model)
-    resumed_reviews = _load_matching_reviews(derivative_dir / "security-review.json",
-                                              provider.name, provider.model)
-    prior_by_id = {item.candidate_id: item for item in (*original_reviews, *resumed_reviews)}
+    original_reviews = _load_matching_reviews(
+        report_dir / "security-review.json", provider.name, provider.model
+    )
+    resumed_reviews = _load_matching_reviews(
+        derivative_dir / "security-review.json", provider.name, provider.model
+    )
+    prior_by_id = {
+        item.candidate_id: item for item in (*original_reviews, *resumed_reviews)
+    }
     scanner_context = load_context_result(report_dir / "context.json")
     review = run_security_review(
-        discovery, verification, provider=provider, project_root=project,
-        merged=merged, context=scanner_context, candidate_context=candidate_context,
-        triage=triage, max_reviews=batch_size,
+        discovery,
+        verification,
+        provider=provider,
+        project_root=project,
+        merged=merged,
+        context=scanner_context,
+        candidate_context=candidate_context,
+        triage=triage,
+        max_reviews=batch_size,
         prior_reviews=tuple(prior_by_id.values()),
-        on_progress=lambda snapshot: _write(derivative_dir / "security-review.json",
-                                            snapshot.to_dict()),
+        on_progress=lambda snapshot: _write(
+            derivative_dir / "security-review.json", snapshot.to_dict()
+        ),
     )
     _attest_snapshot(project, profile)
     review_payload = review.to_dict()
@@ -93,17 +116,29 @@ def review_reverified(
     policy = evaluate_policy(review_payload, triage_payload=triage.to_dict())
     _write(derivative_dir / "policy-gate.json", policy.to_dict())
     write_final_report(
-        derivative_dir / "security-review-report.md", project=str(project),
-        review=review_payload, policy=policy.to_dict(), triage=triage.to_dict(),
-        verification=verification.to_dict(), discovery=discovery.to_dict(),
-        discovery_required_satisfied=bool(original.get("ai_discovery", {}).get("satisfied")),
+        derivative_dir / "security-review-report.md",
+        project=str(project),
+        review=review_payload,
+        policy=policy.to_dict(),
+        triage=triage.to_dict(),
+        verification=verification.to_dict(),
+        discovery=discovery.to_dict(),
+        discovery_required_satisfied=bool(
+            original.get("ai_discovery", {}).get("satisfied")
+        ),
         merged=merged.to_dict(),
-        docker_runtime=(original.get("docker_runtime")
-                        if original.get("docker_runtime", {}).get("status") == "passed" else None),
+        docker_runtime=(
+            original.get("docker_runtime")
+            if original.get("docker_runtime", {}).get("status") == "passed"
+            else None
+        ),
+        runtime_evidence=_read_object(report_dir / "runtime.json"),
         risk=_read_object(report_dir / "risk.json"),
-        execution=_read_object(report_dir / "execution.json"),
+        execution=_read_object(report_dir / "execution.json")
+        or original.get("execution"),
         scanner_requirement=original.get("scanner_requirement"),
         coverage_gaps=original.get("coverage_gaps"),
+        scan_status=original.get("status"),
     )
     result = {
         "status": "completed" if review.status == "completed" else "partial",
@@ -134,8 +169,12 @@ def main() -> int:
     parser.add_argument("--review-batch-size", type=int, default=2)
     args = parser.parse_args()
     provider = provider_from_environment(args.provider, args.model)
-    result = review_reverified(args.report_dir, args.derivative_dir,
-                               provider=provider, batch_size=args.review_batch_size)
+    result = review_reverified(
+        args.report_dir,
+        args.derivative_dir,
+        provider=provider,
+        batch_size=args.review_batch_size,
+    )
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0 if result["status"] == "completed" else 1
 

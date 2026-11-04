@@ -31,6 +31,16 @@ The benchmark command resets the lab data, then proves the labeled behaviors. It
 
 Approve Compose build/start and testing permission only for your own disposable copy. The example contract at `benchmark/verdict-comprehensive-runtime-contract.example.json` is a **baseline GET** contract; it does not enable authenticated workflow testing automatically.
 
+The separate `benchmark/verdict-comprehensive-runtime-contract.full.example.json`
+is a reviewable full-scan template. It adds account and business workflows,
+including stored markup, a bounded login-lockout check, an asynchronous worker
+result and stale-role access. Its `authorized_for_testing` value is `false`:
+confirm this is your disposable lab before setting it to `true` in a local copy.
+The template contains account aliases but no passwords. Supply the fake lab
+credentials through the OS vault or the workflow environment variables.
+The stale-role step demotes the seeded administrator and therefore runs last;
+the fresh Compose stack is discarded after the run.
+
 ## Accounts and authenticated workflows
 
 The fake test identities are `user_a` / `UserA-Lab-Only-1`, `user_b` / `UserB-Lab-Only-1`, and `admin` / `Admin-Lab-Only-1`. For the existing API workflow mode, login is JSON `POST /auth/login` with fields `username` and `password`, session type `bearer`, token JSON field `access_token`, identity verification `GET /me`, username JSON field `username`. Save credentials through the UI's OS vault, not inside a contract or report.
@@ -45,7 +55,17 @@ Example guided steps, to review and adapt in the UI:
 6. Nested resource: as A, `GET /orders/1/notes/2` should not return the note attached to order 2.
 7. Redirect: unauthenticated `GET /auth/continue?next=https://untrusted.example/` should not return an external `Location`. Do not follow the redirect during the test.
 
-The lab contains additional cases not expressible by today's guided runner (notably multipart upload and some cookie/browser behaviors). Record those as coverage gaps; do not count them as passed. Browser crawl visits same-origin links but does not submit forms. A simple form/cookie login is separately available at `/auth/form-login` (fields `username`, `password`; logged-in marker `Signed in as`), while the guided API workflows use bearer tokens. ZAP form login does **not** inherit bearer credentials. Active ZAP requires the disposable Compose target and explicit approval.
+The runner now supports one bounded multipart upload, literal response checks,
+and narrowly scoped generated-auth probes for this disposable lab. The full
+example contract tests a numbered session cookie and an unsigned JWT refresh;
+the static Compose rule checks literal application secrets. These checks do
+not cover arbitrary session forgery, all JWT tampering, or every secret format.
+Record unsupported variants as gaps rather than counting them as passed. Browser
+crawl visits same-origin links but does not submit forms. A simple form/cookie
+login is separately available at `/auth/form-login` (fields `username`,
+`password`; logged-in marker `Signed in as`), while guided API workflows use
+bearer tokens. ZAP form login does **not** inherit bearer credentials. Active
+ZAP requires the disposable Compose target and explicit approval.
 
 ## Benchmark interpretation and cleanup
 

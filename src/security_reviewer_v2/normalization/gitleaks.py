@@ -38,21 +38,36 @@ def normalize_gitleaks_json_file(path: str | Path) -> NormalizationResult:
 
 def normalize_gitleaks_json(payload: Any) -> NormalizationResult:
     if not isinstance(payload, list):
-        raise NormalizationInputError("Input is not recognized Gitleaks JSON (expected an array)")
+        raise NormalizationInputError(
+            "Input is not recognized Gitleaks JSON (expected an array)"
+        )
     findings: list[UnifiedFinding] = []
     warnings: list[NormalizationWarning] = []
     skipped = 0
     for index, result in enumerate(payload):
         if not isinstance(result, dict):
             skipped += 1
-            warnings.append(NormalizationWarning("invalid_result", "Gitleaks result is not an object", 0, index))
+            warnings.append(
+                NormalizationWarning(
+                    "invalid_result", "Gitleaks result is not an object", 0, index
+                )
+            )
             continue
         try:
             findings.append(_normalize_result(result, index))
         except ValueError as error:
             skipped += 1
-            warnings.append(NormalizationWarning("result_skipped", str(error), 0, index))
-    findings.sort(key=lambda item: (item.primary_location.path.casefold(), item.primary_location.start_line or 0, item.rule_id, item.finding_id))
+            warnings.append(
+                NormalizationWarning("result_skipped", str(error), 0, index)
+            )
+    findings.sort(
+        key=lambda item: (
+            item.primary_location.path.casefold(),
+            item.primary_location.start_line or 0,
+            item.rule_id,
+            item.finding_id,
+        )
+    )
     status = NormalizationStatus.PARTIAL if skipped else NormalizationStatus.COMPLETE
     if payload and not findings and skipped == len(payload):
         status = NormalizationStatus.FAILED
@@ -83,10 +98,16 @@ def _normalize_result(result: dict[str, Any], index: int) -> UnifiedFinding:
         end_column=_positive_int(result.get("EndColumn")),
         snippet=None,
     )
-    description = _text(result.get("Description")) or "A possible secret matched a Gitleaks detection rule."
+    description = (
+        _text(result.get("Description"))
+        or "A possible secret matched a Gitleaks detection rule."
+    )
     fingerprint = _text(result.get("Fingerprint"))
     material = "|".join((rule_id, path, str(start_line or 0), fingerprint or ""))
-    finding_id = "finding-" + hashlib.sha256(("gitleaks|" + material).encode("utf-8")).hexdigest()[:20]
+    finding_id = (
+        "finding-"
+        + hashlib.sha256(("gitleaks|" + material).encode("utf-8")).hexdigest()[:20]
+    )
     return UnifiedFinding(
         finding_id=finding_id,
         schema_version=FINDING_SCHEMA_VERSION,

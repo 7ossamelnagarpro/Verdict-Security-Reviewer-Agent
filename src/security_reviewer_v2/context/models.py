@@ -8,7 +8,6 @@ from typing import Any
 
 from security_reviewer_v2.normalization.models import FindingLocation
 
-
 CONTEXT_SCHEMA_VERSION = "1.1"
 
 
@@ -125,20 +124,31 @@ class ContextResult:
         excerpts: dict[str, dict[str, Any]] = {}
         symbols: dict[str, dict[str, Any]] = {}
 
-        def intern(value: dict[str, Any], table: dict[str, dict[str, Any]], prefix: str) -> str:
+        def intern(
+            value: dict[str, Any], table: dict[str, dict[str, Any]], prefix: str
+        ) -> str:
             import hashlib
             import json
 
-            encoded = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+            encoded = json.dumps(
+                value, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+            )
             key = prefix + hashlib.sha256(encoded.encode("utf-8")).hexdigest()
             table.setdefault(key, value)
             return key
 
         for finding in payload["findings"]:
-            for item in (finding["primary"], *finding["additional_primaries"], *finding["code_flow"], *finding["related"]):
+            for item in (
+                finding["primary"],
+                *finding["additional_primaries"],
+                *finding["code_flow"],
+                *finding["related"],
+            ):
                 symbol = item.pop("enclosing_symbol")
                 if symbol is not None:
-                    symbol["excerpt_ref"] = intern(symbol.pop("excerpt"), excerpts, "ex-")
+                    symbol["excerpt_ref"] = intern(
+                        symbol.pop("excerpt"), excerpts, "ex-"
+                    )
                     item["symbol_ref"] = intern(symbol, symbols, "sym-")
                 excerpt = item.pop("excerpt")
                 if excerpt is not None:

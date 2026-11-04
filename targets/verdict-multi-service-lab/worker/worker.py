@@ -22,7 +22,11 @@ def run_job(job: dict) -> dict:
         )
         with urllib.request.urlopen(request, timeout=3) as response:
             return {"status": response.status, "worker_identity": job["run_as"]}
-    return {"status": "completed", "kind": job["kind"], "worker_identity": job["run_as"]}
+    return {
+        "status": "completed",
+        "kind": job["kind"],
+        "worker_identity": job["run_as"],
+    }
 
 
 def main() -> None:
@@ -37,11 +41,17 @@ def main() -> None:
                     try:
                         result = run_job(job)
                         with psycopg.connect(DATABASE_URL) as update:
-                            update.execute("UPDATE jobs SET status='complete',result=%s WHERE id=%s", (json.dumps(result), job["id"]))
+                            update.execute(
+                                "UPDATE jobs SET status='complete',result=%s WHERE id=%s",
+                                (json.dumps(result), job["id"]),
+                            )
                             update.commit()
                     except Exception as error:
                         with psycopg.connect(DATABASE_URL) as update:
-                            update.execute("UPDATE jobs SET status='failed',result=%s WHERE id=%s", (json.dumps({"error": str(error)}), job["id"]))
+                            update.execute(
+                                "UPDATE jobs SET status='failed',result=%s WHERE id=%s",
+                                (json.dumps({"error": str(error)}), job["id"]),
+                            )
                             update.commit()
         except psycopg.OperationalError:
             pass

@@ -15,8 +15,12 @@ from security_reviewer_v2.context.candidate_cli import main as candidate_context
 from security_reviewer_v2.context.candidate_collector import collect_candidate_context
 from security_reviewer_v2.context.models import ContextPolicy, ContextStatus
 from security_reviewer_v2.discovery.models import (
-    CandidateAnchor, CandidateDisposition, CandidateFinding,
-    CandidateMissingCheck, DiscoveryResult, DiscoveryStatus,
+    CandidateAnchor,
+    CandidateDisposition,
+    CandidateFinding,
+    CandidateMissingCheck,
+    DiscoveryResult,
+    DiscoveryStatus,
 )
 from security_reviewer_v2.reviewers.agent import _build_prompt
 from security_reviewer_v2.verification import verify_discovery
@@ -39,14 +43,20 @@ def candidate(**changes: object) -> CandidateFinding:
         verification_notes=(),
         entry_point=CandidateAnchor("app.py", 2, "order_id = request.args['id']"),
         sensitive_operation=CandidateAnchor("app.py", 7, "return row"),
-        missing_check=CandidateMissingCheck("app.py", 5, "owner == current_user", "No check visible"),
+        missing_check=CandidateMissingCheck(
+            "app.py", 5, "owner == current_user", "No check visible"
+        ),
         remaining_questions=("Is authorization implemented elsewhere?",),
     )
     return replace(base, **changes)
 
 
-def discovery(*candidates: CandidateFinding, status: DiscoveryStatus = DiscoveryStatus.COMPLETED) -> DiscoveryResult:
-    return DiscoveryResult("1.2", status, "test", "test-model", (), candidates, (), (), {})
+def discovery(
+    *candidates: CandidateFinding, status: DiscoveryStatus = DiscoveryStatus.COMPLETED
+) -> DiscoveryResult:
+    return DiscoveryResult(
+        "1.2", status, "test", "test-model", (), candidates, (), (), {}
+    )
 
 
 def source(tmp_path: Path) -> None:
@@ -67,7 +77,12 @@ def profile(tmp_path: Path) -> dict:
     return {
         "project_snapshot": {
             "root_path": os.path.normcase(str(tmp_path.resolve())),
-            "files": [{"path": "app.py", "sha256": hashlib.sha256(file.read_bytes()).hexdigest()}],
+            "files": [
+                {
+                    "path": "app.py",
+                    "sha256": hashlib.sha256(file.read_bytes()).hexdigest(),
+                }
+            ],
         },
         "profile": {"inventory": [{"path": "app.py"}]},
     }
@@ -75,12 +90,18 @@ def profile(tmp_path: Path) -> dict:
 
 def test_collects_all_anchor_roles_and_bounded_symbol_context(tmp_path: Path) -> None:
     source(tmp_path)
-    result = collect_candidate_context(discovery(candidate()), project_root=tmp_path, profile_artifact=profile(tmp_path))
+    result = collect_candidate_context(
+        discovery(candidate()),
+        project_root=tmp_path,
+        profile_artifact=profile(tmp_path),
+    )
 
     assert result.status is ContextStatus.COMPLETE
     assert result.summary.input_candidates == 1
     assert result.summary.files_read == 1
-    assert result.summary.evidence_locations == 5  # Primary, three roles, and the end of the range.
+    assert (
+        result.summary.evidence_locations == 5
+    )  # Primary, three roles, and the end of the range.
     context = result.candidates[0]
     assert context.primary.enclosing_symbol.name == "show_order"
     assert context.entry_point.excerpt.start_line == 1
@@ -90,18 +111,26 @@ def test_collects_all_anchor_roles_and_bounded_symbol_context(tmp_path: Path) ->
     assert "[REDACTED]" in json.dumps(result.to_dict())
 
 
-def test_shared_serialization_is_stable_and_does_not_repeat_windows(tmp_path: Path) -> None:
+def test_shared_serialization_is_stable_and_does_not_repeat_windows(
+    tmp_path: Path,
+) -> None:
     source(tmp_path)
     result = collect_candidate_context(
         discovery(candidate(), candidate(candidate_id="ai-two")), project_root=tmp_path
     )
     payload = result.to_dict()
 
-    assert payload == collect_candidate_context(
-        discovery(candidate(), candidate(candidate_id="ai-two")), project_root=tmp_path
-    ).to_dict()
+    assert (
+        payload
+        == collect_candidate_context(
+            discovery(candidate(), candidate(candidate_id="ai-two")),
+            project_root=tmp_path,
+        ).to_dict()
+    )
     assert len(payload["shared_excerpts"]) < 2 * result.summary.excerpts_collected
-    assert payload["candidates"][0]["primary"]["excerpt_ref"] in payload["shared_excerpts"]
+    assert (
+        payload["candidates"][0]["primary"]["excerpt_ref"] in payload["shared_excerpts"]
+    )
     assert len(payload["shared_symbols"]) >= 1
 
 
@@ -112,9 +141,22 @@ def test_bad_ai_path_is_not_resolved_by_suffix_or_outside_root(tmp_path: Path) -
     (nested / "nested.py").write_text("x = 1\n", encoding="utf-8")
     result = collect_candidate_context(
         discovery(
-            candidate(candidate_id="escape", path="../outside.py", entry_point=None, sensitive_operation=None, missing_check=None),
-            candidate(candidate_id="suffix", path="nested.py", entry_point=None, sensitive_operation=None, missing_check=None),
-        ), project_root=tmp_path,
+            candidate(
+                candidate_id="escape",
+                path="../outside.py",
+                entry_point=None,
+                sensitive_operation=None,
+                missing_check=None,
+            ),
+            candidate(
+                candidate_id="suffix",
+                path="nested.py",
+                entry_point=None,
+                sensitive_operation=None,
+                missing_check=None,
+            ),
+        ),
+        project_root=tmp_path,
     )
 
     assert result.status is ContextStatus.FAILED
@@ -124,11 +166,19 @@ def test_bad_ai_path_is_not_resolved_by_suffix_or_outside_root(tmp_path: Path) -
     assert len(result.coverage_gaps) == 2
 
 
-def test_missing_evidence_stays_visible_and_does_not_become_verified(tmp_path: Path) -> None:
+def test_missing_evidence_stays_visible_and_does_not_become_verified(
+    tmp_path: Path,
+) -> None:
     source(tmp_path)
-    result = collect_candidate_context(discovery(
-        candidate(entry_point=CandidateAnchor("missing.py", 2, "x"), verification=CandidateDisposition.INCONCLUSIVE),
-    ), project_root=tmp_path)
+    result = collect_candidate_context(
+        discovery(
+            candidate(
+                entry_point=CandidateAnchor("missing.py", 2, "x"),
+                verification=CandidateDisposition.INCONCLUSIVE,
+            ),
+        ),
+        project_root=tmp_path,
+    )
 
     assert result.status is ContextStatus.PARTIAL
     assert result.candidates[0].discovery_disposition == "inconclusive"
@@ -141,11 +191,15 @@ def test_profile_hash_change_and_file_limit_are_reported(tmp_path: Path) -> None
     source(tmp_path)
     snapshot = profile(tmp_path)
     (tmp_path / "app.py").write_text("changed = True\n", encoding="utf-8")
-    stale = collect_candidate_context(discovery(candidate()), project_root=tmp_path, profile_artifact=snapshot)
+    stale = collect_candidate_context(
+        discovery(candidate()), project_root=tmp_path, profile_artifact=snapshot
+    )
     assert stale.status is ContextStatus.FAILED
     assert any("source_changed_since_profile" in warning for warning in stale.warnings)
     limited = collect_candidate_context(
-        discovery(candidate()), project_root=tmp_path, policy=ContextPolicy(max_file_bytes=2)
+        discovery(candidate()),
+        project_root=tmp_path,
+        policy=ContextPolicy(max_file_bytes=2),
     )
     assert limited.status is ContextStatus.FAILED
     assert any("file_limit_exceeded" in warning for warning in limited.warnings)
@@ -165,7 +219,9 @@ def test_symlink_outside_project_is_not_read(tmp_path: Path) -> None:
     assert "symlink_skipped" in result.candidates[0].primary.warning
 
 
-def test_cli_collects_saved_discovery_without_running_a_model(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_cli_collects_saved_discovery_without_running_a_model(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     source(tmp_path)
     saved = tmp_path / "discovery.json"
     output = tmp_path / "candidate-context.json"
@@ -174,19 +230,31 @@ def test_cli_collects_saved_discovery_without_running_a_model(tmp_path: Path, ca
     exit_code = candidate_context_cli([str(tmp_path), str(saved), str(output)])
 
     assert exit_code == 0
-    assert json.loads(output.read_text(encoding="utf-8"))["summary"]["contexts_created"] == 1
+    assert (
+        json.loads(output.read_text(encoding="utf-8"))["summary"]["contexts_created"]
+        == 1
+    )
     assert json.loads(capsys.readouterr().out)["status"] == "complete"
 
 
-def test_reviewer_uses_collected_candidate_context_not_a_live_reread(tmp_path: Path) -> None:
+def test_reviewer_uses_collected_candidate_context_not_a_live_reread(
+    tmp_path: Path,
+) -> None:
     source(tmp_path)
     finding = candidate(evidence=("api_key = 'gsk_abcdefghijklmnopqrstuvwxyz'",))
     context = collect_candidate_context(discovery(finding), project_root=tmp_path)
-    (tmp_path / "app.py").write_text("new_secret = 'do not send this'\n", encoding="utf-8")
+    (tmp_path / "app.py").write_text(
+        "new_secret = 'do not send this'\n", encoding="utf-8"
+    )
 
     prompt = _build_prompt(
         [SimpleNamespace(candidate_id="ai-one", checks=(), notes=())],
-        {"ai-one": finding}, [], None, tmp_path, 1, candidate_context=context,
+        {"ai-one": finding},
+        [],
+        None,
+        tmp_path,
+        1,
+        candidate_context=context,
     )
     item = json.loads(prompt.split("\n\n", 1)[1])["items"][0]
 
@@ -194,30 +262,52 @@ def test_reviewer_uses_collected_candidate_context_not_a_live_reread(tmp_path: P
     assert "new_secret" not in json.dumps(item)
     assert "abcdefghijklmnopqrstuvwxyz" not in json.dumps(item)
     assert {part["role"] for part in item["additional_candidate_context"]} == {
-        "entry_point", "sensitive_operation", "claimed_missing_check", "range_end",
+        "entry_point",
+        "sensitive_operation",
+        "claimed_missing_check",
+        "range_end",
     }
 
 
-def test_verification_does_not_confirm_unavailable_candidate_anchor(tmp_path: Path) -> None:
+def test_verification_does_not_confirm_unavailable_candidate_anchor(
+    tmp_path: Path,
+) -> None:
     source(tmp_path)
-    finding = candidate(sensitive_operation=CandidateAnchor("app.py", 345, "not present"))
+    finding = candidate(
+        sensitive_operation=CandidateAnchor("app.py", 345, "not present")
+    )
     result = discovery(finding)
     context = collect_candidate_context(result, project_root=tmp_path)
 
-    verification = verify_discovery(result, project_root=tmp_path, candidate_context=context)
+    verification = verify_discovery(
+        result, project_root=tmp_path, candidate_context=context
+    )
 
     assert verification.records[0].disposition.value == "needs_more_evidence"
-    assert any("sensitive_operation context is unavailable" in note for note in verification.records[0].notes)
+    assert any(
+        "sensitive_operation context is unavailable" in note
+        for note in verification.records[0].notes
+    )
 
 
-def test_verification_rechecks_source_snapshot_after_context_collection(tmp_path: Path) -> None:
+def test_verification_rechecks_source_snapshot_after_context_collection(
+    tmp_path: Path,
+) -> None:
     source(tmp_path)
     finding = candidate()
     result = discovery(finding)
     context = collect_candidate_context(result, project_root=tmp_path)
-    (tmp_path / "app.py").write_text((tmp_path / "app.py").read_text(encoding="utf-8") + "\n# changed\n", encoding="utf-8")
+    (tmp_path / "app.py").write_text(
+        (tmp_path / "app.py").read_text(encoding="utf-8") + "\n# changed\n",
+        encoding="utf-8",
+    )
 
-    verification = verify_discovery(result, project_root=tmp_path, candidate_context=context)
+    verification = verify_discovery(
+        result, project_root=tmp_path, candidate_context=context
+    )
 
     assert verification.records[0].disposition.value == "needs_more_evidence"
-    assert any("changed after candidate context" in note for note in verification.records[0].notes)
+    assert any(
+        "changed after candidate context" in note
+        for note in verification.records[0].notes
+    )

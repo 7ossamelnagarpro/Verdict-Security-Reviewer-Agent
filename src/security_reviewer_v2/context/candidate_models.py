@@ -8,7 +8,6 @@ from dataclasses import dataclass
 
 from .models import ContextStatus, EvidenceContext, _to_primitive
 
-
 CANDIDATE_CONTEXT_SCHEMA_VERSION = "1.0"
 
 
@@ -53,19 +52,29 @@ class CandidateContextResult:
         symbols: dict[str, dict] = {}
 
         def intern(value: dict, table: dict[str, dict], prefix: str) -> str:
-            encoded = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+            encoded = json.dumps(
+                value, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+            )
             key = prefix + hashlib.sha256(encoded.encode("utf-8")).hexdigest()
             table.setdefault(key, value)
             return key
 
         for candidate in payload["candidates"]:
-            for role in ("primary", "entry_point", "sensitive_operation", "claimed_missing_check", "range_end"):
+            for role in (
+                "primary",
+                "entry_point",
+                "sensitive_operation",
+                "claimed_missing_check",
+                "range_end",
+            ):
                 evidence = candidate[role]
                 if evidence is None:
                     continue
                 symbol = evidence.pop("enclosing_symbol")
                 if symbol is not None:
-                    symbol["excerpt_ref"] = intern(symbol.pop("excerpt"), excerpts, "ex-")
+                    symbol["excerpt_ref"] = intern(
+                        symbol.pop("excerpt"), excerpts, "ex-"
+                    )
                     evidence["symbol_ref"] = intern(symbol, symbols, "sym-")
                 excerpt = evidence.pop("excerpt")
                 if excerpt is not None:

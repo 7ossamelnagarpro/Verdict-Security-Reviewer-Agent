@@ -53,7 +53,8 @@ if ([string]::IsNullOrWhiteSpace($env:LANGSMITH_API_KEY)) {
 # in their state. Hide payloads before tracing is enabled in this shell.
 $env:LANGSMITH_HIDE_INPUTS = 'true'
 $env:LANGSMITH_HIDE_OUTPUTS = 'true'
-$env:LANGSMITH_HIDE_METADATA = 'true'
+# Only sanitized numeric token usage metadata is sent; prompts and outputs stay hidden.
+$env:LANGSMITH_HIDE_METADATA = 'false'
 $env:LANGSMITH_PROJECT = $Project
 $env:LANGSMITH_TRACING = 'true'
 

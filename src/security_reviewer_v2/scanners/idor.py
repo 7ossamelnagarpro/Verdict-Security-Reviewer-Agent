@@ -40,7 +40,11 @@ class IdoorConfig:
             raise ValueError("IDOR target must use an http(s) URL")
         if not self.user_a_token or not self.user_b_token:
             raise ValueError("Two non-empty test identities are required")
-        for value in (self.user_a_resource, self.user_b_resource, self.safe_resource_template):
+        for value in (
+            self.user_a_resource,
+            self.user_b_resource,
+            self.safe_resource_template,
+        ):
             if not value.startswith("/") or "\x00" in value:
                 raise ValueError("IDOR paths must be safe absolute URL paths")
 
@@ -59,16 +63,26 @@ class IdoorAdapter(ScannerAdapter):
             and task.mode == "differential_authorization"
         )
 
-    def check_prerequisites(self, task: ScanTask, *, project_root: str) -> tuple[PrerequisiteCheck, ...]:
+    def check_prerequisites(
+        self, task: ScanTask, *, project_root: str
+    ) -> tuple[PrerequisiteCheck, ...]:
         reachable = _health_check(self.config.base_url)
         return (
             PrerequisiteCheck(
                 "target_reachable",
                 CheckStatus.AVAILABLE if reachable else CheckStatus.MISSING,
-                "IDOR target health endpoint is reachable" if reachable else "IDOR target is not reachable",
+                "IDOR target health endpoint is reachable"
+                if reachable
+                else "IDOR target is not reachable",
             ),
-            PrerequisiteCheck("test_identities", CheckStatus.AVAILABLE, "Two synthetic test identities are configured"),
-            PrerequisiteCheck("safe_mode", CheckStatus.AVAILABLE, "Probe performs GET requests only"),
+            PrerequisiteCheck(
+                "test_identities",
+                CheckStatus.AVAILABLE,
+                "Two synthetic test identities are configured",
+            ),
+            PrerequisiteCheck(
+                "safe_mode", CheckStatus.AVAILABLE, "Probe performs GET requests only"
+            ),
         )
 
     def build_execution_plan(self, request: ExecutionRequest) -> AdapterExecutionPlan:
@@ -97,7 +111,14 @@ class IdoorAdapter(ScannerAdapter):
                 CommandSpec(
                     name="idor-differential-probe",
                     executable=str(Path(self.config.executable).resolve()),
-                    arguments=("-m", "security_reviewer_v2.scanners.idor", "--config", str(config_path), "--output", str(output)),
+                    arguments=(
+                        "-m",
+                        "security_reviewer_v2.scanners.idor",
+                        "--config",
+                        str(config_path),
+                        "--output",
+                        str(output),
+                    ),
                     working_directory=str(Path(request.project_root).resolve()),
                     timeout_seconds=request.timeout_seconds,
                 ),
@@ -105,12 +126,18 @@ class IdoorAdapter(ScannerAdapter):
             expected_outputs=("result.json",),
         )
 
-    def validate_outputs(self, request: ExecutionRequest, plan: AdapterExecutionPlan) -> tuple[bool, str]:
+    def validate_outputs(
+        self, request: ExecutionRequest, plan: AdapterExecutionPlan
+    ) -> tuple[bool, str]:
         valid, reason = super().validate_outputs(request, plan)
         if not valid:
             return valid, reason
         try:
-            payload = json.loads((Path(request.task_directory) / "result.json").read_text(encoding="utf-8"))
+            payload = json.loads(
+                (Path(request.task_directory) / "result.json").read_text(
+                    encoding="utf-8"
+                )
+            )
         except (OSError, json.JSONDecodeError) as error:
             return False, f"IDOR output could not be parsed: {type(error).__name__}"
         if not isinstance(payload.get("results"), list):
@@ -120,7 +147,9 @@ class IdoorAdapter(ScannerAdapter):
 
 def _health_check(base_url: str) -> bool:
     try:
-        with urllib.request.urlopen(urljoin(base_url.rstrip("/") + "/", "health"), timeout=3) as response:
+        with urllib.request.urlopen(
+            urljoin(base_url.rstrip("/") + "/", "health"), timeout=3
+        ) as response:
             return 200 <= response.status < 300
     except (OSError, urllib.error.URLError):
         return False
@@ -130,7 +159,9 @@ def _request(url: str, token: str) -> tuple[int, str]:
     request = urllib.request.Request(url, headers={"X-Test-User": token}, method="GET")
     try:
         with urllib.request.urlopen(request, timeout=5) as response:
-            return response.status, response.read(512 * 1024).decode("utf-8", errors="replace")
+            return response.status, response.read(512 * 1024).decode(
+                "utf-8", errors="replace"
+            )
     except urllib.error.HTTPError as error:
         return error.code, error.read(512 * 1024).decode("utf-8", errors="replace")
 
@@ -139,9 +170,15 @@ def _probe(config: dict[str, str]) -> dict[str, object]:
     base = config["base_url"].rstrip("/") + "/"
     a_path, b_path = config["user_a_resource"], config["user_b_resource"]
     _, _ = _request(urljoin(base, a_path.lstrip("/")), config["user_a_token"])
-    b_status, b_body = _request(urljoin(base, b_path.lstrip("/")), config["user_b_token"])
-    cross_status, cross_body = _request(urljoin(base, b_path.lstrip("/")), config["user_a_token"])
-    vulnerable = cross_status == b_status and 200 <= cross_status < 300 and cross_body == b_body
+    b_status, b_body = _request(
+        urljoin(base, b_path.lstrip("/")), config["user_b_token"]
+    )
+    cross_status, cross_body = _request(
+        urljoin(base, b_path.lstrip("/")), config["user_a_token"]
+    )
+    vulnerable = (
+        cross_status == b_status and 200 <= cross_status < 300 and cross_body == b_body
+    )
     result: dict[str, object] = {
         "rule_id": "idor.cross-user-resource-access",
         "title": "Cross-user resource access (possible IDOR)",
@@ -158,9 +195,13 @@ def _probe(config: dict[str, str]) -> dict[str, object]:
             "safe_mode": True,
         },
     }
-    safe_path = config.get("safe_resource_template", "").replace("{resource_id}", b_path.rsplit("/", 1)[-1])
+    safe_path = config.get("safe_resource_template", "").replace(
+        "{resource_id}", b_path.rsplit("/", 1)[-1]
+    )
     if safe_path:
-        safe_status, safe_body = _request(urljoin(base, safe_path.lstrip("/")), config["user_a_token"])
+        safe_status, safe_body = _request(
+            urljoin(base, safe_path.lstrip("/")), config["user_a_token"]
+        )
         result["safe_counterpart"] = {
             "path": safe_path,
             "status": safe_status,
@@ -171,13 +212,25 @@ def _probe(config: dict[str, str]) -> dict[str, object]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Run a read-only differential IDOR probe")
+    parser = argparse.ArgumentParser(
+        description="Run a read-only differential IDOR probe"
+    )
     parser.add_argument("--config", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args(argv)
     payload = _probe(json.loads(args.config.read_text(encoding="utf-8")))
-    args.output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(json.dumps({"status": "completed", "findings": sum(1 for item in payload["results"] if item["vulnerable"]), "output": str(args.output)}))
+    args.output.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    print(
+        json.dumps(
+            {
+                "status": "completed",
+                "findings": sum(1 for item in payload["results"] if item["vulnerable"]),
+                "output": str(args.output),
+            }
+        )
+    )
     return 0
 
 

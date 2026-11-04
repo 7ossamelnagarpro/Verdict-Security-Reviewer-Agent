@@ -1,0 +1,174 @@
+{
+  "schema_version": "1.0",
+  "mode": "docker_compose",
+  "trust_level": "trusted_local_project",
+  "authorized_for_testing": false,
+  "target": {"base_url": "http://127.0.0.1:8091", "health_path": "/healthz", "expected_status": 200},
+  "compose": {"file": "compose.yaml", "app_service": "api"},
+  "endpoints": ["/", "/healthz", "/view", "/login", "/account", "/catalog/search?q=widget", "/catalog/query?q=widget", "/comments", "/admin/users", "/debug/config", "/session/start?username=user_a", "/status/secure", "/auth/continue?next=/view"],
+  "accounts": [],
+  "checks": {"authorization": false, "mutating": false},
+  "required_env": [],
+  "workflow_suite": {
+    "version": 1,
+    "allow_mutation": true,
+    "reset": "fresh_stack",
+    "max_requests": 200,
+    "timeout_seconds": 5,
+    "max_seconds": 600,
+    "accounts": [
+      {"id": "user_a", "role": "user", "login_path": "/auth/login", "encoding": "json", "username_field": "username", "password_field": "password", "session": "bearer", "token_path": "access_token", "verify_path": "/me", "identity_path": "username"},
+      {"id": "user_b", "role": "user", "login_path": "/auth/login", "encoding": "json", "username_field": "username", "password_field": "password", "session": "bearer", "token_path": "access_token", "verify_path": "/me", "identity_path": "username"},
+      {"id": "admin", "role": "admin", "login_path": "/auth/login", "encoding": "json", "username_field": "username", "password_field": "password", "session": "bearer", "token_path": "access_token", "verify_path": "/me", "identity_path": "username"},
+      {"id": "user_a_checked", "role": "user", "login_path": "/auth/checked-login", "encoding": "json", "username_field": "username", "password_field": "password", "session": "bearer", "token_path": "access_token", "verify_path": "/me/verified", "identity_path": "username"},
+      {"id": "user_b_checked", "role": "user", "login_path": "/auth/checked-login", "encoding": "json", "username_field": "username", "password_field": "password", "session": "bearer", "token_path": "access_token", "verify_path": "/me/verified", "identity_path": "username"},
+      {"id": "admin_checked", "role": "admin", "login_path": "/auth/checked-login", "encoding": "json", "username_field": "username", "password_field": "password", "session": "bearer", "token_path": "access_token", "verify_path": "/me/verified", "identity_path": "username"}
+    ],
+    "workflows": [
+      {"id": "purchase", "title": "Owner can create, pay and read an invoice", "severity": "low", "steps": [
+        {"actor": "user_a", "method": "POST", "path": "/orders", "body": {"item": "widget", "quantity": 1, "unit_price": 100}, "expect_status": [200, 201], "capture": {"order_id": "id"}},
+        {"actor": "user_a", "method": "POST", "path": "/orders/{{order_id}}/pay", "expect_status": [200], "capture": {"invoice_id": "id"}},
+        {"actor": "user_a", "method": "GET", "path": "/invoices/{{invoice_id}}", "expect_status": [200]}
+      ]},
+      {"id": "order_owner", "title": "Only the owner can read an order", "severity": "high", "steps": [
+        {"actor": "user_b", "method": "POST", "path": "/orders", "body": {"item": "widget", "quantity": 1, "unit_price": 100}, "expect_status": [200, 201], "capture": {"order_id": "id"}},
+        {"actor": "user_b", "method": "GET", "path": "/orders/{{order_id}}", "expect_status": [200]},
+        {"actor": "user_a", "method": "GET", "path": "/orders/{{order_id}}", "expect_status": [403, 404], "security_check": true}
+      ]},
+      {"id": "invoice_owner", "title": "Only the owner can read an invoice", "severity": "high", "steps": [
+        {"actor": "user_b", "method": "POST", "path": "/orders", "body": {"item": "widget", "quantity": 1, "unit_price": 100}, "expect_status": [200, 201], "capture": {"order_id": "id"}},
+        {"actor": "user_b", "method": "POST", "path": "/orders/{{order_id}}/pay", "expect_status": [200], "capture": {"invoice_id": "id"}},
+        {"actor": "user_a", "method": "GET", "path": "/invoices/{{invoice_id}}", "expect_status": [403, 404], "security_check": true}
+      ]},
+      {"id": "admin_users", "title": "User listing requires administrator role", "severity": "high", "steps": [
+        {"actor": "admin", "method": "GET", "path": "/admin/users", "expect_status": [200]},
+        {"actor": "user_a", "method": "GET", "path": "/admin/users", "expect_status": [403, 404], "security_check": true}
+      ]},
+      {"id": "admin_jobs", "title": "Job listing requires administrator role", "severity": "high", "steps": [
+        {"actor": "admin", "method": "GET", "path": "/admin/jobs", "expect_status": [200]},
+        {"actor": "user_a", "method": "GET", "path": "/admin/jobs", "expect_status": [403, 404], "security_check": true}
+      ]},
+      {"id": "payment_replay", "title": "An already paid order rejects another payment", "severity": "high", "steps": [
+        {"actor": "user_a", "method": "POST", "path": "/orders", "body": {"item": "widget", "quantity": 1, "unit_price": 100}, "expect_status": [200, 201], "capture": {"order_id": "id"}},
+        {"actor": "user_a", "method": "POST", "path": "/orders/{{order_id}}/pay", "expect_status": [200]},
+        {"actor": "user_a", "method": "POST", "path": "/orders/{{order_id}}/pay", "expect_status": [400, 409, 422], "security_check": true}
+      ]},
+      {"id": "paid_cancel", "title": "Paid orders cannot be cancelled without a refund", "severity": "high", "steps": [
+        {"actor": "user_a", "method": "POST", "path": "/orders", "body": {"item": "widget", "quantity": 1, "unit_price": 100}, "expect_status": [200, 201], "capture": {"order_id": "id"}},
+        {"actor": "user_a", "method": "POST", "path": "/orders/{{order_id}}/pay", "expect_status": [200]},
+        {"actor": "user_a", "method": "POST", "path": "/orders/{{order_id}}/cancel", "expect_status": [400, 409, 422], "security_check": true}
+      ]},
+      {"id": "coupon_bounds", "title": "Coupon discounts above 100 percent are rejected", "severity": "high", "steps": [
+        {"actor": "user_a", "method": "POST", "path": "/orders", "body": {"item": "widget", "quantity": 1, "unit_price": 100}, "expect_status": [200, 201], "capture": {"order_id": "id"}},
+        {"actor": "user_a", "method": "POST", "path": "/orders/{{order_id}}/apply-coupon", "body": {"code": "WELCOME20", "discount": 150}, "expect_status": [400, 422], "security_check": true}
+      ]},
+      {"id": "negative_price", "title": "Negative order prices are rejected", "severity": "high", "steps": [
+        {"actor": "user_a", "method": "POST", "path": "/orders", "body": {"item": "widget", "quantity": 1, "unit_price": -1}, "expect_status": [400, 422], "security_check": true}
+      ]},
+      {"id": "order_initial_state", "title": "New orders cannot start as paid", "severity": "high", "steps": [
+        {"actor": "user_a", "method": "POST", "path": "/orders", "body": {"item": "widget", "quantity": 1, "unit_price": 100, "status": "paid"}, "expect_status": [400, 422], "security_check": true}
+      ]},
+      {"id": "owner_assignment", "title": "Users cannot create orders for another owner", "severity": "high", "steps": [
+        {"actor": "user_b", "method": "GET", "path": "/me", "expect_status": [200], "capture": {"other_id": "id"}},
+        {"actor": "user_a", "method": "POST", "path": "/orders", "body": {"item": "widget", "quantity": 1, "unit_price": 100, "owner_id": "{{other_id}}"}, "expect_status": [400, 403, 422], "security_check": true}
+      ]},
+      {"id": "worker_role", "title": "Users cannot submit an admin job", "severity": "high", "steps": [
+        {"actor": "user_a", "method": "POST", "path": "/jobs", "body": {"kind": "report", "payload": {}, "run_as": "admin"}, "expect_status": [400, 403, 422], "security_check": true}
+      ]},
+      {"id": "debug_access", "title": "Debug configuration is not public", "severity": "high", "steps": [
+        {"actor": "anonymous", "method": "GET", "path": "/debug/config", "expect_status": [401, 403, 404], "security_check": true}
+      ]},
+      {"id": "profile_owner", "title": "Only the owner can read a profile", "severity": "high", "steps": [
+        {"actor": "user_b", "method": "GET", "path": "/me", "expect_status": [200], "capture": {"other_id": "id"}},
+        {"actor": "user_a", "method": "GET", "path": "/profiles/{{other_id}}", "expect_status": [403, 404], "security_check": true}
+      ]},
+      {"id": "excessive_data", "title": "Self profile does not expose an SSN", "severity": "high", "steps": [
+        {"actor": "user_a", "method": "GET", "path": "/me", "expect_status": [200], "assertions": [{"path": "ssn", "op": "absent"}], "security_check": true}
+      ]},
+      {"id": "price_catalog", "title": "Server controls product price", "severity": "high", "steps": [
+        {"actor": "user_a", "method": "POST", "path": "/orders", "body": {"item": "widget", "quantity": 1, "unit_price": 0.01}, "expect_status": [200, 201], "assertions": [{"path": "unit_price", "op": "eq", "value": 100}], "security_check": true}
+      ]},
+      {"id": "webhook_destination", "title": "Webhook destinations must match the internal mock service host", "severity": "high", "steps": [
+        {"actor": "user_a", "method": "POST", "path": "/webhooks", "body": {"target_url": "http://mock-external@other-internal:9000/webhook", "body": {}}, "expect_status": [400, 422], "security_check": true}
+      ]},
+      {"id": "nested_note", "title": "A nested note must belong to its order", "severity": "high", "steps": [
+        {"actor": "user_a", "method": "GET", "path": "/orders/1/notes/2", "expect_status": [403, 404], "security_check": true}
+      ]},
+      {"id": "unsigned_hook", "title": "An unsigned integration callback is rejected", "severity": "high", "steps": [
+        {"actor": "anonymous", "method": "POST", "path": "/integrations/hook", "body": {"event": "inert-test"}, "expect_status": [401, 403], "security_check": true}
+      ]},
+      {"id": "cookie_flags", "title": "Session cookie has HttpOnly protection", "severity": "medium", "steps": [
+        {"actor": "anonymous", "method": "GET", "path": "/session/start?username=user_a", "expect_status": [200], "response_assertions": [{"op": "header_contains", "name": "Set-Cookie", "value": "HttpOnly"}], "security_check": true}
+      ]},
+      {"id": "external_redirect", "title": "Login continuation never redirects to an external host", "severity": "medium", "steps": [
+        {"actor": "anonymous", "method": "GET", "path": "/auth/continue?next=https://untrusted.example/", "expect_status": [302], "response_assertions": [{"op": "header_not_contains", "name": "Location", "value": "untrusted.example"}], "security_check": true}
+      ]},
+      {"id": "reset_replay", "title": "A password reset token cannot be reused", "severity": "high", "steps": [
+        {"actor": "anonymous", "method": "POST", "path": "/auth/reset/request", "body": {"username": "user_b"}, "expect_status": [200], "capture": {"reset_token": "reset_token"}},
+        {"actor": "anonymous", "method": "POST", "path": "/auth/reset/confirm", "body": {"token": "{{reset_token}}", "password": "Lab-Reset-Only-1"}, "expect_status": [200]},
+        {"actor": "anonymous", "method": "POST", "path": "/auth/reset/confirm", "body": {"token": "{{reset_token}}", "password": "Lab-Reset-Only-2"}, "expect_status": [400, 409], "security_check": true}
+      ]},
+      {"id": "upload_disposition", "title": "Uploaded HTML is served as a download", "severity": "high", "steps": [
+        {"actor": "user_a", "method": "POST", "path": "/uploads", "multipart": {"field": "file", "filename": "test.html", "content_type": "text/html", "content": "<h1>Inert lab marker</h1>"}, "expect_status": [200], "capture": {"upload_id": "id"}},
+        {"actor": "anonymous", "method": "GET", "path": "/uploads/{{upload_id}}", "expect_status": [200], "response_assertions": [{"op": "header_present", "name": "Content-Disposition"}], "security_check": true}
+      ]},
+      {"id": "error_detail", "title": "Database errors do not disclose internal column names", "severity": "medium", "steps": [
+        {"actor": "anonymous", "method": "GET", "path": "/errors/query", "expect_status": [500], "response_assertions": [{"op": "body_not_contains", "value": "unavailable_column"}], "security_check": true}
+      ]},
+      {"id": "stored_comment", "title": "Stored comments render supplied markup as text", "severity": "high", "steps": [
+        {"actor": "user_a", "method": "POST", "path": "/comments", "body": {"body": "<em>VerdictInertCommentProbe</em>"}, "expect_status": [200, 201]},
+        {"actor": "anonymous", "method": "GET", "path": "/comments", "expect_status": [200], "response_assertions": [{"op": "body_not_contains", "value": "<em>VerdictInertCommentProbe</em>"}], "security_check": true}
+      ]},
+      {"id": "login_lockout", "title": "Repeated failed logins are blocked under the declared three-attempt policy", "severity": "medium", "steps": [
+        {"actor": "anonymous", "method": "POST", "path": "/auth/login", "body": {"username": "user_a", "password": "invalid-lab-probe"}, "expect_status": [401]},
+        {"actor": "anonymous", "method": "POST", "path": "/auth/login", "body": {"username": "user_a", "password": "invalid-lab-probe"}, "expect_status": [401]},
+        {"actor": "anonymous", "method": "POST", "path": "/auth/login", "body": {"username": "user_a", "password": "invalid-lab-probe"}, "expect_status": [401]},
+        {"actor": "anonymous", "method": "POST", "path": "/auth/login", "body": {"username": "user_a", "password": "invalid-lab-probe"}, "expect_status": [429, 423], "lockout_after_failures": 3, "security_check": true}
+      ]},
+      {"id": "worker_identity", "title": "User-controlled role must not become the worker's identity", "severity": "high", "steps": [
+        {"actor": "user_a", "method": "POST", "path": "/webhooks", "body": {"target_url": "http://mock-external:9000/webhook", "body": {"probe": "inert"}, "run_as": "admin"}, "expect_status": [200], "capture": {"worker_job_id": "id"}},
+        {"actor": "admin", "method": "GET", "path": "/admin/jobs", "wait_before_seconds": 5, "expect_status": [200], "assertions": [{"path": "0.id", "op": "eq", "value": "{{worker_job_id}}"}, {"path": "0.status", "op": "eq", "value": "complete"}]},
+        {"actor": "admin", "method": "GET", "path": "/admin/jobs", "expect_status": [200], "assertions": [{"path": "0.result.worker_identity", "op": "ne", "value": "admin"}], "security_check": true}
+      ]},
+      {"id": "guessed_session", "title": "A generated session number cannot authenticate a different user", "severity": "medium", "steps": [
+        {"actor": "anonymous", "method": "GET", "path": "/session/whoami", "auth_probe": {"kind": "numbered_cookie", "name": "lab_session", "prefix": "session-", "number": 3}, "expect_status": [401, 403], "security_check": true}
+      ]},
+      {"id": "unsigned_refresh", "title": "Refresh rejects an unsigned synthetic bearer token", "severity": "high", "steps": [
+        {"actor": "anonymous", "method": "POST", "path": "/auth/refresh", "auth_probe": {"kind": "unsigned_jwt", "claims": {"sub": 1, "username": "user_a", "role": "admin"}}, "expect_status": [401, 403], "security_check": true}
+      ]},
+      {"id": "safe_profile_owner", "title": "Verified profile route denies cross-user access", "severity": "medium", "steps": [
+        {"actor": "user_b_checked", "method": "GET", "path": "/me/verified", "expect_status": [200], "capture": {"other_id": "id"}},
+        {"actor": "user_a_checked", "method": "GET", "path": "/profiles/{{other_id}}/verified", "expect_status": [403, 404], "security_check": true}
+      ]},
+      {"id": "safe_admin_audit", "title": "Verified admin route enforces role", "severity": "medium", "steps": [
+        {"actor": "user_a_checked", "method": "GET", "path": "/admin/audit", "expect_status": [403, 404], "security_check": true},
+        {"actor": "admin_checked", "method": "GET", "path": "/admin/audit", "expect_status": [200]}
+      ]},
+      {"id": "safe_status", "title": "Secure status page sends browser protection headers", "severity": "low", "steps": [
+        {"actor": "anonymous", "method": "GET", "path": "/status/secure", "expect_status": [200], "response_assertions": [{"op": "header_present", "name": "Content-Security-Policy"}, {"op": "header_contains", "name": "X-Content-Type-Options", "value": "nosniff"}], "security_check": true}
+      ]},
+      {"id": "safe_forum", "title": "Verified forum escapes stored markup", "severity": "medium", "steps": [
+        {"actor": "user_a_checked", "method": "POST", "path": "/forum/messages", "body": {"body": "<em>VerdictInertForumProbe</em>"}, "expect_status": [200, 201]},
+        {"actor": "anonymous", "method": "GET", "path": "/forum/messages", "expect_status": [200], "response_assertions": [{"op": "body_not_contains", "value": "<em>VerdictInertForumProbe</em>"}], "security_check": true}
+      ]},
+      {"id": "safe_lockout", "title": "The limited login blocks after three failed attempts", "severity": "medium", "steps": [
+        {"actor": "anonymous", "method": "POST", "path": "/auth/limited-login", "body": {"username": "user_a", "password": "invalid-lab-probe"}, "expect_status": [401]},
+        {"actor": "anonymous", "method": "POST", "path": "/auth/limited-login", "body": {"username": "user_a", "password": "invalid-lab-probe"}, "expect_status": [401]},
+        {"actor": "anonymous", "method": "POST", "path": "/auth/limited-login", "body": {"username": "user_a", "password": "invalid-lab-probe"}, "expect_status": [401]},
+        {"actor": "anonymous", "method": "POST", "path": "/auth/limited-login", "body": {"username": "user_a", "password": "invalid-lab-probe"}, "expect_status": [429, 423], "lockout_after_failures": 3, "security_check": true}
+      ]},
+      {"id": "safe_session_probe", "title": "Opaque session rejects a generated session number", "severity": "medium", "steps": [
+        {"actor": "anonymous", "method": "GET", "path": "/session/secure-whoami", "auth_probe": {"kind": "numbered_cookie", "name": "verified_session", "prefix": "session-", "number": 3}, "expect_status": [401, 403], "security_check": true}
+      ]},
+      {"id": "safe_unsigned_probe", "title": "Verified identity rejects an unsigned synthetic bearer token", "severity": "medium", "steps": [
+        {"actor": "anonymous", "method": "GET", "path": "/me/verified", "auth_probe": {"kind": "unsigned_jwt", "claims": {"sub": 1, "username": "user_a", "role": "admin"}}, "expect_status": [401, 403], "security_check": true}
+      ]},
+      {"id": "stale_role", "title": "An administrator token loses access after role demotion", "severity": "high", "steps": [
+        {"actor": "admin", "method": "GET", "path": "/me", "expect_status": [200], "capture": {"admin_id": "id"}},
+        {"actor": "admin_checked", "method": "POST", "path": "/admin/roles/{{admin_id}}", "body": {"role": "user"}, "expect_status": [200]},
+        {"actor": "admin", "method": "GET", "path": "/admin/token-report", "expect_status": [403], "security_check": true}
+      ]}
+    ]
+  }
+}
+
