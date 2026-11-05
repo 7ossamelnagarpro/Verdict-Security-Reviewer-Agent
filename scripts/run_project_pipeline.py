@@ -22,7 +22,10 @@ if str(_SOURCE_ROOT) not in sys.path:
 import shutil
 
 from security_reviewer_v2.discovery.provider import provider_from_environment
-from security_reviewer_v2.discovery.test_plan import approved_readonly_routes
+from security_reviewer_v2.discovery.test_plan import (
+    approved_readonly_proposals,
+    bounded_probe_result,
+)
 from security_reviewer_v2.profiler import profile_project
 from security_reviewer_v2.profiler.artifact import create_saved_profile_artifact
 from security_reviewer_v2.scanners.generic_runtime import (
@@ -84,6 +87,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--ai-model", default=None)
     parser.add_argument("--ai-max-targets", type=int, default=10)
     parser.add_argument("--ai-max-batches", type=int, default=20)
+    parser.add_argument("--ai-max-context-chars", type=int, default=None)
     parser.add_argument("--ai-max-planned-targets", type=int, default=128)
     parser.add_argument("--ai-max-candidates", type=int, default=20)
     parser.add_argument("--ai-max-enrichment-rounds", type=int, default=2)
@@ -119,6 +123,11 @@ def _parser() -> argparse.ArgumentParser:
         type=Path,
         help="reviewed plan from a previous scan; probe bounded source-backed GET routes on disposable Docker",
     )
+    parser.add_argument(
+        "--auto-discovery-get",
+        action="store_true",
+        help="run current source-backed GET proposals on a fresh disposable trusted Compose stack before Review",
+    )
     return parser
 
 
@@ -133,6 +142,9 @@ def _validate(args: argparse.Namespace) -> tuple[Path, Path]:
         raise ValueError(
             f"Choose a new output directory; existing reports are never overwritten: {output}"
         )
+    context_budget = getattr(args, "ai_max_context_chars", None)
+    if context_budget is not None and not 1_000 <= context_budget <= 500_000:
+        raise ValueError("--ai-max-context-chars must be between 1000 and 500000")
     if args.static_only and args.runtime_contract is not None:
         raise ValueError("--static-only cannot be combined with --runtime-contract")
     if args.static_only and args.allow_trusted_local_compose:
@@ -146,6 +158,15 @@ def _validate(args: argparse.Namespace) -> tuple[Path, Path]:
     ):
         raise ValueError(
             "Approved Discovery probes require a trusted disposable Compose scan"
+        )
+    if getattr(args, "auto_discovery_get", False) and (
+        args.static_only
+        or not args.allow_trusted_local_compose
+        or args.runtime_contract is None
+        or getattr(args, "approved_discovery_plan", None) is not None
+    ):
+        raise ValueError(
+            "Current Discovery GET probes require a trusted Compose contract and cannot combine with an approved prior plan"
         )
     if getattr(args, "runtime_recipe", None) and (
         args.static_only
@@ -229,7 +250,11 @@ def _prepare_runtime(args: argparse.Namespace, *, project: Path, output: Path) -
         )
     if spec.mode == "existing_url" and args.allow_trusted_local_compose:
         raise ValueError("Compose opt-in cannot be used with an existing URL")
-    approved_routes: tuple[str, ...] = ()
+    if getattr(args, "auto_discovery_get", False) and (
+        spec.mode != "docker_compose" or spec.trust_level != "trusted_local_project"
+    ):
+        raise ValueError("Current Discovery GET probes require trusted local Compose")
+    approved_proposals: tuple[dict, ...] = ()
     if getattr(args, "approved_discovery_plan", None):
         if spec.mode != "docker_compose":
             raise ValueError(
@@ -238,11 +263,12 @@ def _prepare_runtime(args: argparse.Namespace, *, project: Path, output: Path) -
         fingerprint = create_saved_profile_artifact(profile_project(project), project)[
             "project_snapshot"
         ]["fingerprint"]
-        approved_routes = approved_readonly_routes(
+        approved_proposals = approved_readonly_proposals(
             args.approved_discovery_plan,
             project_root=project,
             project_fingerprint=fingerprint,
         )
+    approved_routes = tuple(item["path"] for item in approved_proposals)
     if spec.authorization_checks:
         raise ValueError(
             "Generic authorization workflows need a project-specific adapter; "
@@ -281,27 +307,15 @@ def _prepare_runtime(args: argparse.Namespace, *, project: Path, output: Path) -
             if getattr(args, "approved_discovery_plan", None):
                 import json
 
-                statuses = {
-                    row.get("path"): row.get("evidence", {}).get("status")
-                    for row in (baseline or {}).get("results", [])
-                    if row.get("rule_id") == "web.endpoint-server-error"
-                }
                 (output / "approved-discovery-probes.json").write_text(
                     json.dumps(
-                        {
-                            "schema_version": "1.0",
-                            "status": "no_eligible_routes"
-                            if not approved_routes
-                            else "completed"
-                            if all(path in statuses for path in approved_routes)
-                            else "partial",
-                            "source_plan": str(args.approved_discovery_plan.resolve()),
-                            "probes": [
-                                {"path": path, "http_status": statuses.get(path)}
-                                for path in approved_routes
-                            ],
-                            "finding_count": 0,
-                        },
+                        bounded_probe_result(
+                            approved_proposals,
+                            baseline,
+                            health_path=spec.health_path,
+                            project_fingerprint=fingerprint,
+                            source_plan=str(args.approved_discovery_plan.resolve()),
+                        ),
                         indent=2,
                     )
                     + "\n",
@@ -441,6 +455,12 @@ def _command(
         str(args.ai_max_targets),
         "--ai-max-batches",
         str(args.ai_max_batches),
+        "--ai-max-context-chars",
+        str(args.ai_max_context_chars)
+        if args.ai_max_context_chars is not None
+        else "8000"
+        if args.ai_provider == "groq"
+        else "20000",
         "--ai-max-planned-targets",
         str(args.ai_max_planned_targets),
         "--ai-max-candidates",
@@ -458,6 +478,8 @@ def _command(
             )
     if args.require_all_scanners:
         command.append("--require-all-scanners")
+    if getattr(args, "auto_discovery_get", False):
+        command.append("--auto-discovery-get")
     if getattr(args, "codebase_memory", True):
         command.append("--codebase-memory")
     else:

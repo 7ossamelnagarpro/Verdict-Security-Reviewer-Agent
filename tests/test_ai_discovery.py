@@ -294,7 +294,9 @@ def test_groq_discovery_falls_back_once_after_strict_schema_400(monkeypatch):
     modes = []
 
     def open_json_fallback(request, _timeout):
-        mode = json.loads(request.data)["response_format"]["type"]
+        body = json.loads(request.data)
+        assert body["tool_choice"] == "none"
+        mode = body["response_format"]["type"]
         modes.append(mode)
         if mode == "json_schema":
             raise urllib.error.HTTPError(
@@ -684,7 +686,17 @@ def test_discovery_processes_all_planned_targets_in_batches(tmp_path: Path):
     )
 
 
-def test_discovery_splits_format_failed_batch_without_losing_targets(tmp_path: Path):
+@pytest.mark.parametrize(
+    "error_message",
+    [
+        "AI provider request failed with HTTP 400 (json_validate_failed)",
+        "AI provider request failed with HTTP 400 (tool_use_failed)",
+        "AI provider request failed with HTTP 400",
+    ],
+)
+def test_discovery_splits_format_failed_batch_without_losing_targets(
+    tmp_path: Path, error_message: str
+):
     merged, context, risk, profile = _inputs(tmp_path)
 
     class FormatSensitiveProvider:
@@ -700,9 +712,7 @@ def test_discovery_splits_format_failed_batch_without_losing_targets(tmp_path: P
             self.sizes.append(size)
             if size > 1 and not self.failed_once:
                 self.failed_once = True
-                raise RuntimeError(
-                    "AI provider request failed with HTTP 400 (json_validate_failed)"
-                )
+                raise RuntimeError(error_message)
             return {"candidates": [], "context_requests": []}, {}
 
     provider = FormatSensitiveProvider()
@@ -714,6 +724,41 @@ def test_discovery_splits_format_failed_batch_without_losing_targets(tmp_path: P
     assert result.usage["format_split_calls"] == 1
     assert result.usage["planned_targets"] == result.usage["targets"]
     assert all(batch.status == "completed" for batch in result.batches)
+
+
+def test_discovery_keeps_initial_result_when_context_enrichment_fails(tmp_path: Path):
+    merged, context, risk, profile = _inputs(tmp_path)
+
+    class EnrichmentFailureProvider:
+        name = "fake"
+        model = "test"
+
+        def __init__(self):
+            self.calls = 0
+
+        def discover(self, prompt, *, timeout_seconds, max_candidates):
+            self.calls += 1
+            if self.calls == 1:
+                return {
+                    "candidates": [],
+                    "context_requests": [{"path": "auth.py", "symbol": "authorize"}],
+                }, {}
+            if self.calls == 2:
+                raise RuntimeError("AI provider request failed with HTTP 400")
+            return {"candidates": [], "context_requests": []}, {}
+
+    provider = EnrichmentFailureProvider()
+    result = DiscoveryAgent(provider, DiscoveryConfig(max_targets=1)).run(
+        merged, context, risk, project_root=tmp_path, profile_artifact=profile
+    )
+    assert result.batches[0].status == "partial"
+    assert result.batches[0].provider_calls == 2
+    assert len(result.batches) == len(result.target_plan)
+    assert result.usage["targets"] == result.usage["planned_targets"]
+    assert any(
+        "could not assess its requested additional context" in gap
+        for gap in result.coverage_gaps
+    )
 
 
 def test_discovery_can_request_function_context_and_ground_structured_candidate(

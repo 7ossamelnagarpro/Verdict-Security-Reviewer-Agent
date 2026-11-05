@@ -26,7 +26,7 @@ def main() -> int:
     parser.add_argument("--model", default=None)
     parser.add_argument("--batch-size", type=int, default=10)
     parser.add_argument("--max-candidates", type=int, default=20)
-    parser.add_argument("--max-context-chars", type=int, default=20_000)
+    parser.add_argument("--max-context-chars", type=int, default=None)
     parser.add_argument("--max-batches", type=int, default=20)
     parser.add_argument("--max-planned-targets", type=int, default=128)
     parser.add_argument("--max-enrichment-rounds", type=int, default=2)
@@ -53,7 +53,11 @@ def main() -> int:
         model=args.model,
         max_targets=args.batch_size,
         max_candidates=args.max_candidates,
-        max_context_chars=args.max_context_chars,
+        max_context_chars=args.max_context_chars
+        if args.max_context_chars is not None
+        else 8_000
+        if args.provider == "groq"
+        else 20_000,
         max_batches=args.max_batches,
         max_planned_targets=args.max_planned_targets,
         max_enrichment_rounds=args.max_enrichment_rounds,

@@ -22,6 +22,10 @@ from security_reviewer_v2.context import (
 from security_reviewer_v2.discovery.agent import DiscoveryAgent
 from security_reviewer_v2.discovery.completion import required_discovery_satisfied
 from security_reviewer_v2.discovery.models import DiscoveryConfig, DiscoveryResult
+from security_reviewer_v2.discovery.test_plan import (
+    build_discovery_test_plan,
+    link_probe_evidence,
+)
 from security_reviewer_v2.normalization.merge_models import MergeResult
 from security_reviewer_v2.policy import evaluate_policy
 from security_reviewer_v2.prioritization.models import RiskResult
@@ -41,6 +45,8 @@ class AgentReviewState(TypedDict, total=False):
     verification_payload: dict[str, Any]
     triage: TriageResult
     triage_payload: dict[str, Any]
+    discovery_test_evidence: dict[str, Any]
+    current_probe_payload: dict[str, Any]
     review_payload: dict[str, Any]
     policy_payload: dict[str, Any]
 
@@ -60,6 +66,9 @@ def run_agent_review_graph(
     write_artifact: Callable[[str, dict[str, Any]], None],
     review_runner: Callable[..., Any],
     application_map: dict[str, Any] | None = None,
+    approved_probe_evidence: dict[str, Any] | None = None,
+    runtime_evidence: dict[str, Any] | None = None,
+    current_probe_runner: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
 ) -> AgentReviewState:
     """Run Discovery through Policy Gate using the existing stage implementations.
 
@@ -128,11 +137,91 @@ def run_agent_review_graph(
 
     def triage_node(state: AgentReviewState) -> AgentReviewState:
         result = triage_candidates(
-            state["discovery"], state["verification"], merged, project_root=project_root
+            state["discovery"],
+            state["verification"],
+            merged,
+            project_root=project_root,
+            discovery_test_evidence=state["discovery_test_evidence"],
         )
         payload = result.to_dict()
         write_artifact("candidate-triage.json", payload)
-        return {"triage": result, "triage_payload": payload}
+        groups = {
+            item["candidate_id"]: item.get("group_id")
+            for item in payload.get("records", [])
+        }
+        evidence = {
+            **state["discovery_test_evidence"],
+            "candidates": [
+                {**item, "review_group_id": groups.get(item["candidate_id"])}
+                for item in state["discovery_test_evidence"]["candidates"]
+            ],
+        }
+        write_artifact("discovery-test-evidence.json", evidence)
+        return {
+            "triage": result,
+            "triage_payload": payload,
+            "discovery_test_evidence": evidence,
+        }
+
+    def discovery_test_evidence_node(state: AgentReviewState) -> AgentReviewState:
+        probe_payload = approved_probe_evidence
+        current_probe_payload = {"status": "not_requested"}
+        if current_probe_runner is not None and state["discovery_satisfied"]:
+            plan = build_discovery_test_plan(
+                state["discovery_payload"],
+                runtime_evidence.get("browser")
+                if isinstance(runtime_evidence, dict)
+                else None,
+                project_root=project_root,
+                project_fingerprint=profile_artifact.get("project_snapshot", {}).get(
+                    "fingerprint"
+                ),
+            )
+            write_artifact("discovery-test-plan.json", plan)
+            try:
+                current_probe_payload = current_probe_runner(plan)
+            except (OSError, RuntimeError, ValueError) as error:
+                current_probe_payload = {
+                    "schema_version": "1.0",
+                    "status": "blocked",
+                    "project_fingerprint": profile_artifact.get(
+                        "project_snapshot", {}
+                    ).get("fingerprint"),
+                    "probes": [],
+                    "cleanup_verified": False,
+                    "warnings": [str(error)],
+                }
+            write_artifact("current-discovery-probes.json", current_probe_payload)
+            probe_payload = current_probe_payload
+        elif current_probe_runner is not None:
+            current_probe_payload = {
+                "schema_version": "1.0",
+                "status": "not_run",
+                "project_fingerprint": profile_artifact.get("project_snapshot", {}).get(
+                    "fingerprint"
+                ),
+                "probes": [],
+                "cleanup_verified": True,
+                "warnings": [
+                    "Current Discovery probes require completed AI Discovery."
+                ],
+            }
+            write_artifact("current-discovery-probes.json", current_probe_payload)
+            probe_payload = current_probe_payload
+        payload = link_probe_evidence(
+            state["discovery_payload"],
+            {"records": []},
+            probe_payload,
+            project_fingerprint=profile_artifact.get("project_snapshot", {}).get(
+                "fingerprint"
+            ),
+            application_map=application_map,
+            runtime_evidence=runtime_evidence,
+        )
+        return {
+            "discovery_test_evidence": payload,
+            "current_probe_payload": current_probe_payload,
+        }
 
     def missing_discovery_node(_state: AgentReviewState) -> AgentReviewState:
         candidate_context = {
@@ -162,10 +251,19 @@ def run_agent_review_graph(
         write_artifact("candidate-context.json", candidate_context)
         write_artifact("verification.json", verification)
         write_artifact("candidate-triage.json", triage)
+        test_evidence = link_probe_evidence(
+            {"candidates": []},
+            triage,
+            None,
+            project_fingerprint=None,
+        )
+        write_artifact("discovery-test-evidence.json", test_evidence)
         return {
             "candidate_context_payload": candidate_context,
             "verification_payload": verification,
             "triage_payload": triage,
+            "discovery_test_evidence": test_evidence,
+            "current_probe_payload": {"status": "not_run"},
         }
 
     def review_node(state: AgentReviewState) -> AgentReviewState:
@@ -198,6 +296,7 @@ def run_agent_review_graph(
             timeout_seconds=None,
             deployment_context=deployment_context,
             max_reviews=max(1, max_reviews),
+            discovery_test_evidence=state["discovery_test_evidence"],
         )
         payload = result.to_dict()
         write_artifact("security-review.json", payload)
@@ -230,6 +329,7 @@ def run_agent_review_graph(
     graph.add_node("candidate_context", candidate_context_node)
     graph.add_node("verification", verification_node)
     graph.add_node("candidate_triage", triage_node)
+    graph.add_node("discovery_test_evidence", discovery_test_evidence_node)
     graph.add_node("missing_discovery", missing_discovery_node)
     graph.add_node("security_review", review_node)
     graph.add_node("skipped_review", skipped_review_node)
@@ -241,7 +341,8 @@ def run_agent_review_graph(
         {"available": "candidate_context", "missing": "missing_discovery"},
     )
     graph.add_edge("candidate_context", "verification")
-    graph.add_edge("verification", "candidate_triage")
+    graph.add_edge("verification", "discovery_test_evidence")
+    graph.add_edge("discovery_test_evidence", "candidate_triage")
     graph.add_conditional_edges(
         "candidate_triage",
         lambda state: "ready" if state["discovery_satisfied"] else "incomplete",

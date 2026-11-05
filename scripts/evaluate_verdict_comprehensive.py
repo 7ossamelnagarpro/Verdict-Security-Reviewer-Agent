@@ -266,6 +266,7 @@ def _coverage_metrics(
         for account in valid_accounts
         if isinstance(account.get("role"), str) and account["role"]
     }
+
     verified_roles = {
         account["role"]
         for account in valid_accounts
@@ -290,6 +291,95 @@ def _coverage_metrics(
     }
 
 
+def _discovery_review_audit(
+    discovery: dict[str, Any] | None,
+    verification: dict[str, Any] | None,
+    triage: dict[str, Any],
+    reviews: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Retain supported Discovery candidates that Review did not flag."""
+    if not isinstance(discovery, dict) or not isinstance(verification, dict):
+        return []
+    grounded = {
+        item.get("candidate_id")
+        for item in verification.get("records", [])
+        if isinstance(item, dict) and item.get("disposition") == "confirmed"
+    }
+    triage_by_candidate = {
+        item.get("candidate_id"): item
+        for item in triage.get("records", [])
+        if isinstance(item, dict) and isinstance(item.get("candidate_id"), str)
+    }
+    audit = []
+    for candidate in discovery.get("candidates", []):
+        if not isinstance(candidate, dict):
+            continue
+        candidate_id = candidate.get("candidate_id")
+        if not isinstance(candidate_id, str) or candidate_id not in grounded:
+            continue
+        record = triage_by_candidate.get(candidate_id, {})
+        group_id = record.get("group_id")
+        verdict = reviews.get(group_id, {}).get("verdict") if group_id else None
+        if verdict is None:
+            # A pending group has no Review verdict to disagree with.
+            continue
+        if verdict in POSITIVE_VERDICTS:
+            continue
+        audit.append(
+            {
+                "candidate_id": candidate_id,
+                "title": candidate.get("title"),
+                "source_path": candidate.get("path"),
+                "source_line": candidate.get("start_line"),
+                "triage_disposition": record.get("disposition", "untracked"),
+                "review_group_id": group_id,
+                "review_verdict": verdict or "not_reviewed",
+                "independent_proof": "not_adjudicated",
+            }
+        )
+    return audit
+
+
+def _discovery_evidence_metrics(payload: dict[str, Any] | None) -> dict[str, Any]:
+    """Count source-linked test observations without calling them exploits."""
+    if not isinstance(payload, dict) or not isinstance(payload.get("candidates"), list):
+        return {"measured": False}
+    candidates = [
+        item
+        for item in payload["candidates"]
+        if isinstance(item, dict) and isinstance(item.get("candidate_id"), str)
+    ]
+
+    def linked_probes(item: dict[str, Any]) -> list[Any]:
+        value = item.get("probes")
+        return value if isinstance(value, list) else []
+
+    def linked_workflows(item: dict[str, Any]) -> list[Any]:
+        value = item.get("workflow_tests")
+        return value if isinstance(value, list) else []
+
+    return {
+        "measured": True,
+        "candidate_count": len(candidates),
+        "observed_candidates": sum(
+            bool(linked_probes(item) or linked_workflows(item)) for item in candidates
+        ),
+        "workflow_linked_candidates": sum(
+            bool(linked_workflows(item)) for item in candidates
+        ),
+        "violated_rule_candidates": sum(
+            any(
+                isinstance(test, dict) and test.get("result") == "violated"
+                for test in linked_workflows(item)
+            )
+            for item in candidates
+        ),
+        "review_group_linked_candidates": sum(
+            isinstance(item.get("review_group_id"), str) for item in candidates
+        ),
+    }
+
+
 def evaluate(
     truth: dict[str, Any],
     scan: dict[str, Any],
@@ -299,6 +389,9 @@ def evaluate(
     *,
     allow_partial: bool = False,
     application_map: dict[str, Any] | None = None,
+    discovery: dict[str, Any] | None = None,
+    verification: dict[str, Any] | None = None,
+    discovery_test_evidence: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if truth.get("target") != "targets/verdict-comprehensive-lab":
         raise ValueError("Wrong benchmark fixture")
@@ -416,8 +509,11 @@ def evaluate(
         if assessment.get("verdict") in POSITIVE_VERDICTS
         and group_id not in linked_positive_groups
     ]
+    discovery_review_audit = _discovery_review_audit(
+        discovery, verification, triage, reviews
+    )
     return {
-        "schema_version": "1.4",
+        "schema_version": "1.5",
         "target": truth["target"],
         "evaluation_status": "provisional" if provisional else "final",
         "generated_at": datetime.now(UTC).isoformat(),
@@ -463,10 +559,14 @@ def evaluate(
             ),
             "candidate_only_excluded": sum(row["status"] == "excluded" for row in rows),
             "unattributed_flagged_groups": len(unattributed_flagged_groups),
+            "discovery_review_disagreements": len(discovery_review_audit),
             "precision": None,
             "f1": None,
         },
         "coverage_metrics": _coverage_metrics(scan, application_map),
+        "discovery_evidence_metrics": _discovery_evidence_metrics(
+            discovery_test_evidence
+        ),
         "limitations": [
             "Held-out comparison of one saved run; the benchmark was not supplied to scanning or AI.",
             *(
@@ -484,6 +584,7 @@ def evaluate(
         ],
         "cases": rows,
         "unattributed_flagged_groups": unattributed_flagged_groups,
+        "discovery_review_audit": discovery_review_audit,
         "original_observations": _original_observations(findings, groups, reviews),
     }
 
@@ -570,6 +671,23 @@ def markdown(result: dict[str, Any]) -> str:
         "",
         "These ratios describe execution of the declared scope, not vulnerability detection.",
         "",
+        "## Discovery test evidence",
+        "",
+        (
+            "Source-linked candidates with runtime observations: "
+            f"**{result['discovery_evidence_metrics']['observed_candidates']}/"
+            f"{result['discovery_evidence_metrics']['candidate_count']}**; "
+            "linked to a Review group: "
+            f"**{result['discovery_evidence_metrics']['review_group_linked_candidates']}**; "
+            "linked to a declared Workflow security check: "
+            f"**{result['discovery_evidence_metrics']['workflow_linked_candidates']}** "
+            "(failed rule: "
+            f"**{result['discovery_evidence_metrics']['violated_rule_candidates']}**)."
+        )
+        if result["discovery_evidence_metrics"].get("measured")
+        else "No Discovery test-evidence artifact was available for this evaluation.",
+        "A linked response or failed declared rule is an observation, not independent exploit proof.",
+        "",
         "## Scan provenance",
         "",
         f"- Target: `{provenance['project']}`",
@@ -609,6 +727,31 @@ def markdown(result: dict[str, Any]) -> str:
         )
     if not result.get("unattributed_flagged_groups"):
         lines.append("- None recorded")
+    lines.append("")
+    disagreements = result.get("discovery_review_audit", [])
+    lines += ["## Discovery candidates not flagged by Review Agent", ""]
+    lines.append(
+        "Source-grounded candidates below require independent adjudication; "
+        "a different Review verdict alone does not prove a false negative."
+    )
+    lines += [
+        "",
+        "| Candidate | Source | Triage | Review group / verdict |",
+        "| --- | --- | --- | --- |",
+    ]
+    for item in disagreements:
+        location = f"{item['source_path'] or 'unknown'}:{item['source_line'] or '?'}"
+        values = (
+            item["candidate_id"],
+            location,
+            item["triage_disposition"],
+            f"{item['review_group_id'] or 'none'} / {item['review_verdict']}",
+        )
+        lines.append(
+            "| " + " | ".join(_markdown_cell(value) for value in values) + " |"
+        )
+    if not disagreements:
+        lines.append("| — | None recorded | — | — |")
     lines.append("")
     for label, title in (
         ("confirmed_vulnerability", "Known-positive cases"),
@@ -693,21 +836,38 @@ def html_report(result: dict[str, Any]) -> str:
     summary = result["summary"]
     provenance = result["scan_provenance"]
     coverage = result.get("coverage_metrics", {})
+    discovery_evidence = result.get("discovery_evidence_metrics", {})
+    evidence_summary = (
+        "{} / {} candidates with linked runtime observations; {} linked to a "
+        "Review group; {} linked to declared Workflow security checks, including "
+        "{} with a failed rule.".format(
+            discovery_evidence["observed_candidates"],
+            discovery_evidence["candidate_count"],
+            discovery_evidence["review_group_linked_candidates"],
+            discovery_evidence["workflow_linked_candidates"],
+            discovery_evidence["violated_rule_candidates"],
+        )
+        if discovery_evidence.get("measured")
+        else "No Discovery test-evidence artifact was available."
+    )
     undetected = [
         row
         for row in result["cases"]
         if row["ground_truth"] == "confirmed_vulnerability"
         and row["status"] == "not_detected"
     ]
-    undetected_rows = "".join(
-        "<tr><td><code>{}</code></td><td>{}</td><td><code>{}</code></td><td>{}</td></tr>".format(
-            escape(str(row["id"])),
-            escape(str(row["category"])),
-            escape(str(row["location"])),
-            escape(str(row["severity"] or "not assigned")),
+    undetected_rows = (
+        "".join(
+            "<tr><td><code>{}</code></td><td>{}</td><td><code>{}</code></td><td>{}</td></tr>".format(
+                escape(str(row["id"])),
+                escape(str(row["category"])),
+                escape(str(row["location"])),
+                escape(str(row["severity"] or "not assigned")),
+            )
+            for row in undetected
         )
-        for row in undetected
-    ) or '<tr><td colspan="4">None</td></tr>'
+        or '<tr><td colspan="4">None</td></tr>'
+    )
     coverage_rows = "".join(
         "<tr><td>{}</td><td>{}</td></tr>".format(
             escape(label),
@@ -738,6 +898,17 @@ def html_report(result: dict[str, Any]) -> str:
             escape(str(group["severity"] or "unrated")),
         )
         for group in result.get("unattributed_flagged_groups", [])
+    )
+    disagreement_rows = "".join(
+        "<tr><td><code>{}</code></td><td><code>{}:{}</code></td><td>{}</td><td>{} / {}</td></tr>".format(
+            escape(str(item["candidate_id"])),
+            escape(str(item["source_path"] or "unknown")),
+            escape(str(item["source_line"] or "?")),
+            escape(str(item["triage_disposition"])),
+            escape(str(item["review_group_id"] or "none")),
+            escape(str(item["review_verdict"])),
+        )
+        for item in result.get("discovery_review_audit", [])
     )
     rows = []
     for row in result["cases"]:
@@ -827,6 +998,8 @@ A provisional diagnostic is not a completed evaluation. This is not a claim of e
 <div class="scroll"><table><thead><tr><th>Case</th><th>Category</th><th>Location</th><th>Severity</th></tr></thead><tbody>{undetected_rows}</tbody></table></div>
 <h2>Measured coverage</h2><p>Execution of the declared scope; these ratios do not measure vulnerability detection.</p>
 <div class="scroll"><table><thead><tr><th>Scope</th><th>Covered / total</th></tr></thead><tbody>{coverage_rows}</tbody></table></div>
+<h2>Discovery test evidence</h2><p>{escape(evidence_summary)}</p>
+<p class="note">A linked response or failed declared rule is an observation, not independent exploit proof.</p>
 <h2>Scan provenance</h2><p>{escape(str(provenance["project"]))} · initial scan {escape(str(provenance["scan_status"]))} ·
 {escape(", ".join(provenance["adapters"]))} · {provenance["merged_findings"]} merged findings · {provenance["reviewed_groups"]}/{provenance["total_groups"]} reviewed groups</p>
 <p>AI discovery: {escape(str((provenance["ai_discovery"] or {}).get("provider", "unknown")))} / {escape(str((provenance["ai_discovery"] or {}).get("model", "unknown")))};
@@ -836,6 +1009,9 @@ recorded coverage gaps: {len(provenance["coverage_gaps"])}.</p>
 <h2>Flagged groups awaiting benchmark adjudication</h2>
 <p>These Review Agent groups are not linked to a known-positive case by the exact signatures. They are not automatically false positives.</p>
 <div class="scroll"><table><thead><tr><th>Group</th><th>Title</th><th>Verdict</th><th>Severity</th></tr></thead><tbody>{unattributed_rows or '<tr><td colspan="4">None recorded</td></tr>'}</tbody></table></div>
+<h2>Discovery candidates not flagged by Review Agent</h2>
+<p>Source grounding and a different Review verdict do not prove a false negative; these candidates need independent adjudication.</p>
+<div class="scroll"><table><thead><tr><th>Candidate</th><th>Source</th><th>Triage</th><th>Review group / verdict</th></tr></thead><tbody>{disagreement_rows or '<tr><td colspan="4">None recorded</td></tr>'}</tbody></table></div>
 <h2>All {len(result["cases"])} benchmark cases</h2>
 <div class="scroll"><table><thead><tr><th>Case</th><th>Category / location</th><th>Ground truth</th><th>Scan outcome / severity</th><th>Expected behavior / proof</th><th>Audit signatures / matched evidence</th></tr></thead><tbody>{"".join(rows)}</tbody></table></div>
 <h2>Original scanner &amp; DAST observations ({len(observations)})</h2>
@@ -865,6 +1041,17 @@ def main() -> None:
         allow_partial=args.diagnostic_partial,
         application_map=_read(args.scan_dir / "application-map.json")
         if (args.scan_dir / "application-map.json").is_file()
+        else None,
+        discovery=_read(args.review_dir / "ai-discovery.json")
+        if (args.review_dir / "ai-discovery.json").is_file()
+        else _read(args.scan_dir / "ai-discovery.json")
+        if (args.scan_dir / "ai-discovery.json").is_file()
+        else None,
+        verification=_read(args.review_dir / "verification.json")
+        if (args.review_dir / "verification.json").is_file()
+        else None,
+        discovery_test_evidence=_read(args.review_dir / "discovery-test-evidence.json")
+        if (args.review_dir / "discovery-test-evidence.json").is_file()
         else None,
     )
     args.output_dir.mkdir(parents=True, exist_ok=False)

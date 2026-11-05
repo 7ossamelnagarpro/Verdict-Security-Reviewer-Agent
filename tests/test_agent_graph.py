@@ -83,6 +83,7 @@ def test_agent_review_graph_routes_discovery_and_review(
         "candidate-context.json",
         "verification.json",
         "candidate-triage.json",
+        "discovery-test-evidence.json",
         "security-review.json",
         "policy-gate.json",
     ]
@@ -100,12 +101,13 @@ def test_agent_review_graph_routes_discovery_and_review(
             "candidate-context.json",
             "verification.json",
             "candidate-triage.json",
+            "discovery-test-evidence.json",
             "security-review.json",
             "policy-gate.json",
         ]
         assert artifacts["ai-discovery.json"]["warnings"] == ["provider unavailable"]
     else:
-        assert calls[:8] == [
+        assert calls[:9] == [
             "discovery",
             "ai-discovery.json",
             "context",
@@ -114,5 +116,84 @@ def test_agent_review_graph_routes_discovery_and_review(
             "verification.json",
             "triage",
             "candidate-triage.json",
+            "discovery-test-evidence.json",
         ]
         assert ("review" in calls) is (discovery_mode == "complete")
+
+
+def test_current_discovery_probes_run_before_review(
+    monkeypatch, tmp_path: Path
+) -> None:
+    calls: list[str] = []
+    artifacts: dict[str, dict] = {}
+
+    class FakeDiscoveryAgent:
+        def __init__(self, *_args):
+            pass
+
+        def run(self, *_args, **_kwargs):
+            return SimpleNamespace(
+                to_dict=lambda: {
+                    "schema_version": "1.0",
+                    "status": "completed",
+                    "candidates": [],
+                    "usage": {"planned_targets": 1, "targets": 1, "provider_calls": 1},
+                    "batches": [{"status": "completed"}],
+                }
+            )
+
+    monkeypatch.setattr(agent_graph, "DiscoveryAgent", FakeDiscoveryAgent)
+    monkeypatch.setattr(
+        agent_graph,
+        "collect_candidate_context",
+        lambda *_args, **_kwargs: SimpleNamespace(warnings=(), to_dict=lambda: {}),
+    )
+    monkeypatch.setattr(
+        agent_graph,
+        "verify_discovery",
+        lambda *_args, **_kwargs: SimpleNamespace(to_dict=lambda: {}),
+    )
+    monkeypatch.setattr(
+        agent_graph,
+        "triage_candidates",
+        lambda *_args, **_kwargs: TriageResult(
+            "1.0", "completed", (), (), TriageSummary(*(0 for _ in range(9))), ()
+        ),
+    )
+
+    def probe_runner(plan: dict) -> dict:
+        calls.append("probes")
+        assert plan["project_fingerprint"] == "snapshot-1"
+        return {
+            "schema_version": "1.0",
+            "status": "no_eligible_routes",
+            "source_plan": "current-scan",
+            "project_fingerprint": "snapshot-1",
+            "probes": [],
+            "cleanup_verified": True,
+        }
+
+    def review_runner(*_args, **kwargs):
+        calls.append("review")
+        assert kwargs["discovery_test_evidence"]["status"] == "not_run"
+        return SimpleNamespace(to_dict=lambda: {"status": "completed", "reviews": []})
+
+    state = agent_graph.run_agent_review_graph(
+        provider=object(),
+        discovery_config=DiscoveryConfig(),
+        project_root=tmp_path,
+        profile_artifact={"project_snapshot": {"fingerprint": "snapshot-1"}},
+        merged=object(),
+        context=object(),
+        risk=SimpleNamespace(findings=()),
+        additional_coverage_gaps=(),
+        deployment_context=None,
+        max_reviews=3,
+        write_artifact=lambda name, payload: artifacts.update({name: payload}),
+        review_runner=review_runner,
+        current_probe_runner=probe_runner,
+    )
+
+    assert calls == ["probes", "review"]
+    assert artifacts["current-discovery-probes.json"]["cleanup_verified"] is True
+    assert state["current_probe_payload"]["status"] == "no_eligible_routes"

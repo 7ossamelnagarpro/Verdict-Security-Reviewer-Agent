@@ -23,8 +23,12 @@ from security_reviewer_v2.codebase_intelligence import (
 )
 from security_reviewer_v2.context.collector import collect_context
 from security_reviewer_v2.discovery.models import DiscoveryConfig
+from security_reviewer_v2.discovery.probe_runner import run_current_discovery_probes
 from security_reviewer_v2.discovery.provider import provider_from_environment
-from security_reviewer_v2.discovery.test_plan import build_discovery_test_plan
+from security_reviewer_v2.discovery.test_plan import (
+    apply_probe_execution,
+    build_discovery_test_plan,
+)
 from security_reviewer_v2.normalization.authorization import (
     normalize_authorization_json_file,
 )
@@ -300,6 +304,12 @@ def main() -> int:
         help="maximum targets per AI Discovery batch",
     )
     parser.add_argument("--ai-max-batches", type=int, default=20)
+    parser.add_argument(
+        "--ai-max-context-chars",
+        type=int,
+        default=None,
+        help="Discovery prompt budget in characters; defaults to 8000 for Groq and 20000 for Ollama",
+    )
     parser.add_argument("--ai-max-planned-targets", type=int, default=128)
     parser.add_argument(
         "--ai-max-candidates",
@@ -343,7 +353,12 @@ def main() -> int:
     parser.add_argument(
         "--test-environment-config",
         type=Path,
-        help="user-supplied environment configuration outside the target project; preflight only",
+        help="user-supplied environment configuration outside the target project",
+    )
+    parser.add_argument(
+        "--auto-discovery-get",
+        action="store_true",
+        help="probe bounded current Discovery GET proposals on a fresh trusted disposable Compose stack before Review",
     )
     parser.add_argument(
         "--docker-runtime-run-id",
@@ -356,6 +371,12 @@ def main() -> int:
         help="import completed generic DAST evidence produced by an explicit Runtime Contract",
     )
     args = parser.parse_args()
+    if args.auto_discovery_get and (
+        args.test_environment_config is None or args.runtime_evidence is None
+    ):
+        parser.error(
+            "--auto-discovery-get requires --test-environment-config and --runtime-evidence"
+        )
     if args.scanner_preflight_only:
         if not args.require_all_scanners:
             parser.error("--scanner-preflight-only requires --require-all-scanners")
@@ -465,6 +486,7 @@ def main() -> int:
         render_markdown(profile_result), encoding="utf-8"
     )
     environment_plan_payload = None
+    environment_spec = None
     if args.test_environment_config:
         try:
             environment_spec = load_environment_spec(
@@ -484,6 +506,15 @@ def main() -> int:
                 "evidence": [],
             }
         _write(output / "test-environment-plan.json", environment_plan_payload)
+    if args.auto_discovery_get and (
+        environment_spec is None
+        or environment_spec.mode != "docker_compose"
+        or environment_spec.trust_level != "trusted_local_project"
+        or environment_plan_payload.get("status") != "ready_for_validation"
+    ):
+        parser.error(
+            "Current Discovery GET probes require a ready trusted local Compose contract"
+        )
 
     registry = _build_registry(
         Path(__file__).resolve().parents[1],
@@ -803,6 +834,18 @@ def main() -> int:
         )
     risk = prioritize_findings(merged, context)
     _write(output / "risk.json", risk.to_dict())
+    approved_probe_path = output / "approved-discovery-probes.json"
+    approved_probe_evidence = None
+    if (
+        approved_probe_path.is_file()
+        and approved_probe_path.stat().st_size <= 128 * 1024
+    ):
+        try:
+            approved_probe_evidence = json.loads(
+                approved_probe_path.read_text(encoding="utf-8")
+            )
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            pass
     agent_state = run_agent_review_graph(
         provider=provider,
         discovery_config=DiscoveryConfig(
@@ -812,6 +855,11 @@ def main() -> int:
             max_batches=args.ai_max_batches,
             max_planned_targets=args.ai_max_planned_targets,
             max_candidates=args.ai_max_candidates,
+            max_context_chars=args.ai_max_context_chars
+            if args.ai_max_context_chars is not None
+            else 8_000
+            if args.ai_provider == "groq"
+            else 20_000,
             max_enrichment_rounds=args.ai_max_enrichment_rounds,
             input_cost_per_million_tokens_usd=args.ai_input_cost_per_million,
             output_cost_per_million_tokens_usd=args.ai_output_cost_per_million,
@@ -828,6 +876,19 @@ def main() -> int:
         write_artifact=lambda name, payload: _write(output / name, payload),
         review_runner=run_security_review,
         application_map=application_map,
+        approved_probe_evidence=approved_probe_evidence,
+        runtime_evidence=runtime_for_summary,
+        current_probe_runner=(
+            lambda plan: run_current_discovery_probes(
+                plan,
+                project_root=project,
+                project_fingerprint=profile_artifact["project_snapshot"]["fingerprint"],
+                environment_config=args.test_environment_config,
+                output_path=output / "current-discovery-runtime.json",
+            )
+        )
+        if args.auto_discovery_get
+        else None,
     )
     discovery_payload = agent_state["discovery_payload"]
     discovery_test_plan = build_discovery_test_plan(
@@ -837,6 +898,10 @@ def main() -> int:
         else None,
         project_root=project,
         project_fingerprint=profile_artifact["project_snapshot"]["fingerprint"],
+    )
+    current_probe_payload = agent_state["current_probe_payload"]
+    discovery_test_plan = apply_probe_execution(
+        discovery_test_plan, current_probe_payload
     )
     _write(output / "discovery-test-plan.json", discovery_test_plan)
     discovery_usage = discovery_payload.get("usage") or {}
@@ -873,6 +938,15 @@ def main() -> int:
             )
         )
     )
+    current_probes_satisfied = (
+        not args.auto_discovery_get
+        or current_probe_payload.get("status") in {"completed", "no_eligible_routes"}
+        and current_probe_payload.get("cleanup_verified") is True
+    )
+    if not current_probes_satisfied:
+        coverage_gaps.append(
+            "Current Discovery GET probes did not complete or Compose cleanup was unverified."
+        )
     scanner_requirement = {
         "requested": args.require_all_scanners,
         "required": list(AUTOMATIC_REQUIRED_SCANNERS)
@@ -892,6 +966,7 @@ def main() -> int:
             and scanners_satisfied
             and review_satisfied
             and runtime_complete
+            and current_probes_satisfied
         )
         else "partial"
     )
@@ -994,6 +1069,17 @@ def main() -> int:
             "proposal_count": discovery_test_plan["proposal_count"],
             "executed_count": discovery_test_plan["executed_count"],
             "artifact": "discovery-test-plan.json",
+        },
+        "current_discovery_probes": {
+            "status": current_probe_payload.get("status"),
+            "requested": args.auto_discovery_get,
+            "satisfied": current_probes_satisfied,
+            "executed_count": discovery_test_plan["executed_count"],
+            "cleanup_verified": current_probe_payload.get("cleanup_verified"),
+            "warnings": current_probe_payload.get("warnings", []),
+            "artifact": "current-discovery-probes.json"
+            if args.auto_discovery_get
+            else None,
         },
         "candidate_context": {
             "status": candidate_context_payload.get("status"),

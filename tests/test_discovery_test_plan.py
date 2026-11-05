@@ -6,13 +6,28 @@ from pathlib import Path
 import pytest
 
 from security_reviewer_v2.discovery.test_plan import (
+    apply_probe_execution,
+    approved_readonly_proposals,
     approved_readonly_routes,
+    bounded_probe_result,
     build_discovery_test_plan,
+    link_probe_evidence,
+    select_bounded_readonly_proposals,
 )
 
 
 def test_source_routes_produce_bounded_non_executable_proposals():
     discovery = {
+        "candidates": [
+            {
+                "candidate_id": "ai-exact",
+                "entry_point": {"path": "api/app.py", "line": 20},
+            },
+            {
+                "candidate_id": "ai-other-line",
+                "entry_point": {"path": "api/app.py", "line": 21},
+            },
+        ],
         "application_map_guidance": {
             "suggestions": [
                 {
@@ -35,7 +50,7 @@ def test_source_routes_produce_bounded_non_executable_proposals():
                 },
                 {"method": "GET", "path": "//external.example", "suggested_checks": []},
             ]
-        }
+        },
     }
     plan = build_discovery_test_plan(discovery)
     assert plan["proposal_count"] == 2
@@ -46,6 +61,8 @@ def test_source_routes_produce_bounded_non_executable_proposals():
     assert "bounded_http_probe_review" not in write["proposal_types"]
     assert "bounded_http_probe_review" in read["proposal_types"]
     assert "role_access_workflow_review" in read["proposal_types"]
+    assert read["candidate_ids"] == ["ai-exact"]
+    assert write["candidate_ids"] == []
     assert all(
         item["approval_required"] and not item["auto_executable"]
         for item in plan["proposals"]
@@ -138,6 +155,35 @@ def test_approved_plan_selects_only_current_declared_get_routes(tmp_path: Path):
     assert approved_readonly_routes(
         saved, project_root=project, project_fingerprint="snapshot-1"
     ) == ("/account",)
+    approved = approved_readonly_proposals(
+        saved, project_root=project, project_fingerprint="snapshot-1"
+    )
+    assert approved[0]["proposal_id"].startswith("route-")
+    assert approved[0]["source"] == {"file": "app.py", "line": 3}
+    assert select_bounded_readonly_proposals(
+        plan, project_root=project, project_fingerprint="snapshot-1"
+    ) == approved
+    observed = bounded_probe_result(
+        approved,
+        {
+            "results": [
+                {
+                    "rule_id": "web.endpoint-server-error",
+                    "path": "/account",
+                    "evidence": {"status": 200},
+                }
+            ]
+        },
+        health_path="/healthz",
+        project_fingerprint="snapshot-1",
+        source_plan="current-scan",
+    )
+    updated = apply_probe_execution(plan, observed)
+    assert observed["status"] == "completed"
+    assert updated["executed_count"] == 1
+    assert updated["proposals"][0]["execution_status"] == "executed"
+    assert updated["proposals"][1]["execution_status"] == "not_executed"
+    assert apply_probe_execution(plan, {**observed, "project_fingerprint": "stale"}) == plan
     with pytest.raises(ValueError, match="snapshot"):
         approved_readonly_routes(
             saved, project_root=project, project_fingerprint="different"
@@ -153,3 +199,121 @@ def test_approved_plan_rejects_file_inside_target(tmp_path: Path):
         approved_readonly_routes(
             saved, project_root=project, project_fingerprint="snapshot-1"
         )
+
+
+def test_probe_evidence_links_only_current_candidates_at_exact_source_anchor():
+    discovery = {
+        "candidates": [
+            {
+                "candidate_id": "ai-current",
+                "entry_point": {"path": "app.py", "line": 3},
+            },
+            {
+                "candidate_id": "ai-other",
+                "entry_point": {"path": "app.py", "line": 4},
+            },
+        ]
+    }
+    triage = {
+        "records": [
+            {"candidate_id": "ai-current", "group_id": "group-1"},
+            {"candidate_id": "ai-other", "group_id": None},
+        ]
+    }
+    probes = {
+        "schema_version": "1.0",
+        "project_fingerprint": "snapshot-1",
+        "probes": [
+            {
+                "proposal_id": "route-1",
+                "candidate_ids": ["ai-previous"],
+                "method": "GET",
+                "path": "/account",
+                "source": {"file": "app.py", "line": 3},
+                "execution_status": "executed",
+                "http_status": 200,
+                "security_assertion": "not_defined",
+            }
+        ],
+    }
+    linked = link_probe_evidence(
+        discovery, triage, probes, project_fingerprint="snapshot-1"
+    )
+    assert linked["observed_candidates"] == 1
+    assert linked["candidates"][0]["review_group_id"] == "group-1"
+    assert linked["candidates"][0]["probes"][0]["conclusion"] == "inconclusive"
+    assert linked["candidates"][1]["status"] == "not_tested"
+    stale = link_probe_evidence(
+        discovery, triage, probes, project_fingerprint="different"
+    )
+    assert stale["status"] == "not_run"
+    assert stale["observed_candidates"] == 0
+    blocked = link_probe_evidence(
+        discovery,
+        triage,
+        {
+            **probes,
+            "status": "blocked",
+            "probes": [],
+            "warnings": ["Docker cleanup unverified"],
+        },
+        project_fingerprint="snapshot-1",
+    )
+    assert blocked["status"] == "partial"
+    assert "Docker cleanup unverified" in blocked["limitations"]
+
+
+def test_declared_workflow_assertion_links_to_candidate_without_response_values():
+    linked = link_probe_evidence(
+        {
+            "candidates": [
+                {
+                    "candidate_id": "ai-me",
+                    "entry_point": {"path": "app.py", "line": 20},
+                }
+            ]
+        },
+        {"records": [{"candidate_id": "ai-me", "group_id": "group-me"}]},
+        None,
+        project_fingerprint="snapshot-1",
+        application_map={
+            "routes": [
+                {
+                    "method": "GET",
+                    "path": "/me",
+                    "source": {"file": "app.py", "line": 20},
+                }
+            ]
+        },
+        runtime_evidence={
+            "workflow_evidence": {
+                "workflows": [
+                    {
+                        "id": "excessive-data",
+                        "steps": [
+                            {
+                                "step": 2,
+                                "actor": "user_a",
+                                "method": "GET",
+                                "path": "/me",
+                                "security_check": True,
+                                "http_status": 200,
+                                "assertion_checks": [
+                                    {
+                                        "kind": "json_field_absent",
+                                        "operator": "missing",
+                                        "passed": False,
+                                    }
+                                ],
+                                "response_body": "secret must not be copied",
+                            }
+                        ],
+                    }
+                ]
+            }
+        },
+    )
+    candidate = linked["candidates"][0]
+    assert candidate["status"] == "observed_assertion"
+    assert candidate["workflow_tests"][0]["result"] == "violated"
+    assert "secret must not be copied" not in json.dumps(linked)

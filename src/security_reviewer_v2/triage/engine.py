@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from security_reviewer_v2.discovery.models import CandidateFinding, DiscoveryResult
+from security_reviewer_v2.discovery.test_plan import candidates_with_violated_workflow
 from security_reviewer_v2.normalization.merge_models import MergedFinding, MergeResult
 from security_reviewer_v2.verification.models import (
     VerificationDisposition,
@@ -40,6 +41,7 @@ def triage_candidates(
     merged: MergeResult,
     *,
     project_root: str | Path | None = None,
+    discovery_test_evidence: dict | None = None,
 ) -> TriageResult:
     """Group only well-supported same-family, same-location evidence.
 
@@ -49,6 +51,7 @@ def triage_candidates(
     scanner_groups = _scanner_groups(merged.findings, project_root=project_root)
     groups = list(scanner_groups)
     verified = {record.candidate_id: record for record in verification.records}
+    runtime_corrob = candidates_with_violated_workflow(discovery_test_evidence)
     records: list[TriageRecord] = []
     warnings: list[str] = []
     for candidate in discovery.candidates:
@@ -57,6 +60,31 @@ def triage_candidates(
             record is None
             or record.disposition is VerificationDisposition.NEEDS_MORE_EVIDENCE
         ):
+            if record is not None and candidate.candidate_id in runtime_corrob:
+                groups.append(
+                    _Group(
+                        candidate.candidate_id,
+                        _candidate_family(candidate),
+                        candidate.path,
+                        candidates=[candidate],
+                        reasons=[
+                            "Source citation is incomplete; a declared security workflow on the exact source route failed an assertion. Review the possible relationship without treating it as proof."
+                        ],
+                    )
+                )
+                records.append(
+                    TriageRecord(
+                        candidate.candidate_id,
+                        TriageDisposition.UNCERTAIN_OVERLAP,
+                        candidate.candidate_id,
+                        (),
+                        (),
+                        (
+                            "Runtime assertion failed on the source route, but the candidate source citation remains incomplete.",
+                        ),
+                    )
+                )
+                continue
             records.append(
                 TriageRecord(
                     candidate.candidate_id,

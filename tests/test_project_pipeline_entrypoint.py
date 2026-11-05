@@ -29,6 +29,7 @@ def _args(
         ai_model=None,
         ai_max_targets=10,
         ai_max_batches=20,
+        ai_max_context_chars=None,
         ai_max_planned_targets=128,
         ai_max_candidates=20,
         ai_max_enrichment_rounds=2,
@@ -68,6 +69,23 @@ def test_codebase_memory_is_forwarded_by_default_with_explicit_opt_out(
     assert "--no-codebase-memory" in command
 
 
+def test_groq_discovery_uses_bounded_prompt_budget_with_override(tmp_path: Path):
+    project = tmp_path / "customer-app"
+    project.mkdir()
+    args = _args(tmp_path, project, provider="groq")
+
+    command = _command(args, project=project, output=args.output)
+    assert command[command.index("--ai-max-context-chars") + 1] == "8000"
+
+    args.ai_max_context_chars = 12_000
+    command = _command(args, project=project, output=args.output)
+    assert command[command.index("--ai-max-context-chars") + 1] == "12000"
+
+    args.ai_max_context_chars = 999
+    with pytest.raises(ValueError, match="ai-max-context-chars"):
+        _validate(args)
+
+
 def test_generic_entrypoint_rejects_output_inside_project(tmp_path: Path) -> None:
     project = tmp_path / "customer-app"
     project.mkdir()
@@ -85,6 +103,30 @@ def test_full_scan_requires_runtime_contract(tmp_path: Path) -> None:
     args.static_only = False
 
     with pytest.raises(ValueError, match="runtime-contract"):
+        _validate(args)
+
+
+def test_current_discovery_get_requires_trusted_compose_and_reaches_child(
+    tmp_path: Path,
+) -> None:
+    project = tmp_path / "customer-app"
+    project.mkdir()
+    contract = tmp_path / "contract.json"
+    contract.write_text("{}", encoding="utf-8")
+    args = _args(tmp_path, project)
+    args.auto_discovery_get = True
+
+    with pytest.raises(ValueError, match="trusted Compose contract"):
+        _validate(args)
+
+    args.static_only = False
+    args.runtime_contract = contract
+    args.allow_trusted_local_compose = True
+    _validate(args)
+    assert "--auto-discovery-get" in _command(args, project=project, output=args.output)
+
+    args.approved_discovery_plan = tmp_path / "older-plan.json"
+    with pytest.raises(ValueError, match="approved prior plan"):
         _validate(args)
 
 
@@ -368,4 +410,17 @@ def test_approved_discovery_plan_adds_bounded_probes_to_disposable_scan(
         (output / "approved-discovery-probes.json").read_text(encoding="utf-8")
     )
     assert evidence["status"] == "completed"
-    assert evidence["probes"] == [{"path": "/account", "http_status": 200}]
+    assert evidence["probes"] == [
+        {
+            "proposal_id": json.loads(saved.read_text(encoding="utf-8"))["proposals"][
+                0
+            ]["id"],
+            "path": "/account",
+            "source": {"file": "app.py", "line": 3},
+            "candidate_ids": [],
+            "method": "GET",
+            "execution_status": "executed",
+            "http_status": 200,
+            "security_assertion": "not_defined",
+        }
+    ]

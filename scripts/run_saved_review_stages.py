@@ -10,8 +10,10 @@ import json
 from pathlib import Path
 
 from security_reviewer_v2.context import collect_candidate_context, load_context_result
+from security_reviewer_v2.discovery.map_context import validated_application_map
 from security_reviewer_v2.discovery.provider import provider_from_environment
 from security_reviewer_v2.discovery.serialization import load_discovery_result
+from security_reviewer_v2.discovery.test_plan import link_probe_evidence
 from security_reviewer_v2.normalization.serialization import load_merge_result
 from security_reviewer_v2.policy import evaluate_policy
 from security_reviewer_v2.profiler.artifact import validate_saved_profile_artifact
@@ -62,6 +64,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--model", default="openai/gpt-oss-120b")
     parser.add_argument("--review-batch-size", type=int, default=2)
     parser.add_argument("--runtime-evidence", type=Path)
+    parser.add_argument("--application-map", type=Path)
+    parser.add_argument("--approved-discovery-probes", type=Path)
     parser.add_argument("--coverage-summary", type=Path)
     args = parser.parse_args(argv)
     if args.prior_review is not None and not args.prior_review.is_file():
@@ -102,6 +106,16 @@ def main(argv: list[str] | None = None) -> int:
         if args.coverage_summary
         else {}
     )
+    application_map = (
+        json.loads(args.application_map.read_text(encoding="utf-8"))
+        if args.application_map
+        else None
+    )
+    approved_probes = (
+        json.loads(args.approved_discovery_probes.read_text(encoding="utf-8"))
+        if args.approved_discovery_probes
+        else None
+    )
     if args.docker_runtime_evidence is not None:
         try:
             saved_runtime = json.loads(
@@ -130,6 +144,14 @@ def main(argv: list[str] | None = None) -> int:
             validate_saved_profile_artifact(profile, args.project)
         except ValueError as error:
             parser.error(str(error))
+    if application_map is not None:
+        application_map, map_status = validated_application_map(
+            application_map,
+            project_root=args.project,
+            profile_artifact=profile,
+        )
+        if map_status != "accepted":
+            parser.error(f"Saved Application Map is unavailable: {map_status}")
     scanner_context = (
         load_context_result(args.scanner_context) if args.scanner_context else None
     )
@@ -147,9 +169,32 @@ def main(argv: list[str] | None = None) -> int:
     verification = verify_discovery(
         discovery, project_root=args.project, candidate_context=candidate_context
     )
-    triage = triage_candidates(
-        discovery, verification, merged, project_root=args.project
+    test_evidence = link_probe_evidence(
+        discovery.to_dict(),
+        {"records": []},
+        approved_probes,
+        project_fingerprint=(profile or {})
+        .get("project_snapshot", {})
+        .get("fingerprint"),
+        application_map=application_map,
+        runtime_evidence=runtime_evidence,
     )
+    triage = triage_candidates(
+        discovery,
+        verification,
+        merged,
+        project_root=args.project,
+        discovery_test_evidence=test_evidence,
+    )
+    group_ids = {
+        item["candidate_id"]: item.get("group_id")
+        for item in triage.to_dict().get("records", [])
+        if isinstance(item, dict) and isinstance(item.get("candidate_id"), str)
+    }
+    test_evidence["candidates"] = [
+        {**item, "review_group_id": group_ids.get(item["candidate_id"])}
+        for item in test_evidence["candidates"]
+    ]
 
     targeted_prior_reviews = None
     if args.re_review_id:
@@ -168,6 +213,7 @@ def main(argv: list[str] | None = None) -> int:
     _write(args.output / "candidate-context.json", candidate_context.to_dict())
     _write(args.output / "verification.json", verification.to_dict())
     _write(args.output / "candidate-triage.json", triage.to_dict())
+    _write(args.output / "discovery-test-evidence.json", test_evidence)
 
     summary = {
         "status": "completed",
@@ -202,6 +248,7 @@ def main(argv: list[str] | None = None) -> int:
                 max_reviews=args.review_batch_size,
                 prior_reviews=saved_reviews,
                 deployment_context=(docker_runtime or {}).get("deployment_context"),
+                discovery_test_evidence=test_evidence,
                 on_progress=lambda snapshot: _write(
                     args.output / "security-review.json", snapshot.to_dict()
                 ),

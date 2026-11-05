@@ -90,23 +90,26 @@ The repository is organized into these major areas:
 
 ## 4. End-to-end pipeline
 
-The full entry point is `scripts/run_pre_review_pipeline.py`. Its current
-logical flow is:
+The user-facing full entry point is `scripts/run_project_pipeline.py`; it
+validates the contract, runs the authorized runtime checks, and passes saved
+evidence to `scripts/run_pre_review_pipeline.py`. Their current execution
+order is:
 
 ```text
 Readiness and preflight
-  -> runtime setup or trusted runtime-evidence import
+  -> authorized runtime setup and bounded DAST evidence, if full mode
   -> project profile and scan plan
   -> static scanner execution
   -> Codebase Memory indexing
-  -> source Application Map
-  -> Discovery Agent
-  -> approved/declared runtime plan and bounded DAST evidence
-  -> normalization
+  -> source Application Map, including bounded graph route hints
+  -> normalization of scanner and saved runtime evidence
   -> merge and deduplication
   -> bounded source context
   -> risk prioritization
-  -> LangGraph evidence/review/policy workflow
+  -> LangGraph: Discovery, candidate context, verification,
+     optional current GET probes on fresh disposable Compose,
+     Discovery test-evidence link, triage, Security Review, policy
+  -> Discovery test-plan artifact with per-proposal execution status
   -> final Markdown/HTML report
   -> optional separate benchmark evaluation
 ```
@@ -115,6 +118,24 @@ The repository README documents the detailed numbered stages. The important
 boundary is that scanners and runtime tools produce evidence before the AI
 review graph; the report is generated after policy evaluation; evaluation is a
 separate comparison against held-out labels.
+
+An approved plan from an earlier scan can add bounded source-backed GET probes
+to a later disposable Docker scan. Each probe now records its proposal ID,
+source declaration, execution status and HTTP status without a response body.
+The graph links exact source-anchor matches to current Discovery candidates
+and their triage groups before Security Review. It also links already executed
+declared security-workflow assertions through the Application Map route source.
+An explicitly requested `--auto-discovery-get` scan probes bounded current
+source-backed GET suggestions on a second disposable Compose stack before
+triage and Review. A blocked probe or unverified cleanup makes the scan partial.
+The Review Agent sees these bounded observations, including failed assertions,
+but a GET status alone remains inconclusive and a workflow mismatch is not
+independent exploit proof. If a candidate's source citation is incomplete but
+an exact source-route workflow has a failed declared security assertion,
+Triage retains it as an uncertain review group; the Review prompt preserves
+both the failed assertion and the citation warning. Current GET suggestions
+are executed only with the explicit Compose option; actor-specific and write
+proposals still need an explicit test contract before this loop can be closed.
 
 ### 4.1 Readiness and runtime safety
 

@@ -77,6 +77,12 @@ During a run, the pipeline validates the contract, starts the explicitly
 trusted disposable stack, performs bounded DAST, then runs the static scanners,
 Codebase Memory, AI Discovery and Security Review. JSON, Markdown and HTML
 artifacts are written to the output directory.
+Groq Discovery uses an 8,000-character prompt budget by default after a
+comprehensive-lab scan using the 20,000-character budget failed during
+context enrichment; Ollama
+keeps the 20,000-character budget. `--ai-max-context-chars` overrides either
+budget. A smaller budget can require more batches and may leave source-context
+limitations visible; it does not change the security verdict rules.
 
 ### Current scope and boundaries
 
@@ -156,6 +162,9 @@ startup command. A reviewed trusted-local-project contract can start Compose
 with `--allow-trusted-local-compose`; simple Flask, FastAPI and Express apps
 can use an explicitly approved temporary startup template. The Guided Runtime
 Contract in the UI can also declare account and business-workflow checks;
+for a trusted Compose target, add `--auto-discovery-get` to probe current
+source-backed GET suggestions on a second disposable stack before Review.
+The flag cannot be combined with a prior `--approved-discovery-plan`.
 write workflows require an approved disposable Compose stack. The fixed
 two-user probes tailored to the educational fixture remain on its dedicated
 Docker route. See [Runtime Contract guide](docs/runtime-contract.md).
@@ -226,10 +235,11 @@ the table.
 | 6 | Merge & Dedup | Rule-based | Conservatively groups related observations and keeps originals; merged counts are not confirmed-vulnerability counts. |
 | 7 | Initial Context Collector | Rule-based | Collects bounded source context where locations exist and preserves linked runtime evidence. |
 | 8 | Risk Prioritization | Rule-based | Orders review work by risk and evidence; no finding is dropped or proved by its score. |
-| 9 | **AI Discovery** | 🟣 **Agent 1** | Inspects planned areas the scanners may have missed. Required for a complete scan; outputs candidates, not free-form DAST. |
+| 9 | **AI Discovery** | 🟣 **Agent 1** | Independently inspects planned scanner-silent and scanner-flagged areas. Required for a complete scan; outputs candidates, not free-form DAST. |
 | 10 | Candidate Context Collector | Rule-based | Collects bounded source text and line anchors behind each AI suggestion. |
 | 11 | Verification | Rule-based | Checks AI citations against the source snapshot. "Confirmed" here means source-grounded, not exploitable. |
 | 12 | Candidate Triage | Rule-based | Groups only grounded overlaps; uncertain and insufficiently evidenced candidates remain visible. |
+| 12a | Discovery GET probes and evidence link | Rule-based | With `--auto-discovery-get` and a trusted disposable Compose contract, probes up to 20 current source-backed GET proposals before Review. Links exact source-anchor candidates to status-only results and declared workflow assertions. An HTTP status alone remains inconclusive. |
 | 13 | **Security Review** | 🟢 **Agent 2** | Reviews all eligible groups in bounded calls and records Confirmed / Likely / False Positive / Needs More Evidence; pending groups make the scan partial. |
 | 14 | Policy Gate | Rule-based | Applies block, warn or allow decisions. A failed release gate can coexist with a completed scan. |
 | 15 | **Final Report** | Rule-based | Generates a report from tool evidence, AI candidates, Agent 2 verdicts, policy decisions and coverage gaps. |
@@ -255,6 +265,17 @@ not complete its planned inspection, the outer graph does not run Agent 2.
 Scanner execution and final reporting remain outside these graphs. The graphs
 do not use persistent LangGraph checkpoints; existing saved-stage artifacts and
 continuation commands remain separate from LangGraph persistence.
+
+`discovery-test-evidence.json` records any exact candidate-to-runtime links,
+including the triage group and redacted assertion outcome. Proposals generated
+by the current scan can execute as bounded, source-backed GET observations when
+`--auto-discovery-get` is set on a trusted disposable Compose scan. Other
+proposals remain unexecuted unless declared in a workflow contract.
+An incomplete AI source citation can enter cautious review when a declared
+security workflow on the exact source route failed an assertion; the citation
+warning and runtime limits remain visible.
+The held-out evaluation separately lists source-grounded Discovery candidates
+not flagged by Review Agent for independent adjudication.
 
 ### Policy Gate
 

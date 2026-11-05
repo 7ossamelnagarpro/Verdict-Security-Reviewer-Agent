@@ -7,11 +7,90 @@ import pytest
 from scripts.evaluate_verdict_comprehensive import (
     TRUTH,
     _coverage_metrics,
+    _discovery_evidence_metrics,
+    _discovery_review_audit,
     _matches,
     evaluate,
     html_report,
     markdown,
 )
+
+
+def test_discovery_review_audit_keeps_grounded_disagreement_without_false_negative_claim():
+    rows = _discovery_review_audit(
+        {
+            "candidates": [
+                {
+                    "candidate_id": "ai-one",
+                    "title": "Issue",
+                    "path": "app.py",
+                    "start_line": 4,
+                },
+                {"candidate_id": "ai-two", "title": "Issue 2"},
+            ]
+        },
+        {
+            "records": [
+                {"candidate_id": "ai-one", "disposition": "confirmed"},
+                {"candidate_id": "ai-two", "disposition": "needs_more_evidence"},
+            ]
+        },
+        {
+            "records": [
+                {
+                    "candidate_id": "ai-one",
+                    "group_id": "group-one",
+                    "disposition": "novel_candidate",
+                }
+            ]
+        },
+        {"group-one": {"verdict": "false_positive"}},
+    )
+    assert len(rows) == 1
+    assert rows[0]["candidate_id"] == "ai-one"
+    assert rows[0]["review_verdict"] == "false_positive"
+    assert rows[0]["independent_proof"] == "not_adjudicated"
+
+
+def test_discovery_review_audit_does_not_call_pending_review_a_disagreement():
+    rows = _discovery_review_audit(
+        {"candidates": [{"candidate_id": "ai-one", "title": "Issue"}]},
+        {"records": [{"candidate_id": "ai-one", "disposition": "confirmed"}]},
+        {"records": [{"candidate_id": "ai-one", "group_id": "group-one"}]},
+        {},
+    )
+    assert rows == []
+
+
+def test_discovery_evidence_metrics_distinguish_observation_from_rule_failure():
+    metrics = _discovery_evidence_metrics(
+        {
+            "candidates": [
+                {
+                    "candidate_id": "ai-one",
+                    "review_group_id": "group-one",
+                    "probes": [{"http_status": 200, "conclusion": "inconclusive"}],
+                    "workflow_tests": [],
+                },
+                {
+                    "candidate_id": "ai-two",
+                    "review_group_id": None,
+                    "probes": [],
+                    "workflow_tests": [{"result": "violated"}],
+                },
+                {"candidate_id": "ai-three", "probes": [], "workflow_tests": []},
+            ]
+        }
+    )
+    assert metrics == {
+        "measured": True,
+        "candidate_count": 3,
+        "observed_candidates": 2,
+        "workflow_linked_candidates": 1,
+        "violated_rule_candidates": 1,
+        "review_group_linked_candidates": 1,
+    }
+    assert _discovery_evidence_metrics(None) == {"measured": False}
 
 
 def test_coverage_metrics_count_only_saved_executed_scope() -> None:

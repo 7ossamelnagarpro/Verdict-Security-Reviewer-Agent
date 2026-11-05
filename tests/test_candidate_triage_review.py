@@ -707,3 +707,124 @@ def test_policy_and_report_expose_unresolved_and_unreviewed_groups() -> None:
     assert "ai-uncertain" in report
     assert "scan-one" in report
     assert "pending: **1**" in report
+
+
+def test_review_receives_linked_discovery_probe_as_inconclusive_context(
+    tmp_path: Path,
+) -> None:
+    ai = candidate("ai-new", "SQL Injection", 10)
+
+    class CapturingReviewer(EchoReviewer):
+        def review(self, prompt, *, timeout_seconds, max_reviews):
+            self.prompt_items = json.loads(prompt.split("\n\n", 1)[1])["items"]
+            return super().review(
+                prompt, timeout_seconds=timeout_seconds, max_reviews=max_reviews
+            )
+
+    provider = CapturingReviewer()
+    run_security_review(
+        discovery(ai),
+        verified(ai),
+        provider=provider,
+        project_root=tmp_path,
+        merged=merged(),
+        discovery_test_evidence={
+            "candidates": [
+                {
+                    "candidate_id": "ai-new",
+                    "probes": [
+                        {
+                            "proposal_id": "route-1",
+                            "method": "GET",
+                            "path": "/account",
+                            "http_status": 200,
+                            "security_assertion": "not_defined",
+                            "conclusion": "inconclusive",
+                        }
+                    ],
+                    "workflow_tests": [
+                        {
+                            "workflow_id": "excessive-data",
+                            "method": "GET",
+                            "path": "/me",
+                            "http_status": 200,
+                            "result": "violated",
+                        }
+                    ],
+                }
+            ]
+        },
+    )
+    assert (
+        provider.prompt_items[0]["discovery_test_evidence"][0]["probes"][0][
+            "conclusion"
+        ]
+        == "inconclusive"
+    )
+    assert (
+        provider.prompt_items[0]["discovery_test_evidence"][0]["workflow_tests"][0][
+            "result"
+        ]
+        == "violated"
+    )
+
+
+def test_failed_declared_workflow_routes_unverified_candidate_to_cautious_review(
+    tmp_path: Path,
+) -> None:
+    ai = candidate("ai-runtime", "Sensitive data exposure", 20)
+    evidence = {
+        "candidates": [
+            {
+                "candidate_id": ai.candidate_id,
+                "probes": [],
+                "workflow_tests": [
+                    {
+                        "workflow_id": "excessive-data",
+                        "method": "GET",
+                        "path": "/me",
+                        "http_status": 200,
+                        "result": "violated",
+                    }
+                ],
+            }
+        ]
+    }
+    unverified = verified(ai, disposition=VerificationDisposition.NEEDS_MORE_EVIDENCE)
+    triage = triage_candidates(
+        discovery(ai), unverified, merged(), discovery_test_evidence=evidence
+    )
+    assert triage.records[0].disposition.value == "uncertain_overlap"
+    assert triage.groups[0].candidate_ids == (ai.candidate_id,)
+    provider = EchoReviewer()
+    result = run_security_review(
+        discovery(ai),
+        unverified,
+        provider=provider,
+        project_root=tmp_path,
+        merged=merged(),
+        triage=triage,
+        discovery_test_evidence=evidence,
+    )
+    assert result.status == "completed"
+    assert provider.calls == [[ai.candidate_id]]
+
+
+def test_passed_workflow_does_not_promote_unverified_candidate() -> None:
+    ai = candidate("ai-uncertain", "Authentication", 20)
+    evidence = {
+        "candidates": [
+            {
+                "candidate_id": ai.candidate_id,
+                "workflow_tests": [{"result": "passed"}],
+            }
+        ]
+    }
+    triage = triage_candidates(
+        discovery(ai),
+        verified(ai, disposition=VerificationDisposition.NEEDS_MORE_EVIDENCE),
+        merged(),
+        discovery_test_evidence=evidence,
+    )
+    assert triage.records[0].disposition.value == "needs_more_evidence"
+    assert triage.records[0].group_id is None

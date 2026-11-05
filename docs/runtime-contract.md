@@ -35,6 +35,23 @@ source-declared GET paths without parameters or query strings and writes
 `approved-discovery-probes.json` with observed statuses. This flag does not
 authorize write proposals or infer expected authorization outcomes; those
 remain explicit `workflow_suite` rules.
+The saved probe record includes proposal/source IDs and execution status.
+`discovery-test-evidence.json` links an executed probe or declared workflow
+assertion to a current Discovery candidate only when the source route anchor
+matches exactly. A GET response without an assertion stays inconclusive.
+With `--auto-discovery-get` on an authorized trusted local Compose scan,
+Verdict can also select up to 20 source-backed GET proposals generated in the
+current Discovery stage. It starts a second disposable Compose stack after
+Discovery and before Review, saves `current-discovery-probes.json` with HTTP
+statuses and cleanup verification, and includes exact source-anchor matches in
+`discovery-test-evidence.json`. The scan remains partial if these requested
+probes or cleanup do not complete. This mode cannot be combined with
+`--approved-discovery-plan`. It does not infer expected outcomes, execute
+write/role proposals, or confirm a vulnerability from a response code.
+When continuing from saved artifacts, `run_saved_review_stages.py` accepts
+`--runtime-evidence`, `--application-map`, and optionally
+`--approved-discovery-probes` so the same bounded evidence reaches triage and
+Review Agent without restarting Docker.
 
 An optional `workflow_suite` adds declarative multi-account and business-rule
 tests in the same runtime session, before teardown. It supports JSON/form login,
