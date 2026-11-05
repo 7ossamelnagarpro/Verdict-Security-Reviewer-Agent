@@ -42,6 +42,7 @@ class DiscoveryConfig:
     max_context_lines: int = 80
     max_context_response_chars: int = 2_000
     max_enrichment_total_bytes: int = 512_000
+    max_hotspots_per_file: int = 12
     input_cost_per_million_tokens_usd: float | None = None
     output_cost_per_million_tokens_usd: float | None = None
 
@@ -60,6 +61,8 @@ class DiscoveryConfig:
             raise ValueError("max_source_file_bytes must be between 1000 and 10000000")
         if self.max_total_source_bytes < self.max_source_file_bytes:
             raise ValueError("max_total_source_bytes must cover at least one source file")
+        if not 1 <= self.max_hotspots_per_file <= 200:
+            raise ValueError("max_hotspots_per_file must be between 1 and 200")
         if not 1 <= self.max_planned_targets <= 10_000:
             raise ValueError("max_planned_targets must be between 1 and 10000")
         if not 1 <= self.max_batches <= 1_000:

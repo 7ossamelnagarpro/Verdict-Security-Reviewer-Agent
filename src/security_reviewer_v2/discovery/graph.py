@@ -54,6 +54,17 @@ _MIN_CONTEXT_CHARS = 1_500  # a single target is not shrunk below this prompt bu
 # from a large reasoning model can trigger this, so it is retried smaller; it is not by itself an outage.  Failures
 # before the request is sent (DNS, TLS, refused) are real outages and still stop discovery immediately.
 _LOST_RESPONSE_CATEGORIES = frozenset({"connection_closed", "timeout"})
+# Prompt-budget notes that do not cost coverage: the duplicate-avoidance list is only a hint (triage de-duplicates
+# candidates against scanner findings deterministically) and background gaps stay in the pipeline's own gap list.
+# They are kept visible as warnings, but must not turn a fully inspected run into PARTIAL.
+_INFORMATIONAL_PROMPT_NOTES = {
+    "known findings were omitted":
+        "The duplicate-avoidance list in the discovery prompt was trimmed; candidates are de-duplicated against scanner findings downstream.",
+    "background coverage gaps were omitted":
+        "Some background coverage gaps were not sent to the model; they remain in the report's coverage gaps.",
+}
+# An on-demand request for a symbol that does not exist is the model's guess being answered, not lost coverage.
+_INFORMATIONAL_CONTEXT_NOTES = ("Symbol is absent or ambiguous", "Symbol was not found uniquely")
 _MAX_TRANSPORT_RETRIES = 2  # consecutive lost responses tolerated before discovery stops as an outage
 
 
@@ -190,7 +201,7 @@ class _Nodes:
                 (*scope.coverage_gaps, "Discovery run was restricted to explicitly selected target IDs."))
         return {"scope": scope, "pending": list(scope.targets), "warnings": list(scope.warnings),
                 "target_limit": self.config.max_targets, "transport_failures": 0,
-                "gaps": {*scope.coverage_gaps, *scope.gap_evidence, *self.broker.inventory_gaps}}
+                "gaps": {*scope.coverage_gaps, *self.broker.inventory_gaps}}
 
     def select_batch(self, state: DiscoveryState) -> DiscoveryState:
         index = state["batch_index"] + 1
@@ -211,7 +222,8 @@ class _Nodes:
         return {
             "batch_index": index, "phase": "ready",
             "pending": [item for item in pending if item.target_id not in included],
-            "gaps": {gap for gap in prompt_gaps if "shortened" in gap or "background" in gap or "known findings" in gap},
+            "gaps": {gap for gap in prompt_gaps if "shortened" in gap},
+            "warnings": [text for gap in prompt_gaps for key, text in _INFORMATIONAL_PROMPT_NOTES.items() if key in gap],
             "batch": BatchProgress(index, targets, prompt,
                                    frozenset(item.path.replace("\\", "/") for item in targets if item.path),
                                    budget=budget),
@@ -361,10 +373,12 @@ class _Nodes:
         batch = state["batch"]
         fresh = [self.broker.fetch(request, batch_index=batch.index, round_index=batch.rounds)
                  for request in batch.selected_requests]
-        allowed, gaps = set(batch.allowed_paths), set()
+        allowed, gaps, warnings = set(batch.allowed_paths), set(), []
         for exchange in fresh:
             if exchange.status == "collected" and exchange.resolved_path:
                 allowed.add(exchange.resolved_path)
+            elif exchange.note and any(exchange.note.startswith(prefix) for prefix in _INFORMATIONAL_CONTEXT_NOTES):
+                warnings.append(f"Discovery batch {batch.index}: on-demand context request unavailable: {exchange.note}")
             elif exchange.note:
                 gaps.add(f"Discovery batch {batch.index} context request {exchange.status}: {exchange.note}")
         prompt = _enrichment_prompt(batch.prompt, fresh, self.config.max_context_chars)
@@ -372,8 +386,8 @@ class _Nodes:
                        allowed_paths=frozenset(allowed), selected_requests=())
         if prompt is None:
             gaps.add(f"Discovery batch {batch.index} could not fit on-demand context in the prompt budget.")
-            return {"batch": base, "exchanges": fresh, "gaps": gaps, "phase": "close"}
-        return {"batch": replace(base, prompt=prompt), "exchanges": fresh, "gaps": gaps, "phase": "call"}
+            return {"batch": base, "exchanges": fresh, "gaps": gaps, "warnings": warnings, "phase": "close"}
+        return {"batch": replace(base, prompt=prompt), "exchanges": fresh, "gaps": gaps, "warnings": warnings, "phase": "call"}
 
     def close_batch(self, state: DiscoveryState) -> DiscoveryState:
         batch = state["batch"]

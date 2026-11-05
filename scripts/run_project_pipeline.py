@@ -56,6 +56,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--ai-max-files", type=int, default=64)
     parser.add_argument("--ai-max-context-chars", type=int, default=20_000)
     parser.add_argument("--ai-max-planned-targets", type=int, default=128)
+    parser.add_argument("--ai-max-hotspots-per-file", type=int, default=12)
     parser.add_argument("--ai-max-candidates", type=int, default=20)
     parser.add_argument("--ai-max-enrichment-rounds", type=int, default=2)
     parser.add_argument("--review-max-findings", type=int, default=3)
@@ -222,6 +223,7 @@ def _command(args: argparse.Namespace, *, project: Path, output: Path,
         "--ai-max-files", str(args.ai_max_files),
         "--ai-max-context-chars", str(args.ai_max_context_chars),
         "--ai-max-planned-targets", str(args.ai_max_planned_targets),
+        "--ai-max-hotspots-per-file", str(getattr(args, "ai_max_hotspots_per_file", 12)),
         "--ai-max-candidates", str(args.ai_max_candidates),
         "--ai-max-enrichment-rounds", str(args.ai_max_enrichment_rounds),
         "--review-max-findings", str(args.review_max_findings),

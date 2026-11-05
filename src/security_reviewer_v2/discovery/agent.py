@@ -91,6 +91,28 @@ def _enrichment_prompt(previous: str, exchanges: list[Any], max_chars: int) -> s
     return next_prompt if len(next_prompt) <= max_chars else None
 
 
+_NUMBERED_LINE = re.compile(r"^(\d+): ?(.*)$")
+
+
+def _drop_shown_lines(code: str, shown: dict[int, str]) -> tuple[str, list[str]]:
+    """Remove numbered source lines the model already received for this file in the same prompt.
+
+    Neighbouring risk findings read overlapping windows of one file; sending each window in full repeats the same
+    functions several times and inflates tokens (and therefore rate-limit waits).  Returns the remaining code and the
+    ids of the targets that carry the dropped lines.
+    """
+    kept: list[str] = []
+    owners: dict[str, None] = {}
+    for line in code.split("\n"):
+        match = _NUMBERED_LINE.match(line)
+        owner = shown.get(int(match.group(1))) if match else None
+        if owner is not None:
+            owners[owner] = None
+        else:
+            kept.append(line)
+    return "\n".join(kept), list(owners)
+
+
 def _build_prompt(
     merged: MergeResult, context: ContextResult, risk: RiskResult,
     scope: DiscoveryScope, max_chars: int,
@@ -110,6 +132,11 @@ def _build_prompt(
          "line": item.primary_location.start_line, "title": item.canonical_finding.title[:100]}
         for item in getattr(merged, "findings", ())
     ]
+    # When the list must be cut, keep what can actually duplicate a candidate: findings in the files being inspected
+    # come first (sorted stably, so output stays deterministic), unrelated files last.
+    inspected_paths = {target.path.replace("\\", "/") for target in scope.targets if target.path}
+    known.sort(key=lambda item: (str(item["path"]).replace("\\", "/") not in inspected_paths,
+                                 str(item["path"]), item["line"] or 0))
     # Key order is the order the model (and a truncated LangSmith trace) reads: the source targets come first and the
     # merge-derived duplicate-avoidance list last.  The reference lists are also capped to a small share of the prompt
     # so they cannot crowd out the code Discovery exists to inspect.
@@ -120,18 +147,27 @@ def _build_prompt(
         "coverage_gaps": list(scope.gap_evidence[:8]),
     }
     encode = lambda: json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    # Generic caveats from other stages are the least useful reference data; drop them before duplicate hints.
     while len(encode()) > payload_limit * REFERENCE_SHARE and (payload["known_findings"] or payload["coverage_gaps"]):
-        if payload["known_findings"]:
-            payload["known_findings"].pop()
-        else:
+        if payload["coverage_gaps"]:
             payload["coverage_gaps"].pop()
+        else:
+            payload["known_findings"].pop()
     included: list[DiscoveryTarget] = []
     omitted = 0
     shortened = 0
     risk_evidence_shortened = 0
+    shown: dict[str, dict[int, str]] = {}   # path -> {line number: id of the target whose code carries it}
     for target in scope.targets:
         record: dict[str, Any] = asdict(target)
         source_code = _redact(scope.snippets.get(target.target_id, ""))
+        shown_here = shown.get((target.path or "").replace("\\", "/"), {})
+        if source_code and shown_here:
+            source_code, carried_by = _drop_shown_lines(source_code, shown_here)
+            if carried_by:
+                record["code_shared_with"] = carried_by   # the lines removed here are in those targets' "code"
+                # Only explained when used, so prompts without overlap keep their full budget for source.
+                payload.setdefault("note", "A target with code_shared_with omits lines that the listed targets' code already contains.")
         if target.kind == "risk_finding":
             item = contexts.get(target.target_id)
             ranked = risk_items.get(target.target_id)
@@ -177,38 +213,54 @@ def _build_prompt(
             shortened += bool(record["code_truncated"])
         payload["targets"].append(record)
         if len(encode()) > payload_limit:
-            while len(encode()) > payload_limit and payload["known_findings"]:
-                payload["known_findings"].pop()
             while len(encode()) > payload_limit and payload["coverage_gaps"]:
                 payload["coverage_gaps"].pop()
-            # Preserve valid JSON and truthful scope. Shrink this window first;
-            # if it still cannot fit, do not pretend the model saw the target.
-            if "code" in record:
-                record["code"] = record["code"][:300]
-                if len(source_code) > 300:
-                    shortened += not record["code_truncated"]
-                    record["code_truncated"] = True
-            if len(encode()) > payload_limit and "scanner_evidence" in record:
-                for evidence in record["scanner_evidence"]:
-                    if evidence["code"] and len(evidence["code"]) > 150:
-                        evidence["code"] = evidence["code"][:150]
-                        evidence["code_truncated"] = True
-                        risk_evidence_shortened += 1
-                for flow in record.get("flow_endpoints", []):
-                    if len(flow["code"]) > 120:
-                        flow["code"] = flow["code"][:120]
-                        risk_evidence_shortened += 1
-            while len(encode()) > payload_limit and len(record.get("scanner_evidence", [])) > 1:
-                record["scanner_evidence"].pop()
-                record["scanner_evidence_omitted"] += 1
-                risk_evidence_shortened += 1
-            if len(encode()) > payload_limit:
+            while len(encode()) > payload_limit and payload["known_findings"]:
+                payload["known_findings"].pop()
+            if len(encode()) > payload_limit and len(payload["targets"]) > 1:
+                # The batch already holds other targets: defer this one whole to the next batch (where it leads at
+                # full size) instead of squeezing it to a stub and still counting it as inspected.
                 payload["targets"].pop()
-                if "code" in record and record["code_truncated"]:
-                    shortened -= 1
+                shortened -= bool(record.get("code_truncated"))
                 omitted += 1
                 continue
+            if len(encode()) > payload_limit:   # trimming reference data was not enough
+                # First target of the batch: shrink it, never pretend the model saw it in full.  Counters are only kept
+                # if the target is really sent, so omitted targets cannot inflate the "shortened" notes.
+                shortened_before, evidence_before = shortened, risk_evidence_shortened
+                capped = bool(record.get("code_truncated"))
+                if "code" in record:
+                    record["code"] = record["code"][:300]
+                    if len(source_code) > 300:
+                        shortened += not record["code_truncated"]
+                        record["code_truncated"] = True
+                if len(encode()) > payload_limit and "scanner_evidence" in record:
+                    for evidence in record["scanner_evidence"]:
+                        if evidence["code"] and len(evidence["code"]) > 150:
+                            evidence["code"] = evidence["code"][:150]
+                            evidence["code_truncated"] = True
+                            risk_evidence_shortened += 1
+                    for flow in record.get("flow_endpoints", []):
+                        if len(flow["code"]) > 120:
+                            flow["code"] = flow["code"][:120]
+                            risk_evidence_shortened += 1
+                while len(encode()) > payload_limit and len(record.get("scanner_evidence", [])) > 1:
+                    record["scanner_evidence"].pop()
+                    record["scanner_evidence_omitted"] += 1
+                    risk_evidence_shortened += 1
+                if len(encode()) > payload_limit:
+                    payload["targets"].pop()
+                    shortened, risk_evidence_shortened = shortened_before, evidence_before
+                    shortened -= capped
+                    omitted += 1
+                    continue
         included.append(target)
+        if record.get("code") and target.path:
+            registry = shown.setdefault(target.path.replace("\\", "/"), {})
+            for line in record["code"].split("\n"):
+                match = _NUMBERED_LINE.match(line)
+                if match:
+                    registry.setdefault(int(match.group(1)), target.target_id)
     known_omitted = len(known) - len(payload["known_findings"])
     background_gaps_omitted = len(scope.gap_evidence) - len(payload["coverage_gaps"])
     gap = tuple(

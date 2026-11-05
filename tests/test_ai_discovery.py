@@ -16,7 +16,7 @@ from security_reviewer_v2.discovery.models import (
 )
 from security_reviewer_v2.discovery import provider as provider_module
 from security_reviewer_v2.discovery.provider import GroqProvider
-from security_reviewer_v2.discovery.scope import DiscoveryScope
+from security_reviewer_v2.discovery.scope import DiscoveryScope, plan_discovery_scope
 from security_reviewer_v2.verification import verify_discovery
 
 
@@ -555,3 +555,178 @@ def test_risk_target_fits_after_trimming_duplicate_background():
     assert any("known findings were omitted" in gap for gap in gaps)
     body = json.loads(prompt.split("\n\n", 1)[1])
     assert {item["scanner"] for item in body["targets"][0]["scanner_evidence"]} == {"codeql-cli", "semgrep-ce"}
+
+
+def test_pipeline_gaps_are_evidence_not_discovery_coverage_loss(tmp_path: Path):
+    """Caveats from other stages guide targeting but must not make a fully inspected discovery PARTIAL."""
+    merged, context, risk, profile = _inputs(tmp_path)
+    class Quiet:
+        name, model = "fake", "test"
+        def discover(self, prompt, *, timeout_seconds, max_candidates):
+            return {"candidates": [], "context_requests": []}, {}
+    result = DiscoveryAgent(Quiet(), DiscoveryConfig(max_targets=10)).run(
+        merged, context, risk, project_root=tmp_path, profile_artifact=profile,
+        additional_coverage_gaps=("A negative result means only that this probe did not observe the behavior.",))
+    assert result.usage["targets"] == result.usage["planned_targets"]
+    assert result.status.value == "completed"
+    assert not any("negative result" in gap for gap in result.coverage_gaps)
+
+
+def test_unresolved_symbol_request_is_a_warning_not_a_coverage_gap(tmp_path: Path):
+    merged, context, risk, profile = _inputs(tmp_path)
+    class AsksForMissingSymbol:
+        name, model = "fake", "test"
+        def __init__(self): self.count = 0
+        def discover(self, prompt, *, timeout_seconds, max_candidates):
+            self.count += 1
+            requests = [{"path": "app.py", "symbol": "require_admin", "start_line": None, "end_line": None}] if self.count == 1 else []
+            return {"candidates": [], "context_requests": requests}, {}
+    result = DiscoveryAgent(AsksForMissingSymbol(), DiscoveryConfig(max_targets=10)).run(
+        merged, context, risk, project_root=tmp_path, profile_artifact=profile)
+    assert any(item.status == "unavailable" for item in result.context_exchanges)
+    assert result.status.value == "completed"
+    assert any("on-demand context request unavailable" in warning for warning in result.warnings)
+
+
+def test_omitted_targets_do_not_inflate_shortened_notes_and_are_deferred_whole():
+    location = SimpleNamespace(path="app.py", start_line=20, end_line=20)
+    evidence = lambda scanner, index: SimpleNamespace(scanner_id=scanner, rule_id=f"rule-{index}", location=location,
+                                                excerpt=SimpleNamespace(code="x" * 600))
+    findings, ranks, targets, snippets = [], [], [], {}
+    for i in range(6):
+        findings.append(SimpleNamespace(merged_finding_id=f"t{i}", title="T", primary=evidence("codeql-cli", 0),
+                        additional_primaries=(evidence("semgrep-ce", 1), evidence("semgrep-ce", 2)), code_flow=()))
+        ranks.append(SimpleNamespace(merged_finding_id=f"t{i}", risk_score=50))
+        targets.append(DiscoveryTarget(f"t{i}", "risk_finding", "app.py", 20, 20, ("risk",)))
+        snippets[f"t{i}"] = "\n".join(f"{n}: code" for n in range(60))
+    scope = DiscoveryScope(tuple(targets), snippets, (), (), ())
+    prompt, included, gaps = _build_prompt(SimpleNamespace(findings=()), SimpleNamespace(findings=tuple(findings)),
+                                           SimpleNamespace(findings=tuple(ranks)), scope, 9_000)
+    sent = json.loads(prompt.split("\n\n", 1)[1])["targets"]
+    assert 0 < len(included) < len(targets)
+    assert not any(item["code_truncated"] for record in sent for item in record["scanner_evidence"])
+    assert not any("excerpts were shortened" in gap for gap in gaps)
+
+
+def _file_profile(root: Path, files: dict[str, str]):
+    for name, text in files.items():
+        (root / name).parent.mkdir(parents=True, exist_ok=True)
+        (root / name).write_text(text, encoding="utf-8")
+    return {
+        "profile": {"inventory": [{"path": name, "category": "source"} for name in files], "coverage_gaps": []},
+        "scan_plan": {"coverage_gaps": []},
+        "project_snapshot": {"root_path": os.path.normcase(str(root.resolve())),
+                             "files": [{"path": n, "sha256": hashlib.sha256((root / n).read_bytes()).hexdigest()} for n in files]},
+    }
+
+
+def test_blank_source_files_are_not_discovery_targets(tmp_path: Path):
+    profile = _file_profile(tmp_path, {
+        "pkg/__init__.py": "\n",
+        "api.py": "@router.get('/users/{user_id}')\ndef user(user_id, request):\n    return db.execute(request.query)\n",
+    })
+    empty = SimpleNamespace(findings=(), coverage_gaps=())
+    scope = plan_discovery_scope(empty, empty, empty, project_root=tmp_path, config=DiscoveryConfig(), profile_artifact=profile)
+    assert all(target.path != "pkg/__init__.py" for target in scope.targets)
+    assert any(target.path == "api.py" for target in scope.targets)
+    assert any("empty source file" in warning for warning in scope.warnings)
+
+
+def test_context_request_finds_symbol_defined_in_another_file(tmp_path: Path):
+    profile = _file_profile(tmp_path, {
+        "app.py": "from guards import require_admin\n\ndef route(auth):\n    require_admin(auth)\n",
+        "guards.py": "def require_admin(auth):\n    return True\n",
+    })
+    broker = ContextBroker(tmp_path, DiscoveryConfig(), profile, _redact)
+    exchange = broker.fetch({"path": "app.py", "symbol": "require_admin"}, batch_index=1, round_index=1)
+    assert exchange.status == "collected"
+    assert exchange.resolved_path == "guards.py"
+    assert "app.py" in exchange.note and "guards.py" in exchange.note
+
+
+def test_ambiguous_or_missing_symbol_is_not_guessed(tmp_path: Path):
+    profile = _file_profile(tmp_path, {
+        "app.py": "def route():\n    return 1\n",
+        "a.py": "def helper():\n    return 1\n",
+        "b.py": "def helper():\n    return 2\n",
+    })
+    broker = ContextBroker(tmp_path, DiscoveryConfig(), profile, _redact)
+    ambiguous = broker.fetch({"path": "app.py", "symbol": "helper"}, batch_index=1, round_index=1)
+    missing = broker.fetch({"path": "app.py", "symbol": "nowhere"}, batch_index=1, round_index=2)
+    assert ambiguous.status == "unavailable" and ambiguous.resolved_path is None
+    assert missing.status == "unavailable" and missing.resolved_path is None
+
+
+def test_overlapping_windows_of_one_file_are_sent_once():
+    location = SimpleNamespace(path="app.py", start_line=1, end_line=1)
+    evidence = SimpleNamespace(scanner_id="codeql", rule_id="r", location=location, excerpt=SimpleNamespace(code="x"))
+    findings = [SimpleNamespace(merged_finding_id=f"t{i}", title="T", primary=evidence, additional_primaries=(), code_flow=())
+                for i in range(2)]
+    ranks = [SimpleNamespace(merged_finding_id=f"t{i}", risk_score=5) for i in range(2)]
+    targets = tuple(DiscoveryTarget(f"t{i}", "risk_finding", "app.py", 1, 1, ("risk",)) for i in range(2))
+    snippets = {"t0": "\n".join(f"{n}: code {n}" for n in range(1, 11)),
+                "t1": "\n".join(f"{n}: code {n}" for n in range(6, 16))}
+    prompt, included, _ = _build_prompt(SimpleNamespace(findings=()), SimpleNamespace(findings=tuple(findings)),
+                                        SimpleNamespace(findings=tuple(ranks)),
+                                        DiscoveryScope(targets, snippets, (), (), ()), 20_000)
+    assert len(included) == 2
+    body = json.loads(prompt.split("\n\n", 1)[1])["targets"]
+    assert prompt.count("8: code 8") == 1          # an overlapping line is sent once
+    assert "11: code 11" in body[1]["code"] and "6: code 6" not in body[1]["code"]
+    assert body[1]["code_shared_with"] == ["t0"]
+
+
+def test_known_findings_for_inspected_files_survive_trimming():
+    mk = lambda i, path: SimpleNamespace(merged_finding_id=f"k{i}", canonical_finding=SimpleNamespace(title="Known"),
+                                         primary_location=SimpleNamespace(path=path, start_line=i))
+    known = tuple(mk(i, "other.py") for i in range(30)) + (mk(99, "app.py"),)
+    target = DiscoveryTarget("file:app.py#L1-5", "no_findings", "app.py", 1, 5, ("x",))
+    scope = DiscoveryScope((target,), {target.target_id: "1: x"}, (), (), ())
+    prompt, _, _ = _build_prompt(SimpleNamespace(findings=known), SimpleNamespace(findings=()),
+                                 SimpleNamespace(findings=()), scope, 6_000)
+    sent = json.loads(prompt.split("\n\n", 1)[1])["known_findings"]
+    assert sent and sent[0]["path"] == "app.py" and len(sent) < len(known)
+
+
+def test_source_is_not_cut_when_dropping_duplicate_hints_is_enough():
+    """Trimming reference data must come first and stop as soon as the target fits; code is shrunk only as a last resort."""
+    mk = lambda i: SimpleNamespace(merged_finding_id=f"k{i}", canonical_finding=SimpleNamespace(title="Known scanner issue"),
+                                   primary_location=SimpleNamespace(path="other.py", start_line=i))
+    code = "\n".join(f"{n}: statement number {n} in a reasonably long line of source" for n in range(1, 25))
+    target = DiscoveryTarget("file:app.py#L1-24", "no_findings", "app.py", 1, 24, ("x",))
+    scope = DiscoveryScope((target,), {target.target_id: code}, (), (), ())
+    empty = SimpleNamespace(findings=())
+    baseline, _, _ = _build_prompt(empty, empty, empty, scope, 50_000)
+    tight = len(baseline) + 20
+    prompt, included, _ = _build_prompt(SimpleNamespace(findings=tuple(mk(i) for i in range(40))), empty, empty, scope, tight)
+    sent = json.loads(prompt.split("\n\n", 1)[1])["targets"][0]
+    assert len(included) == 1 and len(prompt) <= tight
+    assert sent["code"] == code and sent["code_truncated"] is False
+
+
+def _routes_file(count: int) -> str:
+    return "".join(
+        f"@router.get('/orders/{{order_id}}/n{i}')\ndef handler_{i}(order_id: int, authorization: str | None = None):\n"
+        f"    user = identity(authorization)\n    return db.execute('SELECT * FROM orders WHERE id=%s', (order_id,))\n\n"
+        for i in range(count))
+
+
+def test_every_route_handler_up_to_the_cap_is_reviewed_not_only_the_first_three(tmp_path: Path):
+    """A scanner-flagged file used to contribute at most three explicit targets, leaving most endpoints unreviewed."""
+    profile = _file_profile(tmp_path, {"routes.py": _routes_file(10)})
+    flagged = SimpleNamespace(source_findings=(SimpleNamespace(primary_location=SimpleNamespace(path="routes.py", start_line=2)),))
+    merged = SimpleNamespace(findings=(flagged,), coverage_gaps=())
+    empty = SimpleNamespace(findings=(), coverage_gaps=())
+    hotspots = lambda cap: [t for t in plan_discovery_scope(
+        merged, empty, empty, project_root=tmp_path, config=DiscoveryConfig(max_hotspots_per_file=cap),
+        profile_artifact=profile).targets if t.kind == "unflagged_hotspot"]
+    assert len(hotspots(3)) == 3
+    assert len(hotspots(12)) == 9          # the handler holding the scanner finding is excluded as "flagged"
+    assert len({t.target_id for t in hotspots(12)}) == 9
+
+
+def test_hotspot_cap_is_validated():
+    with pytest.raises(ValueError, match="max_hotspots_per_file"):
+        DiscoveryConfig(max_hotspots_per_file=0).validate()
+    DiscoveryConfig().validate()
+    assert DiscoveryConfig().max_hotspots_per_file >= 8

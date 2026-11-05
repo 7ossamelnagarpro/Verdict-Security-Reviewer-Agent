@@ -123,6 +123,9 @@ class GroqProvider:
         effort = os.environ.get("GROQ_REASONING_EFFORT", "").strip().lower()
         if effort in {"low", "medium", "high"} and self.model in _GROQ_STRICT_JSON_MODELS:
             body = {**body, "reasoning_effort": effort}   # opt-in: gpt-oss spends most output tokens on reasoning
+        seed = os.environ.get("GROQ_SEED", "").strip()
+        if seed.lstrip("-").isdigit():
+            body = {**body, "seed": int(seed)}   # opt-in, best effort: makes repeated runs of one prompt more alike
         request = urllib.request.Request(
             self.endpoint,
             data=json.dumps(body).encode("utf-8"),
@@ -142,6 +145,7 @@ class GroqProvider:
             ],
         }
         fallback_used = False
+        started = time.monotonic()
         try:
             payload, retries, waited = self._post(body, timeout_seconds)
         except _GroqHTTPFailure as error:
@@ -167,12 +171,13 @@ class GroqProvider:
             raise ProviderResponseError("AI provider JSON fallback did not match the discovery response schema")
         usage = {**usage, "provider": self.name, "model": self.model, "retry_count": retries,
                  "rate_limit_wait_seconds": waited, "format_fallback_count": int(fallback_used),
-                 "finish_reason": finish_reason}
+                 "finish_reason": finish_reason, "wall_seconds": round(time.monotonic() - started, 3)}
         return _discovery_response(parsed, max_candidates), usage
 
     def review(self, prompt: str, *, timeout_seconds: int | None, max_reviews: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         body = {"model": self.model, "temperature": 0, "response_format": {"type": "json_object"},
                 "messages": [{"role": "system", "content": _REVIEW_SYSTEM_PROMPT}, {"role": "user", "content": prompt}]}
+        started = time.monotonic()
         try:
             payload, retries, waited = self._post(body, timeout_seconds)
         except _GroqHTTPFailure as error:
@@ -181,7 +186,8 @@ class GroqProvider:
         values = parsed.get("reviews", [])
         return (values if isinstance(values, list) else [])[:max_reviews], {
             **usage, "provider": self.name, "model": self.model, "retry_count": retries,
-            "rate_limit_wait_seconds": waited, "finish_reason": finish_reason}
+            "rate_limit_wait_seconds": waited, "finish_reason": finish_reason,
+            "wall_seconds": round(time.monotonic() - started, 3)}
 
 
 @dataclass(frozen=True)

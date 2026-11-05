@@ -164,6 +164,7 @@ def main() -> int:
     parser.add_argument("--ai-max-files", type=int, default=64, help="source files AI Discovery scores for its plan; raise to cover more of a large repository")
     parser.add_argument("--ai-max-context-chars", type=int, default=20_000, help="prompt size per Discovery model call; larger values send more source per batch")
     parser.add_argument("--ai-max-planned-targets", type=int, default=128)
+    parser.add_argument("--ai-max-hotspots-per-file", type=int, default=12, help="route/function hotspots Discovery reviews explicitly per file; raise for more coverage (more model calls)")
     parser.add_argument("--ai-max-candidates", type=int, default=20, help="maximum candidates per provider response")
     parser.add_argument("--ai-max-enrichment-rounds", type=int, default=2)
     parser.add_argument("--ai-input-cost-per-million", type=float, default=None, help="optional caller-supplied USD rate for cost estimates")
@@ -414,7 +415,7 @@ def main() -> int:
             provider=provider,
             discovery_config=DiscoveryConfig(
                 provider=args.ai_provider, model=args.ai_model, max_targets=args.ai_max_targets,
-                max_batches=args.ai_max_batches, max_planned_targets=args.ai_max_planned_targets,
+                max_batches=args.ai_max_batches, max_planned_targets=args.ai_max_planned_targets, max_hotspots_per_file=getattr(args, "ai_max_hotspots_per_file", 12),
                 max_files_considered=args.ai_max_files, max_context_chars=args.ai_max_context_chars,
                 max_candidates=args.ai_max_candidates, max_enrichment_rounds=args.ai_max_enrichment_rounds,
                 input_cost_per_million_tokens_usd=args.ai_input_cost_per_million,

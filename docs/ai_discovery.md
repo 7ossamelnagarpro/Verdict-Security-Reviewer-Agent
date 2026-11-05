@@ -125,3 +125,25 @@ runs. Verification then checks the source grounding, candidate triage groups
 conservative overlaps, and the Security Review Agent reviews every eligible
 issue group in bounded batches. Candidates still needing evidence remain
 visible in the triage artifact and report; they are not security verdicts.
+
+## Prompt packing, status and timing
+
+- **Status.** `completed` means every planned target was inspected without a coverage loss. Only Discovery's own losses
+  (uninspected targets, failed batches, truncated source, omitted candidates, unavailable context) make it `partial`.
+  Caveats from other pipeline stages guide targeting but are not Discovery gaps. Trimmed duplicate hints and unresolved
+  symbol guesses are reported as warnings.
+- **Packing.** Blank source files are skipped. Lines that two targets in the same prompt share are sent once
+  (`code_shared_with` names the target that carries them). A target that does not fit is deferred whole to the next batch;
+  only a batch's first target is ever shrunk, and only if dropping reference data was not enough.
+- **Duplicate hints.** Known findings in the inspected files are kept first when the list is trimmed.
+- **Context requests.** A symbol requested from the wrong file is resolved when it has exactly one definition elsewhere
+  in the inventory; ambiguous or missing symbols are never guessed.
+- **Timing.** `usage.wall_seconds`, `usage.rate_limit_wait_seconds`, `usage.retry_count` and `usage.provider_calls`
+  show how much of a run was provider rate-limit waiting rather than model time.
+- **Coverage of endpoints.** A scanner-flagged file used to contribute at most three explicit hotspot targets, so most
+  route handlers were only seen incidentally inside other targets' windows. `--ai-max-hotspots-per-file` (default 12,
+  config `max_hotspots_per_file`) sets how many route/function hotspots per file are reviewed explicitly. Raising it
+  increases coverage and the number of model calls; the final report still states anything beyond the planning limit.
+- **Reproducibility.** `GROQ_SEED=<int>` (opt-in, best effort) is sent as the request `seed`, so repeated runs of the same
+  prompt are more alike. Model output can still vary between runs; compare several runs before concluding that a
+  finding was lost.

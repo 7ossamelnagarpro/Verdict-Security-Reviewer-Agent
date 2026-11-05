@@ -790,3 +790,16 @@ def test_review_keeps_going_when_the_model_returns_unusable_output_for_one_group
     assert [item.candidate_id for item in result.reviews] == ["scan-b"]
     assert result.pending_ids == ("scan-a",) and result.status == "partial"
     assert any("scan-a" in w and "empty review content" in w for w in result.warnings)
+
+
+def test_seed_is_opt_in(monkeypatch):
+    seen: list[dict] = []
+    monkeypatch.setattr(provider_module, "_urlopen", lambda request, timeout: (seen.append(json.loads(request.data)), io.BytesIO(completion()))[1])
+    monkeypatch.setattr(provider_module.time, "sleep", lambda s: None)
+    monkeypatch.delenv("GROQ_SEED", raising=False)
+    discover(STRICT)
+    monkeypatch.setenv("GROQ_SEED", "7")
+    discover(STRICT)
+    monkeypatch.setenv("GROQ_SEED", "not-a-number")
+    discover(STRICT)
+    assert "seed" not in seen[0] and seen[1]["seed"] == 7 and "seed" not in seen[2]

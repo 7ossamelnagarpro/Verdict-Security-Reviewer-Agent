@@ -87,6 +87,7 @@ def plan_discovery_scope(
     snippets: dict[str, str] = {}
     read_cache: dict[str, tuple[str, ...]] = {}   # files already read, so risk targets do not re-read (or re-count) them
     bytes_read = 0
+    blank_files = 0
     for relative in considered:
         try:
             lines, size = _read_source(root, relative, expected_hashes, config, bytes_read)
@@ -95,7 +96,8 @@ def plan_discovery_scope(
             gaps.append(f"Discovery could not inspect {relative}: {error}")
             continue
         bytes_read += size
-        if not lines:
+        if not any(line.strip() for line in lines):
+            blank_files += 1   # an empty __init__.py has nothing to review and would only occupy a target slot
             continue
         read_cache[relative] = lines
         hotspots = _hotspots(relative, lines, finding_lines.get(relative, set()))
@@ -112,12 +114,14 @@ def plan_discovery_scope(
             no_finding_targets.append(target)
             snippets[target.target_id] = _numbered_window(lines, start, end)
         else:
-            for start, end, score in hotspots[:3]:
+            for start, end, score in hotspots[:config.max_hotspots_per_file]:
                 reasons = (f"Security-relevant function/window scored {score} by deterministic input, authorization, and sink signals; no scanner primary finding is inside it.",)
                 target = _file_target("unflagged_hotspot", relative, start, end, reasons)
                 hotspot_targets.append(target)
                 snippets[target.target_id] = _numbered_window(lines, start, end)
 
+    if blank_files:
+        warnings.append(f"{blank_files} empty source file(s) were skipped; they contain nothing to review.")
     high = [
         DiscoveryTarget(item.merged_finding_id, "risk_finding", getattr(getattr(item, "primary_location", None), "path", None),
                         getattr(getattr(item, "primary_location", None), "start_line", None),

@@ -74,11 +74,23 @@ class ContextBroker:
             lines = self._load(path)
         except ValueError as error:
             return self._result(batch_index, round_index, path, symbol, start, end, "unavailable", None, None, None, None, str(error))
+        relocated_from: str | None = None
         if symbol is not None and raw.get("path") is not None:
             matches = _python_symbols(lines, symbol) if path.endswith(".py") else []
             if len(matches) != 1:
-                return self._result(batch_index, round_index, path, symbol, start, end, "unavailable", None, None, None, None, "Symbol is absent or ambiguous in the requested Python file.")
-            start, end = matches[0]
+                # The model often names the right function in the wrong file (a caller instead of the definition).
+                # Fall back to one bounded inventory search; accept only a single, unambiguous definition.
+                found = self._find_symbol_elsewhere(symbol, exclude=path) if not matches else None
+                if found is None:
+                    return self._result(batch_index, round_index, path, symbol, start, end, "unavailable", None, None, None, None, "Symbol is absent or ambiguous in the requested Python file.")
+                relocated_from = path
+                path, start, end = found
+                try:
+                    lines = self._load(path)
+                except ValueError as error:
+                    return self._result(batch_index, round_index, requested_path, symbol, requested_start, requested_end, "unavailable", None, None, None, None, str(error))
+            else:
+                start, end = matches[0]
         if start is None or start < 1 or start > len(lines):
             return self._result(batch_index, round_index, path, symbol, start, end, "rejected", None, None, None, None, "Start line is outside the source file.")
         if end is None:
@@ -90,8 +102,28 @@ class ContextBroker:
         redacted = self.redact(snippet)
         truncated = bounded_end < end or len(redacted) > self.config.max_context_response_chars
         code = redacted[:self.config.max_context_response_chars]
-        note = "Context was truncated by line or character budget." if truncated else None
+        notes = []
+        if relocated_from:
+            notes.append(f"Symbol is not defined in {relocated_from}; resolved its single definition in {path}.")
+        if truncated:
+            notes.append("Context was truncated by line or character budget.")
+        note = " ".join(notes) or None
         return self._result(batch_index, round_index, requested_path, symbol, requested_start, requested_end, "collected", path, start, bounded_end, code, note)
+
+    def _find_symbol_elsewhere(self, symbol: str, *, exclude: str) -> tuple[str, int, int] | None:
+        """The one Python definition of ``symbol`` in the profiled inventory outside ``exclude``, else None."""
+        found: list[tuple[str, int, int]] = []
+        for candidate in self.paths[:self.config.max_files_considered]:
+            if candidate == exclude or not candidate.endswith(".py"):
+                continue
+            try:
+                lines = self._load(candidate)
+            except ValueError:
+                continue
+            found.extend((candidate, first, last) for first, last in _python_symbols(lines, symbol))
+            if len(found) > 1:
+                return None
+        return found[0] if found else None
 
     def _load(self, path: str) -> tuple[str, ...]:
         if path in self.cache:
