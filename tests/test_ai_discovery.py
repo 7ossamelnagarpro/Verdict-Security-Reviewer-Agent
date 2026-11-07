@@ -730,3 +730,116 @@ def test_hotspot_cap_is_validated():
         DiscoveryConfig(max_hotspots_per_file=0).validate()
     DiscoveryConfig().validate()
     assert DiscoveryConfig().max_hotspots_per_file >= 8
+
+
+def test_default_config_reviews_every_route_handler(tmp_path: Path):
+    profile = _file_profile(tmp_path, {"routes.py": _routes_file(30)})
+    flagged = SimpleNamespace(source_findings=(SimpleNamespace(primary_location=SimpleNamespace(path="routes.py", start_line=2)),))
+    merged = SimpleNamespace(findings=(flagged,), coverage_gaps=())
+    empty = SimpleNamespace(findings=(), coverage_gaps=())
+    scope = plan_discovery_scope(merged, empty, empty, project_root=tmp_path, config=DiscoveryConfig(), profile_artifact=profile)
+    assert len([t for t in scope.targets if t.kind == "unflagged_hotspot"]) == 29
+
+
+def test_hotspot_ties_prefer_state_changing_and_credential_handlers(tmp_path: Path):
+    source = (
+        "@router.get('/orders/{order_id}/a')\ndef read_order(order_id: int, authorization: str | None = None):\n    return db.execute('x')\n\n"
+        "@router.post('/orders/{order_id}/b')\ndef change_order(order_id: int, authorization: str | None = None):\n    return db.execute('x')\n\n"
+        "@router.get('/orders/{order_id}/upload')\ndef upload_view(order_id: int, authorization: str | None = None):\n    return db.execute('x')\n"
+    )
+    profile = _file_profile(tmp_path, {"routes.py": source})
+    from security_reviewer_v2.discovery.scope import _hotspots
+    ranked = _hotspots("routes.py", tuple(source.splitlines()), set())
+    names = [source.splitlines()[start].split("(")[0].replace("def ", "") for start, _, _ in ranked]
+    assert names == ["upload_view", "change_order", "read_order"]   # keyword bump, then POST before GET, then line order
+
+
+def test_prompt_reasons_for_numerous_targets_are_compact():
+    long = "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+    hotspot = DiscoveryTarget("file:a.py#L1-5", "unflagged_hotspot", "a.py", 1, 5, (long,))
+    plain = DiscoveryTarget("file:b.py#L1-5", "no_findings", "b.py", 1, 5, ("No scanner finding has a primary location in this source file; this is not proof it was unscanned.",))
+    scope = DiscoveryScope((hotspot, plain), {hotspot.target_id: "1: x", plain.target_id: "1: y"}, (), (), ())
+    empty = SimpleNamespace(findings=())
+    prompt, included, _ = _build_prompt(empty, empty, empty, scope, 20_000)
+    body = json.loads(prompt.split("\n\n", 1)[1])["targets"]
+    assert body[0]["reasons"] == ["Unflagged security-relevant function, score 7."]
+    assert body[1]["reasons"] == ["No scanner finding in this file."]
+    assert hotspot.reasons == (long,)      # the saved target plan keeps the full explanation
+
+
+def test_hotspots_dropped_by_the_file_limit_are_reported_as_a_gap(tmp_path: Path):
+    profile = _file_profile(tmp_path, {"routes.py": _routes_file(10)})
+    flagged = SimpleNamespace(source_findings=(SimpleNamespace(primary_location=SimpleNamespace(path="routes.py", start_line=2)),))
+    merged = SimpleNamespace(findings=(flagged,), coverage_gaps=())
+    empty = SimpleNamespace(findings=(), coverage_gaps=())
+    plan = lambda cap: plan_discovery_scope(merged, empty, empty, project_root=tmp_path,
+                                            config=DiscoveryConfig(max_hotspots_per_file=cap), profile_artifact=profile)
+    assert any("5 lower-ranked" in gap and "routes.py" in gap for gap in plan(4).coverage_gaps)
+    assert not any("lower-ranked" in gap for gap in plan(100).coverage_gaps)
+
+
+def test_file_without_findings_gets_every_handler_not_just_one_window(tmp_path: Path):
+    profile = _file_profile(tmp_path, {"routes.py": _routes_file(6)})
+    empty = SimpleNamespace(findings=(), coverage_gaps=())
+    scope = plan_discovery_scope(empty, empty, empty, project_root=tmp_path, config=DiscoveryConfig(), profile_artifact=profile)
+    kinds = [t.kind for t in scope.targets if t.path == "routes.py"]
+    assert kinds.count("no_findings") == 1 and kinds.count("unflagged_hotspot") == 5
+    assert len({(t.start_line, t.end_line) for t in scope.targets if t.path == "routes.py"}) == 6
+
+
+def _cand(cid, category, op_line, missing_line, *, path="api.py", severity="medium", confidence="medium",
+          verification=CandidateDisposition.SUPPORTED):
+    anchor = lambda line: CandidateAnchor(path, line, "code")
+    missing = CandidateMissingCheck(path, missing_line, "obs", "expected") if missing_line is not None else None
+    return CandidateFinding(cid, f"title {cid}", category, severity, confidence, path, 10, 12, ("e",), "r", "ai_discovery",
+                            verification, (), anchor(10), anchor(op_line), missing, ())
+
+
+def test_same_root_cause_stated_twice_is_merged_into_the_stronger_candidate():
+    from security_reviewer_v2.discovery.dedup import collapse_duplicate_candidates
+    # /me: "sensitive data exposure" (authorization) and "information disclosure" (privacy) share operation and missing check
+    weak = _cand("ai-1", "Authorization", 203, 201, severity="high")
+    strong = _cand("ai-2", "Privacy", 203, 201, severity="critical")
+    kept, merged = collapse_duplicate_candidates((weak, strong))
+    assert [c.candidate_id for c in kept] == ["ai-2"] and merged == {"ai-2": ("ai-1",)}
+    assert kept[0].duplicate_ids == ("ai-1",) and any("Merged 1 duplicate" in n for n in kept[0].verification_notes)
+
+
+def test_distinct_issues_are_never_merged():
+    from security_reviewer_v2.discovery.dedup import collapse_duplicate_candidates
+    candidates = (
+        _cand("ai-1", "Authorization", 166, 163),            # different missing check: authorization vs CSRF
+        _cand("ai-2", "CSRF", 166, 150),
+        _cand("ai-3", "Authorization", 300, 163),            # different operation
+        _cand("ai-4", "Rate limiting", 166, None),           # no missing check, but a different category than ai-5
+        _cand("ai-5", "Path Traversal", 166, None),
+        _cand("ai-6", "Authorization", 166, 163, path="other.py"),
+    )
+    kept, merged = collapse_duplicate_candidates(candidates)
+    assert len(kept) == 6 and merged == {}
+
+
+def test_missing_check_less_restatement_merges_only_within_one_category():
+    from security_reviewer_v2.discovery.dedup import collapse_duplicate_candidates
+    kept, merged = collapse_duplicate_candidates((_cand("ai-1", "Authorization", 206, None),
+                                                  _cand("ai-2", "authorization", 206, 206)))
+    assert [c.candidate_id for c in kept] == ["ai-2"] and merged == {"ai-2": ("ai-1",)}   # the one with a missing check wins
+
+
+def test_discovery_result_marks_findings_static_and_reports_merged_duplicates(tmp_path: Path):
+    merged_in, context, risk, profile = _inputs(tmp_path)
+    class Twice:
+        name, model = "fake", "test"
+        def discover(self, prompt, *, timeout_seconds, max_candidates):
+            anchor = {"path": "app.py", "line": 2, "code": "x"}
+            base = {"title": "T", "category": "Authorization", "severity": "high", "confidence": "high", "path": "app.py",
+                    "start_line": 1, "end_line": 4, "evidence": ["x"], "reasoning": "r", "entry_point": anchor,
+                    "sensitive_operation": anchor, "missing_check": {"path": "app.py", "line": 3, "observation": "o", "expected_check": "e"},
+                    "remaining_questions": []}
+            return {"candidates": [dict(base, title="One"), dict(base, title="Two")], "context_requests": []}, {}
+    result = DiscoveryAgent(Twice(), DiscoveryConfig(max_targets=10)).run(merged_in, context, risk, project_root=tmp_path, profile_artifact=profile)
+    assert result.usage["analysis"] == "static_source_review"
+    assert len(result.candidates) <= 1 and all(c.analysis == "static_source_review" for c in result.candidates)
+    if result.usage["duplicate_candidates_merged"]:
+        assert any("duplicate AI candidate" in w for w in result.warnings)
+    assert result.to_dict()["candidates"][0]["analysis"] == "static_source_review"

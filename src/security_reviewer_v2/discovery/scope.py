@@ -27,6 +27,9 @@ RISK_CONTEXT_BEFORE = 12      # source lines shown before a scanner-flagged line
 RISK_CONTEXT_AFTER = 25       # ... and after it
 RISK_CONTEXT_MAX_LINES = 60
 SENSITIVE_HINT = re.compile(r"secret|debug|environ|password|token|credential", re.I)
+# Credential, session and file/redirect handling: classes of handler that deterministic signals alone under-rank.
+PRIORITY_HINT = re.compile(r"upload|download|session|cookie|refresh|reset|webhook|hook|redirect|login|signin|password|token", re.I)
+_MUTATING_METHODS = {"post", "put", "patch", "delete"}
 
 
 @dataclass(frozen=True)
@@ -107,18 +110,24 @@ def plan_discovery_scope(
             target = _file_target("coverage_gap", relative, start, end, matched_gaps)
             gap_targets.append(target)
             snippets[target.target_id] = _numbered_window(lines, start, end)
+        extra_hotspots = hotspots
         if relative not in finding_lines:
             start, end = hotspots[0][:2] if hotspots else _fallback_window(lines)
             reasons = ("No scanner finding has a primary location in this source file; this is not proof it was unscanned.",)
             target = _file_target("no_findings", relative, start, end, reasons)
             no_finding_targets.append(target)
             snippets[target.target_id] = _numbered_window(lines, start, end)
-        else:
-            for start, end, score in hotspots[:config.max_hotspots_per_file]:
-                reasons = (f"Security-relevant function/window scored {score} by deterministic input, authorization, and sink signals; no scanner primary finding is inside it.",)
-                target = _file_target("unflagged_hotspot", relative, start, end, reasons)
-                hotspot_targets.append(target)
-                snippets[target.target_id] = _numbered_window(lines, start, end)
+            extra_hotspots = hotspots[1:]   # the first hotspot is the no_findings window above
+        for start, end, score in extra_hotspots[:config.max_hotspots_per_file]:
+            reasons = (f"Security-relevant function/window scored {score} by deterministic input, authorization, and sink signals; no scanner primary finding is inside it.",)
+            target = _file_target("unflagged_hotspot", relative, start, end, reasons)
+            hotspot_targets.append(target)
+            snippets[target.target_id] = _numbered_window(lines, start, end)
+        skipped = len(extra_hotspots) - config.max_hotspots_per_file
+        if skipped > 0:
+            # A silent cap made "completed" claim more than was reviewed; say exactly what was left out.
+            gaps.append(f"{skipped} lower-ranked route/function hotspot(s) in {relative} were not reviewed explicitly "
+                                 f"(per-file limit {config.max_hotspots_per_file}).")
 
     if blank_files:
         warnings.append(f"{blank_files} empty source file(s) were skipped; they contain nothing to review.")
@@ -233,7 +242,7 @@ def _read_source(root: Path, relative: str, hashes: dict[str, str] | None, confi
 
 
 def _hotspots(relative: str, lines: tuple[str, ...], finding_lines: set[int]) -> list[tuple[int, int, int]]:
-    regions: list[tuple[int, int, str, bool]] = []
+    regions: list[tuple[int, int, str, bool, bool]] = []
     if relative.endswith(".py"):
         try:
             tree = ast.parse("\n".join(lines), filename=relative)
@@ -254,15 +263,19 @@ def _hotspots(relative: str, lines: tuple[str, ...], finding_lines: set[int]) ->
                     and decorator.func.attr in {"route", "get", "post", "put", "patch", "delete"}
                     for decorator in decorators
                 )
-                regions.append((start, min(len(lines), node.end_lineno), " ".join((*names, *routes)), route))
+                mutating = any(
+                    isinstance(decorator, ast.Call) and isinstance(decorator.func, ast.Attribute)
+                    and decorator.func.attr in _MUTATING_METHODS for decorator in decorators
+                )
+                regions.append((start, min(len(lines), node.end_lineno), " ".join((*names, *routes)), route, mutating))
         except (SyntaxError, ValueError):
             pass
     if not regions:
         windows = {(max(1, line - 8), min(len(lines), line + 8)) for line, text in enumerate(lines, 1)
                    if INPUT_HINT.search(text)}
-        regions = [(start, end, "\n".join(lines[start - 1:end]), False) for start, end in sorted(windows)]
-    scored: list[tuple[int, int, int]] = []
-    for start, end, signals, route in regions:
+        regions = [(start, end, "\n".join(lines[start - 1:end]), False, False) for start, end in sorted(windows)]
+    scored: list[tuple[int, int, int, bool]] = []
+    for start, end, signals, route, mutating in regions:
         if any(start <= line <= end for line in finding_lines):
             continue
         auth = bool(AUTH_HINT.search(signals))
@@ -271,9 +284,12 @@ def _hotspots(relative: str, lines: tuple[str, ...], finding_lines: set[int]) ->
         sensitive = bool(SENSITIVE_HINT.search(signals))
         if not (boundary and (auth or sink or sensitive)):
             continue
-        score = 3 * auth + 2 * boundary + sink + sensitive + bool(route and "<" in signals)
-        scored.append((start, min(end, start + 79), score))
-    return sorted(set(scored), key=lambda item: (-item[2], item[0]))
+        score = 3 * auth + 2 * boundary + sink + sensitive + bool(route and "<" in signals) + bool(PRIORITY_HINT.search(signals))
+        scored.append((start, min(end, start + 79), score, mutating))
+    # Equal scores are common, so break ties by what is likelier to hold a logic flaw (state-changing handlers first)
+    # instead of by line number, which only reflected where a function happened to sit in the file.
+    ranked = sorted(set(scored), key=lambda item: (-item[2], not item[3], item[0]))
+    return [(start, end, score) for start, end, score, _ in ranked]
 
 
 def _fallback_window(lines: tuple[str, ...]) -> tuple[int, int]:

@@ -42,7 +42,7 @@ class DiscoveryConfig:
     max_context_lines: int = 80
     max_context_response_chars: int = 2_000
     max_enrichment_total_bytes: int = 512_000
-    max_hotspots_per_file: int = 12
+    max_hotspots_per_file: int = 100
     input_cost_per_million_tokens_usd: float | None = None
     output_cost_per_million_tokens_usd: float | None = None
 
@@ -157,6 +157,10 @@ class CandidateFinding:
     sensitive_operation: CandidateAnchor | None = None
     missing_check: CandidateMissingCheck | None = None
     remaining_questions: tuple[str, ...] = ()
+    # Discovery only reads source; it never runs the application, so nothing here is dynamic evidence.  Dynamic
+    # corroboration, when it exists, is attached later by triage from probes that hit the same route.
+    analysis: str = "static_source_review"
+    duplicate_ids: tuple[str, ...] = ()   # AI candidates merged into this one because they state the same root cause
 
 
 @dataclass(frozen=True)

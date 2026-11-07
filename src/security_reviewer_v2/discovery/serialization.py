@@ -52,6 +52,8 @@ def discovery_result_from_dict(payload: dict[str, Any]) -> DiscoveryResult:
                 sensitive_operation=CandidateAnchor(**item["sensitive_operation"]) if isinstance(item.get("sensitive_operation"), dict) else None,
                 missing_check=CandidateMissingCheck(**item["missing_check"]) if isinstance(item.get("missing_check"), dict) else None,
                 remaining_questions=tuple(str(value) for value in item.get("remaining_questions", [])),
+                analysis=str(item.get("analysis", "static_source_review")),
+                duplicate_ids=tuple(str(value) for value in item.get("duplicate_ids", [])),
             )
             for item in payload.get("candidates", [])
         )

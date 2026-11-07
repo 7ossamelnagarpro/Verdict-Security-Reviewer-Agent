@@ -121,7 +121,7 @@ class GroqProvider:
 
     def _post(self, body: dict[str, Any], timeout_seconds: int | None) -> tuple[dict[str, Any], int, float]:
         effort = os.environ.get("GROQ_REASONING_EFFORT", "").strip().lower()
-        if effort in {"low", "medium", "high"} and self.model in _GROQ_STRICT_JSON_MODELS:
+        if "reasoning_effort" not in body and effort in {"low", "medium", "high"} and self.model in _GROQ_STRICT_JSON_MODELS:
             body = {**body, "reasoning_effort": effort}   # opt-in: gpt-oss spends most output tokens on reasoning
         seed = os.environ.get("GROQ_SEED", "").strip()
         if seed.lstrip("-").isdigit():
@@ -171,6 +171,39 @@ class GroqProvider:
             raise ProviderResponseError("AI provider JSON fallback did not match the discovery response schema")
         usage = {**usage, "provider": self.name, "model": self.model, "retry_count": retries,
                  "rate_limit_wait_seconds": waited, "format_fallback_count": int(fallback_used),
+                 "finish_reason": finish_reason, "wall_seconds": round(time.monotonic() - started, 3)}
+        return _discovery_response(parsed, max_candidates), usage
+
+    def discover_rescue(self, prompt: str, *, timeout_seconds: int | None, max_candidates: int) -> tuple[dict[str, Any], dict[str, Any]]:
+        """One last, *different* attempt for a single target that keeps producing ``json_validate_failed``.
+
+        Retrying the same request at temperature 0 reproduces the same failure (the provider reports an empty
+        generation).  This attempt changes what the failure depends on: no server-side constrained decoding, low
+        reasoning effort for gpt-oss models (so the answer is not starved by reasoning tokens) and a small
+        temperature.  The reply is still never trusted blindly: JSON is extracted locally, missing nullable
+        anchors are read as null, and the result must match the discovery schema or the call fails like any other.
+        """
+        body: dict[str, Any] = {
+            "model": self.model,
+            "temperature": 0.2,
+            "messages": [
+                {"role": "system", "content": _SYSTEM_PROMPT + _RESCUE_SYSTEM_SUFFIX},
+                {"role": "user", "content": f"Return at most {max_candidates} candidates.\n" + prompt},
+            ],
+        }
+        if self.model in _GROQ_STRICT_JSON_MODELS:
+            body["reasoning_effort"] = "low"
+        started = time.monotonic()
+        try:
+            payload, retries, waited = self._post(body, timeout_seconds)
+        except _GroqHTTPFailure as error:
+            raise _as_response_error(error)
+        parsed, finish_reason, usage = _completion_json(_with_extracted_json(payload), "content")
+        parsed = _fill_missing_nullable(parsed)
+        if not _matches_discovery_schema(parsed, _DISCOVERY_RESPONSE_SCHEMA):
+            raise ProviderResponseError("AI provider rescue reply did not match the discovery response schema")
+        usage = {**usage, "provider": self.name, "model": self.model, "retry_count": retries,
+                 "rate_limit_wait_seconds": waited, "format_fallback_count": 1, "rescue_attempt": 1,
                  "finish_reason": finish_reason, "wall_seconds": round(time.monotonic() - started, 3)}
         return _discovery_response(parsed, max_candidates), usage
 
@@ -532,6 +565,66 @@ def _matches_discovery_schema(value: Any, schema: dict[str, Any]) -> bool:
         item_schema = schema.get("items")
         return item_schema is None or all(_matches_discovery_schema(item, item_schema) for item in value)
     return True
+
+
+_RESCUE_SYSTEM_SUFFIX = " Output exactly one JSON object and nothing else: no markdown fences, no commentary before or after it."
+_FENCE = re.compile(r"^\s*```(?:json)?\s*(.*?)\s*```\s*$", re.DOTALL | re.IGNORECASE)
+
+
+def _extract_json_text(text: str) -> str:
+    """Return the JSON object inside a model reply that was not produced under JSON mode (fences, stray prose)."""
+    candidate = text.strip()
+    fenced = _FENCE.match(candidate)
+    if fenced:
+        candidate = fenced.group(1).strip()
+    try:
+        json.loads(candidate)
+        return candidate
+    except ValueError:
+        pass
+    start, end = candidate.find("{"), candidate.rfind("}")
+    return candidate[start:end + 1] if 0 <= start < end else candidate
+
+
+def _with_extracted_json(payload: Any) -> Any:
+    """Copy of a chat completion whose first message content is reduced to its JSON object; anything else unchanged."""
+    try:
+        content = payload["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError):
+        return payload
+    if not isinstance(content, str):
+        return payload
+    choice = {**payload["choices"][0], "message": {**payload["choices"][0]["message"], "content": _extract_json_text(content)}}
+    return {**payload, "choices": [choice, *payload["choices"][1:]]}
+
+
+def _fill_missing_nullable(parsed: dict[str, Any]) -> dict[str, Any]:
+    """Without constrained decoding a model may omit keys it meant as null/empty; read them as such, add nothing else."""
+    item_schema = _DISCOVERY_RESPONSE_SCHEMA["properties"]["candidates"]["items"]
+
+    def fill(value: Any, schema: dict[str, Any]) -> Any:
+        if not isinstance(value, dict):
+            return value
+        result = dict(value)
+        for key, child in schema["properties"].items():
+            kinds = child.get("type")
+            kinds = [kinds] if isinstance(kinds, str) else (kinds or [])
+            if key not in result:
+                if "null" in kinds:
+                    result[key] = None
+                elif "array" in kinds:
+                    result[key] = []
+            elif "properties" in child and isinstance(result[key], dict):
+                result[key] = fill(result[key], child)
+        return result
+
+    result = dict(parsed)
+    if "context_requests" not in result:
+        result["context_requests"] = []
+    candidates = result.get("candidates")
+    if isinstance(candidates, list):
+        result["candidates"] = [fill(item, item_schema) for item in candidates]
+    return result
 
 
 def provider_from_environment(name: str, model: str) -> DiscoveryProvider:

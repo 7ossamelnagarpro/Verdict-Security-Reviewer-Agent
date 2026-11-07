@@ -29,7 +29,7 @@ def main() -> int:
     parser.add_argument("--max-context-chars", type=int, default=20_000)
     parser.add_argument("--max-batches", type=int, default=20)
     parser.add_argument("--max-planned-targets", type=int, default=128)
-    parser.add_argument("--max-hotspots-per-file", type=int, default=12)
+    parser.add_argument("--max-hotspots-per-file", type=int, default=100)
     parser.add_argument("--max-enrichment-rounds", type=int, default=2)
     parser.add_argument("--timeout-seconds", type=int, default=None)
     parser.add_argument("--target-id", action="append", default=None, help="rerun one or more IDs from the deterministic target plan")

@@ -141,9 +141,17 @@ visible in the triage artifact and report; they are not security verdicts.
 - **Timing.** `usage.wall_seconds`, `usage.rate_limit_wait_seconds`, `usage.retry_count` and `usage.provider_calls`
   show how much of a run was provider rate-limit waiting rather than model time.
 - **Coverage of endpoints.** A scanner-flagged file used to contribute at most three explicit hotspot targets, so most
-  route handlers were only seen incidentally inside other targets' windows. `--ai-max-hotspots-per-file` (default 12,
-  config `max_hotspots_per_file`) sets how many route/function hotspots per file are reviewed explicitly. Raising it
-  increases coverage and the number of model calls; the final report still states anything beyond the planning limit.
+  route handlers were only seen incidentally inside other targets' windows. Every route/function hotspot is now reviewed
+  explicitly (`--ai-max-hotspots-per-file`, default 100; config `max_hotspots_per_file`). Equal scores are ordered
+  state-changing handlers first, with a bump for upload/session/cookie/token/reset/webhook/redirect/login handlers, so
+  if a planning or batch limit is hit the likelier-vulnerable handlers go first and the report states what was skipped.
+  Full coverage costs more tokens (about twice the prompt volume on the lab project) and therefore more rate-limit time;
+  lower the option for a faster, shallower run.
 - **Reproducibility.** `GROQ_SEED=<int>` (opt-in, best effort) is sent as the request `seed`, so repeated runs of the same
   prompt are more alike. Model output can still vary between runs; compare several runs before concluding that a
   finding was lost.
+- **Static only, and duplicates.** Discovery reads source and never runs the application, so every candidate carries
+  `analysis: "static_source_review"`; dynamic corroboration is added later by triage only when a probe hit the same route.
+  Candidates that state the same root cause (same sensitive operation and same missing-check location, or the same
+  category when one side names no missing check) are merged into the strongest one at the end of the run. The merged ids
+  stay in `duplicate_ids`, `usage.duplicate_candidates_merged` and a warning, so nothing disappears silently.

@@ -113,6 +113,20 @@ def _drop_shown_lines(code: str, shown: dict[int, str]) -> tuple[str, list[str]]
     return "\n".join(kept), list(owners)
 
 
+_HOTSPOT_SCORE = re.compile(r"scored (\d+)")
+
+
+def _prompt_reasons(target: DiscoveryTarget) -> list[str]:
+    """Short reasons for the prompt; the full text stays in the target plan.  Hotspot and no-finding targets are
+    numerous, and their long boilerplate would otherwise be repeated in every one of them."""
+    if target.kind == "unflagged_hotspot":
+        match = _HOTSPOT_SCORE.search(" ".join(target.reasons))
+        return [f"Unflagged security-relevant function, score {match.group(1)}." if match else "Unflagged security-relevant function."]
+    if target.kind == "no_findings":
+        return ["No scanner finding in this file."]
+    return list(target.reasons)
+
+
 def _build_prompt(
     merged: MergeResult, context: ContextResult, risk: RiskResult,
     scope: DiscoveryScope, max_chars: int,
@@ -160,6 +174,7 @@ def _build_prompt(
     shown: dict[str, dict[int, str]] = {}   # path -> {line number: id of the target whose code carries it}
     for target in scope.targets:
         record: dict[str, Any] = asdict(target)
+        record["reasons"] = _prompt_reasons(target)
         source_code = _redact(scope.snippets.get(target.target_id, ""))
         shown_here = shown.get((target.path or "").replace("\\", "/"), {})
         if source_code and shown_here:

@@ -39,6 +39,7 @@ from .agent import (
     _build_prompt, _enrichment_prompt, _redact, _sum_usage, _verify_candidate, _with_cost,
 )
 from .context_tools import ContextBroker
+from .dedup import collapse_duplicate_candidates
 from .models import (
     DISCOVERY_SCHEMA_VERSION, CandidateDisposition, CandidateFinding, DiscoveryBatch, DiscoveryConfig,
     DiscoveryResult, DiscoveryStatus, DiscoveryTarget,
@@ -106,6 +107,7 @@ class BatchProgress:
     reason: str = "size"              # why the batch is being shrunk: "size" (HTTP 413), "output" (unusable answer) or "transport" (lost response)
     last_error: str = ""              # safe text of the failure that triggered the shrink
     counted: bool = False             # targets already credited as inspected by a successful call
+    rescue: bool = False              # the single-target "plain JSON" last attempt was already scheduled for this batch
 
 
 class DiscoveryState(TypedDict, total=False):
@@ -233,7 +235,8 @@ class _Nodes:
         batch = state["batch"]
         batch = replace(batch, calls=batch.calls + 1, sent_prompt_chars=batch.sent_prompt_chars + len(batch.prompt))
         try:
-            raw, usage = call_model(self.provider, "discover", batch.prompt, span="discovery-model-call",
+            raw, usage = call_model(self.provider, "discover_rescue" if batch.rescue else "discover", batch.prompt,
+                                    span="discovery-model-rescue-call" if batch.rescue else "discovery-model-call",
                                     trace_summary=_prompt_summary(batch),
                                     timeout_seconds=self.config.timeout_seconds,
                                     max_candidates=self.config.max_candidates)
@@ -302,6 +305,13 @@ class _Nodes:
         if not giving_up and len(batch.targets) > 1:
             keep = max(1, int(len(batch.targets) * factor))
             selection, returned = batch.targets[:keep], batch.targets[keep:]
+        elif not giving_up and batch.reason == "output" and not batch.rescue and callable(getattr(self.provider, "discover_rescue", None)):
+            # One target keeps breaking the model's output.  Resending the same request at temperature 0 repeats the
+            # same failure and there is nothing smaller to send, so make exactly one request that differs in kind
+            # (no constrained decoding) before reporting the target as uninspected.
+            return {"phase": "call",
+                    "batch": replace(batch, rescue=True, shrinks=batch.shrinks + 1, size_ratio=None, last_error=""),
+                    "warnings": [f"Discovery batch {batch.index}: retrying the single target once in plain JSON mode."]}
         elif not giving_up:
             budget = int(batch.budget * factor)
             giving_up = batch.reason == "output" or budget < _MIN_CONTEXT_CHARS
@@ -412,16 +422,24 @@ class _Nodes:
                      + ", ".join(item.target_id for item in pending[:20]))
         if not inspected:
             gaps.add("No discovery target was inspected.")
+        candidates, merged_duplicates = collapse_duplicate_candidates(tuple(state["candidates"].values()))
+        warnings = list(state["warnings"])
+        if merged_duplicates:
+            removed = sum(len(ids) for ids in merged_duplicates.values())
+            warnings.append(f"{removed} duplicate AI candidate(s) were merged into {len(merged_duplicates)} stronger one(s): "
+                            + "; ".join(f"{kept} <- {', '.join(ids)}" for kept, ids in merged_duplicates.items()))
         failed = state["failed"]
         status = (DiscoveryStatus.BLOCKED if failed and not inspected
                   else DiscoveryStatus.PARTIAL if gaps or failed else DiscoveryStatus.COMPLETED)
         usage = _with_cost({**state["totals"], "targets": len(inspected), "planned_targets": len(scope.targets),
-                            "batches": len(batches), "provider_calls": sum(item.provider_calls for item in batches)},
+                            "batches": len(batches), "provider_calls": sum(item.provider_calls for item in batches),
+                            "duplicate_candidates_merged": sum(len(ids) for ids in merged_duplicates.values()),
+                            "analysis": "static_source_review"},
                            self.config)
         return {"result": DiscoveryResult(
             DISCOVERY_SCHEMA_VERSION, status, self.provider.name, self.provider.model,
-            tuple(item.target_id for item in inspected), tuple(state["candidates"].values()),
-            tuple(dict.fromkeys(state["warnings"])), tuple(sorted(gaps)), usage,
+            tuple(item.target_id for item in inspected), candidates,
+            tuple(dict.fromkeys(warnings)), tuple(sorted(gaps)), usage,
             tuple(inspected), tuple(batches), tuple(state["exchanges"]))}
 
 
