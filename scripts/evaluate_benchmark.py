@@ -13,9 +13,9 @@ is never penalised for tests it did not scan.
 
     python scripts/evaluate_benchmark.py --ground-truth BenchmarkPython/expectedresults-0.1.csv \
         --scan-root targets/owasp-benchmark-python --run-dir runs/run_31 \
-        [--baseline bandit=BenchmarkPython/results/BenchmarkPython-Bandit.sarif] [--output FILE]
+        [--baseline bandit=BenchmarkPython/results/BenchmarkPython-Bandit.sarif] [--output FILE] [--html FILE]
 
-Standard library only. The ground truth is read after the scan and is never a scan input.
+Standard library only (``--html`` additionally imports the project's own report styling). The ground truth is read after the scan and is never a scan input.
 """
 
 from __future__ import annotations
@@ -24,6 +24,7 @@ import argparse
 import csv
 import json
 import re
+import sys
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, NamedTuple
@@ -139,9 +140,15 @@ def sarif_items(path: Path) -> list[Item]:
     return items
 
 
+CWE_IN_TEXT = re.compile(r"CWE[- ]?(\d{1,4})", re.IGNORECASE)
+
+
 def matches(category: str, item: Item) -> bool:
+    wanted = CATEGORY_CWES.get(category, set())
     if item.cwes:
-        return bool(item.cwes & CATEGORY_CWES.get(category, set()))
+        return bool(item.cwes & wanted)
+    if {int(number) for number in CWE_IN_TEXT.findall(item.text)} & wanted:     # AI findings that name their CWE in text
+        return True
     flat = item.text.lower().replace("_", " ").replace("-", " ")
     return any(word in flat for word in CATEGORY_WORDS.get(category, ()))
 
@@ -206,6 +213,8 @@ def evaluate(truth_path: Path, scan_root: Path, run_dir: Path | None, baselines:
     out: dict[str, Any] = {"schema_version": "1.0", "ground_truth": str(truth_path), "scan_root": str(scan_root),
                            "scored_tests": len(scope), "vulnerable": sum(truth[t]["vulnerable"] for t in scope),
                            "safe": sum(not truth[t]["vulnerable"] for t in scope), "modes": cards, "notes": notes}
+    out["cases"] = [{"id": name, "category": truth[name]["category"], "vulnerable": bool(truth[name]["vulnerable"]),
+                     "reported_by": [mode for mode, reported in modes.items() if name in reported]} for name in sorted(scope)]
     if "scanners_only" in modes and "agent_final" in modes:
         s, a = modes["scanners_only"], modes["agent_final"]
         real = {t for t in scope if truth[t]["vulnerable"]}
@@ -229,11 +238,87 @@ def render(result: dict[str, Any]) -> str:
                   f"  real vulnerabilities lost:       {len(effect['real_vulnerabilities_lost'])}  <- the costly mistake",
                   f"  real vulnerabilities recovered:  {len(effect['real_vulnerabilities_recovered'])}",
                   f"  false positives introduced:      {len(effect['false_positives_introduced'])}"]
-    first = next(iter(result["modes"].values()))
-    lines += ["", "Per category (first mode):", f"  {'category':16} {'TPR':>6} {'FPR':>6} {'SCORE':>7}"]
-    lines += [f"  {cat:16} {fmt(c['tpr'])} {fmt(c['fpr'])} {fmt(c['score']):>7}" for cat, c in first["categories"].items()]
+    modes = result["modes"]
+    categories = list(next(iter(modes.values()))["categories"])
+    lines += ["", "Per category, TPR/FPR for every mode (each category is usually one vulnerable + one safe test, so values are 0 or 1):",
+              f"  {'category':16}" + "".join(f"{name:>14}" for name in modes)]
+    for cat in categories:
+        cells = []
+        for card in modes.values():
+            c = card["categories"].get(cat, {})
+            part = lambda v: "n/a" if v is None else f"{v:.2f}"
+            cells.append(f"{part(c.get('tpr'))}/{part(c.get('fpr'))}")
+        lines.append(f"  {cat:16}" + "".join(f"{cell:>14}" for cell in cells))
     lines += [f"note: {n}" for n in result["notes"]]
     return "\n".join(lines)
+
+
+_MODE_LABELS = {"scanners_only": "Scanners only", "ai_discovery": "AI discovery only", "agent_final": "Final agent (scanners + AI + review)"}
+_SHORT_LABELS = {"scanners_only": "Scanners", "ai_discovery": "AI discovery", "agent_final": "Final agent"}
+
+
+def _outcome(case: dict[str, Any], mode: str) -> str:
+    hit = mode in case["reported_by"]
+    if case["vulnerable"]:
+        return "detected" if hit else "not_detected"
+    return "safe_control_flagged" if hit else "safe_control_clean"
+
+
+def html_report(result: dict[str, Any]) -> str:
+    """The scorecard as a page in the same style (rail, dark/light switch) as the Comprehensive lab evaluation."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+    from security_reviewer_v2.reporting.evaluation_html import render_evaluation
+
+    modes = result["modes"]
+    primary = "agent_final" if "agent_final" in modes else next(iter(modes))
+    card = modes[primary]
+    label = lambda mode: _MODE_LABELS.get(mode, mode)
+    pct = lambda v: "n/a" if v is None else f"{v * 100:.1f}%"
+    num = lambda v: "n/a" if v is None else f"{v:.2f}"
+    rows = []
+    for case in result["cases"]:
+        status = _outcome(case, primary)
+        rows.append({
+            "id": case["id"], "status": status,
+            "cells": [case["category"], "vulnerable" if case["vulnerable"] else "safe",
+                      ", ".join(_SHORT_LABELS.get(m, m) for m in case["reported_by"]) or "none"],
+            "details": [("Category", case["category"]),
+                        ("Ground truth", "real vulnerability" if case["vulnerable"] else "safe test (no vulnerability)"),
+                        ("Outcome per mode", [f"{label(m)}: {_outcome(case, m).replace('_', ' ')}" for m in modes])]})
+    effect = result.get("agent_effect")
+    sections = [("Per category, TPR / FPR for each mode",
+                 [f"{cat}: " + " · ".join(f"{label(m)} {num(c['categories'][cat]['tpr'])}/{num(c['categories'][cat]['fpr'])}"
+                                          for m, c in modes.items() if cat in c["categories"])
+                  for cat in next(iter(modes.values()))["categories"]])]
+    if effect:
+        sections.append(("What the agent changed compared with the scanners alone", [
+            f"False positives removed: {len(effect['false_positives_removed'])} ({', '.join(effect['false_positives_removed']) or 'none'})",
+            f"Real vulnerabilities lost: {len(effect['real_vulnerabilities_lost'])} ({', '.join(effect['real_vulnerabilities_lost']) or 'none'})",
+            f"Real vulnerabilities recovered: {len(effect['real_vulnerabilities_recovered'])} ({', '.join(effect['real_vulnerabilities_recovered']) or 'none'})",
+            f"False positives introduced: {len(effect['false_positives_introduced'])} ({', '.join(effect['false_positives_introduced']) or 'none'})"]))
+    if result["notes"]:
+        sections.append(("Run notes", result["notes"]))
+    sections.append(("How to read the scores", [
+        "TPR (recall): the share of real vulnerabilities that were reported. FPR: the share of safe tests that were wrongly reported.",
+        "Score = TPR minus FPR. Zero is no better than guessing; a negative score is worse than guessing.",
+        "Each category usually has one vulnerable and one safe test, so category values are 0 or 1 and small samples move the totals a lot.",
+        "A test counts as reported when a finding in its file describes that category's weakness (same CWE family, or the category's wording). "
+        "For the final agent only confirmed and likely verdicts count."]))
+    return render_evaluation(
+        title="OWASP Benchmark scorecard",
+        headline=f"{label(primary)}: {card['tp']} of {card['tp'] + card['fn']} known vulnerabilities found",
+        intro="The ground truth was read only after the scan and review were finished. This is a sample of the Benchmark, not a claim of full coverage.",
+        gauge=(card["tp"], card["tp"] + card["fn"], "known vulnerabilities detected"),
+        notes=[f"{label(primary)}: TPR {pct(card['recall_tpr'])}, FPR {pct(card['fpr'])}, precision {pct(card['precision'])}, score {num(card['benchmark_score'])}."],
+        provenance=[("Scored tests", f"{result['scored_tests']} ({result['vulnerable']} vulnerable, {result['safe']} safe)"),
+                    ("Scan folder", Path(result["scan_root"]).name),
+                    *[(label(m), f"TPR {pct(c['recall_tpr'])} · FPR {pct(c['fpr'])} · precision {pct(c['precision'])} · score {num(c['benchmark_score'])}"
+                       f" · TP {c['tp']} FN {c['fn']} FP {c['fp']} TN {c['tn']}") for m, c in modes.items()]],
+        donut=[("Vulnerability found", card["tp"], "var(--mint)"), ("Vulnerability missed", card["fn"], "var(--high)"),
+               ("Safe test wrongly flagged", card["fp"], "var(--medium)"), ("Safe test left clean", card["tn"], "var(--low)")],
+        donut_unit="tests", table_title=f"All {result['scored_tests']} scored tests",
+        columns=["Test", "Category", "Ground truth", "Reported by"], outcome_header="Final outcome" if primary == "agent_final" else "Outcome",
+        rows=rows, sections=sections)
 
 
 def main() -> int:
@@ -243,12 +328,17 @@ def main() -> int:
     parser.add_argument("--run-dir", type=Path, help="the pipeline run folder (merged.json, security-review.json, ...)")
     parser.add_argument("--baseline", action="append", default=[], metavar="NAME=FILE.sarif", help="a tool's SARIF results to score the same way")
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--html", type=Path, help="also write the scorecard as an HTML page in the Comprehensive lab evaluation style")
     args = parser.parse_args()
     if args.run_dir is None and not args.baseline:
         parser.error("give --run-dir and/or --baseline")
     baselines = {item.split("=", 1)[0]: Path(item.split("=", 1)[1]) for item in args.baseline if "=" in item}
     result = evaluate(args.ground_truth, args.scan_root, args.run_dir, baselines)
     print(render(result))
+    if args.html:
+        args.html.parent.mkdir(parents=True, exist_ok=True)
+        args.html.write_text(html_report(result), encoding="utf-8")
+        print(f"\nSaved: {args.html}")
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")

@@ -1,0 +1,942 @@
+{
+  "schema_version": "1.1",
+  "source_format": "semgrep-json",
+  "status": "complete",
+  "findings": [
+    {
+      "finding_id": "finding-eb757791e23db4749461",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 0,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "python.flask.security.audit.secure-set-cookie.secure-set-cookie",
+      "title": "Secure Set Cookie",
+      "description": "Found a Flask cookie with insecurely configured properties.  By default the secure, httponly and samesite ar configured insecurely. cookies should be handled securely by setting `secure=True`, `httponly=True`, and `samesite='Lax'` in response.set_cookie(...). If these parameters are not properly set, your cookies are not properly protected and are at risk of being stolen by an attacker. Include the `secure=True`, `httponly=True`, `samesite='Lax'` arguments or set these to be true in the Flask configuration.",
+      "message": "Found a Flask cookie with insecurely configured properties.  By default the secure, httponly and samesite ar configured insecurely. cookies should be handled securely by setting `secure=True`, `httponly=True`, and `samesite='Lax'` in response.set_cookie(...). If these parameters are not properly set, your cookies are not properly protected and are at risk of being stolen by an attacker. Include the `secure=True`, `httponly=True`, `samesite='Lax'` arguments or set these to be true in the Flask configuration.",
+      "severity": "low",
+      "security_severity_score": null,
+      "confidence": "low",
+      "cwes": [
+        "CWE-614"
+      ],
+      "categories": [
+        "security",
+        "technology:flask",
+        "technology:python"
+      ],
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00012.py",
+        "start_line": 26,
+        "start_column": 3,
+        "end_line": 30,
+        "end_column": 23,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {},
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/gLkZ",
+      "runtime_evidence": null,
+      "finding_kind": "sast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "finding-0037a0a971b655f3529e",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 1,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "python.flask.security.audit.secure-set-cookie.secure-set-cookie",
+      "title": "Secure Set Cookie",
+      "description": "Found a Flask cookie with insecurely configured properties.  By default the secure, httponly and samesite ar configured insecurely. cookies should be handled securely by setting `secure=True`, `httponly=True`, and `samesite='Lax'` in response.set_cookie(...). If these parameters are not properly set, your cookies are not properly protected and are at risk of being stolen by an attacker. Include the `secure=True`, `httponly=True`, `samesite='Lax'` arguments or set these to be true in the Flask configuration.",
+      "message": "Found a Flask cookie with insecurely configured properties.  By default the secure, httponly and samesite ar configured insecurely. cookies should be handled securely by setting `secure=True`, `httponly=True`, and `samesite='Lax'` in response.set_cookie(...). If these parameters are not properly set, your cookies are not properly protected and are at risk of being stolen by an attacker. Include the `secure=True`, `httponly=True`, `samesite='Lax'` arguments or set these to be true in the Flask configuration.",
+      "severity": "low",
+      "security_severity_score": null,
+      "confidence": "low",
+      "cwes": [
+        "CWE-614"
+      ],
+      "categories": [
+        "security",
+        "technology:flask",
+        "technology:python"
+      ],
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00068.py",
+        "start_line": 26,
+        "start_column": 3,
+        "end_line": 30,
+        "end_column": 23,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {},
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/gLkZ",
+      "runtime_evidence": null,
+      "finding_kind": "sast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "finding-d8fde07bc8ec9d21b3a3",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 2,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "python.lang.security.audit.exec-detected.exec-detected",
+      "title": "Exec Detected",
+      "description": "Detected the use of exec(). exec() can be dangerous if used to evaluate dynamic content. If this content can be input from outside the program, this may be a code injection vulnerability. Ensure evaluated content is not definable by external sources.",
+      "message": "Detected the use of exec(). exec() can be dangerous if used to evaluate dynamic content. If this content can be input from outside the program, this may be a code injection vulnerability. Ensure evaluated content is not definable by external sources.",
+      "severity": "high",
+      "security_severity_score": null,
+      "confidence": "low",
+      "cwes": [
+        "CWE-95"
+      ],
+      "categories": [
+        "security",
+        "technology:python"
+      ],
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00159.py",
+        "start_line": 45,
+        "start_column": 4,
+        "end_line": 45,
+        "end_column": 13,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {},
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/ndRX",
+      "runtime_evidence": null,
+      "finding_kind": "sast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "finding-18253dd868f26faa9681",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 3,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "python.flask.security.injection.subprocess-injection.subprocess-injection",
+      "title": "Subprocess Injection",
+      "description": "Detected user input entering a `subprocess` call unsafely. This could result in a command injection vulnerability. An attacker could use this vulnerability to execute arbitrary commands on the host, which allows them to download malware, scan sensitive data, or run any command they wish on the server. Do not let users choose the command to run. In general, prefer to use Python API versions of system commands. If you must use subprocess, use a dictionary to allowlist a set of commands.",
+      "message": "Detected user input entering a `subprocess` call unsafely. This could result in a command injection vulnerability. An attacker could use this vulnerability to execute arbitrary commands on the host, which allows them to download malware, scan sensitive data, or run any command they wish on the server. Do not let users choose the command to run. In general, prefer to use Python API versions of system commands. If you must use subprocess, use a dictionary to allowlist a set of commands.",
+      "severity": "medium",
+      "security_severity_score": null,
+      "confidence": "high",
+      "cwes": [
+        "CWE-78"
+      ],
+      "categories": [
+        "security",
+        "technology:flask"
+      ],
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00167.py",
+        "start_line": 53,
+        "start_column": 11,
+        "end_line": 53,
+        "end_column": 84,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {},
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/5gW3",
+      "runtime_evidence": null,
+      "finding_kind": "sast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "finding-d00553bbf1f533cbc3a3",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 5,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "python.lang.security.audit.subprocess-shell-true.subprocess-shell-true",
+      "title": "Subprocess Shell True",
+      "description": "Found 'subprocess' function 'run' with 'shell=True'. This is dangerous because this call will spawn the command using a shell process. Doing so propagates current shell settings and variables, which makes it much easier for a malicious actor to execute commands. Use 'shell=False' instead.",
+      "message": "Found 'subprocess' function 'run' with 'shell=True'. This is dangerous because this call will spawn the command using a shell process. Doing so propagates current shell settings and variables, which makes it much easier for a malicious actor to execute commands. Use 'shell=False' instead.",
+      "severity": "low",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [
+        "CWE-78"
+      ],
+      "categories": [
+        "security",
+        "technology:python"
+      ],
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00167.py",
+        "start_line": 53,
+        "start_column": 40,
+        "end_line": 53,
+        "end_column": 44,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {},
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/J92w",
+      "runtime_evidence": null,
+      "finding_kind": "sast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "finding-a4e057b28f63978cfb8c",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 4,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "python.lang.security.dangerous-subprocess-use.dangerous-subprocess-use",
+      "title": "Dangerous Subprocess Use",
+      "description": "Detected subprocess function 'run' with user controlled data. A malicious actor could leverage this to perform command injection. You may consider using 'shlex.escape()'.",
+      "message": "Detected subprocess function 'run' with user controlled data. A malicious actor could leverage this to perform command injection. You may consider using 'shlex.escape()'.",
+      "severity": "high",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [
+        "CWE-78"
+      ],
+      "categories": [
+        "security",
+        "technology:python"
+      ],
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00167.py",
+        "start_line": 53,
+        "start_column": 26,
+        "end_line": 53,
+        "end_column": 32,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {},
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/NWxp",
+      "runtime_evidence": null,
+      "finding_kind": "sast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "finding-23235980edeca85145ba",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 6,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "python.lang.security.use-defused-xml.use-defused-xml",
+      "title": "Use Defused Xml",
+      "description": "The Python documentation recommends using `defusedxml` instead of `xml` because the native Python `xml` library is vulnerable to XML External Entity (XXE) attacks. These attacks can leak confidential data and \"XML bombs\" can cause denial of service.",
+      "message": "The Python documentation recommends using `defusedxml` instead of `xml` because the native Python `xml` library is vulnerable to XML External Entity (XXE) attacks. These attacks can leak confidential data and \"XML bombs\" can cause denial of service.",
+      "severity": "medium",
+      "security_severity_score": null,
+      "confidence": "low",
+      "cwes": [
+        "CWE-611"
+      ],
+      "categories": [
+        "security",
+        "technology:python"
+      ],
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00205.py",
+        "start_line": 45,
+        "start_column": 3,
+        "end_line": 45,
+        "end_column": 25,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {},
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/kX47",
+      "runtime_evidence": null,
+      "finding_kind": "sast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "finding-c0b8994b5a91c117a532",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 7,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "python.lang.security.use-defused-xml.use-defused-xml",
+      "title": "Use Defused Xml",
+      "description": "The Python documentation recommends using `defusedxml` instead of `xml` because the native Python `xml` library is vulnerable to XML External Entity (XXE) attacks. These attacks can leak confidential data and \"XML bombs\" can cause denial of service.",
+      "message": "The Python documentation recommends using `defusedxml` instead of `xml` because the native Python `xml` library is vulnerable to XML External Entity (XXE) attacks. These attacks can leak confidential data and \"XML bombs\" can cause denial of service.",
+      "severity": "medium",
+      "security_severity_score": null,
+      "confidence": "low",
+      "cwes": [
+        "CWE-611"
+      ],
+      "categories": [
+        "security",
+        "technology:python"
+      ],
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00205.py",
+        "start_line": 46,
+        "start_column": 3,
+        "end_line": 46,
+        "end_column": 25,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {},
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/kX47",
+      "runtime_evidence": null,
+      "finding_kind": "sast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "finding-4608a1f0b7335e5acd47",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 8,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "python.lang.security.use-defused-xml.use-defused-xml",
+      "title": "Use Defused Xml",
+      "description": "The Python documentation recommends using `defusedxml` instead of `xml` because the native Python `xml` library is vulnerable to XML External Entity (XXE) attacks. These attacks can leak confidential data and \"XML bombs\" can cause denial of service.",
+      "message": "The Python documentation recommends using `defusedxml` instead of `xml` because the native Python `xml` library is vulnerable to XML External Entity (XXE) attacks. These attacks can leak confidential data and \"XML bombs\" can cause denial of service.",
+      "severity": "medium",
+      "security_severity_score": null,
+      "confidence": "low",
+      "cwes": [
+        "CWE-611"
+      ],
+      "categories": [
+        "security",
+        "technology:python"
+      ],
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00290.py",
+        "start_line": 45,
+        "start_column": 3,
+        "end_line": 45,
+        "end_column": 37,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {},
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/kX47",
+      "runtime_evidence": null,
+      "finding_kind": "sast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "finding-f0a42fd556cc86bb5149",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 9,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "python.lang.security.use-defused-xml-parse.use-defused-xml-parse",
+      "title": "Use Defused Xml Parse",
+      "description": "The native Python `xml` library is vulnerable to XML External Entity (XXE) attacks.  These attacks can leak confidential data and \"XML bombs\" can cause denial of service. Do not use this library to parse untrusted input. Instead  the Python documentation recommends using `defusedxml`.",
+      "message": "The native Python `xml` library is vulnerable to XML External Entity (XXE) attacks.  These attacks can leak confidential data and \"XML bombs\" can cause denial of service. Do not use this library to parse untrusted input. Instead  the Python documentation recommends using `defusedxml`.",
+      "severity": "medium",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [
+        "CWE-611"
+      ],
+      "categories": [
+        "security",
+        "technology:python"
+      ],
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00290.py",
+        "start_line": 55,
+        "start_column": 11,
+        "end_line": 55,
+        "end_column": 61,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {},
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/n3jG",
+      "runtime_evidence": null,
+      "finding_kind": "sast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "finding-d399ef667188ab7ac6cd",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 10,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "python.flask.security.insecure-deserialization.insecure-deserialization",
+      "title": "Insecure Deserialization",
+      "description": "Detected the use of an insecure deserialization library in a Flask route. These libraries are prone to code execution vulnerabilities. Ensure user data does not enter this function. To fix this, try to avoid serializing whole objects. Consider instead using a serializer such as JSON.",
+      "message": "Detected the use of an insecure deserialization library in a Flask route. These libraries are prone to code execution vulnerabilities. Ensure user data does not enter this function. To fix this, try to avoid serializing whole objects. Consider instead using a serializer such as JSON.",
+      "severity": "medium",
+      "security_severity_score": null,
+      "confidence": "low",
+      "cwes": [
+        "CWE-502"
+      ],
+      "categories": [
+        "security",
+        "technology:flask"
+      ],
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00349.py",
+        "start_line": 53,
+        "start_column": 16,
+        "end_line": 53,
+        "end_column": 59,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {},
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/N45z",
+      "runtime_evidence": null,
+      "finding_kind": "sast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "finding-e6eb426af68f8a812b81",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 11,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "python.lang.security.deserialization.pickle.avoid-pickle",
+      "title": "Avoid Pickle",
+      "description": "Avoid using `pickle`, which is known to lead to code execution vulnerabilities. When unpickling, the serialized data could be manipulated to run arbitrary code. Instead, consider serializing the relevant data as JSON or a similar text-based serialization format.",
+      "message": "Avoid using `pickle`, which is known to lead to code execution vulnerabilities. When unpickling, the serialized data could be manipulated to run arbitrary code. Instead, consider serializing the relevant data as JSON or a similar text-based serialization format.",
+      "severity": "medium",
+      "security_severity_score": null,
+      "confidence": "low",
+      "cwes": [
+        "CWE-502"
+      ],
+      "categories": [
+        "security",
+        "technology:python"
+      ],
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00349.py",
+        "start_line": 53,
+        "start_column": 16,
+        "end_line": 53,
+        "end_column": 59,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {},
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/OPwB",
+      "runtime_evidence": null,
+      "finding_kind": "sast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "finding-598174429fd75c850e1e",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 12,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1",
+      "title": "Insecure Hash Algorithm Sha1",
+      "description": "Detected SHA1 hash algorithm which is considered insecure. SHA1 is not collision resistant and is therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead.",
+      "message": "Detected SHA1 hash algorithm which is considered insecure. SHA1 is not collision resistant and is therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead.",
+      "severity": "medium",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [
+        "CWE-327"
+      ],
+      "categories": [
+        "security",
+        "technology:python"
+      ],
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00714.py",
+        "start_line": 54,
+        "start_column": 10,
+        "end_line": 54,
+        "end_column": 24,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {},
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/ydYx",
+      "runtime_evidence": null,
+      "finding_kind": "sast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "finding-5dd2e9739aaa8ee5497c",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 13,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "python.flask.security.audit.secure-set-cookie.secure-set-cookie",
+      "title": "Secure Set Cookie",
+      "description": "Found a Flask cookie with insecurely configured properties.  By default the secure, httponly and samesite ar configured insecurely. cookies should be handled securely by setting `secure=True`, `httponly=True`, and `samesite='Lax'` in response.set_cookie(...). If these parameters are not properly set, your cookies are not properly protected and are at risk of being stolen by an attacker. Include the `secure=True`, `httponly=True`, `samesite='Lax'` arguments or set these to be true in the Flask configuration.",
+      "message": "Found a Flask cookie with insecurely configured properties.  By default the secure, httponly and samesite ar configured insecurely. cookies should be handled securely by setting `secure=True`, `httponly=True`, and `samesite='Lax'` in response.set_cookie(...). If these parameters are not properly set, your cookies are not properly protected and are at risk of being stolen by an attacker. Include the `secure=True`, `httponly=True`, `samesite='Lax'` arguments or set these to be true in the Flask configuration.",
+      "severity": "low",
+      "security_severity_score": null,
+      "confidence": "low",
+      "cwes": [
+        "CWE-614"
+      ],
+      "categories": [
+        "security",
+        "technology:flask",
+        "technology:python"
+      ],
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00721.py",
+        "start_line": 57,
+        "start_column": 3,
+        "end_line": 60,
+        "end_column": 18,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {},
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/gLkZ",
+      "runtime_evidence": null,
+      "finding_kind": "sast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "finding-f2edfe8120714f985cc9",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 14,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "python.lang.security.audit.subprocess-shell-true.subprocess-shell-true",
+      "title": "Subprocess Shell True",
+      "description": "Found 'subprocess' function 'run' with 'shell=True'. This is dangerous because this call will spawn the command using a shell process. Doing so propagates current shell settings and variables, which makes it much easier for a malicious actor to execute commands. Use 'shell=False' instead.",
+      "message": "Found 'subprocess' function 'run' with 'shell=True'. This is dangerous because this call will spawn the command using a shell process. Doing so propagates current shell settings and variables, which makes it much easier for a malicious actor to execute commands. Use 'shell=False' instead.",
+      "severity": "low",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [
+        "CWE-78"
+      ],
+      "categories": [
+        "security",
+        "technology:python"
+      ],
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00736.py",
+        "start_line": 55,
+        "start_column": 40,
+        "end_line": 55,
+        "end_column": 44,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {},
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/J92w",
+      "runtime_evidence": null,
+      "finding_kind": "sast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "finding-f4215ba8f063264a26a3",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 15,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "python.flask.security.audit.secure-set-cookie.secure-set-cookie",
+      "title": "Secure Set Cookie",
+      "description": "Found a Flask cookie with insecurely configured properties.  By default the secure, httponly and samesite ar configured insecurely. cookies should be handled securely by setting `secure=True`, `httponly=True`, and `samesite='Lax'` in response.set_cookie(...). If these parameters are not properly set, your cookies are not properly protected and are at risk of being stolen by an attacker. Include the `secure=True`, `httponly=True`, `samesite='Lax'` arguments or set these to be true in the Flask configuration.",
+      "message": "Found a Flask cookie with insecurely configured properties.  By default the secure, httponly and samesite ar configured insecurely. cookies should be handled securely by setting `secure=True`, `httponly=True`, and `samesite='Lax'` in response.set_cookie(...). If these parameters are not properly set, your cookies are not properly protected and are at risk of being stolen by an attacker. Include the `secure=True`, `httponly=True`, `samesite='Lax'` arguments or set these to be true in the Flask configuration.",
+      "severity": "low",
+      "security_severity_score": null,
+      "confidence": "low",
+      "cwes": [
+        "CWE-614"
+      ],
+      "categories": [
+        "security",
+        "technology:flask",
+        "technology:python"
+      ],
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00808.py",
+        "start_line": 58,
+        "start_column": 3,
+        "end_line": 61,
+        "end_column": 18,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {},
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/gLkZ",
+      "runtime_evidence": null,
+      "finding_kind": "sast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "finding-9847b21e7c7198f32d29",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 16,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "python.lang.security.audit.eval-detected.eval-detected",
+      "title": "Eval Detected",
+      "description": "Detected the use of eval(). eval() can be dangerous if used to evaluate dynamic content. If this content can be input from outside the program, this may be a code injection vulnerability. Ensure evaluated content is not definable by external sources.",
+      "message": "Detected the use of eval(). eval() can be dangerous if used to evaluate dynamic content. If this content can be input from outside the program, this may be a code injection vulnerability. Ensure evaluated content is not definable by external sources.",
+      "severity": "high",
+      "security_severity_score": null,
+      "confidence": "low",
+      "cwes": [
+        "CWE-95"
+      ],
+      "categories": [
+        "security",
+        "technology:python"
+      ],
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00893.py",
+        "start_line": 54,
+        "start_column": 16,
+        "end_line": 56,
+        "end_column": 5,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {},
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/ZvrD",
+      "runtime_evidence": null,
+      "finding_kind": "sast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "finding-a1abf58704f7969b01c7",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 17,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "python.lang.security.use-defused-xml.use-defused-xml",
+      "title": "Use Defused Xml",
+      "description": "The Python documentation recommends using `defusedxml` instead of `xml` because the native Python `xml` library is vulnerable to XML External Entity (XXE) attacks. These attacks can leak confidential data and \"XML bombs\" can cause denial of service.",
+      "message": "The Python documentation recommends using `defusedxml` instead of `xml` because the native Python `xml` library is vulnerable to XML External Entity (XXE) attacks. These attacks can leak confidential data and \"XML bombs\" can cause denial of service.",
+      "severity": "medium",
+      "security_severity_score": null,
+      "confidence": "low",
+      "cwes": [
+        "CWE-611"
+      ],
+      "categories": [
+        "security",
+        "technology:python"
+      ],
+      "primary_location": {
+        "path": "testcode/BenchmarkTest01122.py",
+        "start_line": 48,
+        "start_column": 3,
+        "end_line": 48,
+        "end_column": 25,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {},
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/kX47",
+      "runtime_evidence": null,
+      "finding_kind": "sast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "finding-78cc3050dae8d2a3af0f",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 18,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "python.lang.security.use-defused-xml.use-defused-xml",
+      "title": "Use Defused Xml",
+      "description": "The Python documentation recommends using `defusedxml` instead of `xml` because the native Python `xml` library is vulnerable to XML External Entity (XXE) attacks. These attacks can leak confidential data and \"XML bombs\" can cause denial of service.",
+      "message": "The Python documentation recommends using `defusedxml` instead of `xml` because the native Python `xml` library is vulnerable to XML External Entity (XXE) attacks. These attacks can leak confidential data and \"XML bombs\" can cause denial of service.",
+      "severity": "medium",
+      "security_severity_score": null,
+      "confidence": "low",
+      "cwes": [
+        "CWE-611"
+      ],
+      "categories": [
+        "security",
+        "technology:python"
+      ],
+      "primary_location": {
+        "path": "testcode/BenchmarkTest01122.py",
+        "start_line": 49,
+        "start_column": 3,
+        "end_line": 49,
+        "end_column": 25,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {},
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/kX47",
+      "runtime_evidence": null,
+      "finding_kind": "sast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "finding-61e198db261c5e0aec94",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 19,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "python.flask.security.insecure-deserialization.insecure-deserialization",
+      "title": "Insecure Deserialization",
+      "description": "Detected the use of an insecure deserialization library in a Flask route. These libraries are prone to code execution vulnerabilities. Ensure user data does not enter this function. To fix this, try to avoid serializing whole objects. Consider instead using a serializer such as JSON.",
+      "message": "Detected the use of an insecure deserialization library in a Flask route. These libraries are prone to code execution vulnerabilities. Ensure user data does not enter this function. To fix this, try to avoid serializing whole objects. Consider instead using a serializer such as JSON.",
+      "severity": "medium",
+      "security_severity_score": null,
+      "confidence": "low",
+      "cwes": [
+        "CWE-502"
+      ],
+      "categories": [
+        "security",
+        "technology:flask"
+      ],
+      "primary_location": {
+        "path": "testcode/BenchmarkTest01216.py",
+        "start_line": 46,
+        "start_column": 16,
+        "end_line": 46,
+        "end_column": 61,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {},
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/N45z",
+      "runtime_evidence": null,
+      "finding_kind": "sast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "finding-191ed7a7094bfdc2df5c",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "semgrep-ce",
+        "scanner_name": "Semgrep",
+        "scanner_version": "1.178.0",
+        "run_index": 0,
+        "result_index": 20,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "python.lang.security.deserialization.pickle.avoid-pickle",
+      "title": "Avoid Pickle",
+      "description": "Avoid using `pickle`, which is known to lead to code execution vulnerabilities. When unpickling, the serialized data could be manipulated to run arbitrary code. Instead, consider serializing the relevant data as JSON or a similar text-based serialization format.",
+      "message": "Avoid using `pickle`, which is known to lead to code execution vulnerabilities. When unpickling, the serialized data could be manipulated to run arbitrary code. Instead, consider serializing the relevant data as JSON or a similar text-based serialization format.",
+      "severity": "medium",
+      "security_severity_score": null,
+      "confidence": "low",
+      "cwes": [
+        "CWE-502"
+      ],
+      "categories": [
+        "security",
+        "technology:python"
+      ],
+      "primary_location": {
+        "path": "testcode/BenchmarkTest01216.py",
+        "start_line": 46,
+        "start_column": 16,
+        "end_line": 46,
+        "end_column": 61,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {},
+      "rule_kind": "pattern",
+      "rule_help_uri": "https://sg.run/OPwB",
+      "runtime_evidence": null,
+      "finding_kind": "sast",
+      "package": null,
+      "component_id": null
+    }
+  ],
+  "warnings": [],
+  "summary": {
+    "input_runs": 1,
+    "input_results": 21,
+    "normalized_findings": 21,
+    "skipped_results": 0
+  }
+}

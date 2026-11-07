@@ -1,0 +1,358 @@
+{
+  "schema_version": "1.0",
+  "status": "completed",
+  "project_root": "/mnt/c/Users/ASUS/Downloads/2update/verdict-integrated/targets/owasp-benchmark-python-cat1",
+  "records": [
+    {
+      "candidate_id": "ai-696ec41f0780e9f2",
+      "disposition": "needs_more_evidence",
+      "path": "testcode/BenchmarkTest00114.py",
+      "start_line": 41,
+      "end_line": 58,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "41: \timport random",
+        "47: \t\tnum = 'BenchmarkTest00114'[13:]",
+        "48: \t\tuser = f'Randy{num}'",
+        "49: \t\tcookie = f'rememberMe{num}'",
+        "50: \t\tvalue = str(random.getrandbits(32))",
+        "54: \t\tmysession[cookie] = value"
+      ],
+      "notes": [
+        "Some AI evidence was not found at its cited source lines.",
+        "Discovery stage could not ground all required structured evidence."
+      ]
+    },
+    {
+      "candidate_id": "ai-81fe3d9e94103325",
+      "disposition": "confirmed",
+      "path": "testcode/BenchmarkTest00114.py",
+      "start_line": 49,
+      "end_line": 57,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "49: \t\tif cookie in mysession and request.cookies.get(cookie) == mysession[cookie]:",
+        "54: mysession[cookie] = value",
+        "55: RESPONSE += (",
+        "56: f'{user} has been remembered with cookie: '"
+      ],
+      "notes": [
+        "source_citation_reanchored:evidence:testcode/BenchmarkTest00114.py:55->54",
+        "source_citation_reanchored:evidence:testcode/BenchmarkTest00114.py:56->55",
+        "source_citation_reanchored:evidence:testcode/BenchmarkTest00114.py:57->56",
+        "source_citation_reanchored:sensitive_operation:testcode/BenchmarkTest00114.py:55->54",
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-e7d6244cbddfaa9b",
+      "disposition": "needs_more_evidence",
+      "path": "helpers/db_sqlite.py",
+      "start_line": 33,
+      "end_line": 48,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "33: def results(cur, sql: str):",
+        "34: \tret = '''<!DOCTYPE html PUBLIC \\\"-//W3C//DTD HTML 4.01 Transitional//EN\\\" \\\"http://www.w3.org/TR/html4/loose.dtd\\'>",
+        "45: \tret += 'Your results are:<br>\\n'",
+        "46: \tfor row in cur:",
+        "47: \t\tret += ', '.join(str(x) for x in row)",
+        "48: \t\tret += '<br>\\n'"
+      ],
+      "notes": [
+        "Some AI evidence was not found at its cited source lines."
+      ]
+    },
+    {
+      "candidate_id": "ai-9c68666e78ffaa90",
+      "disposition": "confirmed",
+      "path": "testcode/BenchmarkTest00212.py",
+      "start_line": 36,
+      "end_line": 53,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "36: \t\tnum = 106",
+        "38: \t\tbar = \"This should never happen\" if (7*42) - num > 200 else param",
+        "44: \t\tfd = open(f'{helpers.utils.RES_DIR}/employees.xml', 'rb')",
+        "46: \t\tquery = '/Employees/Employee[@emplid=\\'' + bar + '\\']'",
+        "48: \t\tnodes = root.xpath(query)"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-dfe6bca5c9f5db21",
+      "disposition": "needs_more_evidence",
+      "path": "testcode/BenchmarkTest00283.py",
+      "start_line": 46,
+      "end_line": 50,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "sql = f'SELECT username from USERS where [REDACTED]",
+        "cur.execute(sql)"
+      ],
+      "notes": [
+        "Some AI evidence was not found at its cited source lines."
+      ]
+    },
+    {
+      "candidate_id": "ai-b66fc40d4ca9bb73",
+      "disposition": "confirmed",
+      "path": "testcode/BenchmarkTest00517.py",
+      "start_line": 55,
+      "end_line": 58,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "fileURI = urlparse(\"file:\" + startURIslashes + helpers.utils.TESTFILES_DIR.replace('\\\\', '/').replace(' ', '_') + bar)",
+        "fileTarget = codecs.open(f'{helpers.utils.TESTFILES_DIR}/{bar}','r','utf-8')"
+      ],
+      "notes": [
+        "source_citation_reanchored:entry_point:testcode/BenchmarkTest00517.py:34->35",
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-04c5b4827c2c1b01",
+      "disposition": "confirmed",
+      "path": "testcode/BenchmarkTest00832.py",
+      "start_line": 53,
+      "end_line": 57,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "fileName = f'{helpers.utils.TESTFILES_DIR}/{bar}'",
+        "fd = open(fileName, 'wb')"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-749df507bf999e5b",
+      "disposition": "needs_more_evidence",
+      "path": "testcode/BenchmarkTest00152.py",
+      "start_line": 38,
+      "end_line": 48,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "conf32394.set('section32394', 'keyB-32394', param)",
+        "bar = conf32394.get('section32394', 'keyA-32394')",
+        "flask.session['userid'] = bar"
+      ],
+      "notes": [
+        "Discovery stage could not ground all required structured evidence."
+      ]
+    },
+    {
+      "candidate_id": "ai-cc2cb69cade51bbf",
+      "disposition": "confirmed",
+      "path": "testcode/BenchmarkTest00114.py",
+      "start_line": 47,
+      "end_line": 48,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "value = str(random.getrandbits(32))"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-7538032eaccc8c4c",
+      "disposition": "confirmed",
+      "path": "testcode/BenchmarkTest00984.py",
+      "start_line": 27,
+      "end_line": 51,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "flask.session['userid'] = bar",
+        "bar = helpers.utils.escape_for_html(param)"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-31c3594938444e8e",
+      "disposition": "confirmed",
+      "path": "testcode/BenchmarkTest00517.py",
+      "start_line": 31,
+      "end_line": 60,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "headers = request.headers.getlist(\"BenchmarkTest00517\")",
+        "bar = thing.doSomething(param)",
+        "fileTarget = codecs.open(f'{helpers.utils.TESTFILES_DIR}/{bar}','r','utf-8')"
+      ],
+      "notes": [
+        "source_citation_reanchored:entry_point:testcode/BenchmarkTest00517.py:31->32",
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-bd56a47da035351b",
+      "disposition": "confirmed",
+      "path": "testcode/BenchmarkTest00266.py",
+      "start_line": 31,
+      "end_line": 56,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "param = values[0]",
+        "bar = param",
+        "filter = f'(&(objectclass=person)(|(uid={bar})(street=The streetz 4 Ms bar)))'",
+        "conn.search(base, filter, attributes=ldap3.ALL_ATTRIBUTES)"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-cc6b1567a911894c",
+      "disposition": "confirmed",
+      "path": "testcode/BenchmarkTest00247.py",
+      "start_line": 31,
+      "end_line": 66,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "values = request.form.getlist(\"BenchmarkTest00247\")",
+        "bar = param",
+        "hash = hashlib.new('sha512')",
+        "f = open(f'{helpers.utils.TESTFILES_DIR}/passwordFile.txt', 'a')",
+        "f.write(f'hash_value={base64.b64encode(result)}\\n')"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-d63fabecf348a2c0",
+      "disposition": "needs_more_evidence",
+      "path": "testcode/BenchmarkTest00984.py",
+      "start_line": 44,
+      "end_line": 51,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "bar = helpers.utils.escape_for_html(param)",
+        "flask.session['userid'] = bar",
+        "RESPONSE += (f'Item: \\'userid\\' with value \\'{escape_for_html(bar)}' '\\'saved in session.')"
+      ],
+      "notes": [
+        "Some AI evidence was not found at its cited source lines.",
+        "Discovery stage could not ground all required structured evidence."
+      ]
+    },
+    {
+      "candidate_id": "ai-f6eab4d5c08f0678",
+      "disposition": "needs_more_evidence",
+      "path": "testcode/BenchmarkTest01003.py",
+      "start_line": 31,
+      "end_line": 43,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "parts = request.path.split(\"/\")",
+        "param = parts[1]",
+        "bar = param.split(' ')[0]",
+        "RESPONSE += (f'Parameter value: {bar}')"
+      ],
+      "notes": [
+        "Some AI evidence was not found at its cited source lines."
+      ]
+    },
+    {
+      "candidate_id": "ai-7802ce708c7d78e4",
+      "disposition": "needs_more_evidence",
+      "path": "testcode/BenchmarkTest01168.py",
+      "start_line": 40,
+      "end_line": 45,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "filter = f'(&(objectclass=person)(|(uid={bar})(street=The streetz 4 Ms bar)))'",
+        "conn.search(base, filter, attributes=ldap3.ALL_ATTRIBUTES)"
+      ],
+      "notes": [
+        "Discovery stage could not ground all required structured evidence."
+      ]
+    }
+  ],
+  "warnings": [
+    "The duplicate-avoidance list in the discovery prompt was trimmed; candidates are de-duplicated against scanner findings downstream.",
+    "Some background coverage gaps were not sent to the model; they remain in the report's coverage gaps.",
+    "Discovery batch 2: AI provider request failed with HTTP 413 (rate_limit_exceeded); request too large: 8433 tokens requested, limit 8000; retrying with a smaller request.",
+    "1 duplicate AI candidate(s) were merged into 1 stronger one(s): ai-04c5b4827c2c1b01 <- ai-962806ab34176f93"
+  ]
+}
