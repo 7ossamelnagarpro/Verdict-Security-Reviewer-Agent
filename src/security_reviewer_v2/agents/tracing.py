@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import inspect
 import os
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager, nullcontext
@@ -109,10 +110,29 @@ def tracing_status() -> str:
             "visible inside WSL/Linux; put them in a git-ignored .env file in the repository root.")
 
 
+def _env_int(name: str, default: int, minimum: int) -> int:
+    try:
+        return max(minimum, int(os.environ.get(name, "").strip() or default))
+    except ValueError:
+        return default
+
+
+def _upload_options() -> dict[str, object]:
+    """Smaller batches and a longer read/write timeout for slow or lossy uplinks (a 1.3 MB multipart POST can time out).
+
+    Tracing is best-effort telemetry: these only make uploads likelier to finish, they never affect scan results.
+    Override with SECURITY_REVIEWER_LANGSMITH_BATCH_BYTES and SECURITY_REVIEWER_LANGSMITH_TIMEOUT_SECONDS.
+    """
+    wanted = {"max_batch_size_bytes": _env_int("SECURITY_REVIEWER_LANGSMITH_BATCH_BYTES", 262_144, 16_384),
+              "timeout_ms": (10_000, _env_int("SECURITY_REVIEWER_LANGSMITH_TIMEOUT_SECONDS", 120, 5) * 1000)}
+    supported = inspect.signature(Client.__init__).parameters     # older langsmith releases lack some options
+    return {key: value for key, value in wanted.items() if key in supported}
+
+
 @lru_cache(maxsize=4)
 def _client(mode: str) -> Client:
     scrub = make_scrubber(mode)
-    return Client(hide_inputs=scrub, hide_outputs=scrub)
+    return Client(hide_inputs=scrub, hide_outputs=scrub, **_upload_options())
 
 
 def build_client(mode: str | None = None) -> Client:

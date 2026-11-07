@@ -26,7 +26,7 @@ INPUT_HINT = re.compile(r"\brequest\b|\breq\.|\bparams\b|\bquery\b|\bbody\b|@\w+
 RISK_CONTEXT_BEFORE = 12      # source lines shown before a scanner-flagged line
 RISK_CONTEXT_AFTER = 25       # ... and after it
 RISK_CONTEXT_MAX_LINES = 60
-SENSITIVE_HINT = re.compile(r"secret|debug|environ|password|token|credential", re.I)
+SENSITIVE_HINT = re.compile(r"secret|debug|environ|password|token|credential|signature|hmac|jwt|cookie|random|md5|sha1", re.I)
 # Credential, session and file/redirect handling: classes of handler that deterministic signals alone under-rank.
 PRIORITY_HINT = re.compile(r"upload|download|session|cookie|refresh|reset|webhook|hook|redirect|login|signin|password|token", re.I)
 _MUTATING_METHODS = {"post", "put", "patch", "delete"}
@@ -175,7 +175,44 @@ def plan_discovery_scope(
     chosen = ordered[:config.max_planned_targets]
     if len(ordered) > len(chosen):
         gaps.append(f"{len(ordered) - len(chosen)} discovery targets exceed the overall planning limit; they were not inspected.")
+    affordable = _fit_to_batches(chosen, snippets, config)
+    if len(affordable) < len(chosen):
+        gaps.append(f"{len(chosen) - len(affordable)} lower-priority discovery target(s) were not planned: the budget of "
+                    f"{config.max_batches} batch(es) (up to {config.max_targets} targets and about {config.max_context_chars} "
+                    "characters each) cannot inspect them. Raise --ai-max-batches to cover them.")
+        chosen = affordable
     return DiscoveryScope(tuple(chosen), snippets, gap_evidence, tuple(sorted(set(warnings))), tuple(sorted(set(gaps))))
+
+
+_PER_TARGET_OVERHEAD = 300     # JSON keys, ids and reasons around each target's code
+_RISK_EVIDENCE = 1_200         # scanner excerpts and data-flow endpoints carried by a risk target
+_BATCH_RESERVE = 2_300         # instruction, duplicate hints and gaps repeated in every prompt
+
+
+def _estimated_chars(target: DiscoveryTarget, snippets: dict[str, str]) -> int:
+    return len(snippets.get(target.target_id, "")) + _PER_TARGET_OVERHEAD + (_RISK_EVIDENCE if target.kind == "risk_finding" else 0)
+
+
+def _fit_to_batches(targets: list[DiscoveryTarget], snippets: dict[str, str], config: DiscoveryConfig) -> list[DiscoveryTarget]:
+    """The longest priority-ordered prefix of ``targets`` that ``config.max_batches`` batches can inspect.
+
+    The estimate is deliberately on the generous side (it ignores that overlapping windows are sent once), so a plan
+    that fits is finished.  Planning more than the batch budget can finish would leave targets uninspected, and a run
+    that does not cover its plan is not a usable AI Discovery stage; leaving them out up front keeps the run complete
+    and says exactly what was left out.
+    """
+    room = max(1_000, config.max_context_chars - min(4_000, config.max_context_chars // 4)) - _BATCH_RESERVE
+    chosen: list[DiscoveryTarget] = []
+    batches, used, count = 1, 0, 0
+    for target in targets:
+        cost = min(_estimated_chars(target, snippets), room)     # a lone oversized target is shrunk to fit a batch
+        if count and (count >= config.max_targets or used + cost > room):
+            if batches >= config.max_batches:
+                break
+            batches, used, count = batches + 1, 0, 0
+        chosen.append(target)
+        used, count = used + cost, count + 1
+    return chosen
 
 
 def _source_paths(root: Path, profile: dict[str, Any] | None) -> tuple[list[str], dict[str, str] | None, tuple[str, ...]]:
@@ -280,7 +317,7 @@ def _hotspots(relative: str, lines: tuple[str, ...], finding_lines: set[int]) ->
             continue
         auth = bool(AUTH_HINT.search(signals))
         boundary = route or bool(INPUT_HINT.search(signals))
-        sink = bool(re.search(r"\b(?:execute|subprocess|system|open|send_file|send_from_directory|eval|pickle|save|set_cookie)\b", signals, re.I))
+        sink = bool(re.search(r"\b(?:execute|executescript|subprocess|system|popen|shell|open|send_file|send_from_directory|eval|exec|pickle|yaml|save|set_cookie|urlopen|requests|httpx|redirect)\b", signals, re.I))
         sensitive = bool(SENSITIVE_HINT.search(signals))
         if not (boundary and (auth or sink or sensitive)):
             continue

@@ -25,7 +25,8 @@ dl.prov{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:7px 18p
 .gauge .gt{stroke:var(--ln2)}.gauge .gv{stroke:var(--mint)}.gauge text{fill:currentColor;font-family:var(--serif)}.gauge .gs{font-family:var(--sans);opacity:.65}
 @media(max-width:760px){.banner.has-gauge{grid-template-columns:1fr}}
 """
-_STATUS_CLASS = {"detected": "allow", "needs_review": "warn", "not_detected": "block"}
+_STATUS_CLASS = {"detected": "allow", "needs_review": "warn", "not_detected": "block",
+                 "safe_control_clean": "allow", "safe_control_flagged": "warn"}
 _SUN_MOON = ('<svg class="moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg>'
              '<svg class="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/></svg>')
 

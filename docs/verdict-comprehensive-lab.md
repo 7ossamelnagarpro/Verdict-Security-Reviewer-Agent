@@ -56,3 +56,30 @@ When finished, remove only this lab's stack and ephemeral database:
 ```powershell
 docker compose -p verdict-comprehensive-lab -f targets/verdict-comprehensive-lab/compose.yaml down --volumes --remove-orphans
 ```
+
+## Reading the held-out evaluation
+
+`scripts/evaluate_verdict_comprehensive.py <scan dir> --review-dir <review dir> --output-dir <new dir>` writes
+`evaluation.json`, `.md` and `.html`. The strict audit credits a known case only when a reviewed **scanner** finding
+carries its exact signature. That count is unchanged; the extra analysis (on by default, `--no-precision-audit` turns
+it off, `--source-root` points at the application source) adds:
+
+- **Safe-control specificity.** A positive (confirmed or likely) finding of the same issue class on a safe control's
+  route marks that control `flagged`. `clean` means no such finding; it does not prove the scan exercised the route.
+- **Origin of each detection.** `static` (SAST, SCA, secrets, config), `dynamic` (DAST and workflow probes). AI
+  discovery candidates are never counted as detections; one on an undetected case's endpoint is listed, with its issue
+  class unverified, for a human to adjudicate.
+- **Verdict calibration.** How confirmed, likely, needs-more-evidence and false-positive verdicts distribute over
+  matched, known-endpoint, safe-control, outside-scope and unlabeled findings.
+- **Precision as bounds.** `precision_on_labeled` is optimistic (only safe-control hits count as wrong),
+  `precision_lower_bound` is pessimistic (everything unmatched counts as wrong) and
+  `precision_lower_bound_in_scope` first sets aside dependency advisories and header/cookie hardening alerts, which the
+  answer key does not cover. Findings that match no case are an adjudication queue: the key is not exhaustive, so they
+  may be real, unlisted vulnerabilities.
+- **Scoring gaps.** Cases without a signature can never be credited; they are listed so a low recall is not misread as
+  a detection failure.
+
+Because the review is LLM-backed, run the scan more than once and summarise with
+`scripts/aggregate_evaluations.py <evaluation.json> <evaluation.json> ... --output-dir <new dir>` (mean, minimum,
+maximum and stable/flaky/never per case). Do not tune detection on the cases of this lab and then report them as a
+result; keep a second application that Verdict has never been adjusted for.

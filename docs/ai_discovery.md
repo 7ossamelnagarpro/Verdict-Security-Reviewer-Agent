@@ -155,3 +155,22 @@ visible in the triage artifact and report; they are not security verdicts.
   Candidates that state the same root cause (same sensitive operation and same missing-check location, or the same
   category when one side names no missing check) are merged into the strongest one at the end of the run. The merged ids
   stay in `duplicate_ids`, `usage.duplicate_candidates_merged` and a warning, so nothing disappears silently.
+
+## Run budget and recovery
+
+- **The batch budget is a plan limit, not just a stop.** `--ai-max-batches N` now cuts the plan, in priority order, to what
+  N batches can inspect (the estimate is generous, so a plan that fits finishes) and reports the rest as a coverage gap.
+  Before, a plan larger than the budget ended with uninspected targets, which fails the required AI stage. On the lab,
+  with the default settings: 20 batches plan 69 targets (8 calls), 5 batches plan 41 (5 calls), 3 batches plan 21.
+- **Know your provider's daily tokens.** Groq's published Free-plan limits for `openai/gpt-oss-120b` are 30 requests and
+  8,000 tokens per minute, 1,000 requests and 200,000 tokens per day, per organisation (the Developer plan raises them;
+  the console's Settings > Limits page is authoritative). One saved lab run used about 125,000 tokens: Discovery about
+  30,000 (5 calls, 3 batches) and the per-group review about 95,000 (69 calls). A Free-plan organisation can therefore
+  afford about one full run a day; a daily limit answers with a Retry-After of minutes to hours, which Discovery does not
+  wait out, so the stage stops with batches left over. Size `--ai-max-batches` to the tokens you have left.
+- **Do not restart a stopped run from scratch.** Keep the partial `ai-discovery.json`, then continue only what is left:
+  `scripts/run_saved_ai_discovery.py ... --target-id <id>` for the remaining target ids (the combine step prints them),
+  `scripts/combine_saved_ai_discovery.py <base> <continuation> --allow-partial --output <file>`, and
+  `scripts/resume_local_review.py` for the review stage. None of these run scanners again.
+- **Duplicate hints.** Known findings are sent only for files the prompt shows (runtime findings, which are URL-based, are
+  always eligible), not repeated for the whole project in every batch.

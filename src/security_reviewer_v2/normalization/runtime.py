@@ -22,7 +22,14 @@ def normalize_runtime_json_file(path: str | Path) -> NormalizationResult:
             continue
         rule_id = str(item.get("rule_id", "web.runtime-check"))
         location = str(item.get("path", "runtime://web"))
-        fingerprint = hashlib.sha256(f"runtime:{rule_id}:{location}".encode()).hexdigest()[:24]
+        raw_evidence = item.get("evidence") if isinstance(item.get("evidence"), dict) else {}
+        # Same rule on the same path but another HTTP method or parameter is a different finding (e.g. ZAP alerts).
+        # Records without those fields keep the exact fingerprint they always had.
+        qualifiers = "".join(f":{key}={raw_evidence[key]}" for key in ("method", "parameter")
+                             if isinstance(raw_evidence.get(key), str) and raw_evidence[key])
+        fingerprint = hashlib.sha256(f"runtime:{rule_id}:{location}{qualifiers}".encode()).hexdigest()[:24]
+        cwe_id = str(raw_evidence.get("cwe_id", "")).strip().upper().removeprefix("CWE-")
+        cwes = (f"CWE-{cwe_id}",) if cwe_id.isdigit() and int(cwe_id) > 0 else ()
         severity = FindingSeverity(str(item.get("severity", "medium")))
         confidence = FindingConfidence(str(item.get("confidence", "medium")))
         message = str(item.get("title", rule_id))
@@ -32,7 +39,7 @@ def normalize_runtime_json_file(path: str | Path) -> NormalizationResult:
             scanner=ScannerProvenance("web-runtime", "Bounded Web Runtime Checks", "1.0", 0, index, None),
             rule_id=rule_id, title=message, description=message, message=message,
             severity=severity, security_severity_score=None, confidence=confidence,
-            cwes=(), categories=("dast", "runtime"),
+            cwes=cwes, categories=("dast", "runtime"),
             primary_location=FindingLocation(location, None, None, None, None),
             code_flow=(), related_locations=(), fingerprints={"primary": fingerprint},
             rule_kind="runtime_behavior", rule_help_uri=None,

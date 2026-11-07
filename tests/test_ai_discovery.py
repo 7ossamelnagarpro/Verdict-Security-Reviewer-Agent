@@ -467,18 +467,62 @@ def test_malformed_model_batch_does_not_prevent_later_batches(tmp_path: Path):
     assert any("did not complete" in gap for gap in result.coverage_gaps)
 
 
-def test_batch_limit_reports_uninspected_targets(tmp_path: Path):
+def test_plan_is_trimmed_to_what_the_batch_budget_can_finish(tmp_path: Path):
+    """Planning more than max_batches can inspect used to end the run with uninspected targets, which fails the required
+    AI stage.  The plan is now cut to the budget, in priority order, and the cut is reported."""
+    from security_reviewer_v2.discovery.completion import required_discovery_satisfied
     merged, context, risk, profile = _inputs(tmp_path)
     class EmptyProvider:
         name = "fake"
         model = "test"
         def discover(self, prompt, *, timeout_seconds, max_candidates):
             return {"candidates": [], "context_requests": []}, {}
+    unrestricted = plan_discovery_scope(merged, risk, context, project_root=tmp_path, config=DiscoveryConfig(max_targets=1),
+                                        profile_artifact=profile)
+    assert len(unrestricted.targets) > 1
     result = DiscoveryAgent(EmptyProvider(), DiscoveryConfig(max_targets=1, max_batches=1)).run(
         merged, context, risk, project_root=tmp_path, profile_artifact=profile)
-    assert result.status.value == "partial"
-    assert result.usage["planned_targets"] > result.usage["targets"]
-    assert any("planned discovery targets were not inspected" in gap for gap in result.coverage_gaps)
+    assert result.status.value == "partial"                       # the cut targets are a visible coverage gap
+    assert result.usage["planned_targets"] == result.usage["targets"] == 1
+    assert any("not planned" in gap and "--ai-max-batches" in gap for gap in result.coverage_gaps)
+    assert required_discovery_satisfied(result.to_dict())
+
+
+def test_many_handlers_with_a_small_batch_budget_still_complete_the_plan(tmp_path: Path):
+    from security_reviewer_v2.discovery.completion import required_discovery_satisfied
+    profile = _file_profile(tmp_path, {"routes.py": _routes_file(40)})
+    empty = SimpleNamespace(findings=(), coverage_gaps=())
+    class EmptyProvider:
+        name = "fake"
+        model = "test"
+        def __init__(self): self.calls = 0
+        def discover(self, prompt, *, timeout_seconds, max_candidates):
+            self.calls += 1
+            return {"candidates": [], "context_requests": []}, {}
+    for budget in (1, 2, 3):
+        provider = EmptyProvider()
+        result = DiscoveryAgent(provider, DiscoveryConfig(max_targets=5, max_batches=budget)).run(
+            empty, empty, empty, project_root=tmp_path, profile_artifact=profile)
+        assert provider.calls <= budget
+        assert required_discovery_satisfied(result.to_dict())
+        assert result.usage["targets"] == result.usage["planned_targets"] <= 5 * budget
+    roomy = DiscoveryAgent(EmptyProvider(), DiscoveryConfig(max_targets=5, max_batches=20)).run(
+        empty, empty, empty, project_root=tmp_path, profile_artifact=profile)
+    assert roomy.status.value == "completed" and roomy.usage["planned_targets"] == 40
+    assert not any("not planned" in gap for gap in roomy.coverage_gaps)
+
+
+def test_known_findings_for_files_not_in_the_prompt_are_not_repeated_in_every_batch():
+    mk = lambda i, path: SimpleNamespace(merged_finding_id=f"k{i}", canonical_finding=SimpleNamespace(title="Known"),
+                                         primary_location=SimpleNamespace(path=path, start_line=i))
+    known = (mk(1, "shown.py"), mk(2, "elsewhere.py"), mk(3, "/runtime/route"))
+    target = DiscoveryTarget("file:shown.py#L1-3", "no_findings", "shown.py", 1, 3, ("x",))
+    scope = DiscoveryScope((target,), {target.target_id: "1: x"}, (), (), ())
+    empty = SimpleNamespace(findings=())
+    prompt, _, gaps = _build_prompt(SimpleNamespace(findings=known), empty, empty, scope, 20_000)
+    sent = {item["path"] for item in json.loads(prompt.split("\n\n", 1)[1])["known_findings"]}
+    assert sent == {"shown.py", "/runtime/route"}                 # runtime findings are URL-based and stay
+    assert any("1 known findings were omitted" in gap for gap in gaps)   # the count stays truthful
 
 
 def test_context_broker_rejects_stale_snapshot_and_duplicate_request(tmp_path: Path):

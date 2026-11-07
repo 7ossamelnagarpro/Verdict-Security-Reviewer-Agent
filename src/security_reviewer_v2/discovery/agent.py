@@ -151,6 +151,11 @@ def _build_prompt(
     inspected_paths = {target.path.replace("\\", "/") for target in scope.targets if target.path}
     known.sort(key=lambda item: (str(item["path"]).replace("\\", "/") not in inspected_paths,
                                  str(item["path"]), item["line"] or 0))
+    # A finding in a file this prompt does not show cannot be duplicated by a candidate about the shown code, and the
+    # list is repeated in every batch.  Keep the inspected files' findings and runtime findings (their path is a URL).
+    total_known = len(known)
+    known = [item for item in known if str(item["path"]).replace("\\", "/") in inspected_paths
+             or str(item["path"]).startswith("/")]
     # Key order is the order the model (and a truncated LangSmith trace) reads: the source targets come first and the
     # merge-derived duplicate-avoidance list last.  The reference lists are also capped to a small share of the prompt
     # so they cannot crowd out the code Discovery exists to inspect.
@@ -276,7 +281,7 @@ def _build_prompt(
                 match = _NUMBERED_LINE.match(line)
                 if match:
                     registry.setdefault(int(match.group(1)), target.target_id)
-    known_omitted = len(known) - len(payload["known_findings"])
+    known_omitted = total_known - len(payload["known_findings"])
     background_gaps_omitted = len(scope.gap_evidence) - len(payload["coverage_gaps"])
     gap = tuple(
         message for message in (

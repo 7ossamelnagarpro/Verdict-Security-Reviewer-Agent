@@ -24,6 +24,38 @@ def _code(value: Any) -> str:
     return f"<code>{html.escape(' '.join(str(value).split()))}</code>"
 
 
+_CODE_SPAN = re.compile(r"`([^`\n]+)`")
+
+
+def _inline_code(value: Any) -> str:
+    """Backtick code for plain identifiers; HTML-escaped <code> when the text could break out or carry markup."""
+    text = " ".join(str(value).split())
+    if any(char in text for char in "`<>&"):
+        return _code(text)
+    return f"`{text}`"
+
+
+def _prose(value: Any) -> str:
+    """Model-written prose: keep **bold** and `code`, but no raw HTML and no live Markdown links."""
+    text = str(value)
+    out, last = [], 0
+    for match in _CODE_SPAN.finditer(text):
+        out.append(_prose_plain(text[last:match.start()]))
+        out.append(_inline_code(match.group(1)))
+        last = match.end()
+    out.append(_prose_plain(text[last:]))
+    return "".join(out)
+
+
+def _prose_plain(text: str) -> str:
+    return html.escape(text, quote=False).replace("[", "\\[").replace("]", "\\]")
+
+
+def _label(value: Any) -> str:
+    """Short model/scanner label: collapse whitespace and neutralise HTML, leave enum-style names readable."""
+    return html.escape(" ".join(str(value).split()), quote=False)
+
+
 def _render_observations(merged: dict[str, Any], risk: dict[str, Any] | None) -> list[str]:
     findings = merged.get("findings", [])
     if not isinstance(findings, list):
@@ -206,19 +238,19 @@ def render_final_report(*, project: str, review: dict[str, Any], policy: dict[st
         lines += ["No agent verdicts were produced. The pre-review observations above remain visible "
                   "but have not been cleared or confirmed by the agent.", ""]
     for index, item in enumerate(reviews, 1):
-        lines += [f"### {index}. {item.get('title', 'Untitled finding')}", "", f"- Issue group: `{item.get('candidate_id', 'unknown')}`", f"- Verdict: **{item.get('verdict', 'unknown')}**", f"- Severity: **{item.get('severity', 'unknown')}**", f"- Confidence: **{item.get('confidence', 'unknown')}**", "", f"**Explanation:** {item.get('explanation', '')}", "", f"**Impact:** {item.get('impact', '')}", "", f"**Remediation:** {item.get('remediation', '')}", "Evidence:"]
+        lines += [f"### {index}. {_label(item.get('title', 'Untitled finding'))}", "", f"- Issue group: {_inline_code(item.get('candidate_id', 'unknown'))}", f"- Verdict: **{_label(item.get('verdict', 'unknown'))}**", f"- Severity: **{_label(item.get('severity', 'unknown'))}**", f"- Confidence: **{_label(item.get('confidence', 'unknown'))}**", "", f"**Explanation:** {_prose(item.get('explanation', ''))}", "", f"**Impact:** {_prose(item.get('impact', ''))}", "", f"**Remediation:** {_prose(item.get('remediation', ''))}", "Evidence:"]
         if item.get("source_ids"):
-            formatted_sources = ", ".join("`" + str(source_id) + "`" for source_id in item["source_ids"])
+            formatted_sources = ", ".join(_inline_code(source_id) for source_id in item["source_ids"])
             lines.append(f"- Source IDs: {formatted_sources}")
         for evidence in item.get("evidence", []):
-            lines.append(f"- `{evidence}`")
+            lines.append(f"- {_inline_code(evidence)}")
         if item.get("limitations"):
             lines += ["", "Limitations:"]
-            lines.extend(f"- {value}" for value in item["limitations"])
+            lines.extend(f"- {_prose(value)}" for value in item["limitations"])
         lines.append("")
     lines += ["## Policy Decisions", ""]
     for decision in policy.get("decisions", []):
-        lines.append(f"- `{decision.get('candidate_id')}`: **{decision.get('action')}** — {decision.get('reason')}")
+        lines.append(f"- {_inline_code(decision.get('candidate_id'))}: **{_label(decision.get('action'))}** — {_prose(decision.get('reason'))}")
     if triage is not None:
         summary = triage.get("summary", {})
         lines += ["", "## Candidate Triage and Unresolved Evidence", "",

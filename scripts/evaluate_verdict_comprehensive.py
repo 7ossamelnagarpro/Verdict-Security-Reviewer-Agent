@@ -7,12 +7,14 @@ Only exact rule/location evidence in saved artifacts counts as a signal.
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 from datetime import datetime, timezone
 import json
 from pathlib import Path
 from typing import Any
 
 from security_reviewer_v2.reporting.evaluation_html import render_evaluation
+from security_reviewer_v2.reporting.evaluation_precision import audit, load_handlers, source_origin
 from security_reviewer_v2.reporting.view import friendly_name
 
 
@@ -81,7 +83,13 @@ def _matches(case_id: str, source: dict[str, Any]) -> bool:
 
 
 def evaluate(truth: dict[str, Any], scan: dict[str, Any], merged: dict[str, Any],
-             triage: dict[str, Any], review: dict[str, Any]) -> dict[str, Any]:
+             triage: dict[str, Any], review: dict[str, Any], *, source_root: Path | None = None,
+             discovery: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Strict signature audit; with ``source_root`` it also measures safe-control specificity and precision bounds.
+
+    ``source_root`` is the audited application's source (never the answer key); ``discovery`` is the saved AI discovery
+    result, used to place AI candidates on routes.
+    """
     if truth.get("target") != "targets/verdict-comprehensive-lab":
         raise ValueError("Wrong benchmark fixture")
     if Path(str(scan.get("project", ""))).name.lower() != "verdict-comprehensive-lab":
@@ -104,6 +112,7 @@ def evaluate(truth: dict[str, Any], scan: dict[str, Any], merged: dict[str, Any]
     if len(cases) != 63 or len({item["id"] for item in cases}) != 63:
         raise ValueError("Expected 63 distinct benchmark cases")
     rows = []
+    strict_matches: dict[str, set[str]] = {}
     for case in cases:
         signals = []
         if case["label"] == "confirmed_vulnerability":
@@ -119,7 +128,8 @@ def evaluate(truth: dict[str, Any], scan: dict[str, Any], merged: dict[str, Any]
                                         "source_finding_id": source.get("finding_id"),
                                         "scanner": source.get("scanner"), "rule_id": source.get("rule_id"),
                                         "path": location.get("path"), "line": location.get("start_line"),
-                                        "verdict": reviews[group_id]["verdict"]})
+                                        "origin": source_origin(source), "verdict": reviews[group_id]["verdict"]})
+                        strict_matches.setdefault(group_id, set()).add(case["id"])
         if case["label"] != "confirmed_vulnerability":
             status = "excluded" if case["label"] == "candidate_only" else "safe_control_not_assessed"
         elif not signals:
@@ -134,10 +144,12 @@ def evaluate(truth: dict[str, Any], scan: dict[str, Any], merged: dict[str, Any]
                      "ground_truth": case["label"], "severity": case.get("severity"),
                      "source": case.get("source"), "expected_behavior": case.get("evidence"),
                      "proof_ref": case.get("proof_ref"), "origin": case.get("origin", []),
-                     "status": status, "expected_signatures": signatures, "signals": signals})
+                     "status": status, "expected_signatures": signatures, "signals": signals,
+                     "has_signature": bool(signatures),
+                     "origins": sorted({item["origin"] for item in signals})})
     positive = [row for row in rows if row["ground_truth"] == "confirmed_vulnerability"]
     detected = sum(row["status"] == "detected" for row in positive)
-    return {"schema_version": "1.1", "target": truth["target"],
+    result = {"schema_version": "1.1", "target": truth["target"],
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "scan_provenance": {"project": scan.get("project"), "scan_status": scan.get("status"),
                                 "adapters": scan.get("adapter_ids", []),
@@ -163,6 +175,120 @@ def evaluate(truth: dict[str, Any], scan: dict[str, Any], merged: dict[str, Any]
                             "Safe controls need a separate specificity audit; precision and F1 are not estimated.",
                             "One case may generate several observations, so issue-group counts are not vulnerability counts."],
             "cases": rows}
+    if source_root is not None:
+        candidates = {item["candidate_id"]: item for item in (discovery or {}).get("candidates", [])
+                      if isinstance(item, dict) and "candidate_id" in item}
+        _add_precision_audit(result, cases=cases, groups=groups, reviews=reviews, findings=findings,
+                             candidates=candidates, strict_matches=strict_matches, handlers=load_handlers(source_root),
+                             discovery=discovery)
+    return result
+
+
+_DISCOVERY_USAGE_KEYS = ("provider_calls", "batches", "retry_count", "rate_limit_wait_seconds", "wall_seconds",
+                         "total_time", "total_tokens", "duplicate_candidates_merged")
+
+
+def _brief(group: dict[str, Any]) -> dict[str, Any]:
+    return {key: group[key] for key in ("group_id", "verdict", "severity", "title", "origins", "routes")}
+
+
+def _add_precision_audit(result: dict[str, Any], *, cases: list[dict[str, Any]], groups: dict[str, Any],
+                         reviews: dict[str, Any], findings: dict[str, Any], candidates: dict[str, Any],
+                         strict_matches: dict[str, set[str]], handlers: list[Any],
+                         discovery: dict[str, Any] | None) -> None:
+    """Add specificity, precision bounds, detection origin and verdict calibration to ``result`` (in place)."""
+    extra = audit(cases=cases, handlers=handlers, groups=groups, reviews=reviews, findings=findings,
+                  candidates=candidates, strict_matches=strict_matches)
+    rows, summary = result["cases"], result["summary"]
+    for row in rows:
+        if row["ground_truth"] == "safe_control":
+            control = extra["safe_controls"][row["id"]]
+            row["status"], row["flagged_by"] = f"safe_control_{control['status']}", control["flagged_by"]
+        elif row["ground_truth"] == "confirmed_vulnerability":
+            row["endpoint_findings"] = [_brief(item) for item in extra["endpoint_groups"].get(row["id"], [])]
+    positive = [row for row in rows if row["ground_truth"] == "confirmed_vulnerability"]
+    unscored = [row["id"] for row in positive if not row["has_signature"]]
+    ai_on_endpoint = [row["id"] for row in positive if row["status"] != "detected"
+                      and any("ai_discovery" in item["origins"] for item in row["endpoint_findings"])]
+    summary.update(extra["summary"])
+    summary["safe_controls_not_assessed"] = summary["safe_controls_not_assessable"]
+    summary["detections_by_origin"] = dict(Counter("+".join(row["origins"]) or "none"
+                                                   for row in positive if row["status"] == "detected"))
+    summary["cases_without_signature"] = unscored
+    summary["not_detected_without_signature"] = sum(row["status"] == "not_detected" and not row["has_signature"] for row in positive)
+    summary["ai_discovery_on_undetected_endpoints"] = ai_on_endpoint
+    result["adjudication_queue"] = [_brief(item) | {"outcome": item["outcome"], "known_cases": item["known_cases"]}
+                                    for item in extra["groups"]
+                                    if item["verdict"] in POSITIVE_VERDICTS and item["outcome"] in ("known_endpoint", "unlabeled")]
+    result["outside_scope_findings"] = [_brief(item) for item in extra["groups"]
+                                        if item["verdict"] in POSITIVE_VERDICTS and item["outcome"] == "outside_scope"]
+    result["safe_control_hits"] = [_brief(item) | {"safe_controls": item["safe_controls"]} for item in extra["groups"]
+                                   if item["verdict"] in POSITIVE_VERDICTS and item["outcome"] == "safe_control"]
+    usage = (discovery or {}).get("usage") or {}
+    result["scan_provenance"]["ai_discovery_usage"] = {key: usage[key] for key in _DISCOVERY_USAGE_KEYS if key in usage}
+    result["schema_version"] = "1.2"
+    result["limitations"] = [item for item in result["limitations"] if not item.startswith("Safe controls need a separate")] + [
+        "Safe-control and precision figures place findings on routes using the lab's source code. A positive finding on a "
+        "safe control's route is a false-positive signal that still needs a human check that it is the same issue class.",
+        "Precision is reported only as bounds, never as a point estimate. precision_on_labeled counts only the findings the "
+        "key can label (matches against safe-control hits, so it is optimistic); precision_lower_bound treats every other "
+        "positive finding as wrong (pessimistic); precision_lower_bound_in_scope first sets aside dependency advisories and "
+        "header/cookie hardening alerts, which the answer key does not cover. Positive findings that match no case are an "
+        "adjudication queue, because the answer key is not exhaustive.",
+        "AI-discovery candidates are never counted as detections here; one on a known endpoint is listed for adjudication, "
+        "because its issue class is not verified against the case.",
+        "A clean safe control means no positive finding of its issue class landed on its route; it does not prove the "
+        "scan exercised that route, so read specificity together with the recorded endpoint coverage.",
+        "Cases with no defined signature cannot be credited by this audit at all, whatever the scan found."]
+
+
+def _percent(value: float | None) -> str:
+    return "n/a" if value is None else f"{value:.1%}"
+
+
+def _finding_line(item: dict[str, Any]) -> str:
+    where = ", ".join(item["routes"]) or "no route resolved"
+    near = f" · near known case {', '.join(item['known_cases'])}" if item.get("known_cases") else ""
+    return (f"{item['verdict'].replace('_', ' ')} · {item.get('severity') or 'severity n/a'} · {item['title']} — {where} · "
+            f"origin: {', '.join(item['origins']) or 'unknown'} · group {item['group_id']}{near}")
+
+
+def _audit_headline(summary: dict[str, Any]) -> list[str]:
+    """Plain-language summary lines for an audited result (precision bounds, specificity, scoring gaps)."""
+    return [
+        f"Safe controls: **{summary['safe_controls_clean']} clean**, **{summary['safe_controls_flagged']} flagged**, "
+        f"{summary['safe_controls_not_assessable']} not assessable (specificity {_percent(summary['safe_control_specificity'])}).",
+        f"Positive findings: **{summary['positive_groups']}** — matched to a known case {summary['matched_groups']}, on a known "
+        f"case's endpoint (unverified) {summary['known_endpoint_groups']}, on a safe control {summary['safe_control_groups']}, "
+        f"outside the answer key's scope {summary['outside_scope_groups']}, unlabeled {summary['unlabeled_groups']}.",
+        f"Precision bounds (not a point estimate): labeled-only {_percent(summary['precision_on_labeled'])} (optimistic), "
+        f"in-scope lower bound {_percent(summary['precision_lower_bound_in_scope'])}, "
+        f"strict lower bound {_percent(summary['precision_lower_bound'])} (pessimistic).",
+        f"{summary['not_detected_without_signature']} of {summary['not_detected']} not-detected cases have no signature at all, so this "
+        "audit could never credit them.", ""]
+
+
+def _audit_sections(result: dict[str, Any]) -> list[tuple[str, list[str]]]:
+    """Sections shared by the markdown and HTML renderers; empty for an unaudited result."""
+    if "adjudication_queue" not in result:
+        return []
+    summary = result["summary"]
+    calibration = summary["verdict_calibration"]
+    usage = result["scan_provenance"].get("ai_discovery_usage") or {}
+    return [
+        ("Detections by origin (static / dynamic)",
+         [f"{origin.replace('+', ' + ')}: {count} case(s)" for origin, count in summary["detections_by_origin"].items()]),
+        ("Verdict calibration (how each outcome class was judged)",
+         [f"{outcome.replace('_', ' ')}: " + ", ".join(f"{verdict.replace('_', ' ')} {count}" for verdict, count in counts.items())
+          for outcome, counts in calibration.items()]),
+        ("Cases the strict audit cannot score (no signature defined)", summary["cases_without_signature"]),
+        ("AI discovery on endpoints of undetected cases (issue class not verified)", summary["ai_discovery_on_undetected_endpoints"]),
+        ("Adjudication queue — positive findings the key cannot label", [_finding_line(item) for item in result["adjudication_queue"]]),
+        ("Safe-control hits — positive findings on a safe control's route", [_finding_line(item) for item in result["safe_control_hits"]]),
+        ("Outside the answer key's scope (dependency advisories, header/cookie hardening)",
+         [_finding_line(item) for item in result["outside_scope_findings"]]),
+        ("AI discovery cost", [f"{key}: {value}" for key, value in usage.items()]),
+    ]
 
 
 def markdown(result: dict[str, Any]) -> str:
@@ -173,9 +299,10 @@ def markdown(result: dict[str, Any]) -> str:
              f"Known-positive cases detected: **{summary['detected']}/{summary['known_positive_cases']}** "
              f"({summary['positive_case_recall_lower_bound']:.1%} conservative lower bound). "
              f"Needs review: **{summary['needs_review']}**. Not detected by exact signal: **{summary['not_detected']}**.",
-             f"Safe controls not assessed for specificity: **{summary['safe_controls_not_assessed']}**. "
-             f"Candidate-only exclusions: **{summary['candidate_only_excluded']}**.", "",
-             "Precision and F1: **not calculated** (unmatched findings and safe controls need manual adjudication).", "",
+             *(_audit_headline(summary) if "adjudication_queue" in result else
+               [f"Safe controls not assessed for specificity: **{summary['safe_controls_not_assessed']}**. "
+                f"Candidate-only exclusions: **{summary['candidate_only_excluded']}**.", "",
+                "Precision and F1: **not calculated** (unmatched findings and safe controls need manual adjudication).", ""]),
              "## Scan provenance", "",
              f"- Target: `{provenance['project']}`", f"- Scan status: `{provenance['scan_status']}`",
              f"- Scanners: {', '.join(provenance['adapters']) or 'none'}",
@@ -191,7 +318,8 @@ def markdown(result: dict[str, Any]) -> str:
         lines.append("- None recorded")
     lines.append("")
     for label, title in (("confirmed_vulnerability", "Known-positive cases"),
-                         ("safe_control", "Safe controls — specificity not assessed"),
+                         ("safe_control", "Safe controls — specificity audit" if "adjudication_queue" in result
+                          else "Safe controls — specificity not assessed"),
                          ("candidate_only", "Excluded candidate")):
         lines += [f"## {title}", ""]
         for row in result["cases"]:
@@ -209,6 +337,13 @@ def markdown(result: dict[str, Any]) -> str:
                     for item in row["expected_signatures"]))
             else:
                 lines.append("- Exact audit signatures: none defined")
+            if "origins" in row and row["ground_truth"] == "confirmed_vulnerability" and row["signals"]:
+                lines.append(f"- Detection origin: {', '.join(row['origins'])}")
+            if row.get("endpoint_findings"):
+                lines.append("- Other findings on this endpoint (not counted as detections):")
+                lines.extend(f"  - {_finding_line(item)}" for item in row["endpoint_findings"])
+            if row.get("flagged_by"):
+                lines.append(f"- Flagged by group(s): {', '.join(row['flagged_by'])}")
             if row["signals"]:
                 lines.append("- Matched reviewed signals:")
                 lines.extend(f"  - `{item['group_id']}` / `{item['finding_id']}`: "
@@ -218,6 +353,8 @@ def markdown(result: dict[str, Any]) -> str:
             else:
                 lines.append("- Matched reviewed signals: none")
             lines.append("")
+    for heading, items in _audit_sections(result):
+        lines += [f"## {heading}", ""] + ([f"- {item}" for item in items] or ["- None recorded"]) + [""]
     lines += ["## Limits", ""] + [f"- {item}" for item in result["limitations"]]
     return "\n".join(lines) + "\n"
 
@@ -226,8 +363,19 @@ def html_report(result: dict[str, Any]) -> str:
     """Evaluation page in the same style (and dark/light switch) as the run report."""
     summary, provenance = result["summary"], result["scan_provenance"]
     discovery, review = provenance["ai_discovery"] or {}, provenance["security_review"] or {}
+    audited = "adjudication_queue" in result
     rows = []
     for row in result["cases"]:
+        extra_details = []
+        if audited and row["ground_truth"] == "confirmed_vulnerability":
+            extra_details = [("Detection origin", ", ".join(row["origins"]) or "no exact signal"),
+                             ("Other findings on this endpoint (not counted as detections)",
+                              [_finding_line(item) for item in row["endpoint_findings"]] or ["None"])]
+            if not row["has_signature"]:
+                extra_details.append(("Scoring", "No signature is defined for this case, so the strict audit can never credit it."))
+        elif audited and row["ground_truth"] == "safe_control":
+            extra_details = [("Specificity audit", row["status"].replace("_", " ")),
+                             ("Flagged by", row["flagged_by"] or ["No positive finding of the same issue class on this route"])]
         rows.append({
             "id": row["id"], "status": row["status"],
             "cells": [(row["category"], row["location"]), row["ground_truth"].replace("_", " "), (row["severity"] or "not assigned").replace("_", " ")],
@@ -237,6 +385,7 @@ def html_report(result: dict[str, Any]) -> str:
                 ("Audit signatures", [f"{item['rule_id']} @ {item['path']}" for item in row["expected_signatures"]] or ["No exact signature defined"]),
                 ("Matched evidence", [f"{item['scanner'] or 'unknown'} / {item['rule_id']} @ {item['path']} → {item['verdict']} (group {item['group_id']})"
                                       for item in row["signals"]] or ["No exact reviewed signal"]),
+                *extra_details,
             ],
         })
     return render_evaluation(
@@ -244,21 +393,35 @@ def html_report(result: dict[str, Any]) -> str:
         headline="Known vulnerabilities found by the saved scan",
         intro="Ground truth was used only after the saved scan and review were complete. This is not a claim of exhaustive vulnerability coverage.",
         gauge=(summary["detected"], summary["known_positive_cases"], "known-positive cases detected"),
-        notes=["Precision and F1 are not calculated: safe controls and unmatched findings require manual adjudication. "
-               "A missing exact match does not prove the application is safe."],
+        notes=([f"Precision bounds, not a point estimate: labeled-only {_percent(summary['precision_on_labeled'])} (optimistic), "
+                f"in-scope lower bound {_percent(summary['precision_lower_bound_in_scope'])}, strict lower bound "
+                f"{_percent(summary['precision_lower_bound'])} (pessimistic). Safe-control specificity: "
+                f"{_percent(summary['safe_control_specificity'])} ({summary['safe_controls_flagged']} flagged).",
+                f"{summary['not_detected_without_signature']} of {summary['not_detected']} not-detected cases have no signature at all, "
+                "so this audit could never credit them. A missing exact match does not prove the application is safe."]
+               if audited else
+               ["Precision and F1 are not calculated: safe controls and unmatched findings require manual adjudication. "
+                "A missing exact match does not prove the application is safe."]),
         provenance=[("Project", friendly_name(provenance["project"])), ("Scan status", provenance["scan_status"]),
                     ("Scanners", ", ".join(provenance["adapters"])),
                     ("Findings", f"{provenance['merged_findings']} merged · {provenance['reviewed_groups']} reviewed groups"),
                     ("AI discovery", f"{discovery.get('provider', 'unknown')} / {discovery.get('model', 'unknown')}"),
-                    ("AI review", review.get("status", "unknown"))],
+                    ("AI review", review.get("status", "unknown")),
+                    *([("Precision (in-scope lower bound)", _percent(summary["precision_lower_bound_in_scope"])),
+                       ("Safe-control specificity", _percent(summary["safe_control_specificity"])),
+                       ("Findings awaiting adjudication", len(result["adjudication_queue"]))] if audited else [])],
         donut=[("Detected", summary["detected"], "var(--mint)"), ("Needs review", summary["needs_review"], "var(--medium)"),
                ("No exact signal", summary["not_detected"], "var(--high)"),
-               ("Safe controls", summary["safe_controls_not_assessed"], "var(--low)"),
+               *([("Safe controls clean", summary["safe_controls_clean"], "var(--low)"),
+                  ("Safe controls flagged", summary["safe_controls_flagged"], "var(--medium)"),
+                  ("Safe controls not assessable", summary["safe_controls_not_assessable"], "var(--ln)")] if audited else
+                 [("Safe controls", summary["safe_controls_not_assessed"], "var(--low)")]),
                ("Candidate only", summary["candidate_only_excluded"], "var(--ln)")],
         table_title=f"All {len(result['cases'])} benchmark cases",
         columns=["Case", "Category / location", "Ground truth", "Severity"], outcome_header="Outcome",
         rows=rows,
-        sections=[("Recorded coverage gaps", provenance["coverage_gaps"]), ("Limits", result["limitations"])])
+        sections=[("Recorded coverage gaps", provenance["coverage_gaps"]), *_audit_sections(result),
+                  ("Limits", result["limitations"])])
 
 
 def main() -> None:
@@ -266,11 +429,18 @@ def main() -> None:
     parser.add_argument("scan_dir", type=Path)
     parser.add_argument("--review-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--source-root", type=Path, default=ROOT / "targets" / "verdict-comprehensive-lab",
+                        help="the audited application's source, used to place findings on routes (not the answer key)")
+    parser.add_argument("--no-precision-audit", action="store_true",
+                        help="keep only the strict signature audit (no safe-control or precision analysis)")
     args = parser.parse_args()
+    discovery_path = args.scan_dir / "ai-discovery.json"
+    audit_root = None if args.no_precision_audit or not args.source_root.is_dir() else args.source_root
     result = evaluate(_read(TRUTH), _read(args.scan_dir / "pre-review-summary.json"),
                       _read(args.scan_dir / "merged.json"),
                       _read(args.review_dir / "candidate-triage.json"),
-                      _read(args.review_dir / "security-review.json"))
+                      _read(args.review_dir / "security-review.json"),
+                      source_root=audit_root, discovery=_read(discovery_path) if discovery_path.is_file() else None)
     args.output_dir.mkdir(parents=True, exist_ok=False)
     (args.output_dir / "evaluation.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     (args.output_dir / "evaluation.md").write_text(markdown(result), encoding="utf-8")
