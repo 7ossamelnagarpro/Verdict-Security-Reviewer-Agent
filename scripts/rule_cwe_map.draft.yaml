@@ -1,0 +1,593 @@
+# DRAFT - proposals only. NOTHING here is authoritative until a named person approves the row.
+# Built from the saved runs (runs/*/merged.json): 59 distinct scanner/rule_id pairs, 24 with no CWE.
+#
+# Trust level of each row is in "source":
+#   tool_equivalent   : a tool already reports a CWE for the equivalent issue (evidence field says where).
+#                       The equivalence itself is a judgement that must still be confirmed.
+#   llm_proposal      : my suggestion; there is NO external source that maps a custom business-logic check to a CWE.
+#                       A person decides; use alt_cwes as a menu, not as an answer.
+#   no_cwe_applicable : no weakness class fits; only a human-approved fixed rating applies.
+#
+# ZAP rules (zap.10010 / 10020 / 10021 / 10038) were REMOVED from the first draft: the raw runtime.json files store
+# the CWE for every ZAP alert, and the current normalizer (normalization/runtime.py) carries it. The gap I reported
+# came from older saved runs normalized before that, not from a missing source.
+#
+# MITRE CHECK (added): every CWE below was checked against the official catalog (CWE 5.0, 2026-10-28; data/cwe_dictionary.json).
+# Changes this forced: stale_role 269 -> 863 (269 is DISCOURAGED); alternatives 20, 345 (DISCOURAGED) and 613 (Deprecated) were
+# removed; the two ZAP-equivalent header rows that used 693 (DISCOURAGED) became rating-only rows, and zap.10021 / zap.10038
+# were re-added as rating-only rows because their reported CWE-693 cannot be used.
+# needs_review_note: true means MITRE says ALLOWED_WITH_REVIEW, so approving the row requires a written note.
+#
+# Before approving any row: check the CWE id exists in the official MITRE catalog, is not Deprecated, and its
+# "Vulnerability Mapping Notes" usage is not PROHIBITED or DISCOURAGED (data/cwe_dictionary.json, see the dictionary task).
+# rating_policy "fixed" copies the severity the tool/author already declared in the saved runs; it becomes policy only
+# when approved.
+schema_version: 3
+rows:
+- scanner: web-runtime
+  rule_id: workflow.order_owner.3
+  title: Only the owner can read an order
+  cwe: CWE-639
+  alt_cwes:
+  - CWE-863
+  tool_severity_seen: high
+  rating_policy: fixed
+  fixed_rating: high
+  confidence: high
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: Classic IDOR.
+  source: llm_proposal
+  evidence: null
+  human_must_confirm: true
+  mitre_check:
+    usage: ALLOWED
+    verdict: ok
+    mitre_name: Authorization Bypass Through User-Controlled Key
+  needs_review_note: false
+  alt_cwes_mitre:
+    CWE-863: needs_review_note
+- scanner: web-runtime
+  rule_id: workflow.invoice_owner.3
+  title: Only the owner can read an invoice
+  cwe: CWE-639
+  alt_cwes:
+  - CWE-863
+  tool_severity_seen: high
+  rating_policy: fixed
+  fixed_rating: high
+  confidence: high
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: Classic IDOR.
+  source: llm_proposal
+  evidence: null
+  human_must_confirm: true
+  mitre_check:
+    usage: ALLOWED
+    verdict: ok
+    mitre_name: Authorization Bypass Through User-Controlled Key
+  needs_review_note: false
+  alt_cwes_mitre:
+    CWE-863: needs_review_note
+- scanner: web-runtime
+  rule_id: workflow.profile_owner.2
+  title: A user cannot read another account profile
+  cwe: CWE-639
+  alt_cwes:
+  - CWE-863
+  tool_severity_seen: high
+  rating_policy: fixed
+  fixed_rating: high
+  confidence: high
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: Classic IDOR.
+  source: llm_proposal
+  evidence: null
+  human_must_confirm: true
+  mitre_check:
+    usage: ALLOWED
+    verdict: ok
+    mitre_name: Authorization Bypass Through User-Controlled Key
+  needs_review_note: false
+  alt_cwes_mitre:
+    CWE-863: needs_review_note
+- scanner: web-runtime
+  rule_id: workflow.nested_note.1
+  title: A note must belong to the order named in the URL
+  cwe: CWE-639
+  alt_cwes:
+  - CWE-863
+  tool_severity_seen: high
+  rating_policy: fixed
+  fixed_rating: high
+  confidence: medium
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: Parent/child id mismatch in the path.
+  source: llm_proposal
+  evidence: null
+  human_must_confirm: true
+  mitre_check:
+    usage: ALLOWED
+    verdict: ok
+    mitre_name: Authorization Bypass Through User-Controlled Key
+  needs_review_note: false
+  alt_cwes_mitre:
+    CWE-863: needs_review_note
+- scanner: web-runtime
+  rule_id: workflow.owner_assignment.2
+  title: Users cannot create orders for another owner
+  cwe: CWE-639
+  alt_cwes:
+  - CWE-915
+  tool_severity_seen: high
+  rating_policy: fixed
+  fixed_rating: high
+  confidence: medium
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: Client controls the owner id; could also be classed as mass assignment (915).
+  source: llm_proposal
+  evidence: null
+  human_must_confirm: true
+  mitre_check:
+    usage: ALLOWED
+    verdict: ok
+    mitre_name: Authorization Bypass Through User-Controlled Key
+  needs_review_note: false
+  alt_cwes_mitre:
+    CWE-915: ok
+- scanner: web-runtime
+  rule_id: workflow.admin_jobs.2
+  title: Job listing requires admin role
+  cwe: CWE-862
+  alt_cwes:
+  - CWE-863
+  tool_severity_seen: high
+  rating_policy: fixed
+  fixed_rating: high
+  confidence: high
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: Admin-only function reachable by a normal user.
+  source: llm_proposal
+  evidence: null
+  human_must_confirm: true
+  mitre_check:
+    usage: ALLOWED_WITH_REVIEW
+    verdict: needs_review_note
+    mitre_name: Missing Authorization
+  needs_review_note: true
+  alt_cwes_mitre:
+    CWE-863: needs_review_note
+- scanner: web-runtime
+  rule_id: workflow.admin_users.2
+  title: User listing requires admin role
+  cwe: CWE-862
+  alt_cwes:
+  - CWE-863
+  tool_severity_seen: high
+  rating_policy: fixed
+  fixed_rating: high
+  confidence: high
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: Admin-only function reachable by a normal user.
+  source: llm_proposal
+  evidence: null
+  human_must_confirm: true
+  mitre_check:
+    usage: ALLOWED_WITH_REVIEW
+    verdict: needs_review_note
+    mitre_name: Missing Authorization
+  needs_review_note: true
+  alt_cwes_mitre:
+    CWE-863: needs_review_note
+- scanner: web-runtime
+  rule_id: workflow.worker_role.1
+  title: Users cannot submit an admin job
+  cwe: CWE-862
+  alt_cwes:
+  - CWE-863
+  tool_severity_seen: high
+  rating_policy: fixed
+  fixed_rating: high
+  confidence: medium
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: Vertical privilege escalation.
+  source: llm_proposal
+  evidence: null
+  human_must_confirm: true
+  mitre_check:
+    usage: ALLOWED_WITH_REVIEW
+    verdict: needs_review_note
+    mitre_name: Missing Authorization
+  needs_review_note: true
+  alt_cwes_mitre:
+    CWE-863: needs_review_note
+- scanner: web-runtime
+  rule_id: workflow.stale_role.3
+  title: A demoted administrator must lose administrative access
+  cwe: CWE-863
+  alt_cwes:
+  - CWE-271
+  tool_severity_seen: high
+  rating_policy: fixed
+  fixed_rating: high
+  confidence: medium
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: My first proposal CWE-269 is DISCOURAGED by MITRE. 863 is the broader authorization choice; 271 (Privilege Dropping / Lowering
+    Errors) is one of 269's allowed children. A person decides.
+  source: llm_proposal
+  evidence: null
+  human_must_confirm: true
+  mitre_check:
+    usage: ALLOWED_WITH_REVIEW
+    verdict: needs_review_note
+    mitre_name: Incorrect Authorization
+  needs_review_note: true
+  alt_cwes_mitre:
+    CWE-271: needs_review_note
+- scanner: web-runtime
+  rule_id: workflow.debug_access.1
+  title: Debug configuration is unavailable anonymously
+  cwe: CWE-306
+  alt_cwes:
+  - CWE-489
+  - CWE-215
+  tool_severity_seen: high
+  rating_policy: fixed
+  fixed_rating: high
+  confidence: low
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: Anonymous access to a sensitive function; the debug-code classes are the alternatives.
+  source: llm_proposal
+  evidence: null
+  human_must_confirm: true
+  mitre_check:
+    usage: ALLOWED
+    verdict: ok
+    mitre_name: Missing Authentication for Critical Functionality
+  needs_review_note: false
+  alt_cwes_mitre:
+    CWE-489: ok
+    CWE-215: ok
+- scanner: web-runtime
+  rule_id: workflow.paid_cancel.3
+  title: Paid orders require a refund before cancellation
+  cwe: CWE-841
+  alt_cwes: []
+  tool_severity_seen: high
+  rating_policy: fixed
+  fixed_rating: high
+  confidence: medium
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: 'Workflow step order not enforced. Rare in NVD, so the statistical catalog will be weak: prefer fixed.'
+  source: llm_proposal
+  evidence: null
+  human_must_confirm: true
+  mitre_check:
+    usage: ALLOWED
+    verdict: ok
+    mitre_name: Improper Enforcement of Behavioral Workflow
+  needs_review_note: false
+  alt_cwes_mitre: {}
+- scanner: web-runtime
+  rule_id: workflow.payment_replay.3
+  title: An already paid order rejects a second payment
+  cwe: CWE-841
+  alt_cwes: []
+  tool_severity_seen: high
+  rating_policy: fixed
+  fixed_rating: high
+  confidence: medium
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: State check missing before payment.
+  source: llm_proposal
+  evidence: null
+  human_must_confirm: true
+  mitre_check:
+    usage: ALLOWED
+    verdict: ok
+    mitre_name: Improper Enforcement of Behavioral Workflow
+  needs_review_note: false
+  alt_cwes_mitre: {}
+- scanner: web-runtime
+  rule_id: workflow.order_initial_state.1
+  title: New orders cannot start as paid
+  cwe: CWE-915
+  alt_cwes:
+  - CWE-841
+  tool_severity_seen: high
+  rating_policy: fixed
+  fixed_rating: high
+  confidence: medium
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: Client sets a server-controlled attribute (mass assignment).
+  source: llm_proposal
+  evidence: null
+  human_must_confirm: true
+  mitre_check:
+    usage: ALLOWED
+    verdict: ok
+    mitre_name: Improperly Controlled Modification of Dynamically-Determined Object Attributes
+  needs_review_note: false
+  alt_cwes_mitre:
+    CWE-841: ok
+- scanner: web-runtime
+  rule_id: workflow.price_catalog.1
+  title: Catalog price must be set by the server
+  cwe: CWE-472
+  alt_cwes:
+  - CWE-602
+  tool_severity_seen: high
+  rating_policy: fixed
+  fixed_rating: high
+  confidence: medium
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: Assumed-immutable parameter controlled by the client.
+  source: llm_proposal
+  evidence: null
+  human_must_confirm: true
+  mitre_check:
+    usage: ALLOWED
+    verdict: ok
+    mitre_name: External Control of Assumed-Immutable Web Parameter
+  needs_review_note: false
+  alt_cwes_mitre:
+    CWE-602: needs_review_note
+- scanner: web-runtime
+  rule_id: workflow.negative_price.1
+  title: Negative order prices are rejected
+  cwe: CWE-1284
+  alt_cwes: []
+  tool_severity_seen: high
+  rating_policy: fixed
+  fixed_rating: high
+  confidence: medium
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: Quantity/amount validation.
+  source: llm_proposal
+  evidence: null
+  human_must_confirm: true
+  mitre_check:
+    usage: ALLOWED
+    verdict: ok
+    mitre_name: Improper Validation of Specified Quantity in Input
+  needs_review_note: false
+  alt_cwes_mitre: {}
+- scanner: web-runtime
+  rule_id: workflow.coupon_bounds.2
+  title: Excessive coupon discounts are rejected
+  cwe: CWE-1284
+  alt_cwes: []
+  tool_severity_seen: high
+  rating_policy: fixed
+  fixed_rating: high
+  confidence: medium
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: Quantity/amount validation.
+  source: llm_proposal
+  evidence: null
+  human_must_confirm: true
+  mitre_check:
+    usage: ALLOWED
+    verdict: ok
+    mitre_name: Improper Validation of Specified Quantity in Input
+  needs_review_note: false
+  alt_cwes_mitre: {}
+- scanner: web-runtime
+  rule_id: workflow.reset_replay.3
+  title: Password reset tokens must be single use
+  cwe: CWE-640
+  alt_cwes: []
+  tool_severity_seen: high
+  rating_policy: fixed
+  fixed_rating: high
+  confidence: medium
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: 'Weak password recovery: token reusable.'
+  source: llm_proposal
+  evidence: null
+  human_must_confirm: true
+  mitre_check:
+    usage: ALLOWED_WITH_REVIEW
+    verdict: needs_review_note
+    mitre_name: Weak Password Recovery Mechanism for Forgotten Password
+  needs_review_note: true
+  alt_cwes_mitre: {}
+- scanner: web-runtime
+  rule_id: workflow.excessive_data.1
+  title: Identity response must not expose a social security number
+  cwe: CWE-359
+  alt_cwes:
+  - CWE-213
+  tool_severity_seen: medium
+  rating_policy: fixed
+  fixed_rating: medium
+  confidence: medium
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: Private personal information in a response.
+  source: llm_proposal
+  evidence: null
+  human_must_confirm: true
+  mitre_check:
+    usage: ALLOWED
+    verdict: ok
+    mitre_name: Exposure of Private Personal Information to an Unauthorized Actor
+  needs_review_note: false
+  alt_cwes_mitre:
+    CWE-213: ok
+- scanner: web-runtime
+  rule_id: workflow.unsigned_hook.1
+  title: Incoming webhook events require a valid signature
+  cwe: CWE-347
+  alt_cwes: []
+  tool_severity_seen: high
+  rating_policy: fixed
+  fixed_rating: high
+  confidence: medium
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: Signature not verified.
+  source: llm_proposal
+  evidence: null
+  human_must_confirm: true
+  mitre_check:
+    usage: ALLOWED
+    verdict: ok
+    mitre_name: Improper Verification of Cryptographic Signature
+  needs_review_note: false
+  alt_cwes_mitre: {}
+- scanner: web-runtime
+  rule_id: workflow.webhook_destination.1
+  title: Webhook destination must match the approved internal host exactly
+  cwe: CWE-918
+  alt_cwes: []
+  tool_severity_seen: high
+  rating_policy: fixed
+  fixed_rating: high
+  confidence: high
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: SSRF.
+  source: llm_proposal
+  evidence: null
+  human_must_confirm: true
+  mitre_check:
+    usage: ALLOWED
+    verdict: ok
+    mitre_name: Server-Side Request Forgery
+  needs_review_note: false
+  alt_cwes_mitre: {}
+- scanner: web-runtime
+  rule_id: web.missing-clickjacking-protection
+  title: Missing clickjacking protection header
+  cwe: CWE-1021
+  alt_cwes: []
+  tool_severity_seen: low
+  rating_policy: fixed
+  fixed_rating: low
+  confidence: high
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: Same CWE ZAP reports for rule 10020.
+  source: tool_equivalent
+  evidence: 'Tool-equivalent: in the saved runtime.json files ZAP rule zap.10020 stores cwe_id 1021 in 16/16 occurrences. That this
+    check is the same issue as zap.10020 is MY judgement; confirm it.'
+  human_must_confirm: true
+  mitre_check:
+    usage: ALLOWED
+    verdict: ok
+    mitre_name: Improper Restriction of Rendered UI Layers or Frames
+  needs_review_note: false
+  alt_cwes_mitre: {}
+- scanner: web-runtime
+  rule_id: web.missing-content-security-policy
+  title: Missing Content-Security-Policy header
+  cwe: null
+  alt_cwes: []
+  tool_severity_seen: low
+  rating_policy: fixed
+  fixed_rating: low
+  confidence: high
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: Rating-only row.
+  source: no_cwe_applicable
+  evidence: ZAP reports CWE-693 for the equivalent alert zap.10038, but MITRE marks CWE-693 (Protection Mechanism Failure) as DISCOURAGED
+    for mapping. No narrower CWE was chosen; a human-approved fixed rating applies.
+  human_must_confirm: true
+  tool_reported_cwe: CWE-693
+  mitre_check: null
+  needs_review_note: false
+  alt_cwes_mitre: {}
+- scanner: web-runtime
+  rule_id: web.missing-content-type-protection
+  title: Missing X-Content-Type-Options header
+  cwe: null
+  alt_cwes: []
+  tool_severity_seen: low
+  rating_policy: fixed
+  fixed_rating: low
+  confidence: high
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: Rating-only row.
+  source: no_cwe_applicable
+  evidence: ZAP reports CWE-693 for the equivalent alert zap.10021, but MITRE marks CWE-693 (Protection Mechanism Failure) as DISCOURAGED
+    for mapping. No narrower CWE was chosen; a human-approved fixed rating applies.
+  human_must_confirm: true
+  tool_reported_cwe: CWE-693
+  mitre_check: null
+  needs_review_note: false
+  alt_cwes_mitre: {}
+- scanner: trivy
+  rule_id: DS-0026
+  title: No HEALTHCHECK defined
+  cwe: null
+  alt_cwes: []
+  tool_severity_seen: low
+  rating_policy: fixed
+  fixed_rating: low
+  confidence: high
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: Container hygiene; no weakness class applies. A fixed human-approved rating is more honest than forcing a CWE.
+  source: no_cwe_applicable
+  evidence: null
+  human_must_confirm: true
+  mitre_check: null
+  needs_review_note: false
+  alt_cwes_mitre: {}
+- scanner: web-runtime
+  rule_id: zap.10021
+  title: (ZAP) X-Content-Type-Options header missing
+  cwe: null
+  alt_cwes: []
+  tool_severity_seen: low
+  rating_policy: fixed
+  fixed_rating: low
+  confidence: high
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: Rating-only row. Rating copied from ZAP's own risk level in the saved runs. Title is from my knowledge of ZAP.
+  source: no_cwe_applicable
+  evidence: ZAP reports CWE-693, which MITRE marks DISCOURAGED for mapping, so the CWE is not used.
+  tool_reported_cwe: CWE-693
+  human_must_confirm: true
+  mitre_check: null
+  needs_review_note: false
+  alt_cwes_mitre: {}
+- scanner: web-runtime
+  rule_id: zap.10038
+  title: (ZAP) Content Security Policy header not set
+  cwe: null
+  alt_cwes: []
+  tool_severity_seen: medium
+  rating_policy: fixed
+  fixed_rating: medium
+  confidence: high
+  status: draft_needs_human_review
+  reviewed_by: null
+  note: Rating-only row. Rating copied from ZAP's own risk level in the saved runs. Title is from my knowledge of ZAP.
+  source: no_cwe_applicable
+  evidence: ZAP reports CWE-693, which MITRE marks DISCOURAGED for mapping, so the CWE is not used.
+  tool_reported_cwe: CWE-693
+  human_must_confirm: true
+  mitre_check: null
+  needs_review_note: false
+  alt_cwes_mitre: {}

@@ -1,0 +1,1461 @@
+# CWE catalog: a statistical reference per CWE, built by scripts/build_cwe_catalog.py
+# from data/cwe_raw/ (NVD CVE API 2.0) and data/cwe_dictionary.json (official MITRE CWE catalog).
+# Defaults are statistical, not official. Human review is required before any use.
+# Every row starts as draft_needs_human_review. Nothing here is used until a person approves the row
+# (scripts/approve_cwe_rows.py). Do not edit numbers by hand: rebuild instead.
+schema_version: 1
+cvss_version: '3.1'
+generated:
+  at_utc: '2026-11-12T06:43:26Z'
+  script: scripts/build_cwe_catalog.py
+  nvd_query_date_utc: '2026-11-10T11:21:09Z'
+  mitre_catalog_version: '5.0'
+  mitre_catalog_date: '2026-10-28'
+config:
+  sample_cap: 300
+  min_sample: 30
+  stable_high_threshold: 0.85
+  stable_low_threshold: 0.15
+  preferred_metric_source: nvd@nist.gov
+  min_preferred_records: 30
+  low_vector_agreement: 0.4
+rows:
+- id: CWE-16
+  name: null
+  status: refused_by_mitre
+  default_basis: insufficient_data
+  modal_rating: null
+  modal_rating_share: null
+  sample_size: 1
+  candidates_after_filters: 1
+  records_in_cache: 1
+  sample_window:
+    newest: '2010-01-25T19:30:01.730'
+    oldest: '2010-01-25T19:30:01.730'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:N
+  reference_vector_share: 1.0
+  rating_distribution:
+    CRITICAL: 0.0
+    HIGH: 1.0
+    MEDIUM: 0.0
+    LOW: 0.0
+  unrated_records: 0
+  high_critical_share: 1.0
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 1.0
+    AC:
+      value: L
+      share: 1.0
+    PR:
+      value: N
+      share: 1.0
+    UI:
+      value: R
+      share: 1.0
+    S:
+      value: U
+      share: 1.0
+    C:
+      value: H
+      share: 1.0
+    I:
+      value: H
+      share: 1.0
+    A:
+      value: N
+      share: 1.0
+  nvd_median_base_score: 8.1
+  flags:
+  - name_missing
+  - non_nvd_scores_used
+  - small_sample
+  - weak_cwe_assignment
+  mitre:
+    verdict: refuse
+    usage: null
+    kind: null
+    dictionary_status: null
+    reason: not found in the catalog
+  needs_review_note: false
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: 67eacce7065a466b
+- id: CWE-22
+  name: Improper Limitation of a Pathname to a Restricted Directory
+  status: draft_needs_human_review
+  default_basis: ambiguous
+  modal_rating: null
+  modal_rating_share: null
+  sample_size: 300
+  candidates_after_filters: 2718
+  records_in_cache: 3506
+  sample_window:
+    newest: '2026-10-28T17:18:20.937'
+    oldest: '2024-05-14T15:13:05.287'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+  reference_vector_share: 0.1767
+  rating_distribution:
+    CRITICAL: 0.23
+    HIGH: 0.4733
+    MEDIUM: 0.28
+    LOW: 0.0167
+  unrated_records: 0
+  high_critical_share: 0.7033
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 0.8233
+    AC:
+      value: L
+      share: 0.9933
+    PR:
+      value: N
+      share: 0.5533
+    UI:
+      value: N
+      share: 0.9167
+    S:
+      value: U
+      share: 0.97
+    C:
+      value: H
+      share: 0.76
+    I:
+      value: H
+      share: 0.5533
+    A:
+      value: N
+      share: 0.5133
+  nvd_median_base_score: 7.5
+  flags:
+  - low_vector_agreement
+  mitre:
+    verdict: needs_review_note
+    usage: ALLOWED_WITH_REVIEW
+    kind: weakness
+    dictionary_status: Stable
+    reason: 'mapping usage ALLOWED_WITH_REVIEW: a reviewer note is required'
+  needs_review_note: true
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: 360f1b87b4281cfc
+- id: CWE-77
+  name: Improper Neutralization of Special Elements used in a Command
+  status: draft_needs_human_review
+  default_basis: stable_high
+  modal_rating: CRITICAL
+  modal_rating_share: 0.5
+  sample_size: 300
+  candidates_after_filters: 1333
+  records_in_cache: 1412
+  sample_window:
+    newest: '2026-08-11T16:17:28.540'
+    oldest: '2024-01-24T16:15:08.630'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+  reference_vector_share: 0.4733
+  rating_distribution:
+    CRITICAL: 0.5
+    HIGH: 0.4567
+    MEDIUM: 0.0433
+    LOW: 0.0
+  unrated_records: 0
+  high_critical_share: 0.9567
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 0.9033
+    AC:
+      value: L
+      share: 0.9767
+    PR:
+      value: N
+      share: 0.5367
+    UI:
+      value: N
+      share: 0.9733
+    S:
+      value: U
+      share: 0.9567
+    C:
+      value: H
+      share: 0.99
+    I:
+      value: H
+      share: 0.99
+    A:
+      value: H
+      share: 0.97
+  nvd_median_base_score: 8.9
+  flags: []
+  mitre:
+    verdict: needs_review_note
+    usage: ALLOWED_WITH_REVIEW
+    kind: weakness
+    dictionary_status: Draft
+    reason: 'mapping usage ALLOWED_WITH_REVIEW: a reviewer note is required'
+  needs_review_note: true
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: 77ba9b1349bb6ba0
+- id: CWE-78
+  name: Improper Neutralization of Special Elements used in an OS Command
+  status: draft_needs_human_review
+  default_basis: stable_high
+  modal_rating: HIGH
+  modal_rating_share: 0.5867
+  sample_size: 300
+  candidates_after_filters: 2464
+  records_in_cache: 3116
+  sample_window:
+    newest: '2026-07-08T14:16:56.643'
+    oldest: '2024-05-03T03:15:29.073'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+  reference_vector_share: 0.36
+  rating_distribution:
+    CRITICAL: 0.3667
+    HIGH: 0.5867
+    MEDIUM: 0.0433
+    LOW: 0.0033
+  unrated_records: 0
+  high_critical_share: 0.9533
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 0.7733
+    AC:
+      value: L
+      share: 0.9767
+    PR:
+      value: N
+      share: 0.5267
+    UI:
+      value: N
+      share: 0.9767
+    S:
+      value: U
+      share: 0.9933
+    C:
+      value: H
+      share: 0.9933
+    I:
+      value: H
+      share: 0.9867
+    A:
+      value: H
+      share: 0.9767
+  nvd_median_base_score: 8.8
+  flags:
+  - low_vector_agreement
+  mitre:
+    verdict: ok
+    usage: ALLOWED
+    kind: weakness
+    dictionary_status: Stable
+    reason: mapping usage ALLOWED
+  needs_review_note: false
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: a5421225e0ea72d2
+- id: CWE-79
+  name: Improper Neutralization of Input During Web Page Generation
+  status: draft_needs_human_review
+  default_basis: stable_low
+  modal_rating: MEDIUM
+  modal_rating_share: 0.9467
+  sample_size: 300
+  candidates_after_filters: 12000
+  records_in_cache: 13704
+  sample_window:
+    newest: '2026-10-28T17:18:21.640'
+    oldest: '2025-08-31T16:15:30.690'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:L/UI:R/S:C/C:L/I:L/A:N
+  reference_vector_share: 0.4033
+  rating_distribution:
+    CRITICAL: 0.04
+    HIGH: 0.01
+    MEDIUM: 0.9467
+    LOW: 0.0033
+  unrated_records: 0
+  high_critical_share: 0.05
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 0.9933
+    AC:
+      value: L
+      share: 0.9967
+    PR:
+      value: L
+      share: 0.44
+    UI:
+      value: R
+      share: 0.9933
+    S:
+      value: C
+      share: 0.99
+    C:
+      value: L
+      share: 0.9467
+    I:
+      value: L
+      share: 0.9467
+    A:
+      value: N
+      share: 0.95
+  nvd_median_base_score: 5.4
+  flags:
+  - unstable_over_time
+  mitre:
+    verdict: ok
+    usage: ALLOWED
+    kind: weakness
+    dictionary_status: Stable
+    reason: mapping usage ALLOWED
+  needs_review_note: false
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: 692c8bc9b83141db
+- id: CWE-89
+  name: Improper Neutralization of Special Elements used in an SQL Command
+  status: draft_needs_human_review
+  default_basis: stable_high
+  modal_rating: CRITICAL
+  modal_rating_share: 0.7533
+  sample_size: 300
+  candidates_after_filters: 5874
+  records_in_cache: 6368
+  sample_window:
+    newest: '2026-09-18T20:17:23.723'
+    oldest: '2025-11-23T21:15:58.010'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+  reference_vector_share: 0.75
+  rating_distribution:
+    CRITICAL: 0.7533
+    HIGH: 0.2133
+    MEDIUM: 0.03
+    LOW: 0.0033
+  unrated_records: 0
+  high_critical_share: 0.9667
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 0.9933
+    AC:
+      value: L
+      share: 1.0
+    PR:
+      value: N
+      share: 0.7667
+    UI:
+      value: N
+      share: 0.9967
+    S:
+      value: U
+      share: 0.9967
+    C:
+      value: H
+      share: 0.9933
+    I:
+      value: H
+      share: 0.9567
+    A:
+      value: H
+      share: 0.95
+  nvd_median_base_score: 9.8
+  flags: []
+  mitre:
+    verdict: ok
+    usage: ALLOWED
+    kind: weakness
+    dictionary_status: Stable
+    reason: mapping usage ALLOWED
+  needs_review_note: false
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: 4bc9ea5aa7fa8682
+- id: CWE-94
+  name: Improper Control of Generation of Code
+  status: draft_needs_human_review
+  default_basis: stable_high
+  modal_rating: HIGH
+  modal_rating_share: 0.5133
+  sample_size: 300
+  candidates_after_filters: 783
+  records_in_cache: 1168
+  sample_window:
+    newest: '2026-08-18T16:18:16.730'
+    oldest: '2023-06-20T15:15:10.810'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+  reference_vector_share: 0.35
+  rating_distribution:
+    CRITICAL: 0.3967
+    HIGH: 0.5133
+    MEDIUM: 0.0833
+    LOW: 0.0067
+  unrated_records: 0
+  high_critical_share: 0.91
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 0.8667
+    AC:
+      value: L
+      share: 0.98
+    PR:
+      value: N
+      share: 0.4767
+    UI:
+      value: N
+      share: 0.8633
+    S:
+      value: U
+      share: 0.9333
+    C:
+      value: H
+      share: 0.93
+    I:
+      value: H
+      share: 0.9333
+    A:
+      value: H
+      share: 0.92
+  nvd_median_base_score: 8.8
+  flags:
+  - low_vector_agreement
+  mitre:
+    verdict: needs_review_note
+    usage: ALLOWED_WITH_REVIEW
+    kind: weakness
+    dictionary_status: Draft
+    reason: 'mapping usage ALLOWED_WITH_REVIEW: a reviewer note is required'
+  needs_review_note: true
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: 7cfdb037437971ba
+- id: CWE-200
+  name: Exposure of Sensitive Information to an Unauthorized Actor
+  status: refused_by_mitre
+  default_basis: ambiguous
+  modal_rating: null
+  modal_rating_share: null
+  sample_size: 300
+  candidates_after_filters: 943
+  records_in_cache: 1132
+  sample_window:
+    newest: '2026-10-20T22:19:04.990'
+    oldest: '2021-01-27T13:15:13.153'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+  reference_vector_share: 0.23
+  rating_distribution:
+    CRITICAL: 0.0267
+    HIGH: 0.2833
+    MEDIUM: 0.63
+    LOW: 0.06
+  unrated_records: 0
+  high_critical_share: 0.31
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 0.76
+    AC:
+      value: L
+      share: 0.9633
+    PR:
+      value: N
+      share: 0.5633
+    UI:
+      value: N
+      share: 0.9033
+    S:
+      value: U
+      share: 0.9667
+    C:
+      value: H
+      share: 0.6433
+    I:
+      value: N
+      share: 0.9133
+    A:
+      value: N
+      share: 0.93
+  nvd_median_base_score: 5.5
+  flags:
+  - low_vector_agreement
+  mitre:
+    verdict: refuse
+    usage: DISCOURAGED
+    kind: weakness
+    dictionary_status: Draft
+    reason: mapping usage DISCOURAGED
+  needs_review_note: false
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: 1d27140106f81100
+- id: CWE-287
+  name: Improper Authentication
+  status: refused_by_mitre
+  default_basis: ambiguous
+  modal_rating: null
+  modal_rating_share: null
+  sample_size: 300
+  candidates_after_filters: 1408
+  records_in_cache: 1529
+  sample_window:
+    newest: '2026-10-26T21:17:32.953'
+    oldest: '2023-04-04T17:15:07.277'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+  reference_vector_share: 0.2567
+  rating_distribution:
+    CRITICAL: 0.2967
+    HIGH: 0.3733
+    MEDIUM: 0.3067
+    LOW: 0.0233
+  unrated_records: 0
+  high_critical_share: 0.67
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 0.7767
+    AC:
+      value: L
+      share: 0.9467
+    PR:
+      value: N
+      share: 0.7267
+    UI:
+      value: N
+      share: 0.9633
+    S:
+      value: U
+      share: 0.98
+    C:
+      value: H
+      share: 0.68
+    I:
+      value: H
+      share: 0.6067
+    A:
+      value: H
+      share: 0.53
+  nvd_median_base_score: 7.5
+  flags:
+  - low_vector_agreement
+  mitre:
+    verdict: refuse
+    usage: DISCOURAGED
+    kind: weakness
+    dictionary_status: Draft
+    reason: mapping usage DISCOURAGED
+  needs_review_note: false
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: a8ff1868ba0c6e24
+- id: CWE-306
+  name: Missing Authentication for Critical Functionality
+  status: draft_needs_human_review
+  default_basis: ambiguous
+  modal_rating: null
+  modal_rating_share: null
+  sample_size: 300
+  candidates_after_filters: 868
+  records_in_cache: 1632
+  sample_window:
+    newest: '2026-10-26T21:19:58.913'
+    oldest: '2022-07-26T22:15:10.843'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+  reference_vector_share: 0.2733
+  rating_distribution:
+    CRITICAL: 0.3333
+    HIGH: 0.4467
+    MEDIUM: 0.2133
+    LOW: 0.0067
+  unrated_records: 0
+  high_critical_share: 0.78
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 0.8333
+    AC:
+      value: L
+      share: 0.9567
+    PR:
+      value: N
+      share: 0.8667
+    UI:
+      value: N
+      share: 0.9667
+    S:
+      value: U
+      share: 0.9833
+    C:
+      value: H
+      share: 0.7033
+    I:
+      value: H
+      share: 0.5833
+    A:
+      value: H
+      share: 0.5
+  nvd_median_base_score: 7.5
+  flags:
+  - low_vector_agreement
+  mitre:
+    verdict: ok
+    usage: ALLOWED
+    kind: weakness
+    dictionary_status: Draft
+    reason: mapping usage ALLOWED
+  needs_review_note: false
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: 53c7de07da810eb8
+- id: CWE-327
+  name: Use of a Broken or Risky Cryptographic Algorithm
+  status: draft_needs_human_review
+  default_basis: ambiguous
+  modal_rating: null
+  modal_rating_share: null
+  sample_size: 300
+  candidates_after_filters: 312
+  records_in_cache: 341
+  sample_window:
+    newest: '2026-03-16T14:18:10.570'
+    oldest: '2018-05-14T20:29:00.640'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+  reference_vector_share: 0.3867
+  rating_distribution:
+    CRITICAL: 0.11
+    HIGH: 0.5433
+    MEDIUM: 0.3167
+    LOW: 0.03
+  unrated_records: 0
+  high_critical_share: 0.6533
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 0.81
+    AC:
+      value: L
+      share: 0.8133
+    PR:
+      value: N
+      share: 0.79
+    UI:
+      value: N
+      share: 0.9733
+    S:
+      value: U
+      share: 0.9567
+    C:
+      value: H
+      share: 0.8433
+    I:
+      value: N
+      share: 0.69
+    A:
+      value: N
+      share: 0.8
+  nvd_median_base_score: 7.5
+  flags:
+  - low_vector_agreement
+  mitre:
+    verdict: needs_review_note
+    usage: ALLOWED_WITH_REVIEW
+    kind: weakness
+    dictionary_status: Draft
+    reason: 'mapping usage ALLOWED_WITH_REVIEW: a reviewer note is required'
+  needs_review_note: true
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: c9cccbd3588b539a
+- id: CWE-328
+  name: Use of Weak Hash
+  status: draft_needs_human_review
+  default_basis: insufficient_data
+  modal_rating: null
+  modal_rating_share: null
+  sample_size: 1
+  candidates_after_filters: 1
+  records_in_cache: 1
+  sample_window:
+    newest: '2026-11-10T01:17:14.777'
+    oldest: '2026-11-10T01:17:14.777'
+  reference_vector: CVSS:3.1/AV:A/AC:H/PR:H/UI:N/S:U/C:H/I:H/A:H
+  reference_vector_share: 1.0
+  rating_distribution:
+    CRITICAL: 0.0
+    HIGH: 0.0
+    MEDIUM: 1.0
+    LOW: 0.0
+  unrated_records: 0
+  high_critical_share: 0.0
+  per_metric_agreement:
+    AV:
+      value: A
+      share: 1.0
+    AC:
+      value: H
+      share: 1.0
+    PR:
+      value: H
+      share: 1.0
+    UI:
+      value: N
+      share: 1.0
+    S:
+      value: U
+      share: 1.0
+    C:
+      value: H
+      share: 1.0
+    I:
+      value: H
+      share: 1.0
+    A:
+      value: H
+      share: 1.0
+  nvd_median_base_score: 6.4
+  flags:
+  - non_nvd_scores_used
+  - small_sample
+  - weak_cwe_assignment
+  mitre:
+    verdict: ok
+    usage: ALLOWED
+    kind: weakness
+    dictionary_status: Draft
+    reason: mapping usage ALLOWED
+  needs_review_note: false
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: b7feb2edcbf6f2ce
+- id: CWE-330
+  name: Use of Insufficiently Random Values
+  status: refused_by_mitre
+  default_basis: ambiguous
+  modal_rating: null
+  modal_rating_share: null
+  sample_size: 210
+  candidates_after_filters: 210
+  records_in_cache: 223
+  sample_window:
+    newest: '2025-01-07T20:15:30.710'
+    oldest: '2008-01-08T19:46:00.000'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+  reference_vector_share: 0.1857
+  rating_distribution:
+    CRITICAL: 0.219
+    HIGH: 0.3429
+    MEDIUM: 0.3952
+    LOW: 0.0429
+  unrated_records: 0
+  high_critical_share: 0.5619
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 0.8286
+    AC:
+      value: L
+      share: 0.8714
+    PR:
+      value: N
+      share: 0.7286
+    UI:
+      value: N
+      share: 0.9476
+    S:
+      value: U
+      share: 0.9619
+    C:
+      value: H
+      share: 0.6667
+    I:
+      value: N
+      share: 0.519
+    A:
+      value: N
+      share: 0.719
+  nvd_median_base_score: 7.5
+  flags:
+  - low_vector_agreement
+  mitre:
+    verdict: refuse
+    usage: DISCOURAGED
+    kind: weakness
+    dictionary_status: Stable
+    reason: mapping usage DISCOURAGED
+  needs_review_note: false
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: fc9f5d4fa5f620cd
+- id: CWE-352
+  name: Cross-Site Request Forgery
+  status: draft_needs_human_review
+  default_basis: ambiguous
+  modal_rating: null
+  modal_rating_share: null
+  sample_size: 300
+  candidates_after_filters: 2183
+  records_in_cache: 2514
+  sample_window:
+    newest: '2026-08-13T16:19:06.767'
+    oldest: '2024-01-13T04:15:07.820'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H
+  reference_vector_share: 0.5067
+  rating_distribution:
+    CRITICAL: 0.0
+    HIGH: 0.5533
+    MEDIUM: 0.43
+    LOW: 0.0167
+  unrated_records: 0
+  high_critical_share: 0.5533
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 0.9967
+    AC:
+      value: L
+      share: 0.99
+    PR:
+      value: N
+      share: 0.9433
+    UI:
+      value: R
+      share: 1.0
+    S:
+      value: U
+      share: 0.9233
+    C:
+      value: H
+      share: 0.5467
+    I:
+      value: H
+      share: 0.68
+    A:
+      value: H
+      share: 0.5467
+  nvd_median_base_score: 8.8
+  flags: []
+  mitre:
+    verdict: ok
+    usage: ALLOWED
+    kind: weakness
+    dictionary_status: Stable
+    reason: mapping usage ALLOWED
+  needs_review_note: false
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: 2a064a6cfe326188
+- id: CWE-434
+  name: Unrestricted Upload of File with Dangerous Type
+  status: draft_needs_human_review
+  default_basis: stable_high
+  modal_rating: CRITICAL
+  modal_rating_share: 0.4667
+  sample_size: 300
+  candidates_after_filters: 1675
+  records_in_cache: 1778
+  sample_window:
+    newest: '2026-09-30T16:17:06.623'
+    oldest: '2024-03-05T12:15:47.433'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+  reference_vector_share: 0.4567
+  rating_distribution:
+    CRITICAL: 0.4667
+    HIGH: 0.46
+    MEDIUM: 0.0733
+    LOW: 0.0
+  unrated_records: 0
+  high_critical_share: 0.9267
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 0.9933
+    AC:
+      value: L
+      share: 1.0
+    PR:
+      value: N
+      share: 0.4967
+    UI:
+      value: N
+      share: 0.9333
+    S:
+      value: U
+      share: 0.9367
+    C:
+      value: H
+      share: 0.92
+    I:
+      value: H
+      share: 0.92
+    A:
+      value: H
+      share: 0.9167
+  nvd_median_base_score: 8.8
+  flags: []
+  mitre:
+    verdict: ok
+    usage: ALLOWED
+    kind: weakness
+    dictionary_status: Draft
+    reason: mapping usage ALLOWED
+  needs_review_note: false
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: a11b1977efba8c02
+- id: CWE-502
+  name: Deserialization of Untrusted Data
+  status: draft_needs_human_review
+  default_basis: stable_high
+  modal_rating: HIGH
+  modal_rating_share: 0.4967
+  sample_size: 300
+  candidates_after_filters: 820
+  records_in_cache: 1070
+  sample_window:
+    newest: '2026-10-28T17:18:21.740'
+    oldest: '2022-09-15T02:15:09.223'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+  reference_vector_share: 0.42
+  rating_distribution:
+    CRITICAL: 0.4433
+    HIGH: 0.4967
+    MEDIUM: 0.0567
+    LOW: 0.0033
+  unrated_records: 0
+  high_critical_share: 0.94
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 0.87
+    AC:
+      value: L
+      share: 0.96
+    PR:
+      value: N
+      share: 0.6033
+    UI:
+      value: N
+      share: 0.91
+    S:
+      value: U
+      share: 0.98
+    C:
+      value: H
+      share: 0.9167
+    I:
+      value: H
+      share: 0.9133
+    A:
+      value: H
+      share: 0.93
+  nvd_median_base_score: 8.8
+  flags: []
+  mitre:
+    verdict: ok
+    usage: ALLOWED
+    kind: weakness
+    dictionary_status: Draft
+    reason: mapping usage ALLOWED
+  needs_review_note: false
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: baf52f58c819e81d
+- id: CWE-601
+  name: URL Redirection to Untrusted Site
+  status: draft_needs_human_review
+  default_basis: stable_low
+  modal_rating: MEDIUM
+  modal_rating_share: 0.9333
+  sample_size: 300
+  candidates_after_filters: 534
+  records_in_cache: 647
+  sample_window:
+    newest: '2026-07-14T15:16:56.977'
+    oldest: '2021-09-30T00:15:07.543'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N
+  reference_vector_share: 0.8067
+  rating_distribution:
+    CRITICAL: 0.0133
+    HIGH: 0.0433
+    MEDIUM: 0.9333
+    LOW: 0.01
+  unrated_records: 0
+  high_critical_share: 0.0567
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 0.9967
+    AC:
+      value: L
+      share: 0.99
+    PR:
+      value: N
+      share: 0.9033
+    UI:
+      value: R
+      share: 0.9833
+    S:
+      value: C
+      share: 0.95
+    C:
+      value: L
+      share: 0.9167
+    I:
+      value: L
+      share: 0.95
+    A:
+      value: N
+      share: 0.96
+  nvd_median_base_score: 6.1
+  flags: []
+  mitre:
+    verdict: ok
+    usage: ALLOWED
+    kind: weakness
+    dictionary_status: Draft
+    reason: mapping usage ALLOWED
+  needs_review_note: false
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: fe7e19271dfbe4b2
+- id: CWE-611
+  name: Improper Restriction of XML External Entity Reference
+  status: draft_needs_human_review
+  default_basis: ambiguous
+  modal_rating: null
+  modal_rating_share: null
+  sample_size: 300
+  candidates_after_filters: 566
+  records_in_cache: 630
+  sample_window:
+    newest: '2026-03-02T02:16:19.800'
+    oldest: '2021-08-05T21:15:10.003'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+  reference_vector_share: 0.22
+  rating_distribution:
+    CRITICAL: 0.3067
+    HIGH: 0.3833
+    MEDIUM: 0.3067
+    LOW: 0.0033
+  unrated_records: 0
+  high_critical_share: 0.69
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 0.8633
+    AC:
+      value: L
+      share: 0.98
+    PR:
+      value: N
+      share: 0.6767
+    UI:
+      value: N
+      share: 0.8467
+    S:
+      value: U
+      share: 0.9733
+    C:
+      value: H
+      share: 0.8833
+    I:
+      value: N
+      share: 0.5833
+    A:
+      value: N
+      share: 0.4933
+  nvd_median_base_score: 7.5
+  flags:
+  - low_vector_agreement
+  mitre:
+    verdict: ok
+    usage: ALLOWED
+    kind: weakness
+    dictionary_status: Draft
+    reason: mapping usage ALLOWED
+  needs_review_note: false
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: 7174778621fd5d3a
+- id: CWE-639
+  name: Authorization Bypass Through User-Controlled Key
+  status: draft_needs_human_review
+  default_basis: ambiguous
+  modal_rating: null
+  modal_rating_share: null
+  sample_size: 300
+  candidates_after_filters: 388
+  records_in_cache: 760
+  sample_window:
+    newest: '2026-09-30T16:16:58.000'
+    oldest: '2021-08-09T10:15:08.277'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N
+  reference_vector_share: 0.13
+  rating_distribution:
+    CRITICAL: 0.0667
+    HIGH: 0.3533
+    MEDIUM: 0.5633
+    LOW: 0.0167
+  unrated_records: 0
+  high_critical_share: 0.42
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 0.98
+    AC:
+      value: L
+      share: 0.9633
+    PR:
+      value: L
+      share: 0.6167
+    UI:
+      value: N
+      share: 0.97
+    S:
+      value: U
+      share: 0.9833
+    C:
+      value: H
+      share: 0.5433
+    I:
+      value: N
+      share: 0.45
+    A:
+      value: N
+      share: 0.7867
+  nvd_median_base_score: 6.5
+  flags:
+  - low_vector_agreement
+  mitre:
+    verdict: ok
+    usage: ALLOWED
+    kind: weakness
+    dictionary_status: Incomplete
+    reason: mapping usage ALLOWED
+  needs_review_note: false
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: 8beca7ea96bc2538
+- id: CWE-798
+  name: Use of Hard-coded Credentials
+  status: draft_needs_human_review
+  default_basis: ambiguous
+  modal_rating: null
+  modal_rating_share: null
+  sample_size: 300
+  candidates_after_filters: 856
+  records_in_cache: 995
+  sample_window:
+    newest: '2026-10-06T19:17:39.867'
+    oldest: '2022-08-29T00:15:08.610'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+  reference_vector_share: 0.4133
+  rating_distribution:
+    CRITICAL: 0.44
+    HIGH: 0.39
+    MEDIUM: 0.1567
+    LOW: 0.0133
+  unrated_records: 0
+  high_critical_share: 0.83
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 0.73
+    AC:
+      value: L
+      share: 0.9167
+    PR:
+      value: N
+      share: 0.7567
+    UI:
+      value: N
+      share: 0.9867
+    S:
+      value: U
+      share: 0.98
+    C:
+      value: H
+      share: 0.91
+    I:
+      value: H
+      share: 0.7533
+    A:
+      value: H
+      share: 0.7033
+  nvd_median_base_score: 8.8
+  flags: []
+  mitre:
+    verdict: needs_review_note
+    usage: ALLOWED_WITH_REVIEW
+    kind: weakness
+    dictionary_status: Draft
+    reason: 'mapping usage ALLOWED_WITH_REVIEW: a reviewer note is required'
+  needs_review_note: true
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: 1e5e9ce2dc599f6b
+- id: CWE-862
+  name: Missing Authorization
+  status: draft_needs_human_review
+  default_basis: ambiguous
+  modal_rating: null
+  modal_rating_share: null
+  sample_size: 300
+  candidates_after_filters: 1852
+  records_in_cache: 3084
+  sample_window:
+    newest: '2026-11-02T20:17:56.450'
+    oldest: '2023-12-04T01:15:10.130'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H
+  reference_vector_share: 0.11
+  rating_distribution:
+    CRITICAL: 0.1
+    HIGH: 0.3667
+    MEDIUM: 0.51
+    LOW: 0.0233
+  unrated_records: 0
+  high_critical_share: 0.4667
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 0.7333
+    AC:
+      value: L
+      share: 0.9767
+    PR:
+      value: L
+      share: 0.6167
+    UI:
+      value: N
+      share: 0.9433
+    S:
+      value: U
+      share: 0.9733
+    C:
+      value: H
+      share: 0.5733
+    I:
+      value: H
+      share: 0.4267
+    A:
+      value: N
+      share: 0.5933
+  nvd_median_base_score: 6.5
+  flags:
+  - low_vector_agreement
+  - unstable_over_time
+  mitre:
+    verdict: needs_review_note
+    usage: ALLOWED_WITH_REVIEW
+    kind: weakness
+    dictionary_status: Incomplete
+    reason: 'mapping usage ALLOWED_WITH_REVIEW: a reviewer note is required'
+  needs_review_note: true
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: d4023312dec1d283
+- id: CWE-863
+  name: Incorrect Authorization
+  status: draft_needs_human_review
+  default_basis: ambiguous
+  modal_rating: null
+  modal_rating_share: null
+  sample_size: 300
+  candidates_after_filters: 1150
+  records_in_cache: 2468
+  sample_window:
+    newest: '2026-11-02T20:17:57.147'
+    oldest: '2023-07-25T19:15:11.640'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H
+  reference_vector_share: 0.0967
+  rating_distribution:
+    CRITICAL: 0.13
+    HIGH: 0.3533
+    MEDIUM: 0.4533
+    LOW: 0.0633
+  unrated_records: 0
+  high_critical_share: 0.4833
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 0.78
+    AC:
+      value: L
+      share: 0.9733
+    PR:
+      value: L
+      share: 0.5967
+    UI:
+      value: N
+      share: 0.9367
+    S:
+      value: U
+      share: 0.95
+    C:
+      value: H
+      share: 0.54
+    I:
+      value: H
+      share: 0.52
+    A:
+      value: N
+      share: 0.5967
+  nvd_median_base_score: 6.6
+  flags:
+  - low_vector_agreement
+  - unstable_over_time
+  mitre:
+    verdict: needs_review_note
+    usage: ALLOWED_WITH_REVIEW
+    kind: weakness
+    dictionary_status: Incomplete
+    reason: 'mapping usage ALLOWED_WITH_REVIEW: a reviewer note is required'
+  needs_review_note: true
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: c79c9003eb04cb1f
+- id: CWE-918
+  name: Server-Side Request Forgery
+  status: draft_needs_human_review
+  default_basis: ambiguous
+  modal_rating: null
+  modal_rating_share: null
+  sample_size: 300
+  candidates_after_filters: 747
+  records_in_cache: 1279
+  sample_window:
+    newest: '2026-09-30T16:16:56.390'
+    oldest: '2022-09-28T16:15:11.243'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+  reference_vector_share: 0.1567
+  rating_distribution:
+    CRITICAL: 0.22
+    HIGH: 0.3433
+    MEDIUM: 0.4067
+    LOW: 0.03
+  unrated_records: 0
+  high_critical_share: 0.5633
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 0.9467
+    AC:
+      value: L
+      share: 0.9833
+    PR:
+      value: N
+      share: 0.5367
+    UI:
+      value: N
+      share: 0.9433
+    S:
+      value: U
+      share: 0.8767
+    C:
+      value: H
+      share: 0.67
+    I:
+      value: N
+      share: 0.4267
+    A:
+      value: N
+      share: 0.6633
+  nvd_median_base_score: 7.5
+  flags:
+  - low_vector_agreement
+  mitre:
+    verdict: ok
+    usage: ALLOWED
+    kind: weakness
+    dictionary_status: Incomplete
+    reason: mapping usage ALLOWED
+  needs_review_note: false
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: 26eb156cd02a3eb9
+- id: CWE-1321
+  name: Improperly Controlled Modification of Object Prototype Attributes
+  status: draft_needs_human_review
+  default_basis: stable_high
+  modal_rating: CRITICAL
+  modal_rating_share: 0.6115
+  sample_size: 278
+  candidates_after_filters: 278
+  records_in_cache: 350
+  sample_window:
+    newest: '2026-06-26T14:17:07.780'
+    oldest: '2018-01-30T20:29:00.600'
+  reference_vector: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+  reference_vector_share: 0.5683
+  rating_distribution:
+    CRITICAL: 0.6115
+    HIGH: 0.2662
+    MEDIUM: 0.1223
+    LOW: 0.0
+  unrated_records: 0
+  high_critical_share: 0.8777
+  per_metric_agreement:
+    AV:
+      value: N
+      share: 0.982
+    AC:
+      value: L
+      share: 0.9712
+    PR:
+      value: N
+      share: 0.8669
+    UI:
+      value: N
+      share: 0.9245
+    S:
+      value: U
+      share: 0.9317
+    C:
+      value: H
+      share: 0.759
+    I:
+      value: H
+      share: 0.8129
+    A:
+      value: H
+      share: 0.8237
+  nvd_median_base_score: 9.8
+  flags: []
+  mitre:
+    verdict: ok
+    usage: ALLOWED
+    kind: weakness
+    dictionary_status: Incomplete
+    reason: mapping usage ALLOWED
+  needs_review_note: false
+  reviewed_by: null
+  reviewed_at: null
+  review_note: null
+  content_sha256: 25f720ba4c1cbaff

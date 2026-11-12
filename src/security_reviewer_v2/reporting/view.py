@@ -520,7 +520,8 @@ class _Evidence:
 
 
 def _runtime_lines(isolated_pilot: dict[str, Any] | None, isolated_runtime: dict[str, Any] | None,
-                   docker_runtime: dict[str, Any] | None, runtime_evidence: dict[str, Any] | None) -> list[str]:
+                   docker_runtime: dict[str, Any] | None, runtime_evidence: dict[str, Any] | None,
+                   penetration_test: dict[str, Any] | None = None) -> list[str]:
     lines: list[str] = []
     if isolated_pilot is not None:
         lines += ["", "## Isolated VM Pilot Evidence", "",
@@ -578,6 +579,15 @@ def _runtime_lines(isolated_pilot: dict[str, Any] | None, isolated_runtime: dict
         else:
             lines.append("- Account and business workflows: **not requested**.")
         lines.append("- These observations do not prove complete vulnerability coverage or exploitation.")
+    if penetration_test is not None and penetration_test.get("status") == "completed":
+        usage = penetration_test.get("usage", {}) or {}
+        lines += ["", "## Autonomous Penetration Testing", "",
+                  f"- Hypotheses tested: **{usage.get('hypotheses_tested', 0)}**; "
+                  f"total attempts: **{usage.get('total_attempts', 0)}**; "
+                  f"exploitation confirmed: **{usage.get('exploitation_confirmed', 0)}**.",
+                  "- Every probe is read-only against an isolated test stack with test accounts.",
+                  "- Full per-attempt reproduction steps (exact method/path/account and response for each "
+                  "try) are in the Markdown report and `dynamic-penetration-test.json`, not summarized here."]
     return lines
 
 
@@ -671,7 +681,9 @@ def build_view(*, project: str, review: dict[str, Any], policy: dict[str, Any], 
                verification: dict[str, Any] | None = None, discovery: dict[str, Any] | None = None,
                discovery_required_satisfied: bool | None = None, isolated_pilot: dict[str, Any] | None = None,
                isolated_runtime: dict[str, Any] | None = None, docker_runtime: dict[str, Any] | None = None,
-               runtime_evidence: dict[str, Any] | None = None, merged: dict[str, Any] | None = None,
+               runtime_evidence: dict[str, Any] | None = None,
+               penetration_test: dict[str, Any] | None = None,
+               merged: dict[str, Any] | None = None,
                risk: dict[str, Any] | None = None, execution: dict[str, Any] | None = None,
                scanner_requirement: dict[str, Any] | None = None,
                coverage_gaps: list[str] | tuple[str, ...] | None = None,
@@ -945,7 +957,8 @@ def build_view(*, project: str, review: dict[str, Any], policy: dict[str, Any], 
         triage=triage_summary, unresolved=unresolved, pending_ids=tuple(str(p) for p in review.get("pending_ids", [])),
         verification_status=(verification or {}).get("status") if verification is not None else None,
         next_steps=tuple(steps), scanner_requirement=scanner_requirement,
-        runtime_lines=tuple(_runtime_lines(isolated_pilot, isolated_runtime, docker_runtime, runtime_evidence)),
+        runtime_lines=tuple(_runtime_lines(isolated_pilot, isolated_runtime, docker_runtime, runtime_evidence,
+                                          penetration_test)),
         expected_groups=(review.get("usage") or {}).get("expected_groups"), skipped_tasks=skipped,
         not_scheduled=tuple(r.scanner for r in rows if r.status == "not_scheduled"), limitations=limitations,
         origin_counts=origin_counts, cwe_counts=rank_count(cwe_tally), file_counts=rank_count(file_tally),

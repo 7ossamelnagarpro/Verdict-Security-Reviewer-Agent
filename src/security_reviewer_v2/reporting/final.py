@@ -114,12 +114,71 @@ def _render_observations(merged: dict[str, Any], risk: dict[str, Any] | None) ->
     return lines
 
 
+def _render_penetration_tests(penetration_test: dict[str, Any]) -> list[str]:
+    """Section 7's attempt record, in full, as literal reproduction steps for a human reviewer.
+
+    Every attempt the Penetration Agent made against every tested hypothesis is listed — not just the
+    one that found something — so a security engineer can see exactly what was tried, reproduce the same
+    request against the same endpoint after a fix, and confirm the fix actually closes it.
+    """
+    lines = ["", "## Autonomous Penetration Testing \u2014 Reproduction Steps", ""]
+    status = penetration_test.get("status", "unknown")
+    if status != "completed":
+        lines.append(f"Status: **{_plain(status)}**.")
+        for warning in penetration_test.get("warnings", []) or []:
+            lines.append(f"- {_plain(warning)}")
+        return lines
+    usage = penetration_test.get("usage", {}) or {}
+    lines.append(f"Hypotheses tested: **{usage.get('hypotheses_tested', 0)}**; "
+                 f"total attempts: **{usage.get('total_attempts', 0)}**; "
+                 f"total requests: **{usage.get('total_requests', 0)}**; "
+                 f"exploitation confirmed: **{usage.get('exploitation_confirmed', 0)}**.")
+    lines.append("Every probe below is read-only (GET/HEAD) against an isolated test stack with test "
+                 "accounts; nothing here mutated real data. Re-run the same method and path after a fix "
+                 "and confirm the response status changes to a denial status.")
+    for result in penetration_test.get("results", []) or []:
+        candidate_id = result.get("candidate_id", "unknown")
+        outcome = result.get("outcome", "unknown")
+        lines += ["", f"### Hypothesis `{_plain(candidate_id)}` \u2014 outcome: **{_label(outcome)}**", "",
+                  f"{_prose(result.get('summary', ''))}", ""]
+        attempts = result.get("attempts", []) or []
+        if not attempts:
+            lines.append("_No attempt could be planned or executed for this hypothesis._")
+            continue
+        for attempt in attempts:
+            steps = attempt.get("request_evidence", []) or []
+            responses = attempt.get("response_evidence", []) or []
+            lines += [f"**Attempt {attempt.get('attempt_number')} \u2014 "
+                     f"{_code(attempt.get('test_strategy', 'unknown'))} via "
+                     f"{', '.join(_code(t) for t in attempt.get('selected_tools', []) or ['unknown'])}**", ""]
+            if attempt.get("entry_point"):
+                lines.append(f"- Source entry point: {_inline_code(attempt['entry_point'])}")
+            lines.append(f"- Target: {_inline_code(attempt.get('target_endpoint', ''))}")
+            lines.append(f"- Plan: {_prose_plain(str(attempt.get('attack_plan', '')))}")
+            for index, request in enumerate(steps):
+                response = responses[index] if index < len(responses) else {}
+                lines.append(
+                    f"  - Step {request.get('step', index + 1)}: "
+                    f"`{request.get('method', '?')} {request.get('path', '?')}` as "
+                    f"`{request.get('actor', '?')}` \u2192 "
+                    f"{_inline_code(response.get('http_status', response.get('status', 'unknown')))}"
+                    + (f" (expected one of {response.get('expected_status')})" if response.get("expected_status") else "")
+                )
+            lines.append(f"- Observation: {_prose(str(attempt.get('observation', '')))}")
+            lines.append(f"- Reasoning: {_prose(str(attempt.get('agent_reasoning_summary', '')))}")
+            lines.append(f"- Next action: **{_label(attempt.get('next_action', 'unknown'))}**"
+                         + (f" ({_label(attempt.get('stop_reason'))})" if attempt.get("stop_reason") not in (None, "none") else ""))
+            lines.append("")
+    return lines
+
+
 def render_final_report(*, project: str, review: dict[str, Any], policy: dict[str, Any],
                         triage: dict[str, Any] | None = None, verification: dict[str, Any] | None = None,
                         discovery: dict[str, Any] | None = None,
                         discovery_required_satisfied: bool | None = None,
                         docker_runtime: dict[str, Any] | None = None,
                         runtime_evidence: dict[str, Any] | None = None,
+                        penetration_test: dict[str, Any] | None = None,
                         merged: dict[str, Any] | None = None,
                         risk: dict[str, Any] | None = None,
                         execution: dict[str, Any] | None = None,
@@ -217,6 +276,8 @@ def render_final_report(*, project: str, review: dict[str, Any], policy: dict[st
         else:
             lines.append("- Account and business workflows: **not requested**.")
         lines.append("- These observations do not prove complete vulnerability coverage or exploitation.")
+    if penetration_test is not None:
+        lines.extend(_render_penetration_tests(penetration_test))
     if execution is not None:
         lines += ["", "## Scanner Execution", ""]
         tasks = execution.get("tasks", [])
@@ -280,6 +341,7 @@ def write_final_report(path: str | Path, *, project: str, review: dict[str, Any]
                        discovery_required_satisfied: bool | None = None,
                        docker_runtime: dict[str, Any] | None = None,
                        runtime_evidence: dict[str, Any] | None = None,
+                       penetration_test: dict[str, Any] | None = None,
                        merged: dict[str, Any] | None = None,
                        risk: dict[str, Any] | None = None,
                        execution: dict[str, Any] | None = None,
@@ -291,7 +353,8 @@ def write_final_report(path: str | Path, *, project: str, review: dict[str, Any]
     path = Path(path)
     options = dict(project=project, review=review, policy=policy, triage=triage, verification=verification,
                    discovery=discovery, discovery_required_satisfied=discovery_required_satisfied,
-                   docker_runtime=docker_runtime, runtime_evidence=runtime_evidence, merged=merged, risk=risk,
+                   docker_runtime=docker_runtime, runtime_evidence=runtime_evidence,
+                   penetration_test=penetration_test, merged=merged, risk=risk,
                    execution=execution, scanner_requirement=scanner_requirement, coverage_gaps=coverage_gaps,
                    adapter_ids=adapter_ids)
     path.parent.mkdir(parents=True, exist_ok=True)

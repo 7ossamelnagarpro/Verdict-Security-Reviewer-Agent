@@ -66,19 +66,23 @@ def test_agent_review_graph_routes_discovery_and_review(monkeypatch, tmp_path: P
     )
 
     assert list(artifacts) == [
-        "ai-discovery.json", "candidate-context.json", "verification.json",
+        "ai-discovery.json", "candidate-context.json", "verification.json", "dynamic-penetration-test.json",
         "candidate-triage.json", "security-review.json", "policy-gate.json",
     ]
     assert state["discovery_satisfied"] is (discovery_mode == "complete")
     assert state["review_payload"]["status"] == ("completed" if discovery_mode == "complete" else "not_run")
     assert state["policy_payload"]["status"] == ("passed" if discovery_mode == "complete" else "incomplete")
+    # Not configured with penetration_access/penetration_target_resolver: the node is a documented no-op.
+    assert state["penetration_test_payload"]["status"] == "not_run"
     if discovery_mode == "blocked":
         assert calls == ["discovery", "ai-discovery.json", "candidate-context.json",
-                         "verification.json", "candidate-triage.json", "security-review.json", "policy-gate.json"]
+                         "verification.json", "dynamic-penetration-test.json",
+                         "candidate-triage.json", "security-review.json", "policy-gate.json"]
         assert artifacts["ai-discovery.json"]["warnings"] == ["provider unavailable"]
     else:
-        assert calls[:8] == ["discovery", "ai-discovery.json", "context", "candidate-context.json",
-                             "verification", "verification.json", "triage", "candidate-triage.json"]
+        assert calls[:9] == ["discovery", "ai-discovery.json", "context", "candidate-context.json",
+                             "verification", "verification.json", "dynamic-penetration-test.json",
+                             "triage", "candidate-triage.json"]
         assert ("review" in calls) is (discovery_mode == "complete")
 
 

@@ -1,7 +1,7 @@
 {
   "schema_version": "1.2",
   "target": "targets/verdict-comprehensive-lab",
-  "generated_at": "2026-11-07T12:19:01.797537+00:00",
+  "generated_at": "2026-11-08T09:50:31.868962+00:00",
   "scan_provenance": {
     "project": "/mnt/c/Users/ASUS/Downloads/2update/verdict-integrated/targets/verdict-comprehensive-lab",
     "scan_status": "completed",
@@ -171,7 +171,22 @@
       "C08",
       "C12",
       "N06"
-    ]
+    ],
+    "found_by": {
+      "detected_cases": 23,
+      "static": 6,
+      "dynamic": 17,
+      "ai_discovery": 6,
+      "static_only": 6,
+      "dynamic_only": 11,
+      "static_and_dynamic": 0,
+      "ai_discovery_only_not_detected": [
+        "C06",
+        "C12",
+        "N06"
+      ],
+      "ai_discovery_assessed_on_endpoints": true
+    }
   },
   "limitations": [
     "Held-out comparison of one saved run; the benchmark was not supplied to scanning or AI.",
@@ -183,7 +198,8 @@
     "Precision is reported only as bounds, never as a point estimate. precision_on_labeled counts only the findings the key can label (matches against safe-control hits, so it is optimistic); precision_lower_bound treats every other positive finding as wrong (pessimistic); precision_lower_bound_in_scope first sets aside dependency advisories and header/cookie hardening alerts, which the answer key does not cover. Positive findings that match no case are an adjudication queue, because the answer key is not exhaustive.",
     "AI-discovery candidates are never counted as detections here; one on a known endpoint is listed for adjudication, because its issue class is not verified against the case.",
     "A clean safe control means no positive finding of its issue class landed on its route; it does not prove the scan exercised that route, so read specificity together with the recorded endpoint coverage.",
-    "Cases with no defined signature cannot be credited by this audit at all, whatever the scan found."
+    "Cases with no defined signature cannot be credited by this audit at all, whatever the scan found.",
+    "Found by: static and dynamic come from the exact signature match; AI discovery is listed when its candidate is in the detecting group or on the case's endpoint, is never counted as a detection, and does not prove the same issue class."
   ],
   "cases": [
     {
@@ -232,7 +248,11 @@
       "origins": [
         "dynamic"
       ],
-      "endpoint_findings": []
+      "endpoint_findings": [],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
     },
     {
       "id": "C02",
@@ -292,7 +312,12 @@
             "GET /profiles/{}"
           ]
         }
-      ]
+      ],
+      "found_by": [
+        "dynamic",
+        "ai_discovery"
+      ],
+      "ai_discovery_basis": "an AI candidate was reported on this case's endpoint (issue class not verified)"
     },
     {
       "id": "C03",
@@ -342,7 +367,11 @@
       "origins": [
         "static"
       ],
-      "endpoint_findings": []
+      "endpoint_findings": [],
+      "found_by": [
+        "static"
+      ],
+      "ai_discovery_basis": null
     },
     {
       "id": "C04",
@@ -405,7 +434,11 @@
             "GET /catalog/search"
           ]
         }
-      ]
+      ],
+      "found_by": [
+        "static"
+      ],
+      "ai_discovery_basis": null
     },
     {
       "id": "C05",
@@ -468,7 +501,11 @@
             "GET /catalog/search"
           ]
         }
-      ]
+      ],
+      "found_by": [
+        "static"
+      ],
+      "ai_discovery_basis": null
     },
     {
       "id": "C06",
@@ -536,7 +573,11 @@
             "GET /comments"
           ]
         }
-      ]
+      ],
+      "found_by": [
+        "ai_discovery"
+      ],
+      "ai_discovery_basis": "an AI candidate was reported on this case's endpoint (issue class not verified)"
     },
     {
       "id": "C07",
@@ -597,7 +638,12 @@
             "GET /admin/users"
           ]
         }
-      ]
+      ],
+      "found_by": [
+        "dynamic",
+        "ai_discovery"
+      ],
+      "ai_discovery_basis": "an AI candidate was reported on this case's endpoint (issue class not verified)"
     },
     {
       "id": "C08",
@@ -710,7 +756,12 @@
             "GET /files"
           ]
         }
-      ]
+      ],
+      "found_by": [
+        "static",
+        "ai_discovery"
+      ],
+      "ai_discovery_basis": "an AI candidate was reported on this case's endpoint (issue class not verified)"
     },
     {
       "id": "C09",
@@ -747,7 +798,9 @@
       "signals": [],
       "has_signature": false,
       "origins": [],
-      "endpoint_findings": []
+      "endpoint_findings": [],
+      "found_by": [],
+      "ai_discovery_basis": null
     },
     {
       "id": "C11",
@@ -795,7 +848,11 @@
       "origins": [
         "dynamic"
       ],
-      "endpoint_findings": []
+      "endpoint_findings": [],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
     },
     {
       "id": "C12",
@@ -827,7 +884,11 @@
             "GET /errors/query"
           ]
         }
-      ]
+      ],
+      "found_by": [
+        "ai_discovery"
+      ],
+      "ai_discovery_basis": "an AI candidate was reported on this case's endpoint (issue class not verified)"
     },
     {
       "id": "C13",
@@ -846,7 +907,9 @@
       "signals": [],
       "has_signature": false,
       "origins": [],
-      "endpoint_findings": []
+      "endpoint_findings": [],
+      "found_by": [],
+      "ai_discovery_basis": null
     },
     {
       "id": "C14",
@@ -934,7 +997,11 @@
             "GET /healthz"
           ]
         }
-      ]
+      ],
+      "found_by": [
+        "static"
+      ],
+      "ai_discovery_basis": null
     },
     {
       "id": "C15",
@@ -953,7 +1020,9 @@
       "signals": [],
       "has_signature": false,
       "origins": [],
-      "endpoint_findings": []
+      "endpoint_findings": [],
+      "found_by": [],
+      "ai_discovery_basis": null
     },
     {
       "id": "C16",
@@ -972,7 +1041,9 @@
       "signals": [],
       "has_signature": false,
       "origins": [],
-      "endpoint_findings": []
+      "endpoint_findings": [],
+      "found_by": [],
+      "ai_discovery_basis": null
     },
     {
       "id": "C17",
@@ -991,7 +1062,9 @@
       "signals": [],
       "has_signature": false,
       "origins": [],
-      "endpoint_findings": []
+      "endpoint_findings": [],
+      "found_by": [],
+      "ai_discovery_basis": null
     },
     {
       "id": "C18",
@@ -1099,7 +1172,11 @@
             "POST /orders"
           ]
         }
-      ]
+      ],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
     },
     {
       "id": "C19",
@@ -1146,7 +1223,11 @@
       "origins": [
         "dynamic"
       ],
-      "endpoint_findings": []
+      "endpoint_findings": [],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
     },
     {
       "id": "C20",
@@ -1230,7 +1311,11 @@
             "POST /orders"
           ]
         }
-      ]
+      ],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
     },
     {
       "id": "C21",
@@ -1290,7 +1375,12 @@
             "POST /orders/{}/apply-coupon"
           ]
         }
-      ]
+      ],
+      "found_by": [
+        "dynamic",
+        "ai_discovery"
+      ],
+      "ai_discovery_basis": "an AI candidate was reported on this case's endpoint (issue class not verified)"
     },
     {
       "id": "C22",
@@ -1350,7 +1440,12 @@
             "POST /orders/{}/pay"
           ]
         }
-      ]
+      ],
+      "found_by": [
+        "dynamic",
+        "ai_discovery"
+      ],
+      "ai_discovery_basis": "an AI candidate was reported on this case's endpoint (issue class not verified)"
     },
     {
       "id": "C23",
@@ -1410,7 +1505,12 @@
             "POST /orders/{}/cancel"
           ]
         }
-      ]
+      ],
+      "found_by": [
+        "dynamic",
+        "ai_discovery"
+      ],
+      "ai_discovery_basis": "an AI candidate was reported on this case's endpoint (issue class not verified)"
     },
     {
       "id": "C24",
@@ -1457,7 +1557,11 @@
       "origins": [
         "dynamic"
       ],
-      "endpoint_findings": []
+      "endpoint_findings": [],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
     },
     {
       "id": "C25",
@@ -1504,7 +1608,11 @@
       "origins": [
         "dynamic"
       ],
-      "endpoint_findings": []
+      "endpoint_findings": [],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
     },
     {
       "id": "C26",
@@ -1551,7 +1659,11 @@
       "origins": [
         "dynamic"
       ],
-      "endpoint_findings": []
+      "endpoint_findings": [],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
     },
     {
       "id": "C27",
@@ -1601,7 +1713,11 @@
       "origins": [
         "static"
       ],
-      "endpoint_findings": []
+      "endpoint_findings": [],
+      "found_by": [
+        "static"
+      ],
+      "ai_discovery_basis": null
     },
     {
       "id": "C28",
@@ -1620,7 +1736,9 @@
       "signals": [],
       "has_signature": false,
       "origins": [],
-      "endpoint_findings": []
+      "endpoint_findings": [],
+      "found_by": [],
+      "ai_discovery_basis": null
     },
     {
       "id": "C29",
@@ -1639,7 +1757,9 @@
       "signals": [],
       "has_signature": false,
       "origins": [],
-      "endpoint_findings": []
+      "endpoint_findings": [],
+      "found_by": [],
+      "ai_discovery_basis": null
     },
     {
       "id": "N01",
@@ -1684,7 +1804,11 @@
       "origins": [
         "dynamic"
       ],
-      "endpoint_findings": []
+      "endpoint_findings": [],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
     },
     {
       "id": "N02",
@@ -1732,7 +1856,11 @@
       "origins": [
         "static"
       ],
-      "endpoint_findings": []
+      "endpoint_findings": [],
+      "found_by": [
+        "static"
+      ],
+      "ai_discovery_basis": null
     },
     {
       "id": "N03",
@@ -1777,7 +1905,11 @@
       "origins": [
         "dynamic"
       ],
-      "endpoint_findings": []
+      "endpoint_findings": [],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
     },
     {
       "id": "N04",
@@ -1835,7 +1967,12 @@
             "GET /orders/{}/notes/{}"
           ]
         }
-      ]
+      ],
+      "found_by": [
+        "dynamic",
+        "ai_discovery"
+      ],
+      "ai_discovery_basis": "an AI candidate was reported on this case's endpoint (issue class not verified)"
     },
     {
       "id": "N05",
@@ -1880,7 +2017,11 @@
       "origins": [
         "dynamic"
       ],
-      "endpoint_findings": []
+      "endpoint_findings": [],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
     },
     {
       "id": "N06",
@@ -1910,7 +2051,11 @@
             "GET /session/start"
           ]
         }
-      ]
+      ],
+      "found_by": [
+        "ai_discovery"
+      ],
+      "ai_discovery_basis": "an AI candidate was reported on this case's endpoint (issue class not verified)"
     },
     {
       "id": "N07",
@@ -1980,7 +2125,11 @@
             "GET /view"
           ]
         }
-      ]
+      ],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
     },
     {
       "id": "S01",

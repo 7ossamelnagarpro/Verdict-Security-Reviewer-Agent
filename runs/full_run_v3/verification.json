@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0",
+  "status": "partial",
+  "project_root": "/mnt/c/Users/ASUS/Downloads/2update/verdict-integrated/targets/security-lab-web",
+  "records": [
+    {
+      "candidate_id": "ai-519e23d1766caa07",
+      "disposition": "confirmed",
+      "path": "app.py",
+      "start_line": 213,
+      "end_line": 221,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "if \"user_id\" not in session:",
+        "return redirect(\"/login\")",
+        "row = db.execute(\"SELECT * FROM orders WHERE id = ?\", (order_id,)).fetchone()",
+        "return jsonify(dict(row))"
+      ],
+      "notes": [
+        "source_citation_reanchored:entry_point:app.py:214->213",
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-048007af103a4b4c",
+      "disposition": "needs_more_evidence",
+      "path": "app.py",
+      "start_line": 227,
+      "end_line": 237,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "if \"user_id\" not in session:",
+        "return redirect(\"/login\")",
+        "row = db.execute(\"SELECT id, username, email, ssn, role FROM users WHERE id = ?\", (user_id,)).fetchone()",
+        "return jsonify(dict(row))"
+      ],
+      "notes": [
+        "source_citation_reanchored:entry_point:app.py:228->227",
+        "source_citation_reanchored:sensitive_operation:app.py:233->232",
+        "Some AI evidence was not found at its cited source lines."
+      ]
+    },
+    {
+      "candidate_id": "ai-210e11b3c2eb7764",
+      "disposition": "confirmed",
+      "path": "app.py",
+      "start_line": 243,
+      "end_line": 250,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "role = request.args.get(\"role\") or session.get(\"role\")",
+        "if role != \"admin\":",
+        "pass",
+        "users = db.execute(\"SELECT id, username, role, email, ssn FROM users\").fetchall()",
+        "return jsonify([dict(u) for u in users])"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    }
+  ],
+  "warnings": []
+}

@@ -1,0 +1,2926 @@
+{
+  "status": "completed",
+  "pre_review": false,
+  "review_agent_ran": true,
+  "project": "/mnt/c/Users/ASUS/Downloads/2update/verdict-integrated/targets/verdict-comprehensive-lab",
+  "adapter_ids": [
+    "codeql-cli",
+    "gitleaks",
+    "semgrep-ce",
+    "trivy"
+  ],
+  "test_environment": {
+    "schema_version": "1.0",
+    "mode": "docker_compose",
+    "status": "ready_for_validation",
+    "base_url": "http://127.0.0.1:8091",
+    "evidence": [
+      "Explicit user authorization was supplied outside the project root.",
+      "Profiler inventoried user-selected Compose file: compose.yaml",
+      "Docker CLI executable is available; daemon and Compose configuration still need runtime verification."
+    ],
+    "missing": [],
+    "warnings": [
+      "Compose execution is opt-in and must pass a separate configuration safety check."
+    ],
+    "compose_sha256": "984b9ab504d6caca0b6e7f5a39021fece3ec2851d6a83b5d0338bb386c232cb9"
+  },
+  "dast_requirement": {
+    "requested": true,
+    "satisfied": true
+  },
+  "sast_requirement": {
+    "requested": true,
+    "satisfied": true
+  },
+  "scanner_requirement": {
+    "requested": false,
+    "required": [],
+    "satisfied": true,
+    "failures": []
+  },
+  "docker_runtime": {
+    "status": "not_requested"
+  },
+  "runtime_evidence": {
+    "authorization_checks_enabled": true,
+    "coverage_notes": [
+      "Baseline checks use bounded HTTP GET observations for an authorized target; declared paths must be safe to visit.",
+      "The baseline phase alone does not crawl browsers, test account workflows or confirm exploitation; additional phases are recorded separately.",
+      "A negative result means only that this probe did not observe the behavior.",
+      "Coverage applies only to declared assertions, accounts and workflows.",
+      "A violation is an observed contract mismatch requiring security review.",
+      "Fresh stack resets the run; workflows must create independent test data. No per-step database reset is performed.",
+      "Install the optional Playwright package and browser before enabling browser DAST.",
+      "Error: browserType.launch: Target page, context or browser has been closed\nBrowser logs:\n\n<launching> /home/asus_safaa99/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-p"
+    ],
+    "mutating_checks_enabled": true,
+    "results": [
+      {
+        "confidence": "high",
+        "evidence": {
+          "header_present": false,
+          "status": 200
+        },
+        "path": "/healthz",
+        "rule_id": "web.missing-content-security-policy",
+        "severity": "low",
+        "title": "Missing Content-Security-Policy header",
+        "vulnerable": true
+      },
+      {
+        "confidence": "high",
+        "evidence": {
+          "content_security_policy_present": false,
+          "status": 200,
+          "x_frame_options_present": false
+        },
+        "path": "/healthz",
+        "rule_id": "web.missing-clickjacking-protection",
+        "severity": "low",
+        "title": "Missing clickjacking protection header",
+        "vulnerable": true
+      },
+      {
+        "confidence": "high",
+        "evidence": {
+          "nosniff_present": false,
+          "status": 200
+        },
+        "path": "/healthz",
+        "rule_id": "web.missing-content-type-protection",
+        "severity": "low",
+        "title": "Missing X-Content-Type-Options header",
+        "vulnerable": true
+      },
+      {
+        "confidence": "medium",
+        "evidence": {
+          "content_type": "",
+          "status": 200
+        },
+        "path": "/",
+        "rule_id": "web.endpoint-server-error",
+        "severity": "medium",
+        "title": "Declared endpoint returned a server error",
+        "vulnerable": false
+      },
+      {
+        "confidence": "medium",
+        "evidence": {
+          "content_type": "",
+          "status": 200
+        },
+        "path": "/healthz",
+        "rule_id": "web.endpoint-server-error",
+        "severity": "medium",
+        "title": "Declared endpoint returned a server error",
+        "vulnerable": false
+      },
+      {
+        "confidence": "medium",
+        "evidence": {
+          "content_type": "",
+          "status": 200
+        },
+        "path": "/view",
+        "rule_id": "web.endpoint-server-error",
+        "severity": "medium",
+        "title": "Declared endpoint returned a server error",
+        "vulnerable": false
+      },
+      {
+        "confidence": "medium",
+        "evidence": {
+          "content_type": "",
+          "status": 200
+        },
+        "path": "/login",
+        "rule_id": "web.endpoint-server-error",
+        "severity": "medium",
+        "title": "Declared endpoint returned a server error",
+        "vulnerable": false
+      },
+      {
+        "confidence": "medium",
+        "evidence": {
+          "content_type": "",
+          "status": 401
+        },
+        "path": "/account",
+        "rule_id": "web.endpoint-server-error",
+        "severity": "medium",
+        "title": "Declared endpoint returned a server error",
+        "vulnerable": false
+      },
+      {
+        "confidence": "medium",
+        "evidence": {
+          "content_type": "",
+          "status": 200
+        },
+        "path": "/comments",
+        "rule_id": "web.endpoint-server-error",
+        "severity": "medium",
+        "title": "Declared endpoint returned a server error",
+        "vulnerable": false
+      },
+      {
+        "confidence": "medium",
+        "evidence": {
+          "content_type": "",
+          "status": 200
+        },
+        "path": "/catalog/search?q=widget",
+        "rule_id": "web.endpoint-server-error",
+        "severity": "medium",
+        "title": "Declared endpoint returned a server error",
+        "vulnerable": false
+      },
+      {
+        "confidence": "medium",
+        "evidence": {
+          "content_type": "",
+          "status": 200
+        },
+        "path": "/catalog/query?q=widget",
+        "rule_id": "web.endpoint-server-error",
+        "severity": "medium",
+        "title": "Declared endpoint returned a server error",
+        "vulnerable": false
+      },
+      {
+        "confidence": "medium",
+        "evidence": {
+          "content_type": "",
+          "status": 401
+        },
+        "path": "/admin/users",
+        "rule_id": "web.endpoint-server-error",
+        "severity": "medium",
+        "title": "Declared endpoint returned a server error",
+        "vulnerable": false
+      },
+      {
+        "confidence": "medium",
+        "evidence": {
+          "content_type": "",
+          "status": 401
+        },
+        "path": "/admin/jobs",
+        "rule_id": "web.endpoint-server-error",
+        "severity": "medium",
+        "title": "Declared endpoint returned a server error",
+        "vulnerable": false
+      },
+      {
+        "confidence": "medium",
+        "evidence": {
+          "content_type": "",
+          "status": 200
+        },
+        "path": "/debug/config",
+        "rule_id": "web.endpoint-server-error",
+        "severity": "medium",
+        "title": "Declared endpoint returned a server error",
+        "vulnerable": false
+      },
+      {
+        "confidence": "medium",
+        "evidence": {
+          "content_type": "",
+          "status": 302
+        },
+        "path": "/auth/continue?next=%2Fview",
+        "rule_id": "web.endpoint-server-error",
+        "severity": "medium",
+        "title": "Declared endpoint returned a server error",
+        "vulnerable": false
+      },
+      {
+        "confidence": "medium",
+        "evidence": {
+          "content_type": "",
+          "status": 200
+        },
+        "path": "/session/start?username=user_a",
+        "rule_id": "web.endpoint-server-error",
+        "severity": "medium",
+        "title": "Declared endpoint returned a server error",
+        "vulnerable": false
+      },
+      {
+        "confidence": "medium",
+        "evidence": {
+          "content_type": "",
+          "status": 200
+        },
+        "path": "/status/secure",
+        "rule_id": "web.endpoint-server-error",
+        "severity": "medium",
+        "title": "Declared endpoint returned a server error",
+        "vulnerable": false
+      },
+      {
+        "rule_id": "workflow.order_owner.3",
+        "source": "runtime-workflow",
+        "title": "Only the owner can read an order",
+        "path": "/orders/{{order_id}}",
+        "vulnerable": true,
+        "severity": "high",
+        "confidence": "medium",
+        "evidence": {
+          "workflow_id": "order_owner",
+          "step": 3,
+          "actor": "user_a",
+          "method": "GET",
+          "status": 200,
+          "expected_statuses": [
+            403,
+            404
+          ],
+          "assertion_results": [
+            false
+          ],
+          "values_redacted": true
+        }
+      },
+      {
+        "rule_id": "workflow.invoice_owner.3",
+        "source": "runtime-workflow",
+        "title": "Only the owner can read an invoice",
+        "path": "/invoices/{{invoice_id}}",
+        "vulnerable": true,
+        "severity": "high",
+        "confidence": "medium",
+        "evidence": {
+          "workflow_id": "invoice_owner",
+          "step": 3,
+          "actor": "user_a",
+          "method": "GET",
+          "status": 200,
+          "expected_statuses": [
+            403,
+            404
+          ],
+          "assertion_results": [
+            false
+          ],
+          "values_redacted": true
+        }
+      },
+      {
+        "rule_id": "workflow.admin_users.2",
+        "source": "runtime-workflow",
+        "title": "User listing requires admin role",
+        "path": "/admin/users",
+        "vulnerable": true,
+        "severity": "high",
+        "confidence": "medium",
+        "evidence": {
+          "workflow_id": "admin_users",
+          "step": 2,
+          "actor": "user_a",
+          "method": "GET",
+          "status": 200,
+          "expected_statuses": [
+            403,
+            404
+          ],
+          "assertion_results": [
+            false
+          ],
+          "values_redacted": true
+        }
+      },
+      {
+        "rule_id": "workflow.admin_jobs.2",
+        "source": "runtime-workflow",
+        "title": "Job listing requires admin role",
+        "path": "/admin/jobs",
+        "vulnerable": true,
+        "severity": "high",
+        "confidence": "medium",
+        "evidence": {
+          "workflow_id": "admin_jobs",
+          "step": 2,
+          "actor": "user_a",
+          "method": "GET",
+          "status": 200,
+          "expected_statuses": [
+            403,
+            404
+          ],
+          "assertion_results": [
+            false
+          ],
+          "values_redacted": true
+        }
+      },
+      {
+        "rule_id": "workflow.payment_replay.3",
+        "source": "runtime-workflow",
+        "title": "An already paid order rejects a second payment",
+        "path": "/orders/{{order_id}}/pay",
+        "vulnerable": true,
+        "severity": "high",
+        "confidence": "medium",
+        "evidence": {
+          "workflow_id": "payment_replay",
+          "step": 3,
+          "actor": "user_a",
+          "method": "POST",
+          "status": 200,
+          "expected_statuses": [
+            400,
+            409,
+            422
+          ],
+          "assertion_results": [
+            false
+          ],
+          "values_redacted": true
+        }
+      },
+      {
+        "rule_id": "workflow.paid_cancel.3",
+        "source": "runtime-workflow",
+        "title": "Paid orders require a refund before cancellation",
+        "path": "/orders/{{order_id}}/cancel",
+        "vulnerable": true,
+        "severity": "high",
+        "confidence": "medium",
+        "evidence": {
+          "workflow_id": "paid_cancel",
+          "step": 3,
+          "actor": "user_a",
+          "method": "POST",
+          "status": 200,
+          "expected_statuses": [
+            400,
+            409,
+            422
+          ],
+          "assertion_results": [
+            false
+          ],
+          "values_redacted": true
+        }
+      },
+      {
+        "rule_id": "workflow.coupon_bounds.2",
+        "source": "runtime-workflow",
+        "title": "Excessive coupon discounts are rejected",
+        "path": "/orders/{{order_id}}/apply-coupon",
+        "vulnerable": true,
+        "severity": "high",
+        "confidence": "medium",
+        "evidence": {
+          "workflow_id": "coupon_bounds",
+          "step": 2,
+          "actor": "user_a",
+          "method": "POST",
+          "status": 200,
+          "expected_statuses": [
+            400,
+            422
+          ],
+          "assertion_results": [
+            false
+          ],
+          "values_redacted": true
+        }
+      },
+      {
+        "rule_id": "workflow.negative_price.1",
+        "source": "runtime-workflow",
+        "title": "Negative order prices are rejected",
+        "path": "/orders",
+        "vulnerable": true,
+        "severity": "high",
+        "confidence": "medium",
+        "evidence": {
+          "workflow_id": "negative_price",
+          "step": 1,
+          "actor": "user_a",
+          "method": "POST",
+          "status": 200,
+          "expected_statuses": [
+            400,
+            422
+          ],
+          "assertion_results": [
+            false
+          ],
+          "values_redacted": true
+        }
+      },
+      {
+        "rule_id": "workflow.order_initial_state.1",
+        "source": "runtime-workflow",
+        "title": "New orders cannot start as paid",
+        "path": "/orders",
+        "vulnerable": true,
+        "severity": "high",
+        "confidence": "medium",
+        "evidence": {
+          "workflow_id": "order_initial_state",
+          "step": 1,
+          "actor": "user_a",
+          "method": "POST",
+          "status": 200,
+          "expected_statuses": [
+            400,
+            422
+          ],
+          "assertion_results": [
+            false
+          ],
+          "values_redacted": true
+        }
+      },
+      {
+        "rule_id": "workflow.owner_assignment.2",
+        "source": "runtime-workflow",
+        "title": "Users cannot create orders for another owner",
+        "path": "/orders",
+        "vulnerable": true,
+        "severity": "high",
+        "confidence": "medium",
+        "evidence": {
+          "workflow_id": "owner_assignment",
+          "step": 2,
+          "actor": "user_a",
+          "method": "POST",
+          "status": 200,
+          "expected_statuses": [
+            400,
+            403,
+            422
+          ],
+          "assertion_results": [
+            false
+          ],
+          "values_redacted": true
+        }
+      },
+      {
+        "rule_id": "workflow.worker_role.1",
+        "source": "runtime-workflow",
+        "title": "Users cannot submit an admin job",
+        "path": "/jobs",
+        "vulnerable": true,
+        "severity": "high",
+        "confidence": "medium",
+        "evidence": {
+          "workflow_id": "worker_role",
+          "step": 1,
+          "actor": "user_a",
+          "method": "POST",
+          "status": 200,
+          "expected_statuses": [
+            400,
+            403,
+            422
+          ],
+          "assertion_results": [
+            false
+          ],
+          "values_redacted": true
+        }
+      },
+      {
+        "rule_id": "workflow.debug_access.1",
+        "source": "runtime-workflow",
+        "title": "Debug configuration is unavailable anonymously",
+        "path": "/debug/config",
+        "vulnerable": true,
+        "severity": "high",
+        "confidence": "medium",
+        "evidence": {
+          "workflow_id": "debug_access",
+          "step": 1,
+          "actor": "anonymous",
+          "method": "GET",
+          "status": 200,
+          "expected_statuses": [
+            401,
+            403,
+            404
+          ],
+          "assertion_results": [
+            false
+          ],
+          "values_redacted": true
+        }
+      },
+      {
+        "rule_id": "workflow.profile_owner.2",
+        "source": "runtime-workflow",
+        "title": "A user cannot read another account profile",
+        "path": "/profiles/{{other_id}}",
+        "vulnerable": true,
+        "severity": "high",
+        "confidence": "medium",
+        "evidence": {
+          "workflow_id": "profile_owner",
+          "step": 2,
+          "actor": "user_a",
+          "method": "GET",
+          "status": 200,
+          "expected_statuses": [
+            403,
+            404
+          ],
+          "assertion_results": [
+            false
+          ],
+          "values_redacted": true
+        }
+      },
+      {
+        "rule_id": "workflow.excessive_data.1",
+        "source": "runtime-workflow",
+        "title": "Identity response must not expose a social security number",
+        "path": "/me",
+        "vulnerable": true,
+        "severity": "medium",
+        "confidence": "medium",
+        "evidence": {
+          "workflow_id": "excessive_data",
+          "step": 1,
+          "actor": "user_a",
+          "method": "GET",
+          "status": 200,
+          "expected_statuses": [
+            200
+          ],
+          "assertion_results": [
+            true,
+            false
+          ],
+          "values_redacted": true
+        }
+      },
+      {
+        "rule_id": "workflow.price_catalog.1",
+        "source": "runtime-workflow",
+        "title": "Catalog price must be set by the server",
+        "path": "/orders",
+        "vulnerable": true,
+        "severity": "high",
+        "confidence": "medium",
+        "evidence": {
+          "workflow_id": "price_catalog",
+          "step": 1,
+          "actor": "user_a",
+          "method": "POST",
+          "status": 200,
+          "expected_statuses": [
+            200,
+            201
+          ],
+          "assertion_results": [
+            true,
+            false
+          ],
+          "values_redacted": true
+        }
+      },
+      {
+        "rule_id": "workflow.webhook_destination.1",
+        "source": "runtime-workflow",
+        "title": "Webhook destination must match the approved internal host exactly",
+        "path": "/webhooks",
+        "vulnerable": true,
+        "severity": "high",
+        "confidence": "medium",
+        "evidence": {
+          "workflow_id": "webhook_destination",
+          "step": 1,
+          "actor": "user_a",
+          "method": "POST",
+          "status": 200,
+          "expected_statuses": [
+            400,
+            422
+          ],
+          "assertion_results": [
+            false
+          ],
+          "values_redacted": true
+        }
+      },
+      {
+        "rule_id": "workflow.nested_note.1",
+        "source": "runtime-workflow",
+        "title": "A note must belong to the order named in the URL",
+        "path": "/orders/1/notes/2",
+        "vulnerable": true,
+        "severity": "high",
+        "confidence": "medium",
+        "evidence": {
+          "workflow_id": "nested_note",
+          "step": 1,
+          "actor": "user_a",
+          "method": "GET",
+          "status": 200,
+          "expected_statuses": [
+            403,
+            404
+          ],
+          "assertion_results": [
+            false
+          ],
+          "values_redacted": true
+        }
+      },
+      {
+        "rule_id": "workflow.unsigned_hook.1",
+        "source": "runtime-workflow",
+        "title": "Incoming webhook events require a valid signature",
+        "path": "/integrations/hook",
+        "vulnerable": true,
+        "severity": "high",
+        "confidence": "medium",
+        "evidence": {
+          "workflow_id": "unsigned_hook",
+          "step": 1,
+          "actor": "anonymous",
+          "method": "POST",
+          "status": 200,
+          "expected_statuses": [
+            400,
+            401,
+            403
+          ],
+          "assertion_results": [
+            false
+          ],
+          "values_redacted": true
+        }
+      },
+      {
+        "rule_id": "workflow.reset_replay.3",
+        "source": "runtime-workflow",
+        "title": "Password reset tokens must be single use",
+        "path": "/auth/reset/confirm",
+        "vulnerable": true,
+        "severity": "high",
+        "confidence": "medium",
+        "evidence": {
+          "workflow_id": "reset_replay",
+          "step": 3,
+          "actor": "anonymous",
+          "method": "POST",
+          "status": 200,
+          "expected_statuses": [
+            400,
+            409,
+            422
+          ],
+          "assertion_results": [
+            false
+          ],
+          "values_redacted": true
+        }
+      },
+      {
+        "rule_id": "workflow.stale_role.3",
+        "source": "runtime-workflow",
+        "title": "A demoted administrator must lose administrative access",
+        "path": "/admin/token-report",
+        "vulnerable": true,
+        "severity": "high",
+        "confidence": "medium",
+        "evidence": {
+          "workflow_id": "stale_role",
+          "step": 3,
+          "actor": "admin",
+          "method": "GET",
+          "status": 200,
+          "expected_statuses": [
+            403,
+            404
+          ],
+          "assertion_results": [
+            false
+          ],
+          "values_redacted": true
+        }
+      },
+      {
+        "rule_id": "zap.10038",
+        "source": "owasp-zap",
+        "title": "Content Security Policy (CSP) Header Not Set",
+        "path": "/catalog/query",
+        "vulnerable": true,
+        "severity": "medium",
+        "confidence": "high",
+        "evidence": {
+          "scanner_rule": "10038",
+          "method": "GET",
+          "parameter": "",
+          "values_redacted": true,
+          "cwe_id": "693"
+        }
+      },
+      {
+        "rule_id": "zap.10038",
+        "source": "owasp-zap",
+        "title": "Content Security Policy (CSP) Header Not Set",
+        "path": "/comments",
+        "vulnerable": true,
+        "severity": "medium",
+        "confidence": "high",
+        "evidence": {
+          "scanner_rule": "10038",
+          "method": "GET",
+          "parameter": "",
+          "values_redacted": true,
+          "cwe_id": "693"
+        }
+      },
+      {
+        "rule_id": "zap.10038",
+        "source": "owasp-zap",
+        "title": "Content Security Policy (CSP) Header Not Set",
+        "path": "/view",
+        "vulnerable": true,
+        "severity": "medium",
+        "confidence": "high",
+        "evidence": {
+          "scanner_rule": "10038",
+          "method": "GET",
+          "parameter": "",
+          "values_redacted": true,
+          "cwe_id": "693"
+        }
+      },
+      {
+        "rule_id": "zap.10038",
+        "source": "owasp-zap",
+        "title": "Content Security Policy (CSP) Header Not Set",
+        "path": "/auth/form-login",
+        "vulnerable": true,
+        "severity": "medium",
+        "confidence": "high",
+        "evidence": {
+          "scanner_rule": "10038",
+          "method": "POST",
+          "parameter": "",
+          "values_redacted": true,
+          "cwe_id": "693"
+        }
+      },
+      {
+        "rule_id": "zap.10020",
+        "source": "owasp-zap",
+        "title": "Missing Anti-clickjacking Header",
+        "path": "/catalog/query",
+        "vulnerable": true,
+        "severity": "medium",
+        "confidence": "medium",
+        "evidence": {
+          "scanner_rule": "10020",
+          "method": "GET",
+          "parameter": "x-frame-options",
+          "values_redacted": true,
+          "cwe_id": "1021"
+        }
+      },
+      {
+        "rule_id": "zap.10020",
+        "source": "owasp-zap",
+        "title": "Missing Anti-clickjacking Header",
+        "path": "/comments",
+        "vulnerable": true,
+        "severity": "medium",
+        "confidence": "medium",
+        "evidence": {
+          "scanner_rule": "10020",
+          "method": "GET",
+          "parameter": "x-frame-options",
+          "values_redacted": true,
+          "cwe_id": "1021"
+        }
+      },
+      {
+        "rule_id": "zap.10020",
+        "source": "owasp-zap",
+        "title": "Missing Anti-clickjacking Header",
+        "path": "/view",
+        "vulnerable": true,
+        "severity": "medium",
+        "confidence": "medium",
+        "evidence": {
+          "scanner_rule": "10020",
+          "method": "GET",
+          "parameter": "x-frame-options",
+          "values_redacted": true,
+          "cwe_id": "1021"
+        }
+      },
+      {
+        "rule_id": "zap.10020",
+        "source": "owasp-zap",
+        "title": "Missing Anti-clickjacking Header",
+        "path": "/auth/form-login",
+        "vulnerable": true,
+        "severity": "medium",
+        "confidence": "medium",
+        "evidence": {
+          "scanner_rule": "10020",
+          "method": "POST",
+          "parameter": "x-frame-options",
+          "values_redacted": true,
+          "cwe_id": "1021"
+        }
+      },
+      {
+        "rule_id": "zap.10010",
+        "source": "owasp-zap",
+        "title": "Cookie No HttpOnly Flag",
+        "path": "/auth/form-login",
+        "vulnerable": true,
+        "severity": "low",
+        "confidence": "medium",
+        "evidence": {
+          "scanner_rule": "10010",
+          "method": "POST",
+          "parameter": "lab_session",
+          "values_redacted": true,
+          "cwe_id": "1004"
+        }
+      },
+      {
+        "rule_id": "zap.10021",
+        "source": "owasp-zap",
+        "title": "X-Content-Type-Options Header Missing",
+        "path": "/",
+        "vulnerable": true,
+        "severity": "low",
+        "confidence": "medium",
+        "evidence": {
+          "scanner_rule": "10021",
+          "method": "GET",
+          "parameter": "x-content-type-options",
+          "values_redacted": true,
+          "cwe_id": "693"
+        }
+      },
+      {
+        "rule_id": "zap.10021",
+        "source": "owasp-zap",
+        "title": "X-Content-Type-Options Header Missing",
+        "path": "/catalog/query",
+        "vulnerable": true,
+        "severity": "low",
+        "confidence": "medium",
+        "evidence": {
+          "scanner_rule": "10021",
+          "method": "GET",
+          "parameter": "x-content-type-options",
+          "values_redacted": true,
+          "cwe_id": "693"
+        }
+      },
+      {
+        "rule_id": "zap.10021",
+        "source": "owasp-zap",
+        "title": "X-Content-Type-Options Header Missing",
+        "path": "/comments",
+        "vulnerable": true,
+        "severity": "low",
+        "confidence": "medium",
+        "evidence": {
+          "scanner_rule": "10021",
+          "method": "GET",
+          "parameter": "x-content-type-options",
+          "values_redacted": true,
+          "cwe_id": "693"
+        }
+      },
+      {
+        "rule_id": "zap.10021",
+        "source": "owasp-zap",
+        "title": "X-Content-Type-Options Header Missing",
+        "path": "/healthz",
+        "vulnerable": true,
+        "severity": "low",
+        "confidence": "medium",
+        "evidence": {
+          "scanner_rule": "10021",
+          "method": "GET",
+          "parameter": "x-content-type-options",
+          "values_redacted": true,
+          "cwe_id": "693"
+        }
+      },
+      {
+        "rule_id": "zap.10021",
+        "source": "owasp-zap",
+        "title": "X-Content-Type-Options Header Missing",
+        "path": "/view",
+        "vulnerable": true,
+        "severity": "low",
+        "confidence": "medium",
+        "evidence": {
+          "scanner_rule": "10021",
+          "method": "GET",
+          "parameter": "x-content-type-options",
+          "values_redacted": true,
+          "cwe_id": "693"
+        }
+      }
+    ],
+    "schema_version": "1.0",
+    "source": "generic-web-runtime",
+    "status": "completed",
+    "target": "http://127.0.0.1:8091",
+    "workflow_evidence": {
+      "status": "completed",
+      "contract_sha256": "be4179a9ed9b003beb6755be0fd9b3df18f4a846e2eba2bc97f2500ae66e9381",
+      "accounts": [
+        {
+          "actor": "user_a",
+          "status": "verified"
+        },
+        {
+          "actor": "user_b",
+          "status": "verified"
+        },
+        {
+          "actor": "admin",
+          "status": "verified"
+        },
+        {
+          "actor": "admin_verified",
+          "status": "verified"
+        }
+      ],
+      "workflows": [
+        {
+          "id": "purchase",
+          "title": "Owner can create and pay an order",
+          "status": "passed",
+          "steps": [
+            {
+              "step": 1,
+              "actor": "user_a",
+              "method": "POST",
+              "path": "/orders",
+              "security_check": false,
+              "status": "passed",
+              "http_status": 200,
+              "expected_status": [
+                200,
+                201
+              ],
+              "assertion_results": [
+                true
+              ]
+            },
+            {
+              "step": 2,
+              "actor": "user_a",
+              "method": "POST",
+              "path": "/orders/{{order_id}}/pay",
+              "security_check": false,
+              "status": "passed",
+              "http_status": 200,
+              "expected_status": [
+                200
+              ],
+              "assertion_results": [
+                true
+              ]
+            },
+            {
+              "step": 3,
+              "actor": "user_a",
+              "method": "GET",
+              "path": "/invoices/{{invoice_id}}",
+              "security_check": false,
+              "status": "passed",
+              "http_status": 200,
+              "expected_status": [
+                200
+              ],
+              "assertion_results": [
+                true
+              ]
+            }
+          ]
+        },
+        {
+          "id": "order_owner",
+          "title": "Only the owner can read an order",
+          "status": "violation",
+          "steps": [
+            {
+              "step": 1,
+              "actor": "user_b",
+              "method": "POST",
+              "path": "/orders",
+              "security_check": false,
+              "status": "passed",
+              "http_status": 200,
+              "expected_status": [
+                200,
+                201
+              ],
+              "assertion_results": [
+                true
+              ]
+            },
+            {
+              "step": 2,
+              "actor": "user_b",
+              "method": "GET",
+              "path": "/orders/{{order_id}}",
+              "security_check": false,
+              "status": "passed",
+              "http_status": 200,
+              "expected_status": [
+                200
+              ],
+              "assertion_results": [
+                true
+              ]
+            },
+            {
+              "step": 3,
+              "actor": "user_a",
+              "method": "GET",
+              "path": "/orders/{{order_id}}",
+              "security_check": true,
+              "status": "violation",
+              "http_status": 200,
+              "expected_status": [
+                403,
+                404
+              ],
+              "assertion_results": [
+                false
+              ]
+            }
+          ]
+        },
+        {
+          "id": "invoice_owner",
+          "title": "Only the owner can read an invoice",
+          "status": "violation",
+          "steps": [
+            {
+              "step": 1,
+              "actor": "user_b",
+              "method": "POST",
+              "path": "/orders",
+              "security_check": false,
+              "status": "passed",
+              "http_status": 200,
+              "expected_status": [
+                200,
+                201
+              ],
+              "assertion_results": [
+                true
+              ]
+            },
+            {
+              "step": 2,
+              "actor": "user_b",
+              "method": "POST",
+              "path": "/orders/{{order_id}}/pay",
+              "security_check": false,
+              "status": "passed",
+              "http_status": 200,
+              "expected_status": [
+                200
+              ],
+              "assertion_results": [
+                true
+              ]
+            },
+            {
+              "step": 3,
+              "actor": "user_a",
+              "method": "GET",
+              "path": "/invoices/{{invoice_id}}",
+              "security_check": true,
+              "status": "violation",
+              "http_status": 200,
+              "expected_status": [
+                403,
+                404
+              ],
+              "assertion_results": [
+                false
+              ]
+            }
+          ]
+        },
+        {
+          "id": "admin_users",
+          "title": "User listing requires admin role",
+          "status": "violation",
+          "steps": [
+            {
+              "step": 1,
+              "actor": "admin",
+              "method": "GET",
+              "path": "/admin/users",
+              "security_check": false,
+              "status": "passed",
+              "http_status": 200,
+              "expected_status": [
+                200
+              ],
+              "assertion_results": [
+                true
+              ]
+            },
+            {
+              "step": 2,
+              "actor": "user_a",
+              "method": "GET",
+              "path": "/admin/users",
+              "security_check": true,
+              "status": "violation",
+              "http_status": 200,
+              "expected_status": [
+                403,
+                404
+              ],
+              "assertion_results": [
+                false
+              ]
+            }
+          ]
+        },
+        {
+          "id": "admin_jobs",
+          "title": "Job listing requires admin role",
+          "status": "violation",
+          "steps": [
+            {
+              "step": 1,
+              "actor": "admin",
+              "method": "GET",
+              "path": "/admin/jobs",
+              "security_check": false,
+              "status": "passed",
+              "http_status": 200,
+              "expected_status": [
+                200
+              ],
+              "assertion_results": [
+                true
+              ]
+            },
+            {
+              "step": 2,
+              "actor": "user_a",
+              "method": "GET",
+              "path": "/admin/jobs",
+              "security_check": true,
+              "status": "violation",
+              "http_status": 200,
+              "expected_status": [
+                403,
+                404
+              ],
+              "assertion_results": [
+                false
+              ]
+            }
+          ]
+        },
+        {
+          "id": "payment_replay",
+          "title": "An already paid order rejects a second payment",
+          "status": "violation",
+          "steps": [
+            {
+              "step": 1,
+              "actor": "user_a",
+              "method": "POST",
+              "path": "/orders",
+              "security_check": false,
+              "status": "passed",
+              "http_status": 200,
+              "expected_status": [
+                200,
+                201
+              ],
+              "assertion_results": [
+                true
+              ]
+            },
+            {
+              "step": 2,
+              "actor": "user_a",
+              "method": "POST",
+              "path": "/orders/{{order_id}}/pay",
+              "security_check": false,
+              "status": "passed",
+              "http_status": 200,
+              "expected_status": [
+                200
+              ],
+              "assertion_results": [
+                true
+              ]
+            },
+            {
+              "step": 3,
+              "actor": "user_a",
+              "method": "POST",
+              "path": "/orders/{{order_id}}/pay",
+              "security_check": true,
+              "status": "violation",
+              "http_status": 200,
+              "expected_status": [
+                400,
+                409,
+                422
+              ],
+              "assertion_results": [
+                false
+              ]
+            }
+          ]
+        },
+        {
+          "id": "paid_cancel",
+          "title": "Paid orders require a refund before cancellation",
+          "status": "violation",
+          "steps": [
+            {
+              "step": 1,
+              "actor": "user_a",
+              "method": "POST",
+              "path": "/orders",
+              "security_check": false,
+              "status": "passed",
+              "http_status": 200,
+              "expected_status": [
+                200,
+                201
+              ],
+              "assertion_results": [
+                true
+              ]
+            },
+            {
+              "step": 2,
+              "actor": "user_a",
+              "method": "POST",
+              "path": "/orders/{{order_id}}/pay",
+              "security_check": false,
+              "status": "passed",
+              "http_status": 200,
+              "expected_status": [
+                200
+              ],
+              "assertion_results": [
+                true
+              ]
+            },
+            {
+              "step": 3,
+              "actor": "user_a",
+              "method": "POST",
+              "path": "/orders/{{order_id}}/cancel",
+              "security_check": true,
+              "status": "violation",
+              "http_status": 200,
+              "expected_status": [
+                400,
+                409,
+                422
+              ],
+              "assertion_results": [
+                false
+              ]
+            }
+          ]
+        },
+        {
+          "id": "coupon_bounds",
+          "title": "Excessive coupon discounts are rejected",
+          "status": "violation",
+          "steps": [
+            {
+              "step": 1,
+              "actor": "user_a",
+              "method": "POST",
+              "path": "/orders",
+              "security_check": false,
+              "status": "passed",
+              "http_status": 200,
+              "expected_status": [
+                200,
+                201
+              ],
+              "assertion_results": [
+                true
+              ]
+            },
+            {
+              "step": 2,
+              "actor": "user_a",
+              "method": "POST",
+              "path": "/orders/{{order_id}}/apply-coupon",
+              "security_check": true,
+              "status": "violation",
+              "http_status": 200,
+              "expected_status": [
+                400,
+                422
+              ],
+              "assertion_results": [
+                false
+              ]
+            }
+          ]
+        },
+        {
+          "id": "negative_price",
+          "title": "Negative order prices are rejected",
+          "status": "violation",
+          "steps": [
+            {
+              "step": 1,
+              "actor": "user_a",
+              "method": "POST",
+              "path": "/orders",
+              "security_check": true,
+              "status": "violation",
+              "http_status": 200,
+              "expected_status": [
+                400,
+                422
+              ],
+              "assertion_results": [
+                false
+              ]
+            }
+          ]
+        },
+        {
+          "id": "order_initial_state",
+          "title": "New orders cannot start as paid",
+          "status": "violation",
+          "steps": [
+            {
+              "step": 1,
+              "actor": "user_a",
+              "method": "POST",
+              "path": "/orders",
+              "security_check": true,
+              "status": "violation",
+              "http_status": 200,
+              "expected_status": [
+                400,
+                422
+              ],
+              "assertion_results": [
+                false
+              ]
+            }
+          ]
+        },
+        {
+          "id": "owner_assignment",
+          "title": "Users cannot create orders for another owner",
+          "status": "violation",
+          "steps": [
+            {
+              "step": 1,
+              "actor": "user_b",
+              "method": "GET",
+              "path": "/me",
+              "security_check": false,
+              "status": "passed",
+              "http_status": 200,
+              "expected_status": [
+                200
+              ],
+              "assertion_results": [
+                true
+              ]
+            },
+            {
+              "step": 2,
+              "actor": "user_a",
+              "method": "POST",
+              "path": "/orders",
+              "security_check": true,
+              "status": "violation",
+              "http_status": 200,
+              "expected_status": [
+                400,
+                403,
+                422
+              ],
+              "assertion_results": [
+                false
+              ]
+            }
+          ]
+        },
+        {
+          "id": "worker_role",
+          "title": "Users cannot submit an admin job",
+          "status": "violation",
+          "steps": [
+            {
+              "step": 1,
+              "actor": "user_a",
+              "method": "POST",
+              "path": "/jobs",
+              "security_check": true,
+              "status": "violation",
+              "http_status": 200,
+              "expected_status": [
+                400,
+                403,
+                422
+              ],
+              "assertion_results": [
+                false
+              ]
+            }
+          ]
+        },
+        {
+          "id": "debug_access",
+          "title": "Debug configuration is unavailable anonymously",
+          "status": "violation",
+          "steps": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/debug/config",
+              "security_check": true,
+              "status": "violation",
+              "http_status": 200,
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "assertion_results": [
+                false
+              ]
+            }
+          ]
+        },
+        {
+          "id": "profile_owner",
+          "title": "A user cannot read another account profile",
+          "status": "violation",
+          "steps": [
+            {
+              "step": 1,
+              "actor": "user_b",
+              "method": "GET",
+              "path": "/me",
+              "security_check": false,
+              "status": "passed",
+              "http_status": 200,
+              "expected_status": [
+                200
+              ],
+              "assertion_results": [
+                true
+              ]
+            },
+            {
+              "step": 2,
+              "actor": "user_a",
+              "method": "GET",
+              "path": "/profiles/{{other_id}}",
+              "security_check": true,
+              "status": "violation",
+              "http_status": 200,
+              "expected_status": [
+                403,
+                404
+              ],
+              "assertion_results": [
+                false
+              ]
+            }
+          ]
+        },
+        {
+          "id": "excessive_data",
+          "title": "Identity response must not expose a social security number",
+          "status": "violation",
+          "steps": [
+            {
+              "step": 1,
+              "actor": "user_a",
+              "method": "GET",
+              "path": "/me",
+              "security_check": true,
+              "status": "violation",
+              "http_status": 200,
+              "expected_status": [
+                200
+              ],
+              "assertion_results": [
+                true,
+                false
+              ]
+            }
+          ]
+        },
+        {
+          "id": "price_catalog",
+          "title": "Catalog price must be set by the server",
+          "status": "violation",
+          "steps": [
+            {
+              "step": 1,
+              "actor": "user_a",
+              "method": "POST",
+              "path": "/orders",
+              "security_check": true,
+              "status": "violation",
+              "http_status": 200,
+              "expected_status": [
+                200,
+                201
+              ],
+              "assertion_results": [
+                true,
+                false
+              ]
+            }
+          ]
+        },
+        {
+          "id": "webhook_destination",
+          "title": "Webhook destination must match the approved internal host exactly",
+          "status": "violation",
+          "steps": [
+            {
+              "step": 1,
+              "actor": "user_a",
+              "method": "POST",
+              "path": "/webhooks",
+              "security_check": true,
+              "status": "violation",
+              "http_status": 200,
+              "expected_status": [
+                400,
+                422
+              ],
+              "assertion_results": [
+                false
+              ]
+            }
+          ]
+        },
+        {
+          "id": "nested_note",
+          "title": "A note must belong to the order named in the URL",
+          "status": "violation",
+          "steps": [
+            {
+              "step": 1,
+              "actor": "user_a",
+              "method": "GET",
+              "path": "/orders/1/notes/2",
+              "security_check": true,
+              "status": "violation",
+              "http_status": 200,
+              "expected_status": [
+                403,
+                404
+              ],
+              "assertion_results": [
+                false
+              ]
+            }
+          ]
+        },
+        {
+          "id": "unsigned_hook",
+          "title": "Incoming webhook events require a valid signature",
+          "status": "violation",
+          "steps": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "POST",
+              "path": "/integrations/hook",
+              "security_check": true,
+              "status": "violation",
+              "http_status": 200,
+              "expected_status": [
+                400,
+                401,
+                403
+              ],
+              "assertion_results": [
+                false
+              ]
+            }
+          ]
+        },
+        {
+          "id": "reset_replay",
+          "title": "Password reset tokens must be single use",
+          "status": "violation",
+          "steps": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "POST",
+              "path": "/auth/reset/request",
+              "security_check": false,
+              "status": "passed",
+              "http_status": 200,
+              "expected_status": [
+                200
+              ],
+              "assertion_results": [
+                true
+              ]
+            },
+            {
+              "step": 2,
+              "actor": "anonymous",
+              "method": "POST",
+              "path": "/auth/reset/confirm",
+              "security_check": false,
+              "status": "passed",
+              "http_status": 200,
+              "expected_status": [
+                200
+              ],
+              "assertion_results": [
+                true
+              ]
+            },
+            {
+              "step": 3,
+              "actor": "anonymous",
+              "method": "POST",
+              "path": "/auth/reset/confirm",
+              "security_check": true,
+              "status": "violation",
+              "http_status": 200,
+              "expected_status": [
+                400,
+                409,
+                422
+              ],
+              "assertion_results": [
+                false
+              ]
+            }
+          ]
+        },
+        {
+          "id": "stale_role",
+          "title": "A demoted administrator must lose administrative access",
+          "status": "violation",
+          "steps": [
+            {
+              "step": 1,
+              "actor": "admin_verified",
+              "method": "GET",
+              "path": "/me/verified",
+              "security_check": false,
+              "status": "passed",
+              "http_status": 200,
+              "expected_status": [
+                200
+              ],
+              "assertion_results": [
+                true
+              ]
+            },
+            {
+              "step": 2,
+              "actor": "admin_verified",
+              "method": "POST",
+              "path": "/admin/roles/{{admin_id}}",
+              "security_check": false,
+              "status": "passed",
+              "http_status": 200,
+              "expected_status": [
+                200
+              ],
+              "assertion_results": [
+                true
+              ]
+            },
+            {
+              "step": 3,
+              "actor": "admin",
+              "method": "GET",
+              "path": "/admin/token-report",
+              "security_check": true,
+              "status": "violation",
+              "http_status": 200,
+              "expected_status": [
+                403,
+                404
+              ],
+              "assertion_results": [
+                false
+              ]
+            }
+          ]
+        }
+      ],
+      "results": [
+        {
+          "rule_id": "workflow.order_owner.3",
+          "source": "runtime-workflow",
+          "title": "Only the owner can read an order",
+          "path": "/orders/{{order_id}}",
+          "vulnerable": true,
+          "severity": "high",
+          "confidence": "medium",
+          "evidence": {
+            "workflow_id": "order_owner",
+            "step": 3,
+            "actor": "user_a",
+            "method": "GET",
+            "status": 200,
+            "expected_statuses": [
+              403,
+              404
+            ],
+            "assertion_results": [
+              false
+            ],
+            "values_redacted": true
+          }
+        },
+        {
+          "rule_id": "workflow.invoice_owner.3",
+          "source": "runtime-workflow",
+          "title": "Only the owner can read an invoice",
+          "path": "/invoices/{{invoice_id}}",
+          "vulnerable": true,
+          "severity": "high",
+          "confidence": "medium",
+          "evidence": {
+            "workflow_id": "invoice_owner",
+            "step": 3,
+            "actor": "user_a",
+            "method": "GET",
+            "status": 200,
+            "expected_statuses": [
+              403,
+              404
+            ],
+            "assertion_results": [
+              false
+            ],
+            "values_redacted": true
+          }
+        },
+        {
+          "rule_id": "workflow.admin_users.2",
+          "source": "runtime-workflow",
+          "title": "User listing requires admin role",
+          "path": "/admin/users",
+          "vulnerable": true,
+          "severity": "high",
+          "confidence": "medium",
+          "evidence": {
+            "workflow_id": "admin_users",
+            "step": 2,
+            "actor": "user_a",
+            "method": "GET",
+            "status": 200,
+            "expected_statuses": [
+              403,
+              404
+            ],
+            "assertion_results": [
+              false
+            ],
+            "values_redacted": true
+          }
+        },
+        {
+          "rule_id": "workflow.admin_jobs.2",
+          "source": "runtime-workflow",
+          "title": "Job listing requires admin role",
+          "path": "/admin/jobs",
+          "vulnerable": true,
+          "severity": "high",
+          "confidence": "medium",
+          "evidence": {
+            "workflow_id": "admin_jobs",
+            "step": 2,
+            "actor": "user_a",
+            "method": "GET",
+            "status": 200,
+            "expected_statuses": [
+              403,
+              404
+            ],
+            "assertion_results": [
+              false
+            ],
+            "values_redacted": true
+          }
+        },
+        {
+          "rule_id": "workflow.payment_replay.3",
+          "source": "runtime-workflow",
+          "title": "An already paid order rejects a second payment",
+          "path": "/orders/{{order_id}}/pay",
+          "vulnerable": true,
+          "severity": "high",
+          "confidence": "medium",
+          "evidence": {
+            "workflow_id": "payment_replay",
+            "step": 3,
+            "actor": "user_a",
+            "method": "POST",
+            "status": 200,
+            "expected_statuses": [
+              400,
+              409,
+              422
+            ],
+            "assertion_results": [
+              false
+            ],
+            "values_redacted": true
+          }
+        },
+        {
+          "rule_id": "workflow.paid_cancel.3",
+          "source": "runtime-workflow",
+          "title": "Paid orders require a refund before cancellation",
+          "path": "/orders/{{order_id}}/cancel",
+          "vulnerable": true,
+          "severity": "high",
+          "confidence": "medium",
+          "evidence": {
+            "workflow_id": "paid_cancel",
+            "step": 3,
+            "actor": "user_a",
+            "method": "POST",
+            "status": 200,
+            "expected_statuses": [
+              400,
+              409,
+              422
+            ],
+            "assertion_results": [
+              false
+            ],
+            "values_redacted": true
+          }
+        },
+        {
+          "rule_id": "workflow.coupon_bounds.2",
+          "source": "runtime-workflow",
+          "title": "Excessive coupon discounts are rejected",
+          "path": "/orders/{{order_id}}/apply-coupon",
+          "vulnerable": true,
+          "severity": "high",
+          "confidence": "medium",
+          "evidence": {
+            "workflow_id": "coupon_bounds",
+            "step": 2,
+            "actor": "user_a",
+            "method": "POST",
+            "status": 200,
+            "expected_statuses": [
+              400,
+              422
+            ],
+            "assertion_results": [
+              false
+            ],
+            "values_redacted": true
+          }
+        },
+        {
+          "rule_id": "workflow.negative_price.1",
+          "source": "runtime-workflow",
+          "title": "Negative order prices are rejected",
+          "path": "/orders",
+          "vulnerable": true,
+          "severity": "high",
+          "confidence": "medium",
+          "evidence": {
+            "workflow_id": "negative_price",
+            "step": 1,
+            "actor": "user_a",
+            "method": "POST",
+            "status": 200,
+            "expected_statuses": [
+              400,
+              422
+            ],
+            "assertion_results": [
+              false
+            ],
+            "values_redacted": true
+          }
+        },
+        {
+          "rule_id": "workflow.order_initial_state.1",
+          "source": "runtime-workflow",
+          "title": "New orders cannot start as paid",
+          "path": "/orders",
+          "vulnerable": true,
+          "severity": "high",
+          "confidence": "medium",
+          "evidence": {
+            "workflow_id": "order_initial_state",
+            "step": 1,
+            "actor": "user_a",
+            "method": "POST",
+            "status": 200,
+            "expected_statuses": [
+              400,
+              422
+            ],
+            "assertion_results": [
+              false
+            ],
+            "values_redacted": true
+          }
+        },
+        {
+          "rule_id": "workflow.owner_assignment.2",
+          "source": "runtime-workflow",
+          "title": "Users cannot create orders for another owner",
+          "path": "/orders",
+          "vulnerable": true,
+          "severity": "high",
+          "confidence": "medium",
+          "evidence": {
+            "workflow_id": "owner_assignment",
+            "step": 2,
+            "actor": "user_a",
+            "method": "POST",
+            "status": 200,
+            "expected_statuses": [
+              400,
+              403,
+              422
+            ],
+            "assertion_results": [
+              false
+            ],
+            "values_redacted": true
+          }
+        },
+        {
+          "rule_id": "workflow.worker_role.1",
+          "source": "runtime-workflow",
+          "title": "Users cannot submit an admin job",
+          "path": "/jobs",
+          "vulnerable": true,
+          "severity": "high",
+          "confidence": "medium",
+          "evidence": {
+            "workflow_id": "worker_role",
+            "step": 1,
+            "actor": "user_a",
+            "method": "POST",
+            "status": 200,
+            "expected_statuses": [
+              400,
+              403,
+              422
+            ],
+            "assertion_results": [
+              false
+            ],
+            "values_redacted": true
+          }
+        },
+        {
+          "rule_id": "workflow.debug_access.1",
+          "source": "runtime-workflow",
+          "title": "Debug configuration is unavailable anonymously",
+          "path": "/debug/config",
+          "vulnerable": true,
+          "severity": "high",
+          "confidence": "medium",
+          "evidence": {
+            "workflow_id": "debug_access",
+            "step": 1,
+            "actor": "anonymous",
+            "method": "GET",
+            "status": 200,
+            "expected_statuses": [
+              401,
+              403,
+              404
+            ],
+            "assertion_results": [
+              false
+            ],
+            "values_redacted": true
+          }
+        },
+        {
+          "rule_id": "workflow.profile_owner.2",
+          "source": "runtime-workflow",
+          "title": "A user cannot read another account profile",
+          "path": "/profiles/{{other_id}}",
+          "vulnerable": true,
+          "severity": "high",
+          "confidence": "medium",
+          "evidence": {
+            "workflow_id": "profile_owner",
+            "step": 2,
+            "actor": "user_a",
+            "method": "GET",
+            "status": 200,
+            "expected_statuses": [
+              403,
+              404
+            ],
+            "assertion_results": [
+              false
+            ],
+            "values_redacted": true
+          }
+        },
+        {
+          "rule_id": "workflow.excessive_data.1",
+          "source": "runtime-workflow",
+          "title": "Identity response must not expose a social security number",
+          "path": "/me",
+          "vulnerable": true,
+          "severity": "medium",
+          "confidence": "medium",
+          "evidence": {
+            "workflow_id": "excessive_data",
+            "step": 1,
+            "actor": "user_a",
+            "method": "GET",
+            "status": 200,
+            "expected_statuses": [
+              200
+            ],
+            "assertion_results": [
+              true,
+              false
+            ],
+            "values_redacted": true
+          }
+        },
+        {
+          "rule_id": "workflow.price_catalog.1",
+          "source": "runtime-workflow",
+          "title": "Catalog price must be set by the server",
+          "path": "/orders",
+          "vulnerable": true,
+          "severity": "high",
+          "confidence": "medium",
+          "evidence": {
+            "workflow_id": "price_catalog",
+            "step": 1,
+            "actor": "user_a",
+            "method": "POST",
+            "status": 200,
+            "expected_statuses": [
+              200,
+              201
+            ],
+            "assertion_results": [
+              true,
+              false
+            ],
+            "values_redacted": true
+          }
+        },
+        {
+          "rule_id": "workflow.webhook_destination.1",
+          "source": "runtime-workflow",
+          "title": "Webhook destination must match the approved internal host exactly",
+          "path": "/webhooks",
+          "vulnerable": true,
+          "severity": "high",
+          "confidence": "medium",
+          "evidence": {
+            "workflow_id": "webhook_destination",
+            "step": 1,
+            "actor": "user_a",
+            "method": "POST",
+            "status": 200,
+            "expected_statuses": [
+              400,
+              422
+            ],
+            "assertion_results": [
+              false
+            ],
+            "values_redacted": true
+          }
+        },
+        {
+          "rule_id": "workflow.nested_note.1",
+          "source": "runtime-workflow",
+          "title": "A note must belong to the order named in the URL",
+          "path": "/orders/1/notes/2",
+          "vulnerable": true,
+          "severity": "high",
+          "confidence": "medium",
+          "evidence": {
+            "workflow_id": "nested_note",
+            "step": 1,
+            "actor": "user_a",
+            "method": "GET",
+            "status": 200,
+            "expected_statuses": [
+              403,
+              404
+            ],
+            "assertion_results": [
+              false
+            ],
+            "values_redacted": true
+          }
+        },
+        {
+          "rule_id": "workflow.unsigned_hook.1",
+          "source": "runtime-workflow",
+          "title": "Incoming webhook events require a valid signature",
+          "path": "/integrations/hook",
+          "vulnerable": true,
+          "severity": "high",
+          "confidence": "medium",
+          "evidence": {
+            "workflow_id": "unsigned_hook",
+            "step": 1,
+            "actor": "anonymous",
+            "method": "POST",
+            "status": 200,
+            "expected_statuses": [
+              400,
+              401,
+              403
+            ],
+            "assertion_results": [
+              false
+            ],
+            "values_redacted": true
+          }
+        },
+        {
+          "rule_id": "workflow.reset_replay.3",
+          "source": "runtime-workflow",
+          "title": "Password reset tokens must be single use",
+          "path": "/auth/reset/confirm",
+          "vulnerable": true,
+          "severity": "high",
+          "confidence": "medium",
+          "evidence": {
+            "workflow_id": "reset_replay",
+            "step": 3,
+            "actor": "anonymous",
+            "method": "POST",
+            "status": 200,
+            "expected_statuses": [
+              400,
+              409,
+              422
+            ],
+            "assertion_results": [
+              false
+            ],
+            "values_redacted": true
+          }
+        },
+        {
+          "rule_id": "workflow.stale_role.3",
+          "source": "runtime-workflow",
+          "title": "A demoted administrator must lose administrative access",
+          "path": "/admin/token-report",
+          "vulnerable": true,
+          "severity": "high",
+          "confidence": "medium",
+          "evidence": {
+            "workflow_id": "stale_role",
+            "step": 3,
+            "actor": "admin",
+            "method": "GET",
+            "status": 200,
+            "expected_statuses": [
+              403,
+              404
+            ],
+            "assertion_results": [
+              false
+            ],
+            "values_redacted": true
+          }
+        }
+      ],
+      "coverage": {
+        "declared": 40,
+        "executed": 40,
+        "violations": 20,
+        "unresolved": 0
+      },
+      "limitations": [
+        "Coverage applies only to declared assertions, accounts and workflows.",
+        "A violation is an observed contract mismatch requiring security review.",
+        "Fresh stack resets the run; workflows must create independent test data. No per-step database reset is performed."
+      ]
+    },
+    "zap": {
+      "status": "completed",
+      "engine": "zap-passive",
+      "image_id": "sha256:030d3df57735dacbb83464854758e674dd9ad01d79d12a129a8e58b1fd384238",
+      "alerts": 14,
+      "results_truncated": false,
+      "authentication": "verified",
+      "limits": "Traditional spider: 1 minute / depth 3. Active scan: at most 3 minutes.",
+      "limitations": [
+        "Not exhaustive",
+        "No generic IDOR or business-workflow proof",
+        "No JavaScript browser crawl"
+      ]
+    },
+    "browser": {
+      "schema_version": "1.0",
+      "source": "playwright-browser-runtime",
+      "target": "http://127.0.0.1:8091",
+      "max_pages": 12,
+      "status": "blocked",
+      "pages_visited": 0,
+      "discovered_links": 0,
+      "coverage_gaps": [
+        "Install the optional Playwright package and browser before enabling browser DAST.",
+        "Error: browserType.launch: Target page, context or browser has been closed\nBrowser logs:\n\n<launching> /home/asus_safaa99/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-p"
+      ]
+    }
+  },
+  "execution": {
+    "schema_version": "1.0",
+    "run_id": "static-20261030T101635Z",
+    "status": "completed",
+    "project_root_name": "verdict-comprehensive-lab",
+    "started_at": "2026-10-30T10:16:35.600114+00:00",
+    "finished_at": "2026-10-30T10:18:24.603225+00:00",
+    "tasks": [
+      {
+        "task_id": "task-45e5f84af47a",
+        "scanner_id": "trivy",
+        "status": "completed",
+        "reason": "Trivy produced valid JSON output",
+        "prerequisite_checks": [
+          {
+            "name": "trivy_executable",
+            "status": "available",
+            "detail": "Trivy runtime version 0.71.2 differs from 0.75.0 (version check skipped)",
+            "version": "0.71.2"
+          },
+          {
+            "name": "target_paths",
+            "status": "available",
+            "detail": "All Trivy targets are inside the project root",
+            "version": null
+          },
+          {
+            "name": "trivy_databases",
+            "status": "available",
+            "detail": "Trivy vulnerability database is available at /home/asus_safaa99/.cache/trivy",
+            "version": null
+          }
+        ],
+        "commands": [
+          {
+            "name": "trivy-filesystem-0",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 0.217929,
+            "stdout_log": "trivy/task-45e5f84af47a/logs/trivy-filesystem-0.stdout.log",
+            "stderr_log": "trivy/task-45e5f84af47a/logs/trivy-filesystem-0.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          }
+        ],
+        "raw_outputs": [
+          "trivy/task-45e5f84af47a/result-0.json"
+        ],
+        "started_at": "2026-10-30T10:16:36.014593+00:00",
+        "finished_at": "2026-10-30T10:16:36.301872+00:00"
+      },
+      {
+        "task_id": "task-510db4138e2f",
+        "scanner_id": "gitleaks",
+        "status": "completed",
+        "reason": "Gitleaks produced valid JSON output",
+        "prerequisite_checks": [
+          {
+            "name": "gitleaks_executable",
+            "status": "available",
+            "detail": "Gitleaks executable exists; runtime version could not be read (version check skipped)",
+            "version": null
+          },
+          {
+            "name": "target_paths",
+            "status": "available",
+            "detail": "All Gitleaks targets are inside the project root",
+            "version": null
+          },
+          {
+            "name": "git_metadata",
+            "status": "available",
+            "detail": "Git-history mode is not requested",
+            "version": null
+          }
+        ],
+        "commands": [
+          {
+            "name": "gitleaks-detect",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 0.117337,
+            "stdout_log": "gitleaks/task-510db4138e2f/logs/gitleaks-detect.stdout.log",
+            "stderr_log": "gitleaks/task-510db4138e2f/logs/gitleaks-detect.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          }
+        ],
+        "raw_outputs": [
+          "gitleaks/task-510db4138e2f/result.json"
+        ],
+        "started_at": "2026-10-30T10:16:36.361145+00:00",
+        "finished_at": "2026-10-30T10:16:36.584728+00:00"
+      },
+      {
+        "task_id": "task-9f00818366ac",
+        "scanner_id": "trivy",
+        "status": "skipped",
+        "reason": "Planning status is not_applicable",
+        "prerequisite_checks": [],
+        "commands": [],
+        "raw_outputs": [],
+        "started_at": null,
+        "finished_at": null
+      },
+      {
+        "task_id": "task-dcae5d188e58",
+        "scanner_id": "semgrep-ce",
+        "status": "completed",
+        "reason": "Semgrep produced valid JSON output",
+        "prerequisite_checks": [
+          {
+            "name": "semgrep_executable",
+            "status": "available",
+            "detail": "Semgrep executable and runtime version were verified",
+            "version": "1.178.0"
+          },
+          {
+            "name": "semgrep_rules",
+            "status": "available",
+            "detail": "Trusted Semgrep configs are configured; registry availability is verified during execution",
+            "version": null
+          },
+          {
+            "name": "target_paths",
+            "status": "available",
+            "detail": "All Semgrep targets are inside the project root",
+            "version": null
+          }
+        ],
+        "commands": [
+          {
+            "name": "semgrep-scan",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 34.21473,
+            "stdout_log": "semgrep-ce/task-dcae5d188e58/logs/semgrep-scan.stdout.log",
+            "stderr_log": "semgrep-ce/task-dcae5d188e58/logs/semgrep-scan.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          }
+        ],
+        "raw_outputs": [
+          "semgrep-ce/task-dcae5d188e58/result.json"
+        ],
+        "started_at": "2026-10-30T10:17:00.734205+00:00",
+        "finished_at": "2026-10-30T10:17:35.107576+00:00"
+      },
+      {
+        "task_id": "task-e01e4c2db2dc",
+        "scanner_id": "codeql-cli",
+        "status": "completed",
+        "reason": "CodeQL produced valid SARIF output",
+        "prerequisite_checks": [
+          {
+            "name": "codeql_executable",
+            "status": "available",
+            "detail": "CodeQL runtime version 2.27.2 differs from 2.27.1 (version check skipped)",
+            "version": "2.27.2"
+          },
+          {
+            "name": "language_query_pack",
+            "status": "available",
+            "detail": "Configured python standard query suite exists",
+            "version": null
+          },
+          {
+            "name": "target_paths",
+            "status": "available",
+            "detail": "All CodeQL targets are inside the project root",
+            "version": null
+          },
+          {
+            "name": "codeql_search_path",
+            "status": "available",
+            "detail": "Configured CodeQL search path exists",
+            "version": null
+          }
+        ],
+        "commands": [
+          {
+            "name": "database-create",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 15.24908,
+            "stdout_log": "codeql-cli/task-e01e4c2db2dc/logs/database-create.stdout.log",
+            "stderr_log": "codeql-cli/task-e01e4c2db2dc/logs/database-create.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          },
+          {
+            "name": "database-analyze",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 23.731242,
+            "stdout_log": "codeql-cli/task-e01e4c2db2dc/logs/database-analyze.stdout.log",
+            "stderr_log": "codeql-cli/task-e01e4c2db2dc/logs/database-analyze.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          }
+        ],
+        "raw_outputs": [
+          "codeql-cli/task-e01e4c2db2dc/result.sarif"
+        ],
+        "started_at": "2026-10-30T10:17:37.444216+00:00",
+        "finished_at": "2026-10-30T10:18:16.621710+00:00"
+      },
+      {
+        "task_id": "task-ea7752418b98",
+        "scanner_id": "trivy",
+        "status": "completed",
+        "reason": "Trivy produced valid JSON output",
+        "prerequisite_checks": [
+          {
+            "name": "trivy_executable",
+            "status": "available",
+            "detail": "Trivy runtime version 0.71.2 differs from 0.75.0 (version check skipped)",
+            "version": "0.71.2"
+          },
+          {
+            "name": "target_paths",
+            "status": "available",
+            "detail": "All Trivy targets are inside the project root",
+            "version": null
+          },
+          {
+            "name": "trivy_databases",
+            "status": "available",
+            "detail": "This Trivy scan type does not require a vulnerability database",
+            "version": null
+          }
+        ],
+        "commands": [
+          {
+            "name": "trivy-filesystem-0",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 3.348748,
+            "stdout_log": "trivy/task-ea7752418b98/logs/trivy-filesystem-0.stdout.log",
+            "stderr_log": "trivy/task-ea7752418b98/logs/trivy-filesystem-0.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          },
+          {
+            "name": "trivy-filesystem-1",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 1.379182,
+            "stdout_log": "trivy/task-ea7752418b98/logs/trivy-filesystem-1.stdout.log",
+            "stderr_log": "trivy/task-ea7752418b98/logs/trivy-filesystem-1.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          },
+          {
+            "name": "trivy-filesystem-2",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 1.377799,
+            "stdout_log": "trivy/task-ea7752418b98/logs/trivy-filesystem-2.stdout.log",
+            "stderr_log": "trivy/task-ea7752418b98/logs/trivy-filesystem-2.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          },
+          {
+            "name": "trivy-filesystem-3",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 1.374252,
+            "stdout_log": "trivy/task-ea7752418b98/logs/trivy-filesystem-3.stdout.log",
+            "stderr_log": "trivy/task-ea7752418b98/logs/trivy-filesystem-3.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          }
+        ],
+        "raw_outputs": [
+          "trivy/task-ea7752418b98/result-0.json",
+          "trivy/task-ea7752418b98/result-1.json",
+          "trivy/task-ea7752418b98/result-2.json",
+          "trivy/task-ea7752418b98/result-3.json"
+        ],
+        "started_at": "2026-10-30T10:18:16.814822+00:00",
+        "finished_at": "2026-10-30T10:18:24.580372+00:00"
+      }
+    ],
+    "coverage_gaps": [
+      "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile."
+    ],
+    "warnings": []
+  },
+  "merge_summary": {
+    "input_batches": 9,
+    "input_findings": 64,
+    "merged_findings": 63,
+    "duplicates_collapsed": 1
+  },
+  "endpoint_coverage": {
+    "status": "generic_completed",
+    "endpoint_count": null,
+    "probe_count": 51,
+    "probed_count": 0,
+    "authentication": null,
+    "workflows": null,
+    "coverage_gaps": [
+      "Baseline checks use bounded HTTP GET observations for an authorized target; declared paths must be safe to visit.",
+      "The baseline phase alone does not crawl browsers, test account workflows or confirm exploitation; additional phases are recorded separately.",
+      "A negative result means only that this probe did not observe the behavior.",
+      "Coverage applies only to declared assertions, accounts and workflows.",
+      "A violation is an observed contract mismatch requiring security review.",
+      "Fresh stack resets the run; workflows must create independent test data. No per-step database reset is performed.",
+      "Install the optional Playwright package and browser before enabling browser DAST.",
+      "Error: browserType.launch: Target page, context or browser has been closed\nBrowser logs:\n\n<launching> /home/asus_safaa99/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-p"
+    ]
+  },
+  "ai_discovery": {
+    "required": true,
+    "satisfied": true,
+    "status": "partial",
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "provider_calls": 5,
+    "planned_targets": 20,
+    "inspected_targets": 20,
+    "failed_batches": 0,
+    "candidate_count": 10,
+    "supported_candidates": 9,
+    "coverage_gaps": [
+      "2 source windows were shortened by the prompt character budget.",
+      "23 known findings were omitted from the discovery prompt's duplicate-avoidance list.",
+      "35 known findings were omitted from the discovery prompt's duplicate-avoidance list.",
+      "37 known findings were omitted from the discovery prompt's duplicate-avoidance list.",
+      "38 background coverage gaps were omitted from the discovery prompt budget.",
+      "A negative result means only that this probe did not observe the behavior.",
+      "A violation is an observed contract mismatch requiring security review.",
+      "Baseline checks use bounded HTTP GET observations for an authorized target; declared paths must be safe to visit.",
+      "Coverage applies only to declared assertions, accounts and workflows.",
+      "Discovery batch 3: on-demand context could not be added (AI provider request failed with HTTP 400 (json_validate_failed); model output 0 chars, not valid JSON); the first response was kept.",
+      "Error: browserType.launch: Target page, context or browser has been closed\nBrowser logs:\n\n<launching> /home/asus_safaa99/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-p",
+      "Fresh stack resets the run; workflows must create independent test data. No per-step database reset is performed.",
+      "Install the optional Playwright package and browser before enabling browser DAST.",
+      "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile.",
+      "The baseline phase alone does not crawl browsers, test account workflows or confirm exploitation; additional phases are recorded separately.",
+      "merged-16678dc11308a0a16a81: primary source context is unavailable.",
+      "merged-17a5197f906426a224ef: primary source context is unavailable.",
+      "merged-19f4a13e0b2d4f7413d0: primary source context is unavailable.",
+      "merged-1ba9f8276fc6dae95df8: primary source context is unavailable.",
+      "merged-2b80ed0c48c0c70a93a4: primary source context is unavailable.",
+      "merged-2d4a81712313b5f2f621: primary source context is unavailable.",
+      "merged-38e7cf77bdf9145d2ae4: primary source context is unavailable.",
+      "merged-41e99a7ce6d803bedda1: primary source context is unavailable.",
+      "merged-50485291173e2448f7c7: primary source context is unavailable.",
+      "merged-553cfc223024a5e03f34: primary source context is unavailable.",
+      "merged-5fe9a08fc103085427f9: primary source context is unavailable.",
+      "merged-65c41e5a25b6337fec07: primary source context is unavailable.",
+      "merged-65f25bcf14fa2ab91271: primary source context is unavailable.",
+      "merged-7457580a7c7bb31a32cd: primary source context is unavailable.",
+      "merged-7c9406875347cad8b1ce: primary source context is unavailable.",
+      "merged-7da23d65adeef42d71a6: primary source context is unavailable.",
+      "merged-87e0399272a390813ea5: primary source context is unavailable.",
+      "merged-8946f8391fc9049cbb58: primary source context is unavailable.",
+      "merged-8e21db3fe42adbf58979: primary source context is unavailable.",
+      "merged-9b32fbabacaa9f45b768: primary source context is unavailable.",
+      "merged-a5ea8ca4c36bd6c25e2a: primary source context is unavailable.",
+      "merged-a9e9047867c909f567ad: primary source context is unavailable.",
+      "merged-ade7b890a037d8c82a1f: primary source context is unavailable.",
+      "merged-b4c1c4d005665a5249a7: primary source context is unavailable.",
+      "merged-bbf1646deeb18d1e95db: primary source context is unavailable.",
+      "merged-bdfe7542047da39c6151: primary source context is unavailable.",
+      "merged-cc8a9ed20905505868f0: primary source context is unavailable.",
+      "merged-d5c3b6b8d8dad90c4d3c: primary source context is unavailable.",
+      "merged-d9421dbfc4162d6dea91: primary source context is unavailable.",
+      "merged-da0f922505b4c0c7fed1: primary source context is unavailable.",
+      "merged-dd64ece99563dbbb173a: primary source context is unavailable.",
+      "merged-dfd8d33b4f84ccf0c23f: primary source context is unavailable.",
+      "merged-e683a977084f2bbcee2e: primary source context is unavailable.",
+      "merged-e7caea540245938b275b: primary source context is unavailable.",
+      "merged-ec17a70b00fa38747671: primary source context is unavailable.",
+      "merged-fbfa546bfd43886d2b10: primary source context is unavailable.",
+      "merged-fe76cc1a4803fb50214c: primary source context is unavailable."
+    ],
+    "warnings": [
+      "Discovery batch 2: AI provider request failed with HTTP 400 (json_validate_failed); model output 0 chars, not valid JSON; retrying with a smaller request."
+    ]
+  },
+  "candidate_context": {
+    "status": "partial",
+    "summary": {
+      "input_candidates": 10,
+      "contexts_created": 10,
+      "evidence_locations": 49,
+      "excerpts_collected": 49,
+      "unavailable_locations": 0,
+      "files_read": 2,
+      "bytes_read": 40607
+    },
+    "coverage_gaps": [
+      "2 source windows were shortened by the prompt character budget.",
+      "23 known findings were omitted from the discovery prompt's duplicate-avoidance list.",
+      "35 known findings were omitted from the discovery prompt's duplicate-avoidance list.",
+      "37 known findings were omitted from the discovery prompt's duplicate-avoidance list.",
+      "38 background coverage gaps were omitted from the discovery prompt budget.",
+      "A negative result means only that this probe did not observe the behavior.",
+      "A violation is an observed contract mismatch requiring security review.",
+      "Baseline checks use bounded HTTP GET observations for an authorized target; declared paths must be safe to visit.",
+      "Coverage applies only to declared assertions, accounts and workflows.",
+      "Discovery batch 3: on-demand context could not be added (AI provider request failed with HTTP 400 (json_validate_failed); model output 0 chars, not valid JSON); the first response was kept.",
+      "Error: browserType.launch: Target page, context or browser has been closed\nBrowser logs:\n\n<launching> /home/asus_safaa99/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-p",
+      "Fresh stack resets the run; workflows must create independent test data. No per-step database reset is performed.",
+      "Install the optional Playwright package and browser before enabling browser DAST.",
+      "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile.",
+      "The baseline phase alone does not crawl browsers, test account workflows or confirm exploitation; additional phases are recorded separately.",
+      "merged-16678dc11308a0a16a81: primary source context is unavailable.",
+      "merged-17a5197f906426a224ef: primary source context is unavailable.",
+      "merged-19f4a13e0b2d4f7413d0: primary source context is unavailable.",
+      "merged-1ba9f8276fc6dae95df8: primary source context is unavailable.",
+      "merged-2b80ed0c48c0c70a93a4: primary source context is unavailable.",
+      "merged-2d4a81712313b5f2f621: primary source context is unavailable.",
+      "merged-38e7cf77bdf9145d2ae4: primary source context is unavailable.",
+      "merged-41e99a7ce6d803bedda1: primary source context is unavailable.",
+      "merged-50485291173e2448f7c7: primary source context is unavailable.",
+      "merged-553cfc223024a5e03f34: primary source context is unavailable.",
+      "merged-5fe9a08fc103085427f9: primary source context is unavailable.",
+      "merged-65c41e5a25b6337fec07: primary source context is unavailable.",
+      "merged-65f25bcf14fa2ab91271: primary source context is unavailable.",
+      "merged-7457580a7c7bb31a32cd: primary source context is unavailable.",
+      "merged-7c9406875347cad8b1ce: primary source context is unavailable.",
+      "merged-7da23d65adeef42d71a6: primary source context is unavailable.",
+      "merged-87e0399272a390813ea5: primary source context is unavailable.",
+      "merged-8946f8391fc9049cbb58: primary source context is unavailable.",
+      "merged-8e21db3fe42adbf58979: primary source context is unavailable.",
+      "merged-9b32fbabacaa9f45b768: primary source context is unavailable.",
+      "merged-a5ea8ca4c36bd6c25e2a: primary source context is unavailable.",
+      "merged-a9e9047867c909f567ad: primary source context is unavailable.",
+      "merged-ade7b890a037d8c82a1f: primary source context is unavailable.",
+      "merged-b4c1c4d005665a5249a7: primary source context is unavailable.",
+      "merged-bbf1646deeb18d1e95db: primary source context is unavailable.",
+      "merged-bdfe7542047da39c6151: primary source context is unavailable.",
+      "merged-cc8a9ed20905505868f0: primary source context is unavailable.",
+      "merged-d5c3b6b8d8dad90c4d3c: primary source context is unavailable.",
+      "merged-d9421dbfc4162d6dea91: primary source context is unavailable.",
+      "merged-da0f922505b4c0c7fed1: primary source context is unavailable.",
+      "merged-dd64ece99563dbbb173a: primary source context is unavailable.",
+      "merged-dfd8d33b4f84ccf0c23f: primary source context is unavailable.",
+      "merged-e683a977084f2bbcee2e: primary source context is unavailable.",
+      "merged-e7caea540245938b275b: primary source context is unavailable.",
+      "merged-ec17a70b00fa38747671: primary source context is unavailable.",
+      "merged-fbfa546bfd43886d2b10: primary source context is unavailable.",
+      "merged-fe76cc1a4803fb50214c: primary source context is unavailable."
+    ],
+    "warnings": [
+      "Discovery batch 2: AI provider request failed with HTTP 400 (json_validate_failed); model output 0 chars, not valid JSON; retrying with a smaller request."
+    ]
+  },
+  "verification": {
+    "status": "partial",
+    "record_count": 10,
+    "confirmed": 7,
+    "needs_more_evidence": 3,
+    "rejected": 0,
+    "warnings": [
+      "Discovery batch 2: AI provider request failed with HTTP 400 (json_validate_failed); model output 0 chars, not valid JSON; retrying with a smaller request."
+    ]
+  },
+  "candidate_triage": {
+    "status": "partial",
+    "summary": {
+      "input_scanner_findings": 63,
+      "input_ai_candidates": 10,
+      "review_groups": 70,
+      "scanner_overlap": 0,
+      "candidate_overlap": 0,
+      "novel_candidates": 4,
+      "uncertain_overlap": 3,
+      "needs_more_evidence": 3,
+      "rejected": 0
+    },
+    "warnings": [
+      "ai-0a72a81ea425e8e0: overlap is uncertain; separate review is required.",
+      "ai-0ecab70a0de5608d: overlap is uncertain; separate review is required.",
+      "ai-986d6ced55b3a433: overlap is uncertain; separate review is required."
+    ]
+  },
+  "security_review": {
+    "status": "completed",
+    "satisfied": true,
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "review_count": 70,
+    "pending_ids": [],
+    "warnings": []
+  },
+  "policy_gate": {
+    "status": "failed",
+    "blocking": true,
+    "decision_count": 70,
+    "warnings": [
+      "RG-006: low likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: high needs more evidence is not sufficiently confirmed for an automatic block.",
+      "RG-006: high needs more evidence is not sufficiently confirmed for an automatic block.",
+      "RG-006: medium likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: medium likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: low likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: high needs more evidence is not sufficiently confirmed for an automatic block.",
+      "RG-006: medium likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: low likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: medium likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: low needs more evidence is not sufficiently confirmed for an automatic block.",
+      "RG-006: medium likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: medium needs more evidence is not sufficiently confirmed for an automatic block.",
+      "RG-006: low likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: low likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: low likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: low likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: high needs more evidence is not sufficiently confirmed for an automatic block.",
+      "RG-006: high needs more evidence is not sufficiently confirmed for an automatic block.",
+      "RG-006: high needs more evidence is not sufficiently confirmed for an automatic block.",
+      "RG-006: high needs more evidence is not sufficiently confirmed for an automatic block.",
+      "RG-003: high likely vulnerability requires manual review; not auto-confirmed.",
+      "RG-003: high likely vulnerability requires manual review; not auto-confirmed.",
+      "RG-006: medium needs more evidence is not sufficiently confirmed for an automatic block.",
+      "RG-006: medium likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: low likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: medium likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: high needs more evidence is not sufficiently confirmed for an automatic block.",
+      "RG-006: low likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: medium likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: medium confirmed vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: low confirmed vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: medium confirmed vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: low confirmed vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: low confirmed vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: low needs more evidence is not sufficiently confirmed for an automatic block.",
+      "RG-006: low likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-003: high likely vulnerability requires manual review; not auto-confirmed.",
+      "RG-006: medium likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: low likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-006: medium needs more evidence is not sufficiently confirmed for an automatic block.",
+      "RG-006: medium likely vulnerability is not sufficiently confirmed for an automatic block.",
+      "RG-003: high likely vulnerability requires manual review; not auto-confirmed.",
+      "RG-006: medium needs more evidence is not sufficiently confirmed for an automatic block.",
+      "6 AI candidates remain unresolved; they are not confirmed vulnerabilities."
+    ]
+  },
+  "context_summary": {
+    "input_findings": 63,
+    "contexts_created": 63,
+    "evidence_locations": 118,
+    "excerpts_collected": 81,
+    "files_read": 8,
+    "bytes_read": 45850,
+    "unavailable_locations": 37
+  },
+  "risk_summary": {
+    "input_findings": 63,
+    "ranked_findings": 63,
+    "selected_for_deep_review": 9,
+    "queued_for_deep_review": 0,
+    "standard_report": 17,
+    "needs_verification": 37
+  },
+  "coverage_gaps": [
+    "A negative result means only that this probe did not observe the behavior.",
+    "A violation is an observed contract mismatch requiring security review.",
+    "Baseline checks use bounded HTTP GET observations for an authorized target; declared paths must be safe to visit.",
+    "Coverage applies only to declared assertions, accounts and workflows.",
+    "Error: browserType.launch: Target page, context or browser has been closed\nBrowser logs:\n\n<launching> /home/asus_safaa99/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-p",
+    "Fresh stack resets the run; workflows must create independent test data. No per-step database reset is performed.",
+    "Install the optional Playwright package and browser before enabling browser DAST.",
+    "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile.",
+    "The baseline phase alone does not crawl browsers, test account workflows or confirm exploitation; additional phases are recorded separately.",
+    "merged-16678dc11308a0a16a81: primary source context is unavailable.",
+    "merged-17a5197f906426a224ef: primary source context is unavailable.",
+    "merged-19f4a13e0b2d4f7413d0: primary source context is unavailable.",
+    "merged-1ba9f8276fc6dae95df8: primary source context is unavailable.",
+    "merged-2b80ed0c48c0c70a93a4: primary source context is unavailable.",
+    "merged-2d4a81712313b5f2f621: primary source context is unavailable.",
+    "merged-38e7cf77bdf9145d2ae4: primary source context is unavailable.",
+    "merged-41e99a7ce6d803bedda1: primary source context is unavailable.",
+    "merged-50485291173e2448f7c7: primary source context is unavailable.",
+    "merged-553cfc223024a5e03f34: primary source context is unavailable.",
+    "merged-5fe9a08fc103085427f9: primary source context is unavailable.",
+    "merged-65c41e5a25b6337fec07: primary source context is unavailable.",
+    "merged-65f25bcf14fa2ab91271: primary source context is unavailable.",
+    "merged-7457580a7c7bb31a32cd: primary source context is unavailable.",
+    "merged-7c9406875347cad8b1ce: primary source context is unavailable.",
+    "merged-7da23d65adeef42d71a6: primary source context is unavailable.",
+    "merged-87e0399272a390813ea5: primary source context is unavailable.",
+    "merged-8946f8391fc9049cbb58: primary source context is unavailable.",
+    "merged-8e21db3fe42adbf58979: primary source context is unavailable.",
+    "merged-9b32fbabacaa9f45b768: primary source context is unavailable.",
+    "merged-a5ea8ca4c36bd6c25e2a: primary source context is unavailable.",
+    "merged-a9e9047867c909f567ad: primary source context is unavailable.",
+    "merged-ade7b890a037d8c82a1f: primary source context is unavailable.",
+    "merged-b4c1c4d005665a5249a7: primary source context is unavailable.",
+    "merged-bbf1646deeb18d1e95db: primary source context is unavailable.",
+    "merged-bdfe7542047da39c6151: primary source context is unavailable.",
+    "merged-cc8a9ed20905505868f0: primary source context is unavailable.",
+    "merged-d5c3b6b8d8dad90c4d3c: primary source context is unavailable.",
+    "merged-d9421dbfc4162d6dea91: primary source context is unavailable.",
+    "merged-da0f922505b4c0c7fed1: primary source context is unavailable.",
+    "merged-dd64ece99563dbbb173a: primary source context is unavailable.",
+    "merged-dfd8d33b4f84ccf0c23f: primary source context is unavailable.",
+    "merged-e683a977084f2bbcee2e: primary source context is unavailable.",
+    "merged-e7caea540245938b275b: primary source context is unavailable.",
+    "merged-ec17a70b00fa38747671: primary source context is unavailable.",
+    "merged-fbfa546bfd43886d2b10: primary source context is unavailable.",
+    "merged-fe76cc1a4803fb50214c: primary source context is unavailable."
+  ],
+  "limitations": [
+    "Scanner silence is not proof of safety.",
+    "Only the explicitly selected runtime probes/workflows were executed; see their coverage evidence."
+  ]
+}

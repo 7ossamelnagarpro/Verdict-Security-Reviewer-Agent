@@ -72,6 +72,12 @@ def _parser() -> argparse.ArgumentParser:
                         help="run an optional bounded same-origin Playwright crawl; missing Playwright is reported as a gap")
     parser.add_argument("--browser-seed-path", action="append", default=[],
                         help="extra authorized same-origin GET page for the bounded browser crawl; repeatable")
+    parser.add_argument("--no-penetration-agent", action="store_true",
+                        help="explicitly disable the Autonomous Penetration Testing Agent for this run. "
+                             "Without this flag, giving --runtime-contract already lets the agent open its "
+                             "own second session automatically, reusing that same contract; "
+                             "--allow-trusted-local-compose and --browser-dast (if given) are reused the "
+                             "same way for the agent's own Compose stack and browser corroboration")
     return parser
 
 
@@ -233,6 +239,16 @@ def _command(args: argparse.Namespace, *, project: Path, output: Path,
                         "--require-dast"))
         if args.runtime_contract is not None:
             command.extend(("--test-environment-config", str(args.runtime_contract.resolve())))
+            # The penetration agent reuses this SAME already-authorized contract automatically for its own
+            # second session (see run_pre_review_pipeline.py's --penetration-test-environment-config help);
+            # the trust decisions already made for the FIRST stack are reused for it the same way, so the
+            # user never has to repeat them for the agent specifically.
+            if args.no_penetration_agent:
+                command.append("--no-penetration-agent")
+            elif args.allow_trusted_local_compose:
+                command.append("--penetration-allow-compose-execution")
+            if not args.no_penetration_agent and args.browser_dast:
+                command.append("--penetration-enable-playwright")
     if args.require_all_scanners:
         command.append("--require-all-scanners")
     if args.codeql_bundle is not None:

@@ -1,0 +1,339 @@
+{
+  "status": "partial",
+  "pre_review": true,
+  "review_agent_ran": false,
+  "project": "/mnt/c/Users/ASUS/Downloads/2update/verdict-integrated/targets/owasp-benchmark-python-cat1",
+  "adapter_ids": [
+    "codeql-cli",
+    "gitleaks",
+    "semgrep-ce",
+    "trivy"
+  ],
+  "test_environment": {
+    "status": "not_requested"
+  },
+  "dast_requirement": {
+    "requested": false,
+    "satisfied": false
+  },
+  "sast_requirement": {
+    "requested": true,
+    "satisfied": true
+  },
+  "scanner_requirement": {
+    "requested": false,
+    "required": [],
+    "satisfied": true,
+    "failures": []
+  },
+  "scanner_coverage": {
+    "applicable_tasks": 3,
+    "completed_tasks": 3,
+    "not_completed": []
+  },
+  "isolated_pilot": {
+    "status": "not_requested"
+  },
+  "isolated_runtime": {
+    "status": "not_requested"
+  },
+  "docker_runtime": {
+    "status": "not_requested"
+  },
+  "runtime_evidence": {
+    "status": "not_requested"
+  },
+  "execution": {
+    "schema_version": "1.0",
+    "run_id": "static-20261027T104114Z",
+    "status": "completed",
+    "project_root_name": "owasp-benchmark-python-cat1",
+    "started_at": "2026-10-27T10:41:14.697401+00:00",
+    "finished_at": "2026-10-27T10:44:02.750820+00:00",
+    "tasks": [
+      {
+        "task_id": "task-510db4138e2f",
+        "scanner_id": "gitleaks",
+        "status": "completed",
+        "reason": "Gitleaks produced valid JSON output",
+        "prerequisite_checks": [
+          {
+            "name": "gitleaks_executable",
+            "status": "available",
+            "detail": "Gitleaks executable exists; runtime version could not be read (version check skipped)",
+            "version": null
+          },
+          {
+            "name": "target_paths",
+            "status": "available",
+            "detail": "All Gitleaks targets are inside the project root",
+            "version": null
+          },
+          {
+            "name": "git_metadata",
+            "status": "available",
+            "detail": "Git-history mode is not requested",
+            "version": null
+          }
+        ],
+        "commands": [
+          {
+            "name": "gitleaks-detect",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 0.117225,
+            "stdout_log": "gitleaks/task-510db4138e2f/logs/gitleaks-detect.stdout.log",
+            "stderr_log": "gitleaks/task-510db4138e2f/logs/gitleaks-detect.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          }
+        ],
+        "raw_outputs": [
+          "gitleaks/task-510db4138e2f/result.json"
+        ],
+        "started_at": "2026-10-27T10:41:14.744017+00:00",
+        "finished_at": "2026-10-27T10:41:14.927236+00:00"
+      },
+      {
+        "task_id": "task-dcae5d188e58",
+        "scanner_id": "semgrep-ce",
+        "status": "completed",
+        "reason": "Semgrep produced valid JSON output",
+        "prerequisite_checks": [
+          {
+            "name": "semgrep_executable",
+            "status": "available",
+            "detail": "Semgrep executable and runtime version were verified",
+            "version": "1.178.0"
+          },
+          {
+            "name": "semgrep_rules",
+            "status": "available",
+            "detail": "Trusted Semgrep configs are configured; registry availability is verified during execution",
+            "version": null
+          },
+          {
+            "name": "target_paths",
+            "status": "available",
+            "detail": "All Semgrep targets are inside the project root",
+            "version": null
+          }
+        ],
+        "commands": [
+          {
+            "name": "semgrep-scan",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 31.354767,
+            "stdout_log": "semgrep-ce/task-dcae5d188e58/logs/semgrep-scan.stdout.log",
+            "stderr_log": "semgrep-ce/task-dcae5d188e58/logs/semgrep-scan.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          }
+        ],
+        "raw_outputs": [
+          "semgrep-ce/task-dcae5d188e58/result.json"
+        ],
+        "started_at": "2026-10-27T10:41:29.263035+00:00",
+        "finished_at": "2026-10-27T10:42:00.897855+00:00"
+      },
+      {
+        "task_id": "task-e01e4c2db2dc",
+        "scanner_id": "codeql-cli",
+        "status": "completed",
+        "reason": "CodeQL produced valid SARIF output",
+        "prerequisite_checks": [
+          {
+            "name": "codeql_executable",
+            "status": "available",
+            "detail": "CodeQL runtime version 2.27.2 differs from 2.27.1 (version check skipped)",
+            "version": "2.27.2"
+          },
+          {
+            "name": "language_query_pack",
+            "status": "available",
+            "detail": "Configured python standard query suite exists",
+            "version": null
+          },
+          {
+            "name": "target_paths",
+            "status": "available",
+            "detail": "All CodeQL targets are inside the project root",
+            "version": null
+          },
+          {
+            "name": "codeql_search_path",
+            "status": "available",
+            "detail": "Configured CodeQL search path exists",
+            "version": null
+          }
+        ],
+        "commands": [
+          {
+            "name": "database-create",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 25.056296,
+            "stdout_log": "codeql-cli/task-e01e4c2db2dc/logs/database-create.stdout.log",
+            "stderr_log": "codeql-cli/task-e01e4c2db2dc/logs/database-create.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          },
+          {
+            "name": "database-analyze",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 94.149729,
+            "stdout_log": "codeql-cli/task-e01e4c2db2dc/logs/database-analyze.stdout.log",
+            "stderr_log": "codeql-cli/task-e01e4c2db2dc/logs/database-analyze.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          }
+        ],
+        "raw_outputs": [
+          "codeql-cli/task-e01e4c2db2dc/result.sarif"
+        ],
+        "started_at": "2026-10-27T10:42:03.415115+00:00",
+        "finished_at": "2026-10-27T10:44:02.730466+00:00"
+      }
+    ],
+    "coverage_gaps": [
+      "Dependency/SCA coverage is unknown for component component-cdb4ee2aea: no supported manifest or lockfile was found."
+    ],
+    "warnings": []
+  },
+  "merge_summary": {
+    "input_batches": 3,
+    "input_findings": 28,
+    "merged_findings": 22,
+    "duplicates_collapsed": 6
+  },
+  "endpoint_coverage": {
+    "status": "not_run",
+    "endpoint_count": null,
+    "probe_count": null,
+    "probed_count": 0,
+    "authentication": null,
+    "workflows": null,
+    "coverage_gaps": []
+  },
+  "ai_discovery": {
+    "required": true,
+    "satisfied": false,
+    "status": "blocked",
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "provider_calls": 1,
+    "planned_targets": 21,
+    "inspected_targets": 0,
+    "failed_batches": 1,
+    "candidate_count": 0,
+    "supported_candidates": 0,
+    "coverage_gaps": [
+      "11 planned discovery targets were not inspected; batch or candidate budget was exhausted: file:testcode/BenchmarkTest00152.py#L21-53, file:testcode/BenchmarkTest00247.py#L21-69, file:testcode/BenchmarkTest00266.py#L1-40, file:testcode/BenchmarkTest00283.py#L21-55, file:testcode/BenchmarkTest00517.py#L21-73, file:testcode/BenchmarkTest00576.py#L21-61, file:testcode/BenchmarkTest00669.py#L1-40, file:testcode/BenchmarkTest00832.py#L21-71, file:testcode/BenchmarkTest00984.py#L21-56, file:testcode/BenchmarkTest01003.py#L1-40, file:testcode/BenchmarkTest01168.py#L1-40",
+      "14 known findings were omitted from the discovery prompt's duplicate-avoidance list.",
+      "2 source windows were shortened by the prompt character budget.",
+      "Dependency/SCA coverage is unknown for component component-cdb4ee2aea: no supported manifest or lockfile was found.",
+      "Discovery batch 1 did not complete; targets: file:helpers/db_sqlite.py#L1-40, merged-5bba528e8bd25247a105, file:testcode/BenchmarkTest00012.py#L34-57, merged-99b07b4e03a54e2874c3, file:helpers/ldap.py#L1-21, merged-c6476ab34c8569ad07d1, file:helpers/separate_request.py#L1-19, file:helpers/ThingFactory.py#L1-21, file:helpers/utils.py#L1-40, file:testcode/BenchmarkTest00114.py#L21-60.",
+      "No discovery target was inspected."
+    ],
+    "warnings": [
+      "Discovery batch 1: AI provider request failed with HTTP 400"
+    ]
+  },
+  "candidate_context": {
+    "status": "partial",
+    "summary": {
+      "input_candidates": 0,
+      "contexts_created": 0,
+      "evidence_locations": 0,
+      "excerpts_collected": 0,
+      "unavailable_locations": 0,
+      "files_read": 0,
+      "bytes_read": 0
+    },
+    "coverage_gaps": [
+      "11 planned discovery targets were not inspected; batch or candidate budget was exhausted: file:testcode/BenchmarkTest00152.py#L21-53, file:testcode/BenchmarkTest00247.py#L21-69, file:testcode/BenchmarkTest00266.py#L1-40, file:testcode/BenchmarkTest00283.py#L21-55, file:testcode/BenchmarkTest00517.py#L21-73, file:testcode/BenchmarkTest00576.py#L21-61, file:testcode/BenchmarkTest00669.py#L1-40, file:testcode/BenchmarkTest00832.py#L21-71, file:testcode/BenchmarkTest00984.py#L21-56, file:testcode/BenchmarkTest01003.py#L1-40, file:testcode/BenchmarkTest01168.py#L1-40",
+      "14 known findings were omitted from the discovery prompt's duplicate-avoidance list.",
+      "2 source windows were shortened by the prompt character budget.",
+      "Dependency/SCA coverage is unknown for component component-cdb4ee2aea: no supported manifest or lockfile was found.",
+      "Discovery batch 1 did not complete; targets: file:helpers/db_sqlite.py#L1-40, merged-5bba528e8bd25247a105, file:testcode/BenchmarkTest00012.py#L34-57, merged-99b07b4e03a54e2874c3, file:helpers/ldap.py#L1-21, merged-c6476ab34c8569ad07d1, file:helpers/separate_request.py#L1-19, file:helpers/ThingFactory.py#L1-21, file:helpers/utils.py#L1-40, file:testcode/BenchmarkTest00114.py#L21-60.",
+      "No discovery target was inspected."
+    ],
+    "warnings": [
+      "Discovery batch 1: AI provider request failed with HTTP 400"
+    ]
+  },
+  "verification": {
+    "status": "partial",
+    "record_count": 0,
+    "confirmed": 0,
+    "needs_more_evidence": 0,
+    "rejected": 0,
+    "warnings": [
+      "Discovery batch 1: AI provider request failed with HTTP 400",
+      "No AI candidates were available for verification."
+    ]
+  },
+  "candidate_triage": {
+    "status": "partial",
+    "summary": {
+      "input_scanner_findings": 22,
+      "input_ai_candidates": 0,
+      "review_groups": 22,
+      "scanner_overlap": 0,
+      "candidate_overlap": 0,
+      "novel_candidates": 0,
+      "uncertain_overlap": 0,
+      "needs_more_evidence": 0,
+      "rejected": 0
+    },
+    "warnings": []
+  },
+  "security_review": {
+    "status": "not_run",
+    "satisfied": false,
+    "provider": null,
+    "model": null,
+    "review_count": 0,
+    "pending_ids": [],
+    "warnings": [
+      "Security Review Agent was not run because required AI Discovery did not complete its planned inspection."
+    ]
+  },
+  "policy_gate": {
+    "status": "incomplete",
+    "blocking": false,
+    "decision_count": 0,
+    "warnings": [
+      "Security review is incomplete; unreviewed issue groups must not be treated as safe."
+    ]
+  },
+  "context_summary": {
+    "input_findings": 22,
+    "contexts_created": 22,
+    "evidence_locations": 114,
+    "excerpts_collected": 114,
+    "files_read": 16,
+    "bytes_read": 28714,
+    "unavailable_locations": 0
+  },
+  "risk_summary": {
+    "input_findings": 22,
+    "ranked_findings": 22,
+    "selected_for_deep_review": 3,
+    "queued_for_deep_review": 0,
+    "standard_report": 19,
+    "needs_verification": 0
+  },
+  "coverage_gaps": [
+    "Dependency/SCA coverage is unknown for component component-cdb4ee2aea: no supported manifest or lockfile was found."
+  ],
+  "limitations": [
+    "Required AI Discovery did not inspect every planned target successfully; this scan is incomplete.",
+    "Security review is incomplete; pending issue groups are not cleared.",
+    "Scanner silence is not proof of safety.",
+    "Runtime checks require an authorized target URL or completed Runtime Contract evidence.",
+    "Mutating workflows remain opt-in and are not executed by this run."
+  ]
+}

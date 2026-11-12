@@ -42,6 +42,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: SL01, MS04
 - Exact audit signatures: `workflow.order_owner.3` at `/orders/{{order_id}}`
 - Detection origin: dynamic
+- Found by: Dynamic (runtime)
 - Matched reviewed signals:
   - `merged-fe4ca713f11faf9b96d6` / `merged-fe4ca713f11faf9b96d6`: {'scanner_id': 'web-runtime', 'scanner_name': 'Bounded Web Runtime Checks', 'scanner_version': '1.0', 'run_index': 0, 'result_index': 17, 'automation_id': None, 'task_id': None} · `workflow.order_owner.3` at `/orders/{{order_id}}`; review verdict `likely_vulnerability`
 
@@ -54,6 +55,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: SL02
 - Exact audit signatures: `workflow.profile_owner.2` at `/profiles/{{other_id}}`
 - Detection origin: dynamic
+- Found by: Dynamic (runtime) + AI discovery — an AI candidate was reported on this case's endpoint (issue class not verified)
 - Other findings on this endpoint (not counted as detections):
   - likely vulnerability · high · Potential IDOR in profile endpoint — GET /profiles/{} · origin: ai_discovery · group ai-1010035e8f9ad623
 - Matched reviewed signals:
@@ -68,6 +70,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: SL03
 - Exact audit signatures: `py/sql-injection` at `api/extra.py` lines 119–119
 - Detection origin: static
+- Found by: Static scanners
 - Matched reviewed signals:
   - `merged-18f1abe978f9fdaad8e6` / `merged-18f1abe978f9fdaad8e6`: {'scanner_id': 'codeql-cli', 'scanner_name': 'CodeQL', 'scanner_version': '2.27.2', 'run_index': 0, 'result_index': 7, 'automation_id': None, 'task_id': None} · `py/sql-injection` at `api/extra.py`; review verdict `likely_vulnerability`
 
@@ -80,6 +83,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: SL04
 - Exact audit signatures: `py/sql-injection` at `api/extra.py` lines 144–144
 - Detection origin: static
+- Found by: Static scanners
 - Other findings on this endpoint (not counted as detections):
   - likely vulnerability · high · Reflected server-side cross-site scripting in catalog_search endpoint — GET /catalog/search · origin: static · group merged-ea527a7d7441e2b11700
 - Matched reviewed signals:
@@ -94,6 +98,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: SL05
 - Exact audit signatures: `py/reflective-xss` at `api/extra.py` lines 145–145
 - Detection origin: static
+- Found by: Static scanners
 - Other findings on this endpoint (not counted as detections):
   - likely vulnerability · high · SQL query built from user-controlled sources — GET /catalog/search · origin: static · group merged-f60fee7d82fbca512208
 - Matched reviewed signals:
@@ -107,6 +112,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Evidence source: browser+static; proof: `benchmark/check_comprehensive_lab.py:C06`
 - Origin: SL06
 - Exact audit signatures: none defined
+- Found by: AI discovery (not counted) — an AI candidate was reported on this case's endpoint (issue class not verified)
 - Other findings on this endpoint (not counted as detections):
   - likely vulnerability · medium · Missing Anti-clickjacking Header — GET /comments · origin: dynamic · group merged-6e468e09eab3ca889e3d
   - likely vulnerability · medium · Content Security Policy (CSP) Header Not Set — GET /comments · origin: dynamic · group merged-81ff94e895c53dbc2029
@@ -123,6 +129,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: SL07, MS05
 - Exact audit signatures: `workflow.admin_users.2` at `/admin/users`
 - Detection origin: dynamic
+- Found by: Dynamic (runtime) + AI discovery — an AI candidate was reported on this case's endpoint (issue class not verified)
 - Other findings on this endpoint (not counted as detections):
   - likely vulnerability · high · Missing role-based access control on admin user listing — GET /admin/users · origin: ai_discovery · group ai-9879663fa926587d
 - Matched reviewed signals:
@@ -137,6 +144,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: SL08
 - Exact audit signatures: `py/path-injection` at `api/extra.py` lines 212–215
 - Detection origin: static
+- Found by: Static scanners + AI discovery — an AI candidate was reported on this case's endpoint (issue class not verified)
 - Other findings on this endpoint (not counted as detections):
   - likely vulnerability · high · Unauthenticated file read endpoint — GET /files · origin: ai_discovery · group ai-827cbbfd5e460c8b
   - likely vulnerability · medium · Potential path traversal via unverified file name in /files endpoint — GET /files · origin: ai_discovery · group ai-f3fefb54ee3cb0c0
@@ -153,6 +161,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Evidence source: dast+static; proof: `benchmark/check_comprehensive_lab.py:C10`
 - Origin: SL10
 - Exact audit signatures: none defined
+- Found by: none
 - Matched reviewed signals: none
 
 ### C11 · debug_exposure — detected
@@ -164,6 +173,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: SL11, MS13
 - Exact audit signatures: `workflow.debug_access.1` at `/debug/config`
 - Detection origin: dynamic
+- Found by: Dynamic (runtime)
 - Matched reviewed signals:
   - `merged-f5fff899f9294177dc70` / `merged-f5fff899f9294177dc70`: {'scanner_id': 'web-runtime', 'scanner_name': 'Bounded Web Runtime Checks', 'scanner_version': '1.0', 'run_index': 0, 'result_index': 28, 'automation_id': None, 'task_id': None} · `workflow.debug_access.1` at `/debug/config`; review verdict `confirmed_vulnerability`
 
@@ -175,6 +185,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Evidence source: dast; proof: `benchmark/check_comprehensive_lab.py:C12`
 - Origin: SL12
 - Exact audit signatures: none defined
+- Found by: AI discovery (not counted) — an AI candidate was reported on this case's endpoint (issue class not verified)
 - Other findings on this endpoint (not counted as detections):
   - likely vulnerability · medium · Potential Information Disclosure via detailed error messages — GET /errors/query · origin: ai_discovery · group ai-e88439567759e848
 - Matched reviewed signals: none
@@ -187,6 +198,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Evidence source: workflow; proof: `benchmark/check_comprehensive_lab.py:C13`
 - Origin: SL13
 - Exact audit signatures: none defined
+- Found by: none
 - Matched reviewed signals: none
 
 ### C14 · cors — detected
@@ -198,6 +210,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: SL14, MS12
 - Exact audit signatures: `python.fastapi.security.wildcard-cors.wildcard-cors` at `api/app.py` lines 26–26
 - Detection origin: static
+- Found by: Static scanners
 - Other findings on this endpoint (not counted as detections):
   - likely vulnerability · low · Missing Content-Security-Policy header — GET /healthz · origin: dynamic · group merged-19f4a13e0b2d4f7413d0
   - needs more evidence · low · Missing clickjacking protection header — GET /healthz · origin: dynamic · group merged-87e0399272a390813ea5
@@ -213,6 +226,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Evidence source: workflow+static; proof: `benchmark/check_comprehensive_lab.py:C15`
 - Origin: SL15
 - Exact audit signatures: none defined
+- Found by: none
 - Matched reviewed signals: none
 
 ### C16 · unsigned_token — not_detected
@@ -223,6 +237,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Evidence source: workflow+static; proof: `benchmark/check_comprehensive_lab.py:C16`
 - Origin: MS01
 - Exact audit signatures: none defined
+- Found by: none
 - Matched reviewed signals: none
 
 ### C17 · refresh_token — not_detected
@@ -233,6 +248,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Evidence source: workflow+static; proof: `benchmark/check_comprehensive_lab.py:C17`
 - Origin: MS02
 - Exact audit signatures: none defined
+- Found by: none
 - Matched reviewed signals: none
 
 ### C18 · mass_assignment — needs_review
@@ -244,6 +260,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: MS03
 - Exact audit signatures: `workflow.owner_assignment.2` at `/orders`; `workflow.order_initial_state.1` at `/orders`; `workflow.negative_price.1` at `/orders`
 - Detection origin: dynamic
+- Found by: Dynamic (runtime)
 - Other findings on this endpoint (not counted as detections):
   - likely vulnerability · high · Catalog price must be set by the server — POST /orders · origin: dynamic · group merged-218d6fc43fe64432894a
 - Matched reviewed signals:
@@ -260,6 +277,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: MS11
 - Exact audit signatures: `workflow.invoice_owner.3` at `/invoices/{{invoice_id}}`
 - Detection origin: dynamic
+- Found by: Dynamic (runtime)
 - Matched reviewed signals:
   - `merged-54b1ddb055358b3579a2` / `merged-54b1ddb055358b3579a2`: {'scanner_id': 'web-runtime', 'scanner_name': 'Bounded Web Runtime Checks', 'scanner_version': '1.0', 'run_index': 0, 'result_index': 18, 'automation_id': None, 'task_id': None} · `workflow.invoice_owner.3` at `/invoices/{{invoice_id}}`; review verdict `confirmed_vulnerability`
 
@@ -272,6 +290,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: MS06
 - Exact audit signatures: `workflow.price_catalog.1` at `/orders`
 - Detection origin: dynamic
+- Found by: Dynamic (runtime)
 - Other findings on this endpoint (not counted as detections):
   - false positive · high · New orders cannot start as paid — POST /orders · origin: dynamic · group merged-5a7c783c30e11426af42
   - confirmed vulnerability · high · Negative order prices are accepted without validation — POST /orders · origin: dynamic · group merged-767d54ff7a729b156819
@@ -288,6 +307,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: MS07
 - Exact audit signatures: `workflow.coupon_bounds.2` at `/orders/{{order_id}}/apply-coupon`
 - Detection origin: dynamic
+- Found by: Dynamic (runtime) + AI discovery — an AI candidate was reported on this case's endpoint (issue class not verified)
 - Other findings on this endpoint (not counted as detections):
   - likely vulnerability · high · Missing authorization on coupon application — POST /orders/{}/apply-coupon · origin: ai_discovery · group ai-d0bd0cf4e664f11f
 - Matched reviewed signals:
@@ -302,6 +322,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: MS08
 - Exact audit signatures: `workflow.payment_replay.3` at `/orders/{{order_id}}/pay`
 - Detection origin: dynamic
+- Found by: Dynamic (runtime) + AI discovery — an AI candidate was reported on this case's endpoint (issue class not verified)
 - Other findings on this endpoint (not counted as detections):
   - likely vulnerability · high · Missing ownership verification on order payment — POST /orders/{}/pay · origin: ai_discovery · group ai-3b4a9d4c62593325
 - Matched reviewed signals:
@@ -316,6 +337,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: MS09
 - Exact audit signatures: `workflow.paid_cancel.3` at `/orders/{{order_id}}/cancel`
 - Detection origin: dynamic
+- Found by: Dynamic (runtime) + AI discovery — an AI candidate was reported on this case's endpoint (issue class not verified)
 - Other findings on this endpoint (not counted as detections):
   - likely vulnerability · high · Missing ownership check on order cancellation — POST /orders/{}/cancel · origin: ai_discovery · group ai-de70ebb6230142e0
 - Matched reviewed signals:
@@ -330,6 +352,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: MS10
 - Exact audit signatures: `workflow.excessive_data.1` at `/me`
 - Detection origin: dynamic
+- Found by: Dynamic (runtime)
 - Matched reviewed signals:
   - `merged-c0dcf73e8d7a6a1fbf02` / `merged-c0dcf73e8d7a6a1fbf02`: {'scanner_id': 'web-runtime', 'scanner_name': 'Bounded Web Runtime Checks', 'scanner_version': '1.0', 'run_index': 0, 'result_index': 30, 'automation_id': None, 'task_id': None} · `workflow.excessive_data.1` at `/me`; review verdict `likely_vulnerability`
 
@@ -342,6 +365,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: MS14
 - Exact audit signatures: `workflow.worker_role.1` at `/jobs`
 - Detection origin: dynamic
+- Found by: Dynamic (runtime)
 - Matched reviewed signals:
   - `merged-b7e0b624f8cddd0a9e8c` / `merged-b7e0b624f8cddd0a9e8c`: {'scanner_id': 'web-runtime', 'scanner_name': 'Bounded Web Runtime Checks', 'scanner_version': '1.0', 'run_index': 0, 'result_index': 27, 'automation_id': None, 'task_id': None} · `workflow.worker_role.1` at `/jobs`; review verdict `likely_vulnerability`
 
@@ -354,6 +378,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: MS15
 - Exact audit signatures: `workflow.webhook_destination.1` at `/webhooks`
 - Detection origin: dynamic
+- Found by: Dynamic (runtime)
 - Matched reviewed signals:
   - `merged-8cdc677a9810b317840f` / `merged-8cdc677a9810b317840f`: {'scanner_id': 'web-runtime', 'scanner_name': 'Bounded Web Runtime Checks', 'scanner_version': '1.0', 'run_index': 0, 'result_index': 32, 'automation_id': None, 'task_id': None} · `workflow.webhook_destination.1` at `/webhooks`; review verdict `confirmed_vulnerability`
 
@@ -366,6 +391,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: MS16
 - Exact audit signatures: `py/clear-text-logging-sensitive-data` at `api/app.py` lines 137–137
 - Detection origin: static
+- Found by: Static scanners
 - Matched reviewed signals:
   - `merged-3202e1e1074cfd44b9bf` / `merged-3202e1e1074cfd44b9bf`: {'scanner_id': 'codeql-cli', 'scanner_name': 'CodeQL', 'scanner_version': '2.27.2', 'run_index': 0, 'result_index': 9, 'automation_id': None, 'task_id': None} · `py/clear-text-logging-sensitive-data` at `api/app.py`; review verdict `likely_vulnerability`
 
@@ -377,6 +403,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Evidence source: static+config; proof: `benchmark/check_comprehensive_lab.py:C28`
 - Origin: MS17
 - Exact audit signatures: none defined
+- Found by: none
 - Matched reviewed signals: none
 
 ### C29 · cross_service_trust — not_detected
@@ -387,6 +414,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Evidence source: workflow; proof: `benchmark/check_comprehensive_lab.py:C29`
 - Origin: MS18
 - Exact audit signatures: none defined
+- Found by: none
 - Matched reviewed signals: none
 
 ### N01 · reset_replay — detected
@@ -398,6 +426,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: not recorded
 - Exact audit signatures: `workflow.reset_replay.3` at `/auth/reset/confirm`
 - Detection origin: dynamic
+- Found by: Dynamic (runtime)
 - Matched reviewed signals:
   - `merged-efce9419c25ced2d8892` / `merged-efce9419c25ced2d8892`: {'scanner_id': 'web-runtime', 'scanner_name': 'Bounded Web Runtime Checks', 'scanner_version': '1.0', 'run_index': 0, 'result_index': 35, 'automation_id': None, 'task_id': None} · `workflow.reset_replay.3` at `/auth/reset/confirm`; review verdict `confirmed_vulnerability`
 
@@ -410,6 +439,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: not recorded
 - Exact audit signatures: `py/url-redirection` at `api/extra.py` lines 617–617
 - Detection origin: static
+- Found by: Static scanners
 - Matched reviewed signals:
   - `merged-51bf51abe866bf8d3d67` / `merged-51bf51abe866bf8d3d67`: {'scanner_id': 'codeql-cli', 'scanner_name': 'CodeQL', 'scanner_version': '2.27.2', 'run_index': 0, 'result_index': 10, 'automation_id': None, 'task_id': None} · `py/url-redirection` at `api/extra.py`; review verdict `likely_vulnerability`
 
@@ -422,6 +452,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: not recorded
 - Exact audit signatures: `workflow.unsigned_hook.1` at `/integrations/hook`
 - Detection origin: dynamic
+- Found by: Dynamic (runtime)
 - Matched reviewed signals:
   - `merged-b98074828fe298997980` / `merged-b98074828fe298997980`: {'scanner_id': 'web-runtime', 'scanner_name': 'Bounded Web Runtime Checks', 'scanner_version': '1.0', 'run_index': 0, 'result_index': 34, 'automation_id': None, 'task_id': None} · `workflow.unsigned_hook.1` at `/integrations/hook`; review verdict `confirmed_vulnerability`
 
@@ -434,6 +465,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: not recorded
 - Exact audit signatures: `workflow.nested_note.1` at `/orders/1/notes/2`
 - Detection origin: dynamic
+- Found by: Dynamic (runtime) + AI discovery — an AI candidate was reported on this case's endpoint (issue class not verified)
 - Other findings on this endpoint (not counted as detections):
   - likely vulnerability · high · Potential IDOR in order note retrieval — GET /orders/{}/notes/{} · origin: ai_discovery · group ai-a814e72d3f3e01fb
 - Matched reviewed signals:
@@ -448,6 +480,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: not recorded
 - Exact audit signatures: `workflow.stale_role.3` at `/admin/token-report`
 - Detection origin: dynamic
+- Found by: Dynamic (runtime)
 - Matched reviewed signals:
   - `merged-d58491aad5be35b48233` / `merged-d58491aad5be35b48233`: {'scanner_id': 'web-runtime', 'scanner_name': 'Bounded Web Runtime Checks', 'scanner_version': '1.0', 'run_index': 0, 'result_index': 36, 'automation_id': None, 'task_id': None} · `workflow.stale_role.3` at `/admin/token-report`; review verdict `likely_vulnerability`
 
@@ -459,6 +492,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Evidence source: dast; proof: `benchmark/check_comprehensive_lab.py:N06`
 - Origin: not recorded
 - Exact audit signatures: none defined
+- Found by: AI discovery (not counted) — an AI candidate was reported on this case's endpoint (issue class not verified)
 - Other findings on this endpoint (not counted as detections):
   - likely vulnerability · medium · Insecure session cookie attributes on /session/start — GET /session/start · origin: ai_discovery · group ai-46240ed0abe60ad2
 - Matched reviewed signals: none
@@ -472,6 +506,7 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Origin: not recorded
 - Exact audit signatures: `zap.10038` at `/view`
 - Detection origin: dynamic
+- Found by: Dynamic (runtime)
 - Other findings on this endpoint (not counted as detections):
   - likely vulnerability · medium · Missing Anti-clickjacking Header — GET /view · origin: dynamic · group merged-4ae7658c2abfbf689e2b
   - likely vulnerability · low · X-Content-Type-Options Header Missing — GET /view · origin: dynamic · group merged-cad468186f9fd0b4e99b
@@ -764,6 +799,14 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - Exact audit signatures: none defined
 - Matched reviewed signals: none
 
+## Detected cases by source (one case can have several sources)
+
+- Static scanners: 6 of 23 detected — C03, C04, C05, C14, C27, N02
+- Dynamic (runtime): 17 of 23 detected — C01, C02, C07, C11, C19, C20, C21, C22, C23, C24, C25, C26, N01, N03, N04, N05, N07
+- AI discovery also present: 6 of 23 detected — C02, C07, C21, C22, C23, N04
+- Static only 6 · dynamic only 11 · static and dynamic 0
+- Not detected, but AI discovery reported on the same endpoint (not counted, issue class not verified): C06, C12, N06
+
 ## Detections by origin (static / dynamic)
 
 - dynamic: 17 case(s)
@@ -871,3 +914,4 @@ Precision bounds (not a point estimate): labeled-only 92.6% (optimistic), in-sco
 - AI-discovery candidates are never counted as detections here; one on a known endpoint is listed for adjudication, because its issue class is not verified against the case.
 - A clean safe control means no positive finding of its issue class landed on its route; it does not prove the scan exercised that route, so read specificity together with the recorded endpoint coverage.
 - Cases with no defined signature cannot be credited by this audit at all, whatever the scan found.
+- Found by: static and dynamic come from the exact signature match; AI discovery is listed when its candidate is in the detecting group or on the case's endpoint, is never counted as a detection, and does not prove the same issue class.

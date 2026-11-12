@@ -1,0 +1,526 @@
+{
+  "schema_version": "1.2",
+  "status": "completed",
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "scope": [
+    "file:api/seed.py#L1-30",
+    "merged-18f1abe978f9fdaad8e6",
+    "file:api/app.py#L175-186",
+    "merged-f60fee7d82fbca512208",
+    "file:mock_external/server.py#L11-30",
+    "merged-ea527a7d7441e2b11700",
+    "file:api/app.py#L189-196",
+    "merged-f4eaf141df049c63545d",
+    "file:api/app.py#L199-204",
+    "merged-83d97da4516adf20e20f",
+    "file:api/extra.py#L125-138",
+    "merged-b527b3ed30e57aac5ec5",
+    "file:api/extra.py#L247-268",
+    "merged-24d14609e3893220ea16",
+    "file:api/extra.py#L288-301",
+    "merged-794dcb4921076779cef0",
+    "merged-b3c734b4cef8dd70fce0"
+  ],
+  "candidates": [
+    {
+      "candidate_id": "ai-827cbbfd5e460c8b",
+      "title": "Unauthenticated file read endpoint",
+      "category": "Access Control",
+      "severity": "Medium",
+      "confidence": "Medium",
+      "path": "api/extra.py",
+      "start_line": 210,
+      "end_line": 215,
+      "evidence": [
+        "210: @router.get(\"/files\")",
+        "211: def file_read(name: str) -> Response:",
+        "212:     file = (FILES / \"public\" / name).resolve()",
+        "213:     if not file.is_relative_to(FILES.resolve()) or not file.is_file():",
+        "214:         raise HTTPException(404, \"File not found\")",
+        "215:     return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")"
+      ],
+      "reasoning": "The endpoint reads arbitrary files from the public directory based solely on a user\u2011supplied name and does not require any authentication or authorization header. An attacker can enumerate or retrieve files without being logged in, leading to information disclosure.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 210,
+        "code": "@router.get(\"/files\")"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 215,
+        "code": "return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 210,
+        "expected_check": "authentication/authorization header validation",
+        "observation": "No Header parameter or identity verification is performed before file access"
+      },
+      "remaining_questions": [
+        "Is there a higher\u2011level middleware that enforces authentication for all routes?",
+        "Does the FILES directory contain any sensitive files beyond public assets?"
+      ]
+    },
+    {
+      "candidate_id": "ai-b281d25e361523d2",
+      "title": "Potential missing admin role verification in admin_audit",
+      "category": "Authorization",
+      "severity": "High",
+      "confidence": "Low",
+      "path": "api/extra.py",
+      "start_line": 204,
+      "end_line": 207,
+      "evidence": [
+        "204: @router.get(\"/admin/audit\")",
+        "205: def admin_audit(authorization: str | None = Header(default=None)) -> dict:",
+        "206:     require_admin(authorization)",
+        "207:     return {\"status\": \"authorized\"}"
+      ],
+      "reasoning": "The endpoint calls `require_admin(authorization)` to enforce admin rights, but the implementation of `require_admin` is not visible. If `require_admin` does not properly validate the token or role, non\u2011admin users could access the audit endpoint.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 204,
+        "code": "@router.get(\"/admin/audit\")"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 207,
+        "code": "return {\"status\": \"authorized\"}"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 206,
+        "expected_check": "robust admin role verification inside require_admin",
+        "observation": "require_admin implementation not provided; uncertainty about its correctness"
+      },
+      "remaining_questions": [
+        "What does `require_admin` actually check? Does it verify the user's role from a trusted source?",
+        "Is the `authorization` header parsed and validated consistently across the application?"
+      ]
+    },
+    {
+      "candidate_id": "ai-ffdf7e41dd3fadea",
+      "title": "Potential missing authentication on verified_file_read endpoint",
+      "category": "Access Control",
+      "severity": "Low",
+      "confidence": "Low",
+      "path": "api/extra.py",
+      "start_line": 218,
+      "end_line": 224,
+      "evidence": [
+        "218: @router.get(\"/files/verified\")",
+        "219: def verified_file_read(name: str) -> Response:",
+        "220:     root = (FILES / \"public\").resolve()",
+        "221:     file = (root / name).resolve()",
+        "222:     if not file.is_relative_to(root) or not file.is_file():",
+        "223:         raise HTTPException(404, \"File not found\")",
+        "224:     return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")"
+      ],
+      "reasoning": "This endpoint also serves files from the public directory but does not accept an authentication header. The name `verified_file_read` suggests it should enforce some verification, yet no check is present, possibly an oversight.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 218,
+        "code": "@router.get(\"/files/verified\")"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 224,
+        "code": "return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 218,
+        "expected_check": "authentication/authorization validation",
+        "observation": "No Header parameter or identity check is performed"
+      },
+      "remaining_questions": [
+        "Is there a global security middleware that restricts this route?",
+        "Does the function name imply a missing call to an identity verification helper?"
+      ]
+    },
+    {
+      "candidate_id": "ai-b0dfdc8f9b2bed63",
+      "title": "Potential overexposure of sensitive user data in /me endpoint",
+      "category": "Sensitive Data Exposure",
+      "severity": "High",
+      "confidence": "Medium",
+      "path": "api/app.py",
+      "start_line": 199,
+      "end_line": 204,
+      "evidence": [
+        "199: @app.get(\"/me\")",
+        "200: def me(authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+        "201:     user = principal(authorization)",
+        "202:     with connection() as conn:",
+        "203:         row = conn.execute(\"SELECT id,username,role,email,ssn FROM users WHERE id=%s\", (user[\"sub\"],)).fetchone()",
+        "204:     return dict(row or {})"
+      ],
+      "reasoning": "The endpoint returns a dictionary containing fields id, username, role, email, and ssn for the authenticated user. While authentication is performed via `principal`, there is no additional authorization or scope check to restrict which fields may be disclosed. Exposing SSN and email may violate privacy principles and could be leveraged by an attacker who obtains a valid token.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/app.py",
+        "line": 199,
+        "code": "@app.get(\"/me\")"
+      },
+      "sensitive_operation": {
+        "path": "api/app.py",
+        "line": 203,
+        "code": "row = conn.execute(\"SELECT id,username,role,email,ssn FROM users WHERE id=%s\", (user[\"sub\"],)).fetchone()"
+      },
+      "missing_check": {
+        "path": "api/app.py",
+        "line": 200,
+        "expected_check": "Authorization or attribute\u2011level access control (e.g., scope check) before returning personally identifiable information",
+        "observation": "Only a principal lookup is performed; no verification that the caller is allowed to view SSN or email"
+      },
+      "remaining_questions": [
+        "Is the `principal` function performing any attribute\u2011level filtering?",
+        "Are there any downstream middleware that strips sensitive fields before response serialization?",
+        "Is the endpoint intended to be used by privileged users only?"
+      ]
+    },
+    {
+      "candidate_id": "ai-94b5d2001b78c64e",
+      "title": "Missing access control on file read endpoints",
+      "category": "Authorization Bypass",
+      "severity": "Medium",
+      "confidence": "Medium",
+      "path": "api/extra.py",
+      "start_line": 210,
+      "end_line": 215,
+      "evidence": [
+        "210: @router.get(\"/files\")",
+        "211: def file_read(name: str) -> Response:",
+        "212:     file = (FILES / \"public\" / name).resolve()",
+        "213:     if not file.is_relative_to(FILES.resolve()) or not file.is_file():",
+        "214:         raise HTTPException(404, \"File not found\")",
+        "215:     return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")"
+      ],
+      "reasoning": "The endpoint serves arbitrary files from the public directory based solely on the `name` parameter. No authentication or authorization checks are performed, allowing any unauthenticated user to retrieve files that may contain sensitive information. Although path traversal is mitigated by the `is_relative_to` check, the lack of access control is a business\u2011logic flaw.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 210,
+        "code": "@router.get(\"/files\")"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 215,
+        "code": "return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 210,
+        "expected_check": "Authentication/authorization guard (e.g., require_user or role check) before file access",
+        "observation": "No auth header or permission verification is present"
+      },
+      "remaining_questions": [
+        "Should the `/files` endpoint be publicly accessible, or is it intended for authenticated users only?",
+        "Are there any global FastAPI dependencies that enforce authentication for all routes?",
+        "Is there a risk that files in the public directory contain confidential data?"
+      ]
+    }
+  ],
+  "warnings": [
+    "3 empty source file(s) were skipped; they contain nothing to review.",
+    "The duplicate-avoidance list in the discovery prompt was trimmed; candidates are de-duplicated against scanner findings downstream.",
+    "Some background coverage gaps were not sent to the model; they remain in the report's coverage gaps."
+  ],
+  "coverage_gaps": [],
+  "usage": {
+    "queue_time": 0.362085903,
+    "prompt_tokens": 10429,
+    "prompt_time": 0.650174228,
+    "completion_tokens": 2707,
+    "completion_time": 5.653307862,
+    "total_tokens": 13136,
+    "total_time": 6.30348209,
+    "retry_count": 0,
+    "rate_limit_wait_seconds": 48.030083679999734,
+    "format_fallback_count": 0,
+    "wall_seconds": 59.119,
+    "targets": 17,
+    "planned_targets": 17,
+    "batches": 2,
+    "provider_calls": 2,
+    "estimated_cost_usd": null,
+    "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+  },
+  "target_plan": [
+    {
+      "target_id": "file:api/seed.py#L1-30",
+      "kind": "no_findings",
+      "path": "api/seed.py",
+      "start_line": 1,
+      "end_line": 30,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "merged-18f1abe978f9fdaad8e6",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 119,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 1; score 74; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:api/app.py#L175-186",
+      "kind": "unflagged_hotspot",
+      "path": "api/app.py",
+      "start_line": 175,
+      "end_line": 186,
+      "reasons": [
+        "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-f60fee7d82fbca512208",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 144,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 2; score 74; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:mock_external/server.py#L11-30",
+      "kind": "no_findings",
+      "path": "mock_external/server.py",
+      "start_line": 11,
+      "end_line": 30,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "merged-ea527a7d7441e2b11700",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 145,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 3; score 70; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:api/app.py#L189-196",
+      "kind": "unflagged_hotspot",
+      "path": "api/app.py",
+      "start_line": 189,
+      "end_line": 196,
+      "reasons": [
+        "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-f4eaf141df049c63545d",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 212,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 4; score 70; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:api/app.py#L199-204",
+      "kind": "unflagged_hotspot",
+      "path": "api/app.py",
+      "start_line": 199,
+      "end_line": 204,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-83d97da4516adf20e20f",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 213,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 5; score 70; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L125-138",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 125,
+      "end_line": 138,
+      "reasons": [
+        "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-b527b3ed30e57aac5ec5",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 215,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 6; score 70; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L247-268",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 247,
+      "end_line": 268,
+      "reasons": [
+        "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-24d14609e3893220ea16",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 221,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 7; score 70; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L288-301",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 288,
+      "end_line": 301,
+      "reasons": [
+        "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-794dcb4921076779cef0",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 222,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 8; score 70; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "merged-b3c734b4cef8dd70fce0",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 224,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 9; score 70; selected for deep review."
+      ]
+    }
+  ],
+  "batches": [
+    {
+      "batch_index": 1,
+      "target_ids": [
+        "file:api/seed.py#L1-30",
+        "merged-18f1abe978f9fdaad8e6",
+        "file:api/app.py#L175-186",
+        "merged-f60fee7d82fbca512208",
+        "file:mock_external/server.py#L11-30",
+        "merged-ea527a7d7441e2b11700",
+        "file:api/app.py#L189-196",
+        "merged-f4eaf141df049c63545d"
+      ],
+      "status": "completed",
+      "prompt_chars": 15578,
+      "provider_calls": 1,
+      "candidate_count": 3,
+      "context_requests": 0,
+      "usage": {
+        "queue_time": 0.052327515,
+        "prompt_tokens": 5159,
+        "prompt_time": 0.261183337,
+        "completion_tokens": 1527,
+        "completion_time": 3.200382304,
+        "total_tokens": 6686,
+        "total_time": 3.461565641,
+        "retry_count": 0,
+        "rate_limit_wait_seconds": 0.0,
+        "format_fallback_count": 0,
+        "wall_seconds": 4.425,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-827cbbfd5e460c8b",
+        "ai-b281d25e361523d2",
+        "ai-ffdf7e41dd3fadea"
+      ]
+    },
+    {
+      "batch_index": 2,
+      "target_ids": [
+        "file:api/app.py#L199-204",
+        "merged-83d97da4516adf20e20f",
+        "file:api/extra.py#L125-138",
+        "merged-b527b3ed30e57aac5ec5",
+        "file:api/extra.py#L247-268",
+        "merged-24d14609e3893220ea16",
+        "file:api/extra.py#L288-301",
+        "merged-794dcb4921076779cef0",
+        "merged-b3c734b4cef8dd70fce0"
+      ],
+      "status": "completed",
+      "prompt_chars": 15945,
+      "provider_calls": 1,
+      "candidate_count": 2,
+      "context_requests": 0,
+      "usage": {
+        "queue_time": 0.309758388,
+        "prompt_tokens": 5270,
+        "prompt_time": 0.388990891,
+        "completion_tokens": 1180,
+        "completion_time": 2.452925558,
+        "total_tokens": 6450,
+        "total_time": 2.841916449,
+        "retry_count": 0,
+        "rate_limit_wait_seconds": 48.030083679999734,
+        "format_fallback_count": 0,
+        "wall_seconds": 54.694,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-b0dfdc8f9b2bed63",
+        "ai-94b5d2001b78c64e"
+      ]
+    }
+  ],
+  "context_exchanges": []
+}

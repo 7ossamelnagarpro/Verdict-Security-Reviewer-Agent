@@ -12,6 +12,7 @@ import os
 import shutil
 import subprocess
 import sys
+from contextlib import contextmanager
 from dataclasses import replace
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -40,7 +41,10 @@ from security_reviewer_v2.prioritization.engine import prioritize_findings
 from security_reviewer_v2.profiler import profile_project
 from security_reviewer_v2.profiler.artifact import create_saved_profile_artifact
 from security_reviewer_v2.profiler.reporting import render_markdown
+from security_reviewer_v2.profiler.code_graph import hotspot_scores
+from security_reviewer_v2.profiler.code_graph_stage import build_code_graph
 from security_reviewer_v2.scanners import AdapterRegistry
+from security_reviewer_v2.scanners.hostpaths import find_codeql
 from security_reviewer_v2.scanners.models import ExecutionStatus
 from security_reviewer_v2.reviewers import run_security_review
 from security_reviewer_v2.reporting import write_final_report
@@ -50,7 +54,9 @@ from security_reviewer_v2.scanners.semgrep import SemgrepAdapter, SemgrepConfig
 from security_reviewer_v2.scanners.trivy import TrivyAdapter, TrivyConfig
 from security_reviewer_v2.scanners.web_runtime import RuntimeConfig, run_checks
 from security_reviewer_v2.scanners.fixture_login_corroboration import corroborate_fixture_login
-from security_reviewer_v2.test_environment import load_environment_spec, plan_environment
+from security_reviewer_v2.test_environment import load_environment_spec, plan_environment, provision_environment
+from security_reviewer_v2.context.routes import build_route_index, handler_for_source_location
+from security_reviewer_v2.dynamic_penetration_agent import ExecutionBudget, RuntimeAccess
 from security_reviewer_v2.test_environment.docker_runtime import load_docker_runtime
 
 
@@ -120,20 +126,97 @@ def _build_registry(root: Path, bundle: Path | None) -> AdapterRegistry:
             executable=str(Path(trivy).resolve()),
             # Fetch the vulnerability DB once if it is missing; set TRIVY_AUTO_DOWNLOAD_DB=0 for offline runs.
             auto_download_db=os.environ.get("TRIVY_AUTO_DOWNLOAD_DB", "1").strip().lower() not in {"0", "false", "no", "off"})))
-    if bundle and (bundle / "codeql.exe").is_file():
+    codeql_launcher = find_codeql(bundle) if bundle else None
+    if bundle and codeql_launcher is not None:
         suites = {}
         for language in ("python", "javascript", "typescript"):
             matches = list((bundle / "qlpacks/codeql").glob(f"{language}-queries/*/codeql-suites/{language}-security-extended.qls"))
             if matches:
                 suites[language] = str(matches[0])
         adapters.append(CodeQLAdapter(CodeQLConfig(
-            executable=str((bundle / "codeql.exe").resolve()), query_suites=suites,
+            executable=str(codeql_launcher.resolve()), query_suites=suites,
             search_path=str(bundle / "qlpacks"), threads=2, ram_mb=3072,
             # Deep mode: effectively no practical timeout for a local run.
             extraction_timeout_seconds=14400, analysis_timeout_seconds=14400,
             default_paths_ignore=("node_modules/**", "**/node_modules/**", "dist/**", "**/dist/**", "build/**", "**/build/**", "coverage/**", "**/coverage/**", ".git/**", ".venv/**", "vendor/**", "**/*.min.js"),
         )))
     return AdapterRegistry(tuple(adapters))
+
+
+def _route_index(project: Path, profile_result) -> list:
+    """AST route index for every profiled Python source file (reused for the penetration agent's resolver)."""
+    import ast as _ast
+    from security_reviewer_v2.profiler.models import FileCategory
+
+    files = []
+    for item in profile_result.profile.inventory:
+        if item.category is not FileCategory.SOURCE or not item.path.endswith(".py"):
+            continue
+        try:
+            resolved = (project / item.path).resolve(strict=True)
+            if not resolved.is_relative_to(project.resolve()):
+                continue
+            files.append((item.path, _ast.parse(resolved.read_text(encoding="utf-8", errors="replace"), filename=item.path)))
+        except (OSError, SyntaxError, ValueError):
+            continue
+    return build_route_index(files)
+
+
+@contextmanager
+def _penetration_session(args, project: Path, profile_result):
+    """Section 6: the Agent's OWN isolated stack, provisioned, held open for the adaptive loop, then torn down.
+
+    Yields ``(access, resolver, plan_payload)``. Both ``access`` and ``resolver`` are ``None`` — the agent
+    stays completely disabled — when ``--no-penetration-agent`` is set, or when neither
+    ``--penetration-test-environment-config`` nor ``--test-environment-config`` names a config: there is no
+    config to run on its own that means "yes, test this." ``--penetration-test-environment-config`` is for a
+    DIFFERENT config than the first stack's; with neither flag given but ``--test-environment-config`` is,
+    the agent automatically opens its OWN second session reusing that SAME already-authorized config — the
+    common case needs no second file.
+    """
+    config_path = None if args.no_penetration_agent else (
+        args.penetration_test_environment_config or args.test_environment_config
+    )
+    if not config_path:
+        yield None, None, {"schema_version": "1.0", "status": "not_requested", "base_url": None,
+                           "evidence": (), "missing": (), "warnings": ()}
+        return
+    try:
+        spec = load_environment_spec(config_path, project_root=project)
+        plan = plan_environment(spec, project_root=project, profile=profile_result)
+    except (OSError, ValueError) as error:
+        yield None, None, {"schema_version": "1.0", "status": "blocked",
+                           "missing": [f"Invalid penetration test-environment configuration: {error}"],
+                           "warnings": [], "evidence": []}
+        return
+    if plan.status != "ready_for_validation" or not spec.workflow_suite:
+        warnings = list(plan.warnings)
+        if not spec.workflow_suite:
+            warnings.append("No workflow_suite (accounts) declared; the penetration agent needs at least one account.")
+        yield None, None, {**plan.to_dict(), "warnings": warnings}
+        return
+
+    accounts = tuple(sorted(account["id"] for account in spec.workflow_suite.get("accounts", ())))
+    account_definitions = {account["id"]: account for account in spec.workflow_suite.get("accounts", ())}
+    route_index = _route_index(project, profile_result)
+    allowed_endpoints = frozenset(spec.endpoint_paths) | frozenset(handler.template for handler in route_index)
+
+    def resolver(candidate) -> str | None:
+        handler = handler_for_source_location(route_index, candidate.path, candidate.start_line, candidate.end_line)
+        return handler.template if handler is not None else None
+
+    with provision_environment(
+        spec, plan, project_root=project, allow_compose_execution=args.penetration_allow_compose_execution,
+    ) as session:
+        # ZAP active-scan corroboration needs the agent's OWN disposable Compose stack identity — it never
+        # runs against existing_url, matching run_zap's own requirement unchanged.
+        zap_context = ({"stack_name": session.project_name, "app_service": spec.app_service}
+                       if session.mode == "docker_compose" and session.project_name and spec.app_service
+                       else None)
+        access = RuntimeAccess(base_url=session.base_url, allowed_endpoints=allowed_endpoints,
+                               accounts=accounts, account_definitions=account_definitions,
+                               zap_context=zap_context, playwright_enabled=args.penetration_enable_playwright)
+        yield access, resolver, {**plan.to_dict(), "base_url": session.base_url}
 
 
 def main() -> int:
@@ -171,6 +254,34 @@ def main() -> int:
     parser.add_argument("--ai-output-cost-per-million", type=float, default=None, help="optional caller-supplied USD rate for cost estimates")
     parser.add_argument("--review-max-findings", type=int, default=3, help="legacy name: maximum issue groups per model call, never a total-run cutoff")
     parser.add_argument("--codeql-bundle", type=Path)
+    parser.add_argument("--code-graph", choices=("auto", "off"), default="auto",
+                        help="auto: build the code graph (Graphify via GRAPHIFY_COMMAND, else the built-in import graph) "
+                             "and feed it to prioritization and AI Discovery; off: skip it")
+    parser.add_argument("--code-graph-json", type=Path,
+                        help="use an already-built graph.json (for example Graphify output) instead of building one")
+    parser.add_argument("--graphify-command", default=None,
+                        help="Graphify command template, e.g. 'graphify {project}'; overrides GRAPHIFY_COMMAND")
+    parser.add_argument("--penetration-test-environment-config", type=Path, default=None,
+                        help="environment-spec JSON for the Autonomous Penetration Testing Agent's own "
+                             "isolated stack. Omit this and, as long as --test-environment-config is given "
+                             "and --no-penetration-agent is not set, the agent automatically reuses that "
+                             "SAME already-authorized config for its own second session — no second file "
+                             "is required for the common case. Pass this only to use a DIFFERENT config.")
+    parser.add_argument("--no-penetration-agent", action="store_true",
+                        help="explicitly disable the penetration agent, even if --test-environment-config "
+                             "would otherwise let it run automatically")
+    parser.add_argument("--penetration-allow-compose-execution", action="store_true",
+                        help="allow Docker Compose to start the penetration agent's own stack (same opt-in "
+                             "requirement as --test-environment-config's); not needed for an existing_url target")
+    parser.add_argument("--penetration-enable-playwright", action="store_true",
+                        help="let the agent corroborate an inconclusive/clean HTTP result with one real "
+                             "browser visit (requires Node.js + Playwright; same trust level as --browser-dast)")
+    parser.add_argument("--penetration-max-attempts-per-hypothesis", type=int, default=4)
+    parser.add_argument("--penetration-max-requests-per-hypothesis", type=int, default=40)
+    parser.add_argument("--penetration-max-total-requests", type=int, default=300)
+    parser.add_argument("--penetration-max-seconds-per-hypothesis", type=float, default=180.0)
+    parser.add_argument("--penetration-max-total-seconds", type=float, default=1800.0,
+                        help="hard ceiling on how long the second stack stays up for the adaptive loop")
     parser.add_argument("--test-environment-config", type=Path,
                         help="user-supplied environment configuration outside the target project; preflight only")
     parser.add_argument("--docker-runtime-run-id", default=None,
@@ -245,6 +356,21 @@ def main() -> int:
     if docker_runtime_payload is not None:
         _write(output / "docker-runtime-evidence.json", docker_runtime_payload)
     profile_result = profile_project(project)
+    code_graph_build = {"status": "disabled", "engine": None, "path": None, "warnings": []}
+    if args.code_graph_json is not None or args.code_graph == "auto":
+        # Pass 2 of the two-pass flow: build (or accept) the graph, then re-profile so the planner, risk ranking and
+        # AI Discovery see its hotspots. A graph problem never blocks the scan; it is recorded as a coverage gap.
+        graph_path = args.code_graph_json.resolve() if args.code_graph_json is not None else None
+        if graph_path is not None:
+            code_graph_build = {"status": "supplied", "engine": "external", "path": str(graph_path), "warnings": []}
+        else:
+            built = build_code_graph(project, profile_result, output / "code-graph",
+                                     graphify_command=args.graphify_command)
+            code_graph_build = built.to_dict()
+            graph_path = built.path
+        if graph_path is not None:
+            profile_result = profile_project(project, code_graph_path=graph_path)
+        _write(output / "code-graph-build.json", code_graph_build)
     profile_artifact = create_saved_profile_artifact(profile_result, project)
     _write(output / "profile.json", profile_artifact)
     (output / "profile.md").write_text(render_markdown(profile_result), encoding="utf-8")
@@ -408,27 +534,46 @@ def main() -> int:
     _write(output / "context.json", context.to_dict())
     if any(warning.startswith("source_changed_since_profile:") for warning in context.warnings):
         raise SystemExit("Source files changed since profiling; rerun the pipeline before risk or AI review")
-    risk = prioritize_findings(merged, context)
+    risk = prioritize_findings(merged, context, hotspots=hotspot_scores(profile_result.code_graph))
     _write(output / "risk.json", risk.to_dict())
-    with pipeline_trace("pre-review-pipeline", metadata={"provider": args.ai_provider, "model": str(args.ai_model)}):
-        agent_state = run_agent_review_graph(
-            provider=provider,
-            discovery_config=DiscoveryConfig(
-                provider=args.ai_provider, model=args.ai_model, max_targets=args.ai_max_targets,
-                max_batches=args.ai_max_batches, max_planned_targets=args.ai_max_planned_targets, max_hotspots_per_file=getattr(args, "ai_max_hotspots_per_file", 100),
-                max_files_considered=args.ai_max_files, max_context_chars=args.ai_max_context_chars,
-                max_candidates=args.ai_max_candidates, max_enrichment_rounds=args.ai_max_enrichment_rounds,
-                input_cost_per_million_tokens_usd=args.ai_input_cost_per_million,
-                output_cost_per_million_tokens_usd=args.ai_output_cost_per_million,
-            ),
-            project_root=project, profile_artifact=profile_artifact,
-            merged=merged, context=context, risk=risk,
-            additional_coverage_gaps=tuple(execution.coverage_gaps) + tuple(coverage_payload.get("coverage_gaps", ())),
-            deployment_context=(docker_runtime_payload or {}).get("deployment_context"),
-            max_reviews=args.review_max_findings,
-            write_artifact=lambda name, payload: _write(output / name, payload),
-            review_runner=run_security_review,
-        )
+
+    penetration_access = None
+    penetration_resolver = None
+    penetration_budget = None
+    penetration_plan_payload = {"status": "not_requested"}
+    with _penetration_session(
+        args, project, profile_result,
+    ) as (penetration_access, penetration_resolver, penetration_plan_payload):
+        penetration_budget = ExecutionBudget(
+            max_attempts_per_hypothesis=args.penetration_max_attempts_per_hypothesis,
+            max_requests_per_hypothesis=args.penetration_max_requests_per_hypothesis,
+            max_total_requests=args.penetration_max_total_requests,
+            max_seconds_per_hypothesis=args.penetration_max_seconds_per_hypothesis,
+            max_total_seconds=args.penetration_max_total_seconds,
+        ) if penetration_access is not None else None
+        _write(output / "penetration-test-environment-plan.json", penetration_plan_payload)
+        with pipeline_trace("pre-review-pipeline", metadata={"provider": args.ai_provider, "model": str(args.ai_model)}):
+            agent_state = run_agent_review_graph(
+                provider=provider,
+                penetration_access=penetration_access,
+                penetration_target_resolver=penetration_resolver,
+                penetration_budget=penetration_budget,
+                discovery_config=DiscoveryConfig(
+                    provider=args.ai_provider, model=args.ai_model, max_targets=args.ai_max_targets,
+                    max_batches=args.ai_max_batches, max_planned_targets=args.ai_max_planned_targets, max_hotspots_per_file=getattr(args, "ai_max_hotspots_per_file", 100),
+                    max_files_considered=args.ai_max_files, max_context_chars=args.ai_max_context_chars,
+                    max_candidates=args.ai_max_candidates, max_enrichment_rounds=args.ai_max_enrichment_rounds,
+                    input_cost_per_million_tokens_usd=args.ai_input_cost_per_million,
+                    output_cost_per_million_tokens_usd=args.ai_output_cost_per_million,
+                ),
+                project_root=project, profile_artifact=profile_artifact,
+                merged=merged, context=context, risk=risk,
+                additional_coverage_gaps=tuple(execution.coverage_gaps) + tuple(coverage_payload.get("coverage_gaps", ())),
+                deployment_context=(docker_runtime_payload or {}).get("deployment_context"),
+                max_reviews=args.review_max_findings,
+                write_artifact=lambda name, payload: _write(output / name, payload),
+                review_runner=run_security_review,
+            )
     discovery_payload = agent_state["discovery_payload"]
     discovery_usage = discovery_payload.get("usage") or {}
     discovery_batches = discovery_payload.get("batches") or []
@@ -458,6 +603,7 @@ def main() -> int:
                        discovery=discovery_payload, discovery_required_satisfied=discovery_satisfied,
                        docker_runtime=docker_runtime_payload,
                        runtime_evidence=generic_runtime_payload,
+                       penetration_test=agent_state.get("penetration_test_payload"),
                        merged=merged.to_dict(), risk=risk.to_dict(),
                        execution=execution.to_dict(), scanner_requirement=scanner_requirement,
                        coverage_gaps=coverage_gaps)
@@ -475,8 +621,16 @@ def main() -> int:
                                                     and task.status == ExecutionStatus.COMPLETED
                                                     for task in execution.tasks)},
               "scanner_requirement": scanner_requirement,
+              "code_graph": {**code_graph_build,
+                             "schema_status": getattr(profile_result.code_graph, "schema_status", None),
+                             "files_in_graph": getattr(profile_result.code_graph, "files_in_graph", 0),
+                             "hotspots": len(getattr(profile_result.code_graph, "hotspots", ()) or ())},
               "docker_runtime": docker_runtime_payload or {"status": "not_requested"},
               "runtime_evidence": generic_runtime_payload or {"status": "not_requested"},
+              "dynamic_penetration_agent": {
+                  "test_environment": penetration_plan_payload,
+                  "results": agent_state.get("penetration_test_payload", {"status": "not_run"}),
+              },
               "execution": execution.to_dict(), "merge_summary": asdict(merged.summary),
               "endpoint_coverage": {"status": coverage_payload.get("status"),
                                      "endpoint_count": coverage_payload.get("endpoint_count"),

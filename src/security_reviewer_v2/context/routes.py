@@ -132,6 +132,18 @@ def explain_route(index: Iterable[RouteHandler], request_path: str, method: str 
     return RouteMatch(None, "ambiguous", tuple(top.values()))
 
 
+def handler_for_source_location(index: Iterable[RouteHandler], path: str, start_line: int, end_line: int) -> RouteHandler | None:
+    """The one route handler whose decorator sits inside ``[start_line, end_line]`` of ``path``, if any.
+
+    Used to turn a Discovery/Verification candidate's source anchor into the HTTP route it concerns, for
+    ``dynamic_penetration_agent``'s ``target_endpoint_resolver`` — never a guess, only an exact source match.
+    """
+    matches = [handler for handler in index if handler.path == path and start_line <= handler.line <= end_line]
+    if len(matches) == 1:
+        return matches[0]
+    return None
+
+
 def resolve_route(index: Iterable[RouteHandler], request_path: str, method: str | None = None) -> RouteHandler | None:
     """The single handler serving ``request_path`` (and ``method`` when known), or None when unknown/ambiguous."""
     return explain_route(index, request_path, method).handler

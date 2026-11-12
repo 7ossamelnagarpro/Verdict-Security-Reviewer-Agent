@@ -1,0 +1,681 @@
+{
+  "schema_version": "1.0",
+  "ground_truth": "/home/asus_safaa99/BenchmarkPython/expectedresults-0.1.csv",
+  "scan_root": "targets/owasp-benchmark-python-cat1",
+  "scored_tests": 28,
+  "vulnerable": 14,
+  "safe": 14,
+  "modes": {
+    "scanners_only": {
+      "tests": 28,
+      "tp": 8,
+      "fn": 6,
+      "fp": 6,
+      "tn": 8,
+      "precision": 0.5714,
+      "recall_tpr": 0.5714,
+      "fpr": 0.4286,
+      "f1": 0.5714,
+      "accuracy": 0.5714,
+      "benchmark_score": 0.1429,
+      "categories": {
+        "cmdi": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 1,
+          "tn": 0,
+          "tpr": 1.0,
+          "fpr": 1.0,
+          "score": 0.0
+        },
+        "codeinj": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 1,
+          "tn": 0,
+          "tpr": 1.0,
+          "fpr": 1.0,
+          "score": 0.0
+        },
+        "deserialization": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 1,
+          "tn": 0,
+          "tpr": 1.0,
+          "fpr": 1.0,
+          "score": 0.0
+        },
+        "hash": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 1.0,
+          "fpr": 0.0,
+          "score": 1.0
+        },
+        "ldapi": {
+          "tp": 0,
+          "fn": 1,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 0.0,
+          "fpr": 0.0,
+          "score": 0.0
+        },
+        "pathtraver": {
+          "tp": 0,
+          "fn": 1,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 0.0,
+          "fpr": 0.0,
+          "score": 0.0
+        },
+        "redirect": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 1,
+          "tn": 0,
+          "tpr": 1.0,
+          "fpr": 1.0,
+          "score": 0.0
+        },
+        "securecookie": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 1,
+          "tn": 0,
+          "tpr": 1.0,
+          "fpr": 1.0,
+          "score": 0.0
+        },
+        "sqli": {
+          "tp": 0,
+          "fn": 1,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 0.0,
+          "fpr": 0.0,
+          "score": 0.0
+        },
+        "trustbound": {
+          "tp": 0,
+          "fn": 1,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 0.0,
+          "fpr": 0.0,
+          "score": 0.0
+        },
+        "weakrand": {
+          "tp": 0,
+          "fn": 1,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 0.0,
+          "fpr": 0.0,
+          "score": 0.0
+        },
+        "xpathi": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 1.0,
+          "fpr": 0.0,
+          "score": 1.0
+        },
+        "xss": {
+          "tp": 0,
+          "fn": 1,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 0.0,
+          "fpr": 0.0,
+          "score": 0.0
+        },
+        "xxe": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 1,
+          "tn": 0,
+          "tpr": 1.0,
+          "fpr": 1.0,
+          "score": 0.0
+        }
+      }
+    },
+    "ai_discovery": {
+      "tests": 28,
+      "tp": 5,
+      "fn": 9,
+      "fp": 4,
+      "tn": 10,
+      "precision": 0.5556,
+      "recall_tpr": 0.3571,
+      "fpr": 0.2857,
+      "f1": 0.4348,
+      "accuracy": 0.5357,
+      "benchmark_score": 0.0714,
+      "categories": {
+        "cmdi": {
+          "tp": 0,
+          "fn": 1,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 0.0,
+          "fpr": 0.0,
+          "score": 0.0
+        },
+        "codeinj": {
+          "tp": 0,
+          "fn": 1,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 0.0,
+          "fpr": 0.0,
+          "score": 0.0
+        },
+        "deserialization": {
+          "tp": 0,
+          "fn": 1,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 0.0,
+          "fpr": 0.0,
+          "score": 0.0
+        },
+        "hash": {
+          "tp": 0,
+          "fn": 1,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 0.0,
+          "fpr": 0.0,
+          "score": 0.0
+        },
+        "ldapi": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 1,
+          "tn": 0,
+          "tpr": 1.0,
+          "fpr": 1.0,
+          "score": 0.0
+        },
+        "pathtraver": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 1,
+          "tn": 0,
+          "tpr": 1.0,
+          "fpr": 1.0,
+          "score": 0.0
+        },
+        "redirect": {
+          "tp": 0,
+          "fn": 1,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 0.0,
+          "fpr": 0.0,
+          "score": 0.0
+        },
+        "securecookie": {
+          "tp": 0,
+          "fn": 1,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 0.0,
+          "fpr": 0.0,
+          "score": 0.0
+        },
+        "sqli": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 1.0,
+          "fpr": 0.0,
+          "score": 1.0
+        },
+        "trustbound": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 1,
+          "tn": 0,
+          "tpr": 1.0,
+          "fpr": 1.0,
+          "score": 0.0
+        },
+        "weakrand": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 1.0,
+          "fpr": 0.0,
+          "score": 1.0
+        },
+        "xpathi": {
+          "tp": 0,
+          "fn": 1,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 0.0,
+          "fpr": 0.0,
+          "score": 0.0
+        },
+        "xss": {
+          "tp": 0,
+          "fn": 1,
+          "fp": 1,
+          "tn": 0,
+          "tpr": 0.0,
+          "fpr": 1.0,
+          "score": -1.0
+        },
+        "xxe": {
+          "tp": 0,
+          "fn": 1,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 0.0,
+          "fpr": 0.0,
+          "score": 0.0
+        }
+      }
+    },
+    "agent_final": {
+      "tests": 28,
+      "tp": 11,
+      "fn": 3,
+      "fp": 4,
+      "tn": 10,
+      "precision": 0.7333,
+      "recall_tpr": 0.7857,
+      "fpr": 0.2857,
+      "f1": 0.7586,
+      "accuracy": 0.75,
+      "benchmark_score": 0.5,
+      "categories": {
+        "cmdi": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 1,
+          "tn": 0,
+          "tpr": 1.0,
+          "fpr": 1.0,
+          "score": 0.0
+        },
+        "codeinj": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 1.0,
+          "fpr": 0.0,
+          "score": 1.0
+        },
+        "deserialization": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 1,
+          "tn": 0,
+          "tpr": 1.0,
+          "fpr": 1.0,
+          "score": 0.0
+        },
+        "hash": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 1.0,
+          "fpr": 0.0,
+          "score": 1.0
+        },
+        "ldapi": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 1.0,
+          "fpr": 0.0,
+          "score": 1.0
+        },
+        "pathtraver": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 1,
+          "tn": 0,
+          "tpr": 1.0,
+          "fpr": 1.0,
+          "score": 0.0
+        },
+        "redirect": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 1.0,
+          "fpr": 0.0,
+          "score": 1.0
+        },
+        "securecookie": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 1.0,
+          "fpr": 0.0,
+          "score": 1.0
+        },
+        "sqli": {
+          "tp": 0,
+          "fn": 1,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 0.0,
+          "fpr": 0.0,
+          "score": 0.0
+        },
+        "trustbound": {
+          "tp": 0,
+          "fn": 1,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 0.0,
+          "fpr": 0.0,
+          "score": 0.0
+        },
+        "weakrand": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 1.0,
+          "fpr": 0.0,
+          "score": 1.0
+        },
+        "xpathi": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 1.0,
+          "fpr": 0.0,
+          "score": 1.0
+        },
+        "xss": {
+          "tp": 0,
+          "fn": 1,
+          "fp": 0,
+          "tn": 1,
+          "tpr": 0.0,
+          "fpr": 0.0,
+          "score": 0.0
+        },
+        "xxe": {
+          "tp": 1,
+          "fn": 0,
+          "fp": 1,
+          "tn": 0,
+          "tpr": 1.0,
+          "fpr": 1.0,
+          "score": 0.0
+        }
+      }
+    }
+  },
+  "notes": [],
+  "cases": [
+    {
+      "id": "BenchmarkTest00012",
+      "category": "sqli",
+      "vulnerable": false,
+      "reported_by": []
+    },
+    {
+      "id": "BenchmarkTest00068",
+      "category": "redirect",
+      "vulnerable": true,
+      "reported_by": [
+        "scanners_only",
+        "agent_final"
+      ]
+    },
+    {
+      "id": "BenchmarkTest00114",
+      "category": "weakrand",
+      "vulnerable": true,
+      "reported_by": [
+        "ai_discovery",
+        "agent_final"
+      ]
+    },
+    {
+      "id": "BenchmarkTest00151",
+      "category": "redirect",
+      "vulnerable": false,
+      "reported_by": [
+        "scanners_only"
+      ]
+    },
+    {
+      "id": "BenchmarkTest00152",
+      "category": "trustbound",
+      "vulnerable": false,
+      "reported_by": [
+        "ai_discovery"
+      ]
+    },
+    {
+      "id": "BenchmarkTest00159",
+      "category": "codeinj",
+      "vulnerable": true,
+      "reported_by": [
+        "scanners_only",
+        "agent_final"
+      ]
+    },
+    {
+      "id": "BenchmarkTest00167",
+      "category": "cmdi",
+      "vulnerable": true,
+      "reported_by": [
+        "scanners_only",
+        "agent_final"
+      ]
+    },
+    {
+      "id": "BenchmarkTest00205",
+      "category": "xxe",
+      "vulnerable": true,
+      "reported_by": [
+        "scanners_only",
+        "agent_final"
+      ]
+    },
+    {
+      "id": "BenchmarkTest00212",
+      "category": "xpathi",
+      "vulnerable": true,
+      "reported_by": [
+        "scanners_only",
+        "agent_final"
+      ]
+    },
+    {
+      "id": "BenchmarkTest00247",
+      "category": "hash",
+      "vulnerable": false,
+      "reported_by": []
+    },
+    {
+      "id": "BenchmarkTest00266",
+      "category": "ldapi",
+      "vulnerable": true,
+      "reported_by": [
+        "ai_discovery",
+        "agent_final"
+      ]
+    },
+    {
+      "id": "BenchmarkTest00283",
+      "category": "sqli",
+      "vulnerable": true,
+      "reported_by": [
+        "ai_discovery"
+      ]
+    },
+    {
+      "id": "BenchmarkTest00290",
+      "category": "xpathi",
+      "vulnerable": false,
+      "reported_by": []
+    },
+    {
+      "id": "BenchmarkTest00349",
+      "category": "deserialization",
+      "vulnerable": false,
+      "reported_by": [
+        "scanners_only",
+        "agent_final"
+      ]
+    },
+    {
+      "id": "BenchmarkTest00517",
+      "category": "pathtraver",
+      "vulnerable": true,
+      "reported_by": [
+        "ai_discovery",
+        "agent_final"
+      ]
+    },
+    {
+      "id": "BenchmarkTest00576",
+      "category": "weakrand",
+      "vulnerable": false,
+      "reported_by": []
+    },
+    {
+      "id": "BenchmarkTest00669",
+      "category": "xss",
+      "vulnerable": true,
+      "reported_by": []
+    },
+    {
+      "id": "BenchmarkTest00714",
+      "category": "hash",
+      "vulnerable": true,
+      "reported_by": [
+        "scanners_only",
+        "agent_final"
+      ]
+    },
+    {
+      "id": "BenchmarkTest00721",
+      "category": "securecookie",
+      "vulnerable": false,
+      "reported_by": [
+        "scanners_only"
+      ]
+    },
+    {
+      "id": "BenchmarkTest00736",
+      "category": "cmdi",
+      "vulnerable": false,
+      "reported_by": [
+        "scanners_only",
+        "agent_final"
+      ]
+    },
+    {
+      "id": "BenchmarkTest00808",
+      "category": "securecookie",
+      "vulnerable": true,
+      "reported_by": [
+        "scanners_only",
+        "agent_final"
+      ]
+    },
+    {
+      "id": "BenchmarkTest00832",
+      "category": "pathtraver",
+      "vulnerable": false,
+      "reported_by": [
+        "ai_discovery",
+        "agent_final"
+      ]
+    },
+    {
+      "id": "BenchmarkTest00893",
+      "category": "codeinj",
+      "vulnerable": false,
+      "reported_by": [
+        "scanners_only"
+      ]
+    },
+    {
+      "id": "BenchmarkTest00984",
+      "category": "trustbound",
+      "vulnerable": true,
+      "reported_by": [
+        "ai_discovery"
+      ]
+    },
+    {
+      "id": "BenchmarkTest01003",
+      "category": "xss",
+      "vulnerable": false,
+      "reported_by": [
+        "ai_discovery"
+      ]
+    },
+    {
+      "id": "BenchmarkTest01122",
+      "category": "xxe",
+      "vulnerable": false,
+      "reported_by": [
+        "scanners_only",
+        "agent_final"
+      ]
+    },
+    {
+      "id": "BenchmarkTest01168",
+      "category": "ldapi",
+      "vulnerable": false,
+      "reported_by": [
+        "ai_discovery"
+      ]
+    },
+    {
+      "id": "BenchmarkTest01216",
+      "category": "deserialization",
+      "vulnerable": true,
+      "reported_by": [
+        "scanners_only",
+        "agent_final"
+      ]
+    }
+  ],
+  "agent_effect": {
+    "false_positives_removed": [
+      "BenchmarkTest00151",
+      "BenchmarkTest00721",
+      "BenchmarkTest00893"
+    ],
+    "real_vulnerabilities_lost": [],
+    "real_vulnerabilities_recovered": [
+      "BenchmarkTest00114",
+      "BenchmarkTest00266",
+      "BenchmarkTest00517"
+    ],
+    "false_positives_introduced": [
+      "BenchmarkTest00832"
+    ]
+  }
+}

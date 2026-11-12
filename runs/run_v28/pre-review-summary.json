@@ -1,0 +1,422 @@
+{
+  "status": "completed",
+  "pre_review": false,
+  "review_agent_ran": true,
+  "project": "/mnt/c/Users/ASUS/Downloads/2update/verdict-integrated/targets/security-lab-web",
+  "adapter_ids": [
+    "codeql-cli",
+    "gitleaks",
+    "semgrep-ce",
+    "trivy"
+  ],
+  "test_environment": {
+    "status": "not_requested"
+  },
+  "dast_requirement": {
+    "requested": false,
+    "satisfied": false
+  },
+  "sast_requirement": {
+    "requested": true,
+    "satisfied": true
+  },
+  "scanner_requirement": {
+    "requested": false,
+    "required": [],
+    "satisfied": true,
+    "failures": []
+  },
+  "isolated_pilot": {
+    "status": "not_requested"
+  },
+  "isolated_runtime": {
+    "status": "not_requested"
+  },
+  "docker_runtime": {
+    "status": "not_requested"
+  },
+  "runtime_evidence": {
+    "status": "not_requested"
+  },
+  "execution": {
+    "schema_version": "1.0",
+    "run_id": "static-20261022T092931Z",
+    "status": "partial",
+    "project_root_name": "security-lab-web",
+    "started_at": "2026-10-22T09:29:31.692677+00:00",
+    "finished_at": "2026-10-22T09:30:18.770024+00:00",
+    "tasks": [
+      {
+        "task_id": "task-45e5f84af47a",
+        "scanner_id": "trivy",
+        "status": "prerequisite_unverified",
+        "reason": "Unverified prerequisites: trivy_databases",
+        "prerequisite_checks": [
+          {
+            "name": "trivy_executable",
+            "status": "available",
+            "detail": "Trivy runtime version 0.71.2 differs from 0.75.0 (version check skipped)",
+            "version": "0.71.2"
+          },
+          {
+            "name": "target_paths",
+            "status": "available",
+            "detail": "All Trivy targets are inside the project root",
+            "version": null
+          },
+          {
+            "name": "trivy_databases",
+            "status": "unverified",
+            "detail": "SCA requires a verified Trivy vulnerability database; run trivy fs --download-db-only",
+            "version": null
+          }
+        ],
+        "commands": [],
+        "raw_outputs": [],
+        "started_at": null,
+        "finished_at": null
+      },
+      {
+        "task_id": "task-510db4138e2f",
+        "scanner_id": "gitleaks",
+        "status": "failed",
+        "reason": "Command gitleaks-dir ended with failed",
+        "prerequisite_checks": [
+          {
+            "name": "gitleaks_executable",
+            "status": "available",
+            "detail": "Gitleaks executable exists; runtime version could not be read (version check skipped)",
+            "version": null
+          },
+          {
+            "name": "target_paths",
+            "status": "available",
+            "detail": "All Gitleaks targets are inside the project root",
+            "version": null
+          },
+          {
+            "name": "git_metadata",
+            "status": "available",
+            "detail": "Git-history mode is not requested",
+            "version": null
+          }
+        ],
+        "commands": [
+          {
+            "name": "gitleaks-dir",
+            "status": "failed",
+            "exit_code": 1,
+            "duration_seconds": 0.009366,
+            "stdout_log": "gitleaks/task-510db4138e2f/logs/gitleaks-dir.stdout.log",
+            "stderr_log": "gitleaks/task-510db4138e2f/logs/gitleaks-dir.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          }
+        ],
+        "raw_outputs": [],
+        "started_at": "2026-10-22T09:29:32.019390+00:00",
+        "finished_at": "2026-10-22T09:29:32.078359+00:00"
+      },
+      {
+        "task_id": "task-9f00818366ac",
+        "scanner_id": "trivy",
+        "status": "skipped",
+        "reason": "Planning status is not_applicable",
+        "prerequisite_checks": [],
+        "commands": [],
+        "raw_outputs": [],
+        "started_at": null,
+        "finished_at": null
+      },
+      {
+        "task_id": "task-dcae5d188e58",
+        "scanner_id": "semgrep-ce",
+        "status": "completed",
+        "reason": "Semgrep produced valid JSON output",
+        "prerequisite_checks": [
+          {
+            "name": "semgrep_executable",
+            "status": "available",
+            "detail": "Semgrep executable exists; runtime version could not be read (version check skipped)",
+            "version": null
+          },
+          {
+            "name": "semgrep_rules",
+            "status": "available",
+            "detail": "Trusted Semgrep configs are configured; registry availability is verified during execution",
+            "version": null
+          },
+          {
+            "name": "target_paths",
+            "status": "available",
+            "detail": "All Semgrep targets are inside the project root",
+            "version": null
+          }
+        ],
+        "commands": [
+          {
+            "name": "semgrep-scan",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 26.883579,
+            "stdout_log": "semgrep-ce/task-dcae5d188e58/logs/semgrep-scan.stdout.log",
+            "stderr_log": "semgrep-ce/task-dcae5d188e58/logs/semgrep-scan.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          }
+        ],
+        "raw_outputs": [
+          "semgrep-ce/task-dcae5d188e58/result.json"
+        ],
+        "started_at": "2026-10-22T09:29:47.146153+00:00",
+        "finished_at": "2026-10-22T09:30:14.137775+00:00"
+      },
+      {
+        "task_id": "task-e01e4c2db2dc",
+        "scanner_id": "codeql-cli",
+        "status": "failed",
+        "reason": "Command database-create ended with failed",
+        "prerequisite_checks": [
+          {
+            "name": "codeql_executable",
+            "status": "available",
+            "detail": "CodeQL runtime version 2.27.2 differs from 2.27.1 (version check skipped)",
+            "version": "2.27.2"
+          },
+          {
+            "name": "language_query_pack",
+            "status": "available",
+            "detail": "Configured python standard query suite exists",
+            "version": null
+          },
+          {
+            "name": "target_paths",
+            "status": "available",
+            "detail": "All CodeQL targets are inside the project root",
+            "version": null
+          },
+          {
+            "name": "codeql_search_path",
+            "status": "available",
+            "detail": "Configured CodeQL search path exists",
+            "version": null
+          }
+        ],
+        "commands": [
+          {
+            "name": "database-create",
+            "status": "failed",
+            "exit_code": 2,
+            "duration_seconds": 0.569995,
+            "stdout_log": "codeql-cli/task-e01e4c2db2dc/logs/database-create.stdout.log",
+            "stderr_log": "codeql-cli/task-e01e4c2db2dc/logs/database-create.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          }
+        ],
+        "raw_outputs": [],
+        "started_at": "2026-10-22T09:30:15.961751+00:00",
+        "finished_at": "2026-10-22T09:30:16.606353+00:00"
+      },
+      {
+        "task_id": "task-f535ab2d488a",
+        "scanner_id": "trivy",
+        "status": "completed",
+        "reason": "Trivy produced valid JSON output",
+        "prerequisite_checks": [
+          {
+            "name": "trivy_executable",
+            "status": "available",
+            "detail": "Trivy runtime version 0.71.2 differs from 0.75.0 (version check skipped)",
+            "version": "0.71.2"
+          },
+          {
+            "name": "target_paths",
+            "status": "available",
+            "detail": "All Trivy targets are inside the project root",
+            "version": null
+          },
+          {
+            "name": "trivy_databases",
+            "status": "available",
+            "detail": "This Trivy scan type does not require a vulnerability database",
+            "version": null
+          }
+        ],
+        "commands": [
+          {
+            "name": "trivy-filesystem-0",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 1.173001,
+            "stdout_log": "trivy/task-f535ab2d488a/logs/trivy-filesystem-0.stdout.log",
+            "stderr_log": "trivy/task-f535ab2d488a/logs/trivy-filesystem-0.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          },
+          {
+            "name": "trivy-filesystem-1",
+            "status": "completed",
+            "exit_code": 0,
+            "duration_seconds": 0.771994,
+            "stdout_log": "trivy/task-f535ab2d488a/logs/trivy-filesystem-1.stdout.log",
+            "stderr_log": "trivy/task-f535ab2d488a/logs/trivy-filesystem-1.stderr.log",
+            "stdout_truncated": false,
+            "stderr_truncated": false
+          }
+        ],
+        "raw_outputs": [
+          "trivy/task-f535ab2d488a/result-0.json",
+          "trivy/task-f535ab2d488a/result-1.json"
+        ],
+        "started_at": "2026-10-22T09:30:16.701512+00:00",
+        "finished_at": "2026-10-22T09:30:18.754608+00:00"
+      }
+    ],
+    "coverage_gaps": [
+      "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile.",
+      "codeql-cli task task-e01e4c2db2dc did not complete: failed (Command database-create ended with failed).",
+      "gitleaks task task-510db4138e2f did not complete: failed (Command gitleaks-dir ended with failed).",
+      "trivy task task-45e5f84af47a did not complete: prerequisite_unverified (Unverified prerequisites: trivy_databases)."
+    ],
+    "warnings": []
+  },
+  "merge_summary": {
+    "input_batches": 3,
+    "input_findings": 26,
+    "merged_findings": 26,
+    "duplicates_collapsed": 0
+  },
+  "endpoint_coverage": {
+    "status": "not_run",
+    "endpoint_count": null,
+    "probe_count": null,
+    "probed_count": 0,
+    "authentication": null,
+    "workflows": null,
+    "coverage_gaps": []
+  },
+  "ai_discovery": {
+    "required": true,
+    "satisfied": true,
+    "status": "partial",
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "provider_calls": 2,
+    "planned_targets": 3,
+    "inspected_targets": 3,
+    "failed_batches": 0,
+    "candidate_count": 6,
+    "supported_candidates": 6,
+    "coverage_gaps": [
+      "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile.",
+      "codeql-cli task task-e01e4c2db2dc did not complete: failed (Command database-create ended with failed).",
+      "gitleaks task task-510db4138e2f did not complete: failed (Command gitleaks-dir ended with failed).",
+      "semgrep-ce normalization was partial; some scanner results may be unavailable.",
+      "trivy task task-45e5f84af47a did not complete: prerequisite_unverified (Unverified prerequisites: trivy_databases)."
+    ],
+    "warnings": []
+  },
+  "candidate_context": {
+    "status": "partial",
+    "summary": {
+      "input_candidates": 6,
+      "contexts_created": 6,
+      "evidence_locations": 30,
+      "excerpts_collected": 30,
+      "unavailable_locations": 0,
+      "files_read": 1,
+      "bytes_read": 11473
+    },
+    "coverage_gaps": [
+      "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile.",
+      "codeql-cli task task-e01e4c2db2dc did not complete: failed (Command database-create ended with failed).",
+      "gitleaks task task-510db4138e2f did not complete: failed (Command gitleaks-dir ended with failed).",
+      "semgrep-ce normalization was partial; some scanner results may be unavailable.",
+      "trivy task task-45e5f84af47a did not complete: prerequisite_unverified (Unverified prerequisites: trivy_databases)."
+    ],
+    "warnings": []
+  },
+  "verification": {
+    "status": "partial",
+    "record_count": 6,
+    "confirmed": 6,
+    "needs_more_evidence": 0,
+    "rejected": 0,
+    "warnings": []
+  },
+  "candidate_triage": {
+    "status": "partial",
+    "summary": {
+      "input_scanner_findings": 26,
+      "input_ai_candidates": 6,
+      "review_groups": 21,
+      "scanner_overlap": 0,
+      "candidate_overlap": 2,
+      "novel_candidates": 4,
+      "uncertain_overlap": 0,
+      "needs_more_evidence": 0,
+      "rejected": 0
+    },
+    "warnings": []
+  },
+  "security_review": {
+    "status": "completed",
+    "satisfied": true,
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "review_count": 21,
+    "pending_ids": [],
+    "warnings": []
+  },
+  "policy_gate": {
+    "status": "failed",
+    "blocking": true,
+    "decision_count": 21,
+    "warnings": [
+      "Finding is not sufficiently confirmed for an automatic block.",
+      "Finding is not sufficiently confirmed for an automatic block.",
+      "Finding is not sufficiently confirmed for an automatic block.",
+      "Finding is not sufficiently confirmed for an automatic block.",
+      "Finding is not sufficiently confirmed for an automatic block.",
+      "Finding is not sufficiently confirmed for an automatic block.",
+      "Finding is not sufficiently confirmed for an automatic block.",
+      "Finding is not sufficiently confirmed for an automatic block.",
+      "Finding is not sufficiently confirmed for an automatic block.",
+      "Finding is not sufficiently confirmed for an automatic block.",
+      "Finding is not sufficiently confirmed for an automatic block.",
+      "Finding is not sufficiently confirmed for an automatic block.",
+      "high likely vulnerability requires manual review; not auto-confirmed.",
+      "high likely vulnerability requires manual review; not auto-confirmed."
+    ]
+  },
+  "context_summary": {
+    "input_findings": 26,
+    "contexts_created": 26,
+    "evidence_locations": 26,
+    "excerpts_collected": 26,
+    "files_read": 2,
+    "bytes_read": 11932,
+    "unavailable_locations": 0
+  },
+  "risk_summary": {
+    "input_findings": 26,
+    "ranked_findings": 26,
+    "selected_for_deep_review": 0,
+    "queued_for_deep_review": 0,
+    "standard_report": 26,
+    "needs_verification": 0
+  },
+  "coverage_gaps": [
+    "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile.",
+    "codeql-cli task task-e01e4c2db2dc did not complete: failed (Command database-create ended with failed).",
+    "gitleaks task task-510db4138e2f did not complete: failed (Command gitleaks-dir ended with failed).",
+    "semgrep-ce normalization was partial; some scanner results may be unavailable.",
+    "trivy task task-45e5f84af47a did not complete: prerequisite_unverified (Unverified prerequisites: trivy_databases)."
+  ],
+  "limitations": [
+    "Scanner silence is not proof of safety.",
+    "Runtime checks require an authorized target URL or completed Runtime Contract evidence.",
+    "Mutating workflows remain opt-in and are not executed by this run."
+  ]
+}

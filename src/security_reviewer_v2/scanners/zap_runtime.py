@@ -16,12 +16,28 @@ IMAGE = "ghcr.io/zaproxy/zaproxy:stable"
 MAX_RESULTS = 500
 
 
-def automation_plan(origin: str, *, active=False, auth=None):
-    context = {"name": "verdict", "urls": [origin], "includePaths": [re.escape(origin) + r"(?:/.*)?"],
+def automation_plan(origin: str, *, active=False, auth=None, scope_path: str | None = None):
+    """Build a ZAP Automation Framework plan.
+
+    ``scope_path`` narrows the crawl/scan to one path instead of the whole origin — used by the
+    Penetration Agent's :mod:`dynamic_penetration_agent.zap_attempt` to run one scoped attempt
+    against a single hypothesis's endpoint rather than re-spidering and re-scanning the entire
+    application for every attempt. ``None`` (the default) keeps the original whole-origin plan
+    unchanged, so every existing caller and test is unaffected.
+    """
+    if scope_path is not None and (
+        not scope_path.startswith("/") or scope_path.startswith("//") or "\\" in scope_path
+        or "#" in scope_path or len(scope_path) > 500 or any(ord(char) < 32 for char in scope_path)
+    ):
+        raise ValueError("scope_path must be a bounded same-origin path")
+    target = origin + scope_path if scope_path is not None else origin + "/"
+    include = [re.escape(origin + scope_path) + r"(?:[/?].*)?$"] if scope_path is not None else \
+              [re.escape(origin) + r"(?:/.*)?"]
+    context = {"name": "verdict", "urls": [origin], "includePaths": include,
                "excludePaths": [re.escape(origin) + r"/.*(?i:logout|signout|delete|destroy).*" ]}
-    spider = {"type": "spider", "parameters": {"context": "verdict", "url": origin + "/",
-              "maxDuration": 1, "maxDepth": 3, "maxChildren": 10, "logoutAvoidance": True,
-              "processForm": False, "postForm": False},
+    spider = {"type": "spider", "parameters": {"context": "verdict", "url": target,
+              "maxDuration": 1, "maxDepth": 0 if scope_path is not None else 3, "maxChildren": 10,
+              "logoutAvoidance": True, "processForm": False, "postForm": False},
               "tests": [{"name": "At least one scoped URL must be visited", "type": "stats",
                          "statistic": "automation.spider.urls.added", "operator": ">=", "value": 1, "onFail": "error"}]}
     if auth:
@@ -55,6 +71,8 @@ def automation_plan(origin: str, *, active=False, auth=None):
                   "threadPerHost": 2, "delayInMs": 100, "maxAlertsPerRule": 10}
         if auth:
             params["user"] = "tester"
+        if scope_path is not None:
+            params["url"] = target
         jobs.extend([{"type": "activeScan", "parameters": params},
                      {"type": "passiveScan-wait", "parameters": {"maxDuration": 2}}])
     jobs.append({"type": "report", "parameters": {"template": "traditional-json", "reportDir": "/zap/wrk",
@@ -89,7 +107,14 @@ def parse_alerts(payload, origin):
     return results
 
 
-def run_zap(base_url: str, runtime_path: Path, *, engine: str, stack_name=None, app_service=None, auth=None):
+def run_zap(base_url: str, runtime_path: Path, *, engine: str, stack_name=None, app_service=None, auth=None,
+            scope_path: str | None = None, max_seconds: int | None = None):
+    """Run one ZAP Automation Framework job and merge its alerts into ``runtime_path``.
+
+    ``scope_path`` and ``max_seconds`` are additive, optional, and used only by the Penetration
+    Agent's scoped one-endpoint attempts (:mod:`dynamic_penetration_agent.zap_attempt`); every
+    existing caller passes neither and gets the original whole-origin behavior unchanged.
+    """
     if engine == "baseline":
         return
     if engine not in {"zap-passive", "zap-active"}:
@@ -124,7 +149,7 @@ def run_zap(base_url: str, runtime_path: Path, *, engine: str, stack_name=None, 
         origin = f"http://host.docker.internal:{urlsplit(base_url).port}"
     if auth and not all(os.environ.get(key) for key in ("SECURITY_TEST_ZAP_USERNAME", "SECURITY_TEST_ZAP_PASSWORD")):
         raise ValueError("Save the test account in the OS credential vault first")
-    plan = automation_plan(origin, active=engine == "zap-active", auth=auth)
+    plan = automation_plan(origin, active=engine == "zap-active", auth=auth, scope_path=scope_path)
     name = "sr-zap-" + secrets.token_hex(5)
     lease, _ = register(name)
     with tempfile.TemporaryDirectory(prefix="verdict-zap-") as directory:
@@ -143,7 +168,7 @@ def run_zap(base_url: str, runtime_path: Path, *, engine: str, stack_name=None, 
                              "-autorun", "/zap/wrk/plan.yaml"])
         print("ZAP: crawling the scoped target and collecting bounded evidence…", flush=True)
         try:
-            completed = subprocess.run(command_args, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=660, check=False)
+            completed = subprocess.run(command_args, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=max_seconds or 660, check=False)
             report = folder / "zap-report.json"
             if completed.returncode not in {0, 2} or not report.is_file():
                 from security_reviewer_v2.web.credentials import redact

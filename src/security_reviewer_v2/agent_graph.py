@@ -17,11 +17,14 @@ from security_reviewer_v2.context import CandidateContextResult, ContextResult, 
 from security_reviewer_v2.discovery.agent import DiscoveryAgent
 from security_reviewer_v2.discovery.completion import required_discovery_satisfied
 from security_reviewer_v2.discovery.models import DiscoveryConfig, DiscoveryResult
+from security_reviewer_v2.dynamic_penetration_agent import ExecutionBudget, RuntimeAccess
+from security_reviewer_v2.dynamic_penetration_agent.agent import run_penetration_tests
 from security_reviewer_v2.normalization.merge_models import MergeResult
 from security_reviewer_v2.policy import evaluate_policy
 from security_reviewer_v2.prioritization.models import RiskResult
 from security_reviewer_v2.triage import TriageResult, triage_candidates
 from security_reviewer_v2.verification import VerificationResult, verify_discovery
+from security_reviewer_v2.verification.models import VerificationRecord
 
 
 class AgentReviewState(TypedDict, total=False):
@@ -34,6 +37,7 @@ class AgentReviewState(TypedDict, total=False):
     candidate_context_payload: dict[str, Any]
     verification: VerificationResult
     verification_payload: dict[str, Any]
+    penetration_test_payload: dict[str, Any]
     triage: TriageResult
     triage_payload: dict[str, Any]
     review_payload: dict[str, Any]
@@ -54,12 +58,26 @@ def run_agent_review_graph(
     max_reviews: int,
     write_artifact: Callable[[str, dict[str, Any]], None],
     review_runner: Callable[..., Any],
+    penetration_access: RuntimeAccess | None = None,
+    penetration_target_resolver: Callable[[Any], str | None] | None = None,
+    penetration_budget: ExecutionBudget | None = None,
+    penetration_transport: Any = None,
 ) -> AgentReviewState:
     """Run Discovery through Policy Gate using the existing stage implementations.
 
     Artifacts are written as each node finishes, so a failed later node does not
     erase earlier evidence. The graph itself has no persistent checkpointer:
     source evidence and provider credentials must not enter a checkpoint store.
+
+    The optional ``dynamic_penetration_agent`` node (section 2 of the design) runs between
+    ``verification`` and ``candidate_triage`` *only* when both ``penetration_access`` (the isolated
+    second Docker stack's base URL, its allowlisted routes, and its Runtime Contract accounts) and
+    ``penetration_target_resolver`` are supplied by the caller. With neither supplied (the default),
+    this node is skipped and the graph is exactly the previous ``verification -> candidate_triage``
+    edge — no existing behavior, test, or security control changes for a caller that does not opt in.
+    The agent itself never gets network access beyond what ``penetration_access`` names: it reaches the
+    target only through ``scanners.runtime_workflows`` (the same bounded, non-mutating HTTP executor the
+    existing DAST stage uses), via the allowlisted routes and the Runtime Contract's own accounts.
     """
 
     def discovery_node(_state: AgentReviewState) -> AgentReviewState:
@@ -104,6 +122,37 @@ def run_agent_review_graph(
         write_artifact("verification.json", payload)
         return {"verification": result, "verification_payload": payload}
 
+    def penetration_node(state: AgentReviewState) -> AgentReviewState:
+        # Opt-in only (see the docstring above); still a no-op when the caller forgot the resolver.
+        if penetration_access is None or penetration_target_resolver is None:
+            payload = {"schema_version": "1.0", "status": "not_run", "results": [], "usage": {},
+                       "warnings": ["dynamic_penetration_agent was not configured for this run."]}
+            write_artifact("dynamic-penetration-test.json", payload)
+            return {"penetration_test_payload": payload}
+
+        report = run_penetration_tests(
+            state["discovery"], state["verification"], access=penetration_access,
+            target_endpoint_resolver=penetration_target_resolver, budget=penetration_budget,
+            transport=penetration_transport,
+        )
+        payload = report.to_dict()
+        write_artifact("dynamic-penetration-test.json", payload)
+
+        # This is the "Verification (evaluates exploitation evidence)" step from the design: it only
+        # annotates an existing CONFIRMED record's notes with what the agent observed — it can never
+        # change a disposition, and it never touches a candidate Verification did not already confirm.
+        by_candidate = {item.candidate_id: item for item in report.results}
+        updated_records = tuple(
+            replace(record, notes=(*record.notes, f"dynamic_penetration_agent: {by_candidate[record.candidate_id].outcome.value} "
+                                                    f"({len(by_candidate[record.candidate_id].attempts)} attempt(s)) "
+                                                    f"\u2014 {by_candidate[record.candidate_id].summary}"))
+            if record.candidate_id in by_candidate else record
+            for record in state["verification"].records
+        )
+        updated_verification = replace(state["verification"], records=updated_records)
+        return {"penetration_test_payload": payload, "verification": updated_verification,
+                "verification_payload": updated_verification.to_dict()}
+
     def triage_node(state: AgentReviewState) -> AgentReviewState:
         result = triage_candidates(state["discovery"], state["verification"], merged,
                                    project_root=project_root)
@@ -124,12 +173,18 @@ def run_agent_review_graph(
             "schema_version": "1.0", "status": "not_run", "groups": [], "records": [],
             "warnings": ["AI Discovery did not produce a result; candidate triage was not run."],
         }
+        penetration_test = {
+            "schema_version": "1.0", "status": "not_run", "results": [], "usage": {},
+            "warnings": ["AI Discovery did not produce a result; the penetration agent was not run."],
+        }
         write_artifact("candidate-context.json", candidate_context)
         write_artifact("verification.json", verification)
+        write_artifact("dynamic-penetration-test.json", penetration_test)
         write_artifact("candidate-triage.json", triage)
         return {
             "candidate_context_payload": candidate_context,
             "verification_payload": verification,
+            "penetration_test_payload": penetration_test,
             "triage_payload": triage,
         }
 
@@ -173,6 +228,7 @@ def run_agent_review_graph(
     graph.add_node("ai_discovery", discovery_node)
     graph.add_node("candidate_context", candidate_context_node)
     graph.add_node("verification", verification_node)
+    graph.add_node("dynamic_penetration_agent", penetration_node)
     graph.add_node("candidate_triage", triage_node)
     graph.add_node("missing_discovery", missing_discovery_node)
     graph.add_node("security_review", review_node)
@@ -185,7 +241,8 @@ def run_agent_review_graph(
         {"available": "candidate_context", "missing": "missing_discovery"},
     )
     graph.add_edge("candidate_context", "verification")
-    graph.add_edge("verification", "candidate_triage")
+    graph.add_edge("verification", "dynamic_penetration_agent")
+    graph.add_edge("dynamic_penetration_agent", "candidate_triage")
     graph.add_conditional_edges(
         "candidate_triage",
         lambda state: "ready" if state["discovery_satisfied"] else "incomplete",

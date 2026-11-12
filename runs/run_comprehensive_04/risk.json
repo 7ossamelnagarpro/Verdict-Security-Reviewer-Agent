@@ -1,0 +1,2236 @@
+{
+  "schema_version": "1.0",
+  "policy_version": "heuristic-v1",
+  "status": "partial",
+  "policy": {
+    "deep_review_threshold": 65,
+    "max_deep_reviews": 20
+  },
+  "findings": [
+    {
+      "rank": 1,
+      "merged_finding_id": "merged-18f1abe978f9fdaad8e6",
+      "title": "SQL query built from user-controlled sources",
+      "primary_location": {
+        "path": "api/extra.py",
+        "start_line": 119,
+        "start_column": 28,
+        "end_line": null,
+        "end_column": 33,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-89"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 74,
+      "priority_band": "high",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 12,
+          "evidence": [
+            "CWE-89"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "3 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 2,
+      "merged_finding_id": "merged-f60fee7d82fbca512208",
+      "title": "SQL query built from user-controlled sources",
+      "primary_location": {
+        "path": "api/extra.py",
+        "start_line": 144,
+        "start_column": 29,
+        "end_line": null,
+        "end_column": 82,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-89"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 74,
+      "priority_band": "high",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 12,
+          "evidence": [
+            "CWE-89"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "2 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 3,
+      "merged_finding_id": "merged-ea527a7d7441e2b11700",
+      "title": "Reflected server-side cross-site scripting",
+      "primary_location": {
+        "path": "api/extra.py",
+        "start_line": 145,
+        "start_column": 12,
+        "end_line": null,
+        "end_column": 90,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-79",
+        "CWE-116"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 70,
+      "priority_band": "high",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-79"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "2 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 4,
+      "merged_finding_id": "merged-f4eaf141df049c63545d",
+      "title": "Uncontrolled data used in path expression",
+      "primary_location": {
+        "path": "api/extra.py",
+        "start_line": 212,
+        "start_column": 13,
+        "end_line": null,
+        "end_column": 36,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-22",
+        "CWE-23",
+        "CWE-36",
+        "CWE-73",
+        "CWE-99"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 70,
+      "priority_band": "high",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-22"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "2 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 5,
+      "merged_finding_id": "merged-83d97da4516adf20e20f",
+      "title": "Uncontrolled data used in path expression",
+      "primary_location": {
+        "path": "api/extra.py",
+        "start_line": 213,
+        "start_column": 56,
+        "end_line": null,
+        "end_column": 60,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-22",
+        "CWE-23",
+        "CWE-36",
+        "CWE-73",
+        "CWE-99"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 70,
+      "priority_band": "high",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-22"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "3 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 6,
+      "merged_finding_id": "merged-b527b3ed30e57aac5ec5",
+      "title": "Uncontrolled data used in path expression",
+      "primary_location": {
+        "path": "api/extra.py",
+        "start_line": 215,
+        "start_column": 21,
+        "end_line": null,
+        "end_column": 25,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-22",
+        "CWE-23",
+        "CWE-36",
+        "CWE-73",
+        "CWE-99"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 70,
+      "priority_band": "high",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-22"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "3 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 7,
+      "merged_finding_id": "merged-24d14609e3893220ea16",
+      "title": "Uncontrolled data used in path expression",
+      "primary_location": {
+        "path": "api/extra.py",
+        "start_line": 221,
+        "start_column": 13,
+        "end_line": null,
+        "end_column": 24,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-22",
+        "CWE-23",
+        "CWE-36",
+        "CWE-73",
+        "CWE-99"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 70,
+      "priority_band": "high",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-22"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "2 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 8,
+      "merged_finding_id": "merged-794dcb4921076779cef0",
+      "title": "Uncontrolled data used in path expression",
+      "primary_location": {
+        "path": "api/extra.py",
+        "start_line": 222,
+        "start_column": 45,
+        "end_line": null,
+        "end_column": 49,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-22",
+        "CWE-23",
+        "CWE-36",
+        "CWE-73",
+        "CWE-99"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 70,
+      "priority_band": "high",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-22"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "3 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 9,
+      "merged_finding_id": "merged-b3c734b4cef8dd70fce0",
+      "title": "Uncontrolled data used in path expression",
+      "primary_location": {
+        "path": "api/extra.py",
+        "start_line": 224,
+        "start_column": 21,
+        "end_line": null,
+        "end_column": 25,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-22",
+        "CWE-23",
+        "CWE-36",
+        "CWE-73",
+        "CWE-99"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 70,
+      "priority_band": "high",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-22"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "3 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 10,
+      "merged_finding_id": "merged-3202e1e1074cfd44b9bf",
+      "title": "Clear-text logging of sensitive information",
+      "primary_location": {
+        "path": "api/app.py",
+        "start_line": 137,
+        "start_column": 55,
+        "end_line": null,
+        "end_column": 95,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-312",
+        "CWE-359",
+        "CWE-532"
+      ],
+      "scanners": [
+        "codeql-cli",
+        "semgrep-ce"
+      ],
+      "risk_score": 60,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_corroboration",
+          "label": "Independent scanner support",
+          "points": 8,
+          "evidence": [
+            "codeql-cli",
+            "semgrep-ce"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 11,
+      "merged_finding_id": "merged-9c6fcf61fc01168b15e2",
+      "title": "Log Injection",
+      "primary_location": {
+        "path": "api/app.py",
+        "start_line": 137,
+        "start_column": 45,
+        "end_line": null,
+        "end_column": 53,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "medium",
+      "cwes": [
+        "CWE-117"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 54,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "14 steps",
+            "1 files"
+          ]
+        },
+        {
+          "factor_id": "external_input",
+          "label": "External input signal in collected flow",
+          "points": 12,
+          "evidence": [
+            "flask_request_form",
+            "generic_request_json"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 12,
+      "merged_finding_id": "merged-51bf51abe866bf8d3d67",
+      "title": "URL redirection from remote source",
+      "primary_location": {
+        "path": "api/extra.py",
+        "start_line": 617,
+        "start_column": 29,
+        "end_line": null,
+        "end_column": 33,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-601"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 47,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "2 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 13,
+      "merged_finding_id": "merged-f41fd10802e7c4dd22bb",
+      "title": "URL redirection from remote source",
+      "primary_location": {
+        "path": "api/extra.py",
+        "start_line": 625,
+        "start_column": 29,
+        "end_line": null,
+        "end_column": 33,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-601"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 47,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "2 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 14,
+      "merged_finding_id": "merged-17a5197f906426a224ef",
+      "title": "Job listing requires admin role",
+      "primary_location": {
+        "path": "/admin/jobs",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/admin/jobs"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 15,
+      "merged_finding_id": "merged-da0f922505b4c0c7fed1",
+      "title": "A demoted administrator must lose administrative access",
+      "primary_location": {
+        "path": "/admin/token-report",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/admin/token-report"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 16,
+      "merged_finding_id": "merged-38e7cf77bdf9145d2ae4",
+      "title": "User listing requires admin role",
+      "primary_location": {
+        "path": "/admin/users",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/admin/users"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 17,
+      "merged_finding_id": "merged-d9421dbfc4162d6dea91",
+      "title": "Password reset tokens must be single use",
+      "primary_location": {
+        "path": "/auth/reset/confirm",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/auth/reset/confirm"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 18,
+      "merged_finding_id": "merged-e7caea540245938b275b",
+      "title": "Debug configuration is unavailable anonymously",
+      "primary_location": {
+        "path": "/debug/config",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/debug/config"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 19,
+      "merged_finding_id": "merged-8e21db3fe42adbf58979",
+      "title": "Incoming webhook events require a valid signature",
+      "primary_location": {
+        "path": "/integrations/hook",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/integrations/hook"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 20,
+      "merged_finding_id": "merged-d5c3b6b8d8dad90c4d3c",
+      "title": "Only the owner can read an invoice",
+      "primary_location": {
+        "path": "/invoices/{{invoice_id}}",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/invoices/{{invoice_id}}"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 21,
+      "merged_finding_id": "merged-a5ea8ca4c36bd6c25e2a",
+      "title": "Users cannot submit an admin job",
+      "primary_location": {
+        "path": "/jobs",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/jobs"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 22,
+      "merged_finding_id": "merged-1ba9f8276fc6dae95df8",
+      "title": "Users cannot create orders for another owner",
+      "primary_location": {
+        "path": "/orders",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/orders"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 23,
+      "merged_finding_id": "merged-2d4a81712313b5f2f621",
+      "title": "New orders cannot start as paid",
+      "primary_location": {
+        "path": "/orders",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/orders"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 24,
+      "merged_finding_id": "merged-8946f8391fc9049cbb58",
+      "title": "Negative order prices are rejected",
+      "primary_location": {
+        "path": "/orders",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/orders"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 25,
+      "merged_finding_id": "merged-cc8a9ed20905505868f0",
+      "title": "Catalog price must be set by the server",
+      "primary_location": {
+        "path": "/orders",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/orders"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 26,
+      "merged_finding_id": "merged-b4c1c4d005665a5249a7",
+      "title": "A note must belong to the order named in the URL",
+      "primary_location": {
+        "path": "/orders/1/notes/2",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/orders/1/notes/2"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 27,
+      "merged_finding_id": "merged-a9e9047867c909f567ad",
+      "title": "Only the owner can read an order",
+      "primary_location": {
+        "path": "/orders/{{order_id}}",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/orders/{{order_id}}"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 28,
+      "merged_finding_id": "merged-7da23d65adeef42d71a6",
+      "title": "Excessive coupon discounts are rejected",
+      "primary_location": {
+        "path": "/orders/{{order_id}}/apply-coupon",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/orders/{{order_id}}/apply-coupon"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 29,
+      "merged_finding_id": "merged-e683a977084f2bbcee2e",
+      "title": "Paid orders require a refund before cancellation",
+      "primary_location": {
+        "path": "/orders/{{order_id}}/cancel",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/orders/{{order_id}}/cancel"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 30,
+      "merged_finding_id": "merged-dd64ece99563dbbb173a",
+      "title": "An already paid order rejects a second payment",
+      "primary_location": {
+        "path": "/orders/{{order_id}}/pay",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/orders/{{order_id}}/pay"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 31,
+      "merged_finding_id": "merged-2b80ed0c48c0c70a93a4",
+      "title": "A user cannot read another account profile",
+      "primary_location": {
+        "path": "/profiles/{{other_id}}",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/profiles/{{other_id}}"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 32,
+      "merged_finding_id": "merged-65f25bcf14fa2ab91271",
+      "title": "Webhook destination must match the approved internal host exactly",
+      "primary_location": {
+        "path": "/webhooks",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/webhooks"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 33,
+      "merged_finding_id": "merged-70f8087c412d06924742",
+      "title": "Wildcard Cors",
+      "primary_location": {
+        "path": "api/app.py",
+        "start_line": 26,
+        "start_column": 19,
+        "end_line": 26,
+        "end_column": 24,
+        "snippet": null
+      },
+      "scanner_severity": "low",
+      "scanner_confidence": "medium",
+      "cwes": [
+        "CWE-942"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 17,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 10,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 34,
+      "merged_finding_id": "merged-58377a692410b6446bbd",
+      "title": "No HEALTHCHECK defined",
+      "primary_location": {
+        "path": "Dockerfile.api",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "low",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "trivy"
+      ],
+      "risk_score": 17,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 10,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 35,
+      "merged_finding_id": "merged-0de42012099941c48e01",
+      "title": "No HEALTHCHECK defined",
+      "primary_location": {
+        "path": "Dockerfile.mock",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "low",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "trivy"
+      ],
+      "risk_score": 17,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 10,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 36,
+      "merged_finding_id": "merged-df83daf10f817c7aa965",
+      "title": "No HEALTHCHECK defined",
+      "primary_location": {
+        "path": "Dockerfile.worker",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "low",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "trivy"
+      ],
+      "risk_score": 17,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 10,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 37,
+      "merged_finding_id": "merged-65c41e5a25b6337fec07",
+      "title": "Identity response must not expose a social security number",
+      "primary_location": {
+        "path": "/me",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 12,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/me"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 38,
+      "merged_finding_id": "merged-c150b78349615dd9bc2d",
+      "title": "Dynamic Urllib Use Detected",
+      "primary_location": {
+        "path": "worker/worker.py",
+        "start_line": 23,
+        "start_column": 14,
+        "end_line": 23,
+        "end_column": 56,
+        "snippet": null
+      },
+      "scanner_severity": "low",
+      "scanner_confidence": "low",
+      "cwes": [
+        "CWE-939"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 12,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 10,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 2,
+          "evidence": [
+            "low"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 39,
+      "merged_finding_id": "merged-19f4a13e0b2d4f7413d0",
+      "title": "Missing Content-Security-Policy header",
+      "primary_location": {
+        "path": "/healthz",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "low",
+      "scanner_confidence": "high",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 2,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 10,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/healthz"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 40,
+      "merged_finding_id": "merged-87e0399272a390813ea5",
+      "title": "Missing clickjacking protection header",
+      "primary_location": {
+        "path": "/healthz",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "low",
+      "scanner_confidence": "high",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 2,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 10,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/healthz"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 41,
+      "merged_finding_id": "merged-bbf1646deeb18d1e95db",
+      "title": "Missing X-Content-Type-Options header",
+      "primary_location": {
+        "path": "/healthz",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "low",
+      "scanner_confidence": "high",
+      "cwes": [],
+      "scanners": [
+        "web-runtime"
+      ],
+      "risk_score": 2,
+      "priority_band": "low",
+      "review_disposition": "needs_verification",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 10,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "missing_primary_context",
+          "label": "Primary context unavailable",
+          "points": -20,
+          "evidence": [
+            "unsafe_relative_path:/healthz"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 42,
+      "merged_finding_id": "merged-7711056ee3332442a201",
+      "title": "Dynamic Urllib Use Detected",
+      "primary_location": {
+        "path": "tests/test_smoke.py",
+        "start_line": 20,
+        "start_column": 10,
+        "end_line": 22,
+        "end_column": 6,
+        "snippet": null
+      },
+      "scanner_severity": "low",
+      "scanner_confidence": "low",
+      "cwes": [
+        "CWE-939"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 0,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 10,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 2,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "non_production_path",
+          "label": "Test, fixture or example path",
+          "points": -15,
+          "evidence": [
+            "tests/test_smoke.py"
+          ]
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    "unsafe_relative_path:/admin/jobs",
+    "unsafe_relative_path:/admin/token-report",
+    "unsafe_relative_path:/admin/users",
+    "unsafe_relative_path:/auth/reset/confirm",
+    "unsafe_relative_path:/debug/config",
+    "unsafe_relative_path:/healthz",
+    "unsafe_relative_path:/integrations/hook",
+    "unsafe_relative_path:/invoices/{{invoice_id}}",
+    "unsafe_relative_path:/jobs",
+    "unsafe_relative_path:/me",
+    "unsafe_relative_path:/orders",
+    "unsafe_relative_path:/orders/1/notes/2",
+    "unsafe_relative_path:/orders/{{order_id}}",
+    "unsafe_relative_path:/orders/{{order_id}}/apply-coupon",
+    "unsafe_relative_path:/orders/{{order_id}}/cancel",
+    "unsafe_relative_path:/orders/{{order_id}}/pay",
+    "unsafe_relative_path:/profiles/{{other_id}}",
+    "unsafe_relative_path:/webhooks"
+  ],
+  "coverage_gaps": [
+    "merged-17a5197f906426a224ef: primary source context is unavailable.",
+    "merged-19f4a13e0b2d4f7413d0: primary source context is unavailable.",
+    "merged-1ba9f8276fc6dae95df8: primary source context is unavailable.",
+    "merged-2b80ed0c48c0c70a93a4: primary source context is unavailable.",
+    "merged-2d4a81712313b5f2f621: primary source context is unavailable.",
+    "merged-38e7cf77bdf9145d2ae4: primary source context is unavailable.",
+    "merged-65c41e5a25b6337fec07: primary source context is unavailable.",
+    "merged-65f25bcf14fa2ab91271: primary source context is unavailable.",
+    "merged-7da23d65adeef42d71a6: primary source context is unavailable.",
+    "merged-87e0399272a390813ea5: primary source context is unavailable.",
+    "merged-8946f8391fc9049cbb58: primary source context is unavailable.",
+    "merged-8e21db3fe42adbf58979: primary source context is unavailable.",
+    "merged-a5ea8ca4c36bd6c25e2a: primary source context is unavailable.",
+    "merged-a9e9047867c909f567ad: primary source context is unavailable.",
+    "merged-b4c1c4d005665a5249a7: primary source context is unavailable.",
+    "merged-bbf1646deeb18d1e95db: primary source context is unavailable.",
+    "merged-cc8a9ed20905505868f0: primary source context is unavailable.",
+    "merged-d5c3b6b8d8dad90c4d3c: primary source context is unavailable.",
+    "merged-d9421dbfc4162d6dea91: primary source context is unavailable.",
+    "merged-da0f922505b4c0c7fed1: primary source context is unavailable.",
+    "merged-dd64ece99563dbbb173a: primary source context is unavailable.",
+    "merged-e683a977084f2bbcee2e: primary source context is unavailable.",
+    "merged-e7caea540245938b275b: primary source context is unavailable."
+  ],
+  "summary": {
+    "input_findings": 42,
+    "ranked_findings": 42,
+    "selected_for_deep_review": 9,
+    "queued_for_deep_review": 0,
+    "standard_report": 10,
+    "needs_verification": 23
+  }
+}

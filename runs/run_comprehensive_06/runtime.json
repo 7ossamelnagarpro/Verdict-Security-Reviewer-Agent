@@ -1,0 +1,160 @@
+{
+  "authorization_checks_enabled": false,
+  "coverage_notes": [
+    "Baseline checks use bounded HTTP GET observations for an authorized target; declared paths must be safe to visit.",
+    "The baseline phase alone does not crawl browsers, test account workflows or confirm exploitation; additional phases are recorded separately.",
+    "A negative result means only that this probe did not observe the behavior."
+  ],
+  "mutating_checks_enabled": false,
+  "results": [
+    {
+      "confidence": "high",
+      "evidence": {
+        "header_present": false,
+        "status": 200
+      },
+      "path": "/healthz",
+      "rule_id": "web.missing-content-security-policy",
+      "severity": "low",
+      "title": "Missing Content-Security-Policy header",
+      "vulnerable": true
+    },
+    {
+      "confidence": "high",
+      "evidence": {
+        "content_security_policy_present": false,
+        "status": 200,
+        "x_frame_options_present": false
+      },
+      "path": "/healthz",
+      "rule_id": "web.missing-clickjacking-protection",
+      "severity": "low",
+      "title": "Missing clickjacking protection header",
+      "vulnerable": true
+    },
+    {
+      "confidence": "high",
+      "evidence": {
+        "nosniff_present": false,
+        "status": 200
+      },
+      "path": "/healthz",
+      "rule_id": "web.missing-content-type-protection",
+      "severity": "low",
+      "title": "Missing X-Content-Type-Options header",
+      "vulnerable": true
+    },
+    {
+      "confidence": "medium",
+      "evidence": {
+        "content_type": "",
+        "status": 200
+      },
+      "path": "/",
+      "rule_id": "web.endpoint-server-error",
+      "severity": "medium",
+      "title": "Declared endpoint returned a server error",
+      "vulnerable": false
+    },
+    {
+      "confidence": "medium",
+      "evidence": {
+        "content_type": "",
+        "status": 200
+      },
+      "path": "/healthz",
+      "rule_id": "web.endpoint-server-error",
+      "severity": "medium",
+      "title": "Declared endpoint returned a server error",
+      "vulnerable": false
+    },
+    {
+      "confidence": "medium",
+      "evidence": {
+        "content_type": "",
+        "status": 200
+      },
+      "path": "/view",
+      "rule_id": "web.endpoint-server-error",
+      "severity": "medium",
+      "title": "Declared endpoint returned a server error",
+      "vulnerable": false
+    },
+    {
+      "confidence": "medium",
+      "evidence": {
+        "content_type": "",
+        "status": 200
+      },
+      "path": "/login",
+      "rule_id": "web.endpoint-server-error",
+      "severity": "medium",
+      "title": "Declared endpoint returned a server error",
+      "vulnerable": false
+    },
+    {
+      "confidence": "medium",
+      "evidence": {
+        "content_type": "",
+        "status": 200
+      },
+      "path": "/catalog/search?q=widget",
+      "rule_id": "web.endpoint-server-error",
+      "severity": "medium",
+      "title": "Declared endpoint returned a server error",
+      "vulnerable": false
+    },
+    {
+      "confidence": "medium",
+      "evidence": {
+        "content_type": "",
+        "status": 200
+      },
+      "path": "/catalog/query?q=widget",
+      "rule_id": "web.endpoint-server-error",
+      "severity": "medium",
+      "title": "Declared endpoint returned a server error",
+      "vulnerable": false
+    },
+    {
+      "confidence": "medium",
+      "evidence": {
+        "content_type": "",
+        "status": 200
+      },
+      "path": "/comments",
+      "rule_id": "web.endpoint-server-error",
+      "severity": "medium",
+      "title": "Declared endpoint returned a server error",
+      "vulnerable": false
+    },
+    {
+      "confidence": "medium",
+      "evidence": {
+        "content_type": "",
+        "status": 401
+      },
+      "path": "/admin/users",
+      "rule_id": "web.endpoint-server-error",
+      "severity": "medium",
+      "title": "Declared endpoint returned a server error",
+      "vulnerable": false
+    },
+    {
+      "confidence": "medium",
+      "evidence": {
+        "content_type": "",
+        "status": 200
+      },
+      "path": "/debug/config",
+      "rule_id": "web.endpoint-server-error",
+      "severity": "medium",
+      "title": "Declared endpoint returned a server error",
+      "vulnerable": false
+    }
+  ],
+  "schema_version": "1.0",
+  "source": "generic-web-runtime",
+  "status": "completed",
+  "target": "http://127.0.0.1:8091"
+}

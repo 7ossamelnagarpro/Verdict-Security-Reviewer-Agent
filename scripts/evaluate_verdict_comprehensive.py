@@ -145,6 +145,7 @@ def evaluate(truth: dict[str, Any], scan: dict[str, Any], merged: dict[str, Any]
                      "source": case.get("source"), "expected_behavior": case.get("evidence"),
                      "proof_ref": case.get("proof_ref"), "origin": case.get("origin", []),
                      "status": status, "expected_signatures": signatures, "signals": signals,
+                     "ai_in_detecting_group": any(groups[item["group_id"]].get("candidate_ids") for item in signals),
                      "has_signature": bool(signatures),
                      "origins": sorted({item["origin"] for item in signals})})
     positive = [row for row in rows if row["ground_truth"] == "confirmed_vulnerability"]
@@ -181,7 +182,81 @@ def evaluate(truth: dict[str, Any], scan: dict[str, Any], merged: dict[str, Any]
         _add_precision_audit(result, cases=cases, groups=groups, reviews=reviews, findings=findings,
                              candidates=candidates, strict_matches=strict_matches, handlers=load_handlers(source_root),
                              discovery=discovery)
+    _add_found_by(result, audited=source_root is not None)
     return result
+
+
+_SOURCE_LABELS = {"static": "Static scanners", "dynamic": "Dynamic (runtime)", "ai_discovery": "AI discovery"}
+
+
+def _add_found_by(result: dict[str, Any], *, audited: bool) -> None:
+    """Say, for every known-positive case, which parts of the pipeline produced evidence for it.
+
+    Static and dynamic come from the exact signature match that decides ``detected``. AI discovery is shown beside them
+    when an AI candidate sits in the detecting group or (audited runs) on the case's endpoint; its issue class is not
+    verified, so it never changes a case's status and is never counted as a detection.
+    """
+    positive = [row for row in result["cases"] if row["ground_truth"] == "confirmed_vulnerability"]
+    for row in positive:
+        sources = [origin for origin in ("static", "dynamic") if origin in row["origins"]]
+        if row.pop("ai_in_detecting_group", False):
+            basis = "an AI candidate was grouped with the detecting evidence"
+        elif any("ai_discovery" in item["origins"] for item in row.get("endpoint_findings", [])):
+            basis = "an AI candidate was reported on this case's endpoint (issue class not verified)"
+        else:
+            basis = None
+        if basis:
+            sources.append("ai_discovery")
+        row["found_by"], row["ai_discovery_basis"] = sources, basis
+    for row in result["cases"]:
+        row.pop("ai_in_detecting_group", None)
+    detected = [row for row in positive if row["status"] == "detected"]
+    count = lambda rows, *need: sum(all(source in row["found_by"] for source in need) for row in rows)
+    result["summary"]["found_by"] = {
+        "detected_cases": len(detected),
+        "static": count(detected, "static"), "dynamic": count(detected, "dynamic"), "ai_discovery": count(detected, "ai_discovery"),
+        "static_only": sum(row["found_by"] == ["static"] for row in detected),
+        "dynamic_only": sum(row["found_by"] == ["dynamic"] for row in detected),
+        "static_and_dynamic": sum(row["found_by"][:2] == ["static", "dynamic"] for row in detected),
+        "ai_discovery_only_not_detected": [row["id"] for row in positive if row["found_by"] == ["ai_discovery"] and row["status"] != "detected"],
+        "ai_discovery_assessed_on_endpoints": audited}
+    result["limitations"].append(
+        "Found by: static and dynamic come from the exact signature match; AI discovery is listed when its candidate is in the "
+        "detecting group" + (" or on the case's endpoint" if audited else " (endpoint placement needs the audited run)") +
+        ", is never counted as a detection, and does not prove the same issue class.")
+
+
+def found_by_text(row: dict[str, Any]) -> str:
+    """Short table text: ``Static scanners + Dynamic (runtime) + AI discovery``; an AI-only hit is marked as not counted."""
+    if row["ground_truth"] != "confirmed_vulnerability":
+        return "—"
+    sources = row.get("found_by") or []
+    if not sources:
+        return "none"
+    text = " + ".join(_SOURCE_LABELS[source] for source in sources)
+    return text + " (not counted)" if sources == ["ai_discovery"] and row["status"] != "detected" else text
+
+
+def _found_by_note(summary: dict[str, Any]) -> str:
+    found = summary["found_by"]
+    return (f"Of {found['detected_cases']} detected cases: {found['static']} have static-scanner evidence, {found['dynamic']} have dynamic "
+            f"(runtime) evidence and {found['static_and_dynamic']} have both; AI discovery also reported on {found['ai_discovery']} of them "
+            "(not counted as a detection, issue class not verified).")
+
+
+def _found_by_section(result: dict[str, Any]) -> list[tuple[str, list[str]]]:
+    summary = result["summary"].get("found_by")
+    if not summary:
+        return []
+    rows = [row for row in result["cases"] if row["ground_truth"] == "confirmed_vulnerability"]
+    ids = lambda source: ", ".join(row["id"] for row in rows if row["status"] == "detected" and source in row["found_by"]) or "none"
+    return [("Detected cases by source (one case can have several sources)", [
+        f"Static scanners: {summary['static']} of {summary['detected_cases']} detected — {ids('static')}",
+        f"Dynamic (runtime): {summary['dynamic']} of {summary['detected_cases']} detected — {ids('dynamic')}",
+        f"AI discovery also present: {summary['ai_discovery']} of {summary['detected_cases']} detected — {ids('ai_discovery')}",
+        f"Static only {summary['static_only']} · dynamic only {summary['dynamic_only']} · static and dynamic {summary['static_and_dynamic']}",
+        "Not detected, but AI discovery reported on the same endpoint (not counted, issue class not verified): "
+        + (", ".join(summary["ai_discovery_only_not_detected"]) or "none")])]
 
 
 _DISCOVERY_USAGE_KEYS = ("provider_calls", "batches", "retry_count", "rate_limit_wait_seconds", "wall_seconds",
@@ -339,6 +414,8 @@ def markdown(result: dict[str, Any]) -> str:
                 lines.append("- Exact audit signatures: none defined")
             if "origins" in row and row["ground_truth"] == "confirmed_vulnerability" and row["signals"]:
                 lines.append(f"- Detection origin: {', '.join(row['origins'])}")
+            if row["ground_truth"] == "confirmed_vulnerability":
+                lines.append(f"- Found by: {found_by_text(row)}" + (f" — {row['ai_discovery_basis']}" if row.get("ai_discovery_basis") else ""))
             if row.get("endpoint_findings"):
                 lines.append("- Other findings on this endpoint (not counted as detections):")
                 lines.extend(f"  - {_finding_line(item)}" for item in row["endpoint_findings"])
@@ -353,7 +430,7 @@ def markdown(result: dict[str, Any]) -> str:
             else:
                 lines.append("- Matched reviewed signals: none")
             lines.append("")
-    for heading, items in _audit_sections(result):
+    for heading, items in [*_found_by_section(result), *_audit_sections(result)]:
         lines += [f"## {heading}", ""] + ([f"- {item}" for item in items] or ["- None recorded"]) + [""]
     lines += ["## Limits", ""] + [f"- {item}" for item in result["limitations"]]
     return "\n".join(lines) + "\n"
@@ -378,8 +455,11 @@ def html_report(result: dict[str, Any]) -> str:
                              ("Flagged by", row["flagged_by"] or ["No positive finding of the same issue class on this route"])]
         rows.append({
             "id": row["id"], "status": row["status"],
-            "cells": [(row["category"], row["location"]), row["ground_truth"].replace("_", " "), (row["severity"] or "not assigned").replace("_", " ")],
+            "cells": [(row["category"], row["location"]), row["ground_truth"].replace("_", " "), (row["severity"] or "not assigned").replace("_", " "),
+                      found_by_text(row)],
             "details": [
+                *([("Found by", found_by_text(row) + (f" — {row['ai_discovery_basis']}" if row.get("ai_discovery_basis") else ""))]
+                  if row["ground_truth"] == "confirmed_vulnerability" else []),
                 ("Expected behavior", row["expected_behavior"]), ("Proof", row["proof_ref"]),
                 ("Source / origin", f"{row['source'] or 'not recorded'}; origin: {', '.join(row['origin']) or 'not recorded'}"),
                 ("Audit signatures", [f"{item['rule_id']} @ {item['path']}" for item in row["expected_signatures"]] or ["No exact signature defined"]),
@@ -393,7 +473,7 @@ def html_report(result: dict[str, Any]) -> str:
         headline="Known vulnerabilities found by the saved scan",
         intro="Ground truth was used only after the saved scan and review were complete. This is not a claim of exhaustive vulnerability coverage.",
         gauge=(summary["detected"], summary["known_positive_cases"], "known-positive cases detected"),
-        notes=([f"Precision bounds, not a point estimate: labeled-only {_percent(summary['precision_on_labeled'])} (optimistic), "
+        notes=([_found_by_note(summary)] if summary.get("found_by") else []) + ([f"Precision bounds, not a point estimate: labeled-only {_percent(summary['precision_on_labeled'])} (optimistic), "
                 f"in-scope lower bound {_percent(summary['precision_lower_bound_in_scope'])}, strict lower bound "
                 f"{_percent(summary['precision_lower_bound'])} (pessimistic). Safe-control specificity: "
                 f"{_percent(summary['safe_control_specificity'])} ({summary['safe_controls_flagged']} flagged).",
@@ -418,9 +498,9 @@ def html_report(result: dict[str, Any]) -> str:
                  [("Safe controls", summary["safe_controls_not_assessed"], "var(--low)")]),
                ("Candidate only", summary["candidate_only_excluded"], "var(--ln)")],
         table_title=f"All {len(result['cases'])} benchmark cases",
-        columns=["Case", "Category / location", "Ground truth", "Severity"], outcome_header="Outcome",
+        columns=["Case", "Category / location", "Ground truth", "Severity", "Found by"], outcome_header="Outcome",
         rows=rows,
-        sections=[("Recorded coverage gaps", provenance["coverage_gaps"]), *_audit_sections(result),
+        sections=[("Recorded coverage gaps", provenance["coverage_gaps"]), *_found_by_section(result), *_audit_sections(result),
                   ("Limits", result["limitations"])])
 
 

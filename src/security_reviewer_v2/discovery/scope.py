@@ -74,7 +74,9 @@ def plan_discovery_scope(
     # files. Profiler inventory, when supplied, avoids a second tree walk.
     unflagged = [path for path in paths if path not in finding_lines]
     flagged = [path for path in paths if path in finding_lines]
-    key = lambda path: (-bool(PATH_HINT.search(path)), path.casefold())
+    graph_scores = _graph_hotspot_scores(profile_artifact)
+    # Code-graph hubs are reviewed first inside each hint class; without a graph this is the previous ordering.
+    key = lambda path: (-bool(PATH_HINT.search(path)), -graph_scores.get(path, 0), path.casefold())
     unflagged.sort(key=key)
     flagged.sort(key=key)
     half = max(1, config.max_files_considered // 2)
@@ -276,6 +278,18 @@ def _read_source(root: Path, relative: str, hashes: dict[str, str] | None, confi
         return tuple(data.decode("utf-8").splitlines()), len(data)
     except (OSError, UnicodeDecodeError) as error:
         raise ValueError("source could not be read as UTF-8") from error
+
+
+def _graph_hotspot_scores(profile_artifact: dict[str, Any] | None) -> dict[str, int]:
+    """Path -> connected-file count from the profiler's ingested code graph (empty when absent or unrecognized)."""
+    graph = profile_artifact.get("code_graph") if isinstance(profile_artifact, dict) else None
+    if not isinstance(graph, dict) or graph.get("schema_status") != "recognized":
+        return {}
+    scores: dict[str, int] = {}
+    for item in graph.get("hotspots") or ():
+        if isinstance(item, dict) and isinstance(item.get("path"), str) and isinstance(item.get("connected_files"), int):
+            scores[item["path"].replace("\\", "/")] = item["connected_files"]
+    return scores
 
 
 def _hotspots(relative: str, lines: tuple[str, ...], finding_lines: set[int]) -> list[tuple[int, int, int]]:

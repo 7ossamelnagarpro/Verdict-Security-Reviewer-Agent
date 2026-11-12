@@ -16,6 +16,9 @@ _SAFE_KEYS = frozenset({
     "source_sha256",
     # Business-workflow violations: which workflow/step/method failed and the recorded assertion outcome.
     "workflow_id", "step", "method", "expected_statuses", "assertion_results",
+    # Per-attempt HTTP status facts (status codes only, never bodies/tokens): used by the Penetration
+    # Agent's reproduction-step evidence so a reviewer sees the exact response code, not just a verdict label.
+    "http_status", "expected_status",
 })
 
 
