@@ -6,6 +6,10 @@
   python scripts/approve_rule_map.py --ids workflow.order_owner.3 --revoke
 """
 import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))        # lets this script run without `pip install -e .`
 
 from security_reviewer_v2.policy.catalog_approval import KIND_RULE_MAP, cli_main
 

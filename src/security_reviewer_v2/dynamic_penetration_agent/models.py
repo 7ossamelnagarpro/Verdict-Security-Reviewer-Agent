@@ -127,12 +127,20 @@ class PenetrationAttempt:
 
 @dataclass(frozen=True)
 class HypothesisTestResult:
-    """Every attempt against one hypothesis, plus the final test outcome (never a vulnerability verdict)."""
+    """Every attempt against one hypothesis, plus the final test outcome (never a vulnerability verdict).
+
+    ``considered_but_not_executed`` records a strategy the controller picked but that never reached a
+    tool call at all — rejected by the planner or the validator, or its tool was unavailable — each as
+    ``{"strategy": ..., "reason": ...}``. These never fired a single request, so they are kept separate
+    from ``attempts`` (which did), but a reviewer still needs them to see the FULL set of scenarios the
+    agent drew for this hypothesis, not only the ones that got far enough to execute.
+    """
 
     candidate_id: str
     outcome: TestOutcome
     attempts: tuple[PenetrationAttempt, ...]
     summary: str
+    considered_but_not_executed: tuple[dict[str, Any], ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return _primitive(self)

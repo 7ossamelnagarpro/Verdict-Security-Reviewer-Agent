@@ -56,7 +56,33 @@ def _label(value: Any) -> str:
     return html.escape(" ".join(str(value).split()), quote=False)
 
 
-def _render_observations(merged: dict[str, Any], risk: dict[str, Any] | None) -> list[str]:
+def _penetration_confirmed_group_ids(penetration_test: dict[str, Any] | None,
+                                     triage: dict[str, Any] | None) -> frozenset[str]:
+    """Review-group ids (``merged-...`` or a novel ``ai-...``) with an ``exploitation_confirmed`` hypothesis.
+
+    The Penetration Agent's ``candidate_id`` is the AI Discovery id; Triage's groups record which AI
+    candidate ids were merged into which review group (``group.candidate_ids`` -> ``group.group_id``), or
+    a novel AI candidate keeps its own id as the group id. Either way this resolves to the SAME id space
+    Policy Decisions and Security Review Agent Verdicts use, so a reviewer sees the exploit confirmation
+    right next to that specific finding, not only in the standalone Penetration Testing section.
+    """
+    if not isinstance(penetration_test, dict):
+        return frozenset()
+    confirmed_ai_ids = {str(item.get("candidate_id")) for item in penetration_test.get("results", []) or []
+                        if isinstance(item, dict) and item.get("outcome") == "exploitation_confirmed"}
+    if not confirmed_ai_ids:
+        return frozenset()
+    if not isinstance(triage, dict):
+        return frozenset(confirmed_ai_ids)
+    group_ids = set(confirmed_ai_ids)  # a novel AI candidate keeps its own id as the group id
+    for group in triage.get("groups", []) or []:
+        if isinstance(group, dict) and confirmed_ai_ids.intersection(group.get("candidate_ids", []) or []):
+            group_ids.add(str(group.get("group_id")))
+    return frozenset(group_ids)
+
+
+def _render_observations(merged: dict[str, Any], risk: dict[str, Any] | None,
+                         penetration_confirmed: frozenset[str] = frozenset()) -> list[str]:
     findings = merged.get("findings", [])
     if not isinstance(findings, list):
         findings = []
@@ -111,6 +137,10 @@ def _render_observations(merged: dict[str, Any], risk: dict[str, Any] | None) ->
         for source in runtime_sources:
             facts = json.dumps(source["runtime_evidence"], sort_keys=True, ensure_ascii=False)
             lines.append(f"{evidence_indent}- Bounded runtime evidence: {_code(facts)}.")
+        if finding_id in penetration_confirmed:
+            lines.append(f"{evidence_indent}- \u2705 **Independently confirmed by the Autonomous "
+                         "Penetration Agent** \u2014 see Autonomous Penetration Testing above for the "
+                         "exact reproduction steps.")
     return lines
 
 
@@ -142,8 +172,9 @@ def _render_penetration_tests(penetration_test: dict[str, Any]) -> list[str]:
         lines += ["", f"### Hypothesis `{_plain(candidate_id)}` \u2014 outcome: **{_label(outcome)}**", "",
                   f"{_prose(result.get('summary', ''))}", ""]
         attempts = result.get("attempts", []) or []
-        if not attempts:
-            lines.append("_No attempt could be planned or executed for this hypothesis._")
+        gaps = result.get("considered_but_not_executed", []) or []
+        if not attempts and not gaps:
+            lines.append("_No scenario could be planned for this hypothesis._")
             continue
         for attempt in attempts:
             steps = attempt.get("request_evidence", []) or []
@@ -168,6 +199,13 @@ def _render_penetration_tests(penetration_test: dict[str, Any]) -> list[str]:
             lines.append(f"- Reasoning: {_prose(str(attempt.get('agent_reasoning_summary', '')))}")
             lines.append(f"- Next action: **{_label(attempt.get('next_action', 'unknown'))}**"
                          + (f" ({_label(attempt.get('stop_reason'))})" if attempt.get("stop_reason") not in (None, "none") else ""))
+            lines.append("")
+        if gaps:
+            lines.append("**Other scenarios the agent drew up but could not execute at all "
+                         "(never sent a single request):**")
+            lines.append("")
+            for gap in gaps:
+                lines.append(f"- {_code(gap.get('strategy', 'unknown'))}: {_prose(str(gap.get('reason', '')))}")
             lines.append("")
     return lines
 
@@ -292,14 +330,18 @@ def render_final_report(*, project: str, review: dict[str, Any], policy: dict[st
         if idle:
             lines.extend(f"- {_plain(row.role)}: **{_plain(row.outcome)}**" + "".join(f" — {_plain(n)}" for n in row.notes) for row in idle)
             lines.append("Registered but not scheduled (nothing to scan): " + ", ".join(_code(row.scanner) for row in idle) + ".")
+    penetration_confirmed = _penetration_confirmed_group_ids(penetration_test, triage)
     if merged is not None:
-        lines.extend(_render_observations(merged, risk))
+        lines.extend(_render_observations(merged, risk, penetration_confirmed))
     lines += ["", "## Security Review Agent Verdicts", ""]
     if not reviews:
         lines += ["No agent verdicts were produced. The pre-review observations above remain visible "
                   "but have not been cleared or confirmed by the agent.", ""]
     for index, item in enumerate(reviews, 1):
         lines += [f"### {index}. {_label(item.get('title', 'Untitled finding'))}", "", f"- Issue group: {_inline_code(item.get('candidate_id', 'unknown'))}", f"- Verdict: **{_label(item.get('verdict', 'unknown'))}**", f"- Severity: **{_label(item.get('severity', 'unknown'))}**", f"- Confidence: **{_label(item.get('confidence', 'unknown'))}**", "", f"**Explanation:** {_prose(item.get('explanation', ''))}", "", f"**Impact:** {_prose(item.get('impact', ''))}", "", f"**Remediation:** {_prose(item.get('remediation', ''))}", "Evidence:"]
+        if str(item.get("candidate_id")) in penetration_confirmed:
+            lines.append("- \u2705 **Independently confirmed by the Autonomous Penetration Agent** "
+                         "\u2014 see Autonomous Penetration Testing above for the exact reproduction steps.")
         if item.get("source_ids"):
             formatted_sources = ", ".join(_inline_code(source_id) for source_id in item["source_ids"])
             lines.append(f"- Source IDs: {formatted_sources}")
@@ -311,7 +353,8 @@ def render_final_report(*, project: str, review: dict[str, Any], policy: dict[st
         lines.append("")
     lines += ["## Policy Decisions", ""]
     for decision in policy.get("decisions", []):
-        lines.append(f"- {_inline_code(decision.get('candidate_id'))}: **{_label(decision.get('action'))}** — {_prose(decision.get('reason'))}")
+        marker = " \u2705 confirmed by Penetration Agent" if str(decision.get("candidate_id")) in penetration_confirmed else ""
+        lines.append(f"- {_inline_code(decision.get('candidate_id'))}: **{_label(decision.get('action'))}**{marker} — {_prose(decision.get('reason'))}")
     if triage is not None:
         summary = triage.get("summary", {})
         lines += ["", "## Candidate Triage and Unresolved Evidence", "",

@@ -31,6 +31,7 @@ class RuntimeAccess:
     environment: Mapping[str, str] | None = None
     zap_context: Mapping[str, str] | None = None   # {"stack_name": ..., "app_service": ...}; enables "zap"
     playwright_enabled: bool = False               # explicit opt-in; enables "playwright"
+    ai_provider: Any = None                         # explicit opt-in; an AttackPlanProvider (see ai_planner.py)
 
     @property
     def corroboration_tools(self) -> tuple[str, ...]:
@@ -71,18 +72,26 @@ def run_penetration_tests(
         if candidate is None:
             continue
         target_endpoint = target_endpoint_resolver(candidate)
-        attempts, evaluations = adaptive_controller.run_hypothesis(
+        attempts, evaluations, planning_gaps = adaptive_controller.run_hypothesis(
             candidate, target_endpoint=target_endpoint, base_url=access.base_url,
             accounts=access.accounts, account_definitions=access.account_definitions,
             allowed_endpoints=access.allowed_endpoints, tracker=tracker,
             environment=access.environment, transport=transport,
             zap_context=access.zap_context, corroboration_tools=access.corroboration_tools,
+            ai_provider=access.ai_provider,
         )
         outcome = evidence_evaluator.hypothesis_outcome(evaluations, planning_blocked=target_endpoint is None)
-        summary = (attempts[-1].observation if attempts else
-                   "No HTTP route was resolved for this candidate; no safe test exists." if target_endpoint is None else
-                   "No applicable template could be planned with the accounts and evidence on hand.")
-        results.append(HypothesisTestResult(candidate_id, outcome, attempts, summary))
+        if attempts:
+            summary = attempts[-1].observation
+        elif target_endpoint is None:
+            summary = "No HTTP route was resolved for this candidate; no safe test exists."
+        elif planning_gaps:
+            summary = ("Every applicable scenario was considered but none could be executed: "
+                      + "; ".join(f"{gap['strategy']} \u2014 {gap['reason']}" for gap in planning_gaps))
+        else:
+            summary = "No applicable template could be planned with the accounts and evidence on hand."
+        results.append(HypothesisTestResult(candidate_id, outcome, attempts, summary,
+                                            considered_but_not_executed=planning_gaps))
 
     status = "completed" if confirmed else "not_run"
     if not confirmed:

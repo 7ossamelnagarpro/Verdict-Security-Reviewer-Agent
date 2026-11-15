@@ -28,6 +28,7 @@ import hashlib
 import logging
 import inspect
 import os
+import sys
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager, nullcontext
 from functools import lru_cache
@@ -188,6 +189,43 @@ def pipeline_trace(name: str, *, metadata: Mapping[str, Any] | None = None,
     finally:
         if client is not None or tracing_requested():
             flush_traces(client)
+
+
+@contextmanager
+def node_trace(name: str, *, inputs: Mapping[str, Any] | None = None) -> Iterator[Any]:
+    """A named child run for one graph node, so it shows up as its own entry in LangSmith's trace tree.
+
+    ``graph.compile().invoke({})`` passes no run config, so a node that itself makes no traced model
+    call (``dynamic_penetration_agent`` is pure Python: no LLM calls) has nothing of its own to show in
+    LangSmith beyond whatever the ambient graph run already provides. This gives such a node an explicit,
+    visible span with real input/output metadata, nested under the pipeline's existing trace.
+
+    No-ops (yields ``None``) when tracing isn't active, so it costs nothing when disabled and a caller
+    that gets ``None`` back should skip calling ``.end(...)`` on it. Usage::
+
+        with node_trace("my_node", inputs={"candidates": 5}) as run:
+            result = do_work()
+            if run is not None:
+                run.end(outputs={"status": result["status"]})
+    """
+    if not get_tracing_context().get("enabled"):
+        yield None
+        return
+    try:
+        manager = trace(name=name, run_type="chain", inputs=dict(inputs or {}))
+        run = manager.__enter__()
+    except Exception:  # tracing is optional: a broken LangSmith call must never fail a security review
+        log.debug("LangSmith node span failed for %s", name, exc_info=True)
+        yield None
+        return
+    try:
+        yield run
+    except BaseException:
+        # Let the real error propagate to the caller; still close the span (as errored) first.
+        manager.__exit__(*sys.exc_info())
+        raise
+    else:
+        manager.__exit__(None, None, None)
 
 
 def graph_config(agent: str, *, recursion_limit: int, metadata: Mapping[str, Any] | None = None) -> dict[str, Any]:

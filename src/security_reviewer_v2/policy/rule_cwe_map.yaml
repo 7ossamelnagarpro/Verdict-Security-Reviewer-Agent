@@ -34,12 +34,12 @@ rows:
   rating_policy: fixed
   fixed_rating: high
   confidence: high
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: Classic IDOR.
   source: llm_proposal
   evidence: null
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check:
     usage: ALLOWED
     verdict: ok
@@ -47,6 +47,8 @@ rows:
   needs_review_note: false
   alt_cwes_mitre:
     CWE-863: needs_review_note
+  reviewed_at: '2026-11-13T07:15:08Z'
+  review_note: Reviewed rule description and CWE; fixed rating kept as the project author declared it
 - scanner: web-runtime
   rule_id: workflow.invoice_owner.3
   title: Only the owner can read an invoice
@@ -57,12 +59,12 @@ rows:
   rating_policy: fixed
   fixed_rating: high
   confidence: high
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: Classic IDOR.
   source: llm_proposal
   evidence: null
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check:
     usage: ALLOWED
     verdict: ok
@@ -70,6 +72,8 @@ rows:
   needs_review_note: false
   alt_cwes_mitre:
     CWE-863: needs_review_note
+  reviewed_at: '2026-11-13T07:15:08Z'
+  review_note: Reviewed rule description and CWE; fixed rating kept as the project author declared it
 - scanner: web-runtime
   rule_id: workflow.profile_owner.2
   title: A user cannot read another account profile
@@ -80,12 +84,12 @@ rows:
   rating_policy: fixed
   fixed_rating: high
   confidence: high
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: Classic IDOR.
   source: llm_proposal
   evidence: null
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check:
     usage: ALLOWED
     verdict: ok
@@ -93,6 +97,8 @@ rows:
   needs_review_note: false
   alt_cwes_mitre:
     CWE-863: needs_review_note
+  reviewed_at: '2026-11-13T07:15:08Z'
+  review_note: Reviewed rule description and CWE; fixed rating kept as the project author declared it
 - scanner: web-runtime
   rule_id: workflow.nested_note.1
   title: A note must belong to the order named in the URL
@@ -103,12 +109,12 @@ rows:
   rating_policy: fixed
   fixed_rating: high
   confidence: medium
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: Parent/child id mismatch in the path.
   source: llm_proposal
   evidence: null
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check:
     usage: ALLOWED
     verdict: ok
@@ -116,6 +122,8 @@ rows:
   needs_review_note: false
   alt_cwes_mitre:
     CWE-863: needs_review_note
+  reviewed_at: '2026-11-13T07:15:08Z'
+  review_note: Reviewed rule description and CWE; fixed rating kept as the project author declared it
 - scanner: web-runtime
   rule_id: workflow.owner_assignment.2
   title: Users cannot create orders for another owner
@@ -126,12 +134,12 @@ rows:
   rating_policy: fixed
   fixed_rating: high
   confidence: medium
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: Client controls the owner id; could also be classed as mass assignment (915).
   source: llm_proposal
   evidence: null
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check:
     usage: ALLOWED
     verdict: ok
@@ -139,6 +147,8 @@ rows:
   needs_review_note: false
   alt_cwes_mitre:
     CWE-915: ok
+  reviewed_at: '2026-11-13T07:15:08Z'
+  review_note: Reviewed rule description and CWE; fixed rating kept as the project author declared it
 - scanner: web-runtime
   rule_id: workflow.admin_jobs.2
   title: Job listing requires admin role
@@ -149,12 +159,12 @@ rows:
   rating_policy: fixed
   fixed_rating: high
   confidence: high
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: Admin-only function reachable by a normal user.
   source: llm_proposal
   evidence: null
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check:
     usage: ALLOWED_WITH_REVIEW
     verdict: needs_review_note
@@ -162,6 +172,8 @@ rows:
   needs_review_note: true
   alt_cwes_mitre:
     CWE-863: needs_review_note
+  reviewed_at: '2026-11-13T07:15:08Z'
+  review_note: Reviewed rule description and CWE; fixed rating kept as the project author declared it
 - scanner: web-runtime
   rule_id: workflow.admin_users.2
   title: User listing requires admin role
@@ -172,12 +184,12 @@ rows:
   rating_policy: fixed
   fixed_rating: high
   confidence: high
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: Admin-only function reachable by a normal user.
   source: llm_proposal
   evidence: null
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check:
     usage: ALLOWED_WITH_REVIEW
     verdict: needs_review_note
@@ -185,6 +197,8 @@ rows:
   needs_review_note: true
   alt_cwes_mitre:
     CWE-863: needs_review_note
+  reviewed_at: '2026-11-13T07:15:08Z'
+  review_note: Reviewed rule description and CWE; fixed rating kept as the project author declared it
 - scanner: web-runtime
   rule_id: workflow.worker_role.1
   title: Users cannot submit an admin job
@@ -195,12 +209,12 @@ rows:
   rating_policy: fixed
   fixed_rating: high
   confidence: medium
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: Vertical privilege escalation.
   source: llm_proposal
   evidence: null
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check:
     usage: ALLOWED_WITH_REVIEW
     verdict: needs_review_note
@@ -208,6 +222,8 @@ rows:
   needs_review_note: true
   alt_cwes_mitre:
     CWE-863: needs_review_note
+  reviewed_at: '2026-11-13T07:15:08Z'
+  review_note: Reviewed rule description and CWE; fixed rating kept as the project author declared it
 - scanner: web-runtime
   rule_id: workflow.stale_role.3
   title: A demoted administrator must lose administrative access
@@ -218,13 +234,13 @@ rows:
   rating_policy: fixed
   fixed_rating: high
   confidence: medium
-  status: draft_needs_human_review
-  reviewed_by: null
-  note: My first proposal CWE-269 is DISCOURAGED by MITRE. 863 is the broader authorization choice; 271 (Privilege Dropping / Lowering
-    Errors) is one of 269's allowed children. A person decides.
+  status: approved
+  reviewed_by: Safaa Samy
+  note: My first proposal CWE-269 is DISCOURAGED by MITRE. 863 is the broader authorization choice; 271 (Privilege Dropping
+    / Lowering Errors) is one of 269's allowed children. A person decides.
   source: llm_proposal
   evidence: null
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check:
     usage: ALLOWED_WITH_REVIEW
     verdict: needs_review_note
@@ -232,6 +248,8 @@ rows:
   needs_review_note: true
   alt_cwes_mitre:
     CWE-271: needs_review_note
+  reviewed_at: '2026-11-13T07:15:08Z'
+  review_note: Reviewed rule description and CWE; fixed rating kept as the project author declared it
 - scanner: web-runtime
   rule_id: workflow.debug_access.1
   title: Debug configuration is unavailable anonymously
@@ -243,12 +261,12 @@ rows:
   rating_policy: fixed
   fixed_rating: high
   confidence: low
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: Anonymous access to a sensitive function; the debug-code classes are the alternatives.
   source: llm_proposal
   evidence: null
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check:
     usage: ALLOWED
     verdict: ok
@@ -257,6 +275,8 @@ rows:
   alt_cwes_mitre:
     CWE-489: ok
     CWE-215: ok
+  reviewed_at: '2026-11-13T07:15:08Z'
+  review_note: Reviewed rule description and CWE; fixed rating kept as the project author declared it
 - scanner: web-runtime
   rule_id: workflow.paid_cancel.3
   title: Paid orders require a refund before cancellation
@@ -266,18 +286,20 @@ rows:
   rating_policy: fixed
   fixed_rating: high
   confidence: medium
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: 'Workflow step order not enforced. Rare in NVD, so the statistical catalog will be weak: prefer fixed.'
   source: llm_proposal
   evidence: null
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check:
     usage: ALLOWED
     verdict: ok
     mitre_name: Improper Enforcement of Behavioral Workflow
   needs_review_note: false
   alt_cwes_mitre: {}
+  reviewed_at: '2026-11-13T07:15:08Z'
+  review_note: Reviewed rule description and CWE; fixed rating kept as the project author declared it
 - scanner: web-runtime
   rule_id: workflow.payment_replay.3
   title: An already paid order rejects a second payment
@@ -287,18 +309,20 @@ rows:
   rating_policy: fixed
   fixed_rating: high
   confidence: medium
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: State check missing before payment.
   source: llm_proposal
   evidence: null
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check:
     usage: ALLOWED
     verdict: ok
     mitre_name: Improper Enforcement of Behavioral Workflow
   needs_review_note: false
   alt_cwes_mitre: {}
+  reviewed_at: '2026-11-13T07:15:08Z'
+  review_note: Reviewed rule description and CWE; fixed rating kept as the project author declared it
 - scanner: web-runtime
   rule_id: workflow.order_initial_state.1
   title: New orders cannot start as paid
@@ -309,12 +333,12 @@ rows:
   rating_policy: fixed
   fixed_rating: high
   confidence: medium
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: Client sets a server-controlled attribute (mass assignment).
   source: llm_proposal
   evidence: null
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check:
     usage: ALLOWED
     verdict: ok
@@ -322,6 +346,8 @@ rows:
   needs_review_note: false
   alt_cwes_mitre:
     CWE-841: ok
+  reviewed_at: '2026-11-13T07:15:08Z'
+  review_note: Reviewed rule description and CWE; fixed rating kept as the project author declared it
 - scanner: web-runtime
   rule_id: workflow.price_catalog.1
   title: Catalog price must be set by the server
@@ -332,12 +358,12 @@ rows:
   rating_policy: fixed
   fixed_rating: high
   confidence: medium
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: Assumed-immutable parameter controlled by the client.
   source: llm_proposal
   evidence: null
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check:
     usage: ALLOWED
     verdict: ok
@@ -345,6 +371,8 @@ rows:
   needs_review_note: false
   alt_cwes_mitre:
     CWE-602: needs_review_note
+  reviewed_at: '2026-11-13T07:15:08Z'
+  review_note: Reviewed rule description and CWE; fixed rating kept as the project author declared it
 - scanner: web-runtime
   rule_id: workflow.negative_price.1
   title: Negative order prices are rejected
@@ -354,18 +382,20 @@ rows:
   rating_policy: fixed
   fixed_rating: high
   confidence: medium
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: Quantity/amount validation.
   source: llm_proposal
   evidence: null
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check:
     usage: ALLOWED
     verdict: ok
     mitre_name: Improper Validation of Specified Quantity in Input
   needs_review_note: false
   alt_cwes_mitre: {}
+  reviewed_at: '2026-11-13T07:15:08Z'
+  review_note: Reviewed rule description and CWE; fixed rating kept as the project author declared it
 - scanner: web-runtime
   rule_id: workflow.coupon_bounds.2
   title: Excessive coupon discounts are rejected
@@ -375,18 +405,20 @@ rows:
   rating_policy: fixed
   fixed_rating: high
   confidence: medium
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: Quantity/amount validation.
   source: llm_proposal
   evidence: null
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check:
     usage: ALLOWED
     verdict: ok
     mitre_name: Improper Validation of Specified Quantity in Input
   needs_review_note: false
   alt_cwes_mitre: {}
+  reviewed_at: '2026-11-13T07:15:08Z'
+  review_note: Reviewed rule description and CWE; fixed rating kept as the project author declared it
 - scanner: web-runtime
   rule_id: workflow.reset_replay.3
   title: Password reset tokens must be single use
@@ -396,18 +428,20 @@ rows:
   rating_policy: fixed
   fixed_rating: high
   confidence: medium
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: 'Weak password recovery: token reusable.'
   source: llm_proposal
   evidence: null
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check:
     usage: ALLOWED_WITH_REVIEW
     verdict: needs_review_note
     mitre_name: Weak Password Recovery Mechanism for Forgotten Password
   needs_review_note: true
   alt_cwes_mitre: {}
+  reviewed_at: '2026-11-13T07:15:08Z'
+  review_note: Reviewed rule description and CWE; fixed rating kept as the project author declared it
 - scanner: web-runtime
   rule_id: workflow.excessive_data.1
   title: Identity response must not expose a social security number
@@ -418,12 +452,12 @@ rows:
   rating_policy: fixed
   fixed_rating: medium
   confidence: medium
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: Private personal information in a response.
   source: llm_proposal
   evidence: null
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check:
     usage: ALLOWED
     verdict: ok
@@ -431,6 +465,8 @@ rows:
   needs_review_note: false
   alt_cwes_mitre:
     CWE-213: ok
+  reviewed_at: '2026-11-13T07:15:08Z'
+  review_note: Reviewed rule description and CWE; fixed rating kept as the project author declared it
 - scanner: web-runtime
   rule_id: workflow.unsigned_hook.1
   title: Incoming webhook events require a valid signature
@@ -440,18 +476,20 @@ rows:
   rating_policy: fixed
   fixed_rating: high
   confidence: medium
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: Signature not verified.
   source: llm_proposal
   evidence: null
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check:
     usage: ALLOWED
     verdict: ok
     mitre_name: Improper Verification of Cryptographic Signature
   needs_review_note: false
   alt_cwes_mitre: {}
+  reviewed_at: '2026-11-13T07:15:08Z'
+  review_note: Reviewed rule description and CWE; fixed rating kept as the project author declared it
 - scanner: web-runtime
   rule_id: workflow.webhook_destination.1
   title: Webhook destination must match the approved internal host exactly
@@ -461,18 +499,20 @@ rows:
   rating_policy: fixed
   fixed_rating: high
   confidence: high
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: SSRF.
   source: llm_proposal
   evidence: null
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check:
     usage: ALLOWED
     verdict: ok
     mitre_name: Server-Side Request Forgery
   needs_review_note: false
   alt_cwes_mitre: {}
+  reviewed_at: '2026-11-13T07:15:08Z'
+  review_note: Reviewed rule description and CWE; fixed rating kept as the project author declared it
 - scanner: web-runtime
   rule_id: web.missing-clickjacking-protection
   title: Missing clickjacking protection header
@@ -482,19 +522,21 @@ rows:
   rating_policy: fixed
   fixed_rating: low
   confidence: high
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: Same CWE ZAP reports for rule 10020.
   source: tool_equivalent
-  evidence: 'Tool-equivalent: in the saved runtime.json files ZAP rule zap.10020 stores cwe_id 1021 in 16/16 occurrences. That this
-    check is the same issue as zap.10020 is MY judgement; confirm it.'
-  human_must_confirm: true
+  evidence: 'Tool-equivalent: in the saved runtime.json files ZAP rule zap.10020 stores cwe_id 1021 in 16/16 occurrences.
+    That this check is the same issue as zap.10020 is MY judgement; confirm it.'
+  human_must_confirm: false
   mitre_check:
     usage: ALLOWED
     verdict: ok
     mitre_name: Improper Restriction of Rendered UI Layers or Frames
   needs_review_note: false
   alt_cwes_mitre: {}
+  reviewed_at: '2026-11-13T07:22:02Z'
+  review_note: Confirmed CWE-1021 mapping against the equivalent ZAP 10020 alert; both describe missing clickjacking protection.
 - scanner: web-runtime
   rule_id: web.missing-content-security-policy
   title: Missing Content-Security-Policy header
@@ -504,17 +546,20 @@ rows:
   rating_policy: fixed
   fixed_rating: low
   confidence: high
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: Rating-only row.
   source: no_cwe_applicable
-  evidence: ZAP reports CWE-693 for the equivalent alert zap.10038, but MITRE marks CWE-693 (Protection Mechanism Failure) as DISCOURAGED
-    for mapping. No narrower CWE was chosen; a human-approved fixed rating applies.
-  human_must_confirm: true
+  evidence: ZAP reports CWE-693 for the equivalent alert zap.10038, but MITRE marks CWE-693 (Protection Mechanism Failure)
+    as DISCOURAGED for mapping. No narrower CWE was chosen; a human-approved fixed rating applies.
+  human_must_confirm: false
   tool_reported_cwe: CWE-693
   mitre_check: null
   needs_review_note: false
   alt_cwes_mitre: {}
+  reviewed_at: '2026-11-13T07:22:12Z'
+  review_note: Human-reviewed fixed rating against saved scanner results. CWE intentionally left null because CWE-693 is discouraged
+    by MITRE and no narrower applicable CWE was established; DS-0026 is container hygiene rather than a confirmed weakness.
 - scanner: web-runtime
   rule_id: web.missing-content-type-protection
   title: Missing X-Content-Type-Options header
@@ -524,17 +569,20 @@ rows:
   rating_policy: fixed
   fixed_rating: low
   confidence: high
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: Rating-only row.
   source: no_cwe_applicable
-  evidence: ZAP reports CWE-693 for the equivalent alert zap.10021, but MITRE marks CWE-693 (Protection Mechanism Failure) as DISCOURAGED
-    for mapping. No narrower CWE was chosen; a human-approved fixed rating applies.
-  human_must_confirm: true
+  evidence: ZAP reports CWE-693 for the equivalent alert zap.10021, but MITRE marks CWE-693 (Protection Mechanism Failure)
+    as DISCOURAGED for mapping. No narrower CWE was chosen; a human-approved fixed rating applies.
+  human_must_confirm: false
   tool_reported_cwe: CWE-693
   mitre_check: null
   needs_review_note: false
   alt_cwes_mitre: {}
+  reviewed_at: '2026-11-13T07:22:12Z'
+  review_note: Human-reviewed fixed rating against saved scanner results. CWE intentionally left null because CWE-693 is discouraged
+    by MITRE and no narrower applicable CWE was established; DS-0026 is container hygiene rather than a confirmed weakness.
 - scanner: trivy
   rule_id: DS-0026
   title: No HEALTHCHECK defined
@@ -544,15 +592,18 @@ rows:
   rating_policy: fixed
   fixed_rating: low
   confidence: high
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: Container hygiene; no weakness class applies. A fixed human-approved rating is more honest than forcing a CWE.
   source: no_cwe_applicable
   evidence: null
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check: null
   needs_review_note: false
   alt_cwes_mitre: {}
+  reviewed_at: '2026-11-13T07:22:12Z'
+  review_note: Human-reviewed fixed rating against saved scanner results. CWE intentionally left null because CWE-693 is discouraged
+    by MITRE and no narrower applicable CWE was established; DS-0026 is container hygiene rather than a confirmed weakness.
 - scanner: web-runtime
   rule_id: zap.10021
   title: (ZAP) X-Content-Type-Options header missing
@@ -562,16 +613,19 @@ rows:
   rating_policy: fixed
   fixed_rating: low
   confidence: high
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: Rating-only row. Rating copied from ZAP's own risk level in the saved runs. Title is from my knowledge of ZAP.
   source: no_cwe_applicable
   evidence: ZAP reports CWE-693, which MITRE marks DISCOURAGED for mapping, so the CWE is not used.
   tool_reported_cwe: CWE-693
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check: null
   needs_review_note: false
   alt_cwes_mitre: {}
+  reviewed_at: '2026-11-13T07:22:12Z'
+  review_note: Human-reviewed fixed rating against saved scanner results. CWE intentionally left null because CWE-693 is discouraged
+    by MITRE and no narrower applicable CWE was established; DS-0026 is container hygiene rather than a confirmed weakness.
 - scanner: web-runtime
   rule_id: zap.10038
   title: (ZAP) Content Security Policy header not set
@@ -581,13 +635,16 @@ rows:
   rating_policy: fixed
   fixed_rating: medium
   confidence: high
-  status: draft_needs_human_review
-  reviewed_by: null
+  status: approved
+  reviewed_by: Safaa Samy
   note: Rating-only row. Rating copied from ZAP's own risk level in the saved runs. Title is from my knowledge of ZAP.
   source: no_cwe_applicable
   evidence: ZAP reports CWE-693, which MITRE marks DISCOURAGED for mapping, so the CWE is not used.
   tool_reported_cwe: CWE-693
-  human_must_confirm: true
+  human_must_confirm: false
   mitre_check: null
   needs_review_note: false
   alt_cwes_mitre: {}
+  reviewed_at: '2026-11-13T07:22:12Z'
+  review_note: Human-reviewed fixed rating against saved scanner results. CWE intentionally left null because CWE-693 is discouraged
+    by MITRE and no narrower applicable CWE was established; DS-0026 is container hygiene rather than a confirmed weakness.

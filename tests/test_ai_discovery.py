@@ -108,7 +108,7 @@ def test_saved_regrounding_keeps_original_scope_and_rejected_candidates(tmp_path
     assert unchanged.candidates[0] == rejected
 
 
-@pytest.mark.parametrize("operation", ("discover", "review"))
+@pytest.mark.parametrize("operation", ("discover", "review", "plan_attack"))
 def test_groq_failure_reports_status_without_response_body(monkeypatch, operation):
     def reject(_request, _timeout):
         assert _request.get_header("User-agent").startswith("agentic-security-reviewer-v2/")
@@ -119,10 +119,29 @@ def test_groq_failure_reports_status_without_response_body(monkeypatch, operatio
     with pytest.raises(RuntimeError, match=r"HTTP 429") as error:
         if operation == "discover":
             provider.discover("sample", timeout_seconds=10, max_candidates=1)
-        else:
+        elif operation == "review":
             provider.review("sample", timeout_seconds=10, max_reviews=1)
+        else:
+            provider.plan_attack("sample", timeout_seconds=10)
     assert "sensitive details" not in str(error.value)
     assert "test-secret" not in str(error.value)
+
+
+def test_groq_plan_attack_parses_the_models_decision_and_reasoning(monkeypatch):
+    """GroqProvider.plan_attack, used by dynamic_penetration_agent.ai_planner's --penetration-ai-planner."""
+    def fake_open(_request, _timeout):
+        body = json.loads(_request.data)
+        assert body["response_format"] == {"type": "json_object"}
+        assert body["messages"][0]["role"] == "system"
+        content = json.dumps({"decision": "idor", "reasoning": "Evidence cites another account's resource."})
+        return io.BytesIO(json.dumps({"choices": [{"message": {"content": content}}],
+                                      "usage": {"prompt_tokens": 42}}).encode("utf-8"))
+
+    monkeypatch.setattr(provider_module, "_urlopen", fake_open)
+    provider = GroqProvider(model="test-model", api_key="test-secret")
+    parsed, usage = provider.plan_attack("some prompt", timeout_seconds=10)
+    assert parsed == {"decision": "idor", "reasoning": "Evidence cites another account's resource."}
+    assert usage["provider"] == "groq"
 
 
 def test_groq_discovery_uses_strict_schema_for_supported_model():

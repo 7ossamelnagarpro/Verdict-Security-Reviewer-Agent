@@ -16,12 +16,14 @@ from pathlib import Path
 
 import yaml
 
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))        # lets this script run without `pip install -e .`
+
 from security_reviewer_v2.policy.catalog_approval import write_document
 from security_reviewer_v2.policy.cwe_catalog_builder import (EXPECTED_CWES, FILE_HEADER, CatalogBuildError,
                                                              CatalogConfig, build_catalog, render_review_doc)
 from security_reviewer_v2.policy.cwe_dictionary import CweDictionaryError, load_dictionary
 
-ROOT = Path(__file__).resolve().parents[1]
 
 
 def main(argv=None) -> int:

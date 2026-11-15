@@ -251,6 +251,134 @@ def test_final_report_lists_every_attempt_as_a_reproduction_step():
     assert "expected one of [401, 403, 404]" in md
 
 
+def test_considered_but_not_executed_records_scenarios_that_never_fired_a_request():
+    """Strategies the agent drew up but couldn't run (no account available) are not silently dropped."""
+    candidate = _candidate()  # reasoning mentions "ownership" and "authorization" -> idor + authz_matrix + http
+    access = RuntimeAccess("http://127.0.0.1:5000", frozenset({"/orders/5"}), (), {})  # no accounts at all
+    transport = _FakeTransport(200)  # vulnerable even unauthenticated
+    report = run_penetration_tests(
+        _discovery(candidate), _confirmed("c1"), access=access,
+        target_endpoint_resolver=lambda c: "/orders/5", transport=transport,
+    )
+    result = report.results[0]
+    assert result.outcome is TestOutcome.EXPLOITATION_CONFIRMED  # unauthenticated_access still ran
+    strategies_blocked = {gap["strategy"] for gap in result.considered_but_not_executed}
+    assert "idor" in strategies_blocked
+    assert "authorization_matrix" in strategies_blocked
+    assert all("account" in gap["reason"].lower() for gap in result.considered_but_not_executed)
+
+
+def test_report_lists_scenarios_considered_but_never_executed():
+    from security_reviewer_v2.reporting.final import render_final_report
+
+    candidate = _candidate()
+    access = RuntimeAccess("http://127.0.0.1:5000", frozenset({"/orders/5"}), (), {})
+    transport = _FakeTransport(200)
+    report = run_penetration_tests(
+        _discovery(candidate), _confirmed("c1"), access=access,
+        target_endpoint_resolver=lambda c: "/orders/5", transport=transport,
+    )
+    md = render_final_report(project="demo", review={"status": "completed", "reviews": []},
+                             policy={"status": "passed", "decisions": [], "blocking": False},
+                             penetration_test=report.to_dict())
+    assert "could not execute at all" in md
+    assert "`idor`" in md or "idor" in md
+
+
+def test_report_marks_a_finding_as_confirmed_by_the_penetration_agent():
+    from security_reviewer_v2.reporting.final import render_final_report
+
+    candidate = _candidate()
+    access, transport = _access("/orders/5", transport_status=200)
+    report = run_penetration_tests(
+        _discovery(candidate), _confirmed("c1"), access=access,
+        target_endpoint_resolver=lambda c: "/orders/5", transport=transport,
+    )
+    # c1 was merged with a scanner finding into review group "merged-xyz" — the report must still find it.
+    triage = {"groups": [{"group_id": "merged-xyz", "candidate_ids": ["c1"]}]}
+    review = {"status": "completed", "reviews": [{
+        "candidate_id": "merged-xyz", "title": "Missing authorization", "verdict": "likely_vulnerability",
+        "severity": "high", "confidence": "medium", "explanation": "x", "impact": "x", "remediation": "x",
+    }]}
+    policy = {"status": "passed", "decisions": [{"candidate_id": "merged-xyz", "action": "block", "reason": "x"}],
+             "blocking": True}
+    md = render_final_report(project="demo", review=review, policy=policy, triage=triage,
+                             penetration_test=report.to_dict())
+    assert "Independently confirmed by the Autonomous Penetration Agent" in md
+    assert "confirmed by Penetration Agent" in md  # the Policy Decisions one-liner marker
+
+
+def test_ai_planner_drives_the_adaptive_loop_end_to_end():
+    """With an AI provider configured, its chosen strategy and reasoning reach the final attempt record."""
+    class _FakeAIProvider:
+        def plan_attack(self, prompt, *, timeout_seconds):
+            # Always goes straight for IDOR-style authorization_matrix, citing its own reasoning.
+            return {"decision": "authorization_matrix",
+                    "reasoning": "The hypothesis describes an ownership check gap; test cross-account access first."}, {}
+
+    candidate = _candidate()
+    access, transport = _access("/orders/5", transport_status=200)  # vulnerable
+    access = RuntimeAccess(access.base_url, access.allowed_endpoints, access.accounts,
+                           access.account_definitions, access.environment, ai_provider=_FakeAIProvider())
+    report = run_penetration_tests(
+        _discovery(candidate), _confirmed("c1"), access=access,
+        target_endpoint_resolver=lambda c: "/orders/5", transport=transport,
+    )
+    result = report.results[0]
+    assert result.outcome is TestOutcome.EXPLOITATION_CONFIRMED
+    assert result.attempts[0].test_strategy == "authorization_matrix"
+    assert "AI planner:" in result.attempts[0].attack_plan
+    assert "ownership check gap" in result.attempts[0].attack_plan
+
+
+def test_ai_planner_failure_falls_back_to_rule_based_selection_without_stalling():
+    """A broken AI provider must not stop the agent from still testing the hypothesis."""
+    class _BrokenAIProvider:
+        def plan_attack(self, prompt, *, timeout_seconds):
+            raise RuntimeError("provider unreachable")
+
+    candidate = _candidate()
+    access, transport = _access("/orders/5", transport_status=403)  # correctly denied
+    access = RuntimeAccess(access.base_url, access.allowed_endpoints, access.accounts,
+                           access.account_definitions, access.environment, ai_provider=_BrokenAIProvider())
+    report = run_penetration_tests(
+        _discovery(candidate), _confirmed("c1"), access=access,
+        target_endpoint_resolver=lambda c: "/orders/5", transport=transport,
+    )
+    result = report.results[0]
+    assert result.outcome is TestOutcome.NOT_REPRODUCED
+    assert len(result.attempts) >= 1  # the agent still ran, via the rule-based fallback
+
+
+def test_a_blocked_login_does_not_stop_the_loop_while_an_untried_template_remains():
+    """Regression: if authorization_matrix's login fails, the agent must still try
+    unauthenticated_access (which needs no login at all) before giving up — not stop at 1 attempt."""
+    candidate = _candidate(title="Missing ownership verification in coupon application",
+                           reasoning="Missing ownership check: Authorization (CWE-639)")
+
+    class _FlakyLoginTransport:
+        def __init__(self, *a): pass
+        def request(self, actor, method, path, body=None, headers=None, encoding="json"):
+            if actor == "user_b" and path == "/auth/login":
+                return 500, {}  # the one account's login fails -> that attempt is "blocked"
+            if actor == "anonymous":
+                return 200, {"id": 5}  # vulnerable with no session at all
+            return 404, {}
+
+    access = RuntimeAccess(
+        "http://127.0.0.1:5000", frozenset({"/orders/5"}), ("user_b",), ACCOUNT_DEFINITIONS, ENVIRONMENT,
+    )
+    report = run_penetration_tests(
+        _discovery(candidate), _confirmed("c1"), access=access,
+        target_endpoint_resolver=lambda c: "/orders/5", transport=_FlakyLoginTransport(),
+    )
+    result = report.results[0]
+    assert result.outcome is TestOutcome.EXPLOITATION_CONFIRMED
+    assert len(result.attempts) >= 2  # did not stop after the one blocked attempt
+    assert any(a.test_strategy == "unauthenticated_access" for a in result.attempts)
+    assert result.attempts[-1].stop_reason == "exploitation_confirmed"
+
+
 def test_scenario_validator_rejects_an_account_outside_the_contract():
     plan = AttackPlan(
         candidate_id="c1", attempt_number=1, test_strategy=TestStrategy.AUTHORIZATION_MATRIX,

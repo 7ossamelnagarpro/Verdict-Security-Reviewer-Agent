@@ -78,6 +78,11 @@ def _parser() -> argparse.ArgumentParser:
                              "own second session automatically, reusing that same contract; "
                              "--allow-trusted-local-compose and --browser-dast (if given) are reused the "
                              "same way for the agent's own Compose stack and browser corroboration")
+    parser.add_argument("--penetration-ai-planner", action="store_true",
+                        help="let an AI model choose which attack template the Penetration Agent tries "
+                             "next, reasoning over the hypothesis and every prior attempt's actual result, "
+                             "instead of the fixed keyword table. Reuses the SAME --ai-provider/--ai-model "
+                             "already configured for Discovery; has no effect with --no-penetration-agent")
     return parser
 
 
@@ -249,6 +254,8 @@ def _command(args: argparse.Namespace, *, project: Path, output: Path,
                 command.append("--penetration-allow-compose-execution")
             if not args.no_penetration_agent and args.browser_dast:
                 command.append("--penetration-enable-playwright")
+            if not args.no_penetration_agent and args.penetration_ai_planner:
+                command.append("--penetration-ai-planner")
     if args.require_all_scanners:
         command.append("--require-all-scanners")
     if args.codeql_bundle is not None:

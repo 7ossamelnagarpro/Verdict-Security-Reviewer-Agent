@@ -411,3 +411,9 @@ def test_the_shipped_catalog_is_valid_when_present():
     assert ca.validate_catalog(data) == []
     refused = [r for r in data["rows"] if r["status"] in ("refused_by_mitre", "source_incomplete")]
     assert all(r["reviewed_by"] is None for r in refused)
+
+
+@pytest.mark.parametrize("name", ["build_cwe_catalog.py", "approve_cwe_rows.py", "approve_rule_map.py"])
+def test_scripts_put_src_on_the_path_before_importing_the_package(name):
+    text = (POLICY.parents[2] / "scripts" / name).read_text(encoding="utf-8")
+    assert text.index('sys.path.insert(0, str(ROOT / "src"))') < text.index("from security_reviewer_v2")

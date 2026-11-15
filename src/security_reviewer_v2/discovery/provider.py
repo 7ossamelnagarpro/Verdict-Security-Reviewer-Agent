@@ -53,6 +53,20 @@ def _discovery_response_format(model: str) -> dict[str, Any]:
     return {"type": "json_object"}
 
 
+_ATTACK_PLAN_SYSTEM_PROMPT = (
+    "You are a penetration-testing strategist. You are given one security hypothesis, a fixed menu of "
+    "attack templates that are actually available to run, and the full record of every attempt already "
+    "made against this hypothesis (which template, which tool, what was observed, and whether it was "
+    "treated as a confirmed violation, a correct denial, inconclusive, or blocked). "
+    "Pick exactly one template id from the menu to try next, or \"stop\" if no remaining template would "
+    "add anything. Ground your reasoning ONLY in the hypothesis text and the attempts given to you — "
+    "never invent an endpoint, account, payload, method, or detail that was not already provided; you are "
+    "choosing which pre-approved template runs next, not designing the HTTP request yourself. "
+    "Reply with a JSON object: {\"decision\": \"<one template id from the menu, or 'stop'>\", "
+    "\"reasoning\": \"<one or two sentences, grounded in the evidence above>\"}."
+)
+
+
 class DiscoveryProvider(Protocol):
     name: str
     model: str
@@ -222,6 +236,27 @@ class GroqProvider:
             "rate_limit_wait_seconds": waited, "finish_reason": finish_reason,
             "wall_seconds": round(time.monotonic() - started, 3)}
 
+    def plan_attack(self, prompt: str, *, timeout_seconds: int | None) -> tuple[dict[str, Any], dict[str, Any]]:
+        """One attack-strategy decision for the Penetration Agent's adaptive loop (see ``ai_planner.py``).
+
+        Same shape and the same caller-side validation discipline as :meth:`review`: the reply is parsed
+        here, but which decisions are actually SAFE to act on is decided entirely by the caller against a
+        fixed allowlist — this method only returns what the model said.
+        """
+        body = {"model": self.model, "temperature": 0, "response_format": {"type": "json_object"},
+                "messages": [{"role": "system", "content": _ATTACK_PLAN_SYSTEM_PROMPT},
+                            {"role": "user", "content": prompt}]}
+        started = time.monotonic()
+        try:
+            payload, retries, waited = self._post(body, timeout_seconds)
+        except _GroqHTTPFailure as error:
+            raise _as_response_error(error)
+        parsed, finish_reason, usage = _completion_json(payload, "attack plan content")
+        return parsed if isinstance(parsed, dict) else {}, {
+            **usage, "provider": self.name, "model": self.model, "retry_count": retries,
+            "rate_limit_wait_seconds": waited, "finish_reason": finish_reason,
+            "wall_seconds": round(time.monotonic() - started, 3)}
+
 
 @dataclass(frozen=True)
 class OllamaProvider:
@@ -259,6 +294,18 @@ class OllamaProvider:
         parsed, payload, retries = _ollama_json_response(request, timeout_seconds)
         reviews = parsed.get("reviews", []) if isinstance(parsed, dict) else []
         return (reviews if isinstance(reviews, list) else [])[:max_reviews], {"provider": self.name, "model": self.model, "total_duration_ns": payload.get("total_duration"), "retry_count": retries}
+
+    def plan_attack(self, prompt: str, *, timeout_seconds: int | None) -> tuple[dict[str, Any], dict[str, Any]]:
+        body = {"model": self.model, "stream": False, "think": False, "format": "json",
+                "options": {"temperature": 0},
+                "messages": [{"role": "system", "content": _ATTACK_PLAN_SYSTEM_PROMPT},
+                            {"role": "user", "content": prompt}]}
+        request = urllib.request.Request(self.endpoint, data=json.dumps(body).encode("utf-8"),
+                                         headers={"Content-Type": "application/json"}, method="POST")
+        parsed, payload, retries = _ollama_json_response(request, timeout_seconds)
+        return parsed if isinstance(parsed, dict) else {}, {
+            "provider": self.name, "model": self.model,
+            "total_duration_ns": payload.get("total_duration"), "retry_count": retries}
 
 
 def _ollama_json_response(request: urllib.request.Request, timeout_seconds: int | None) -> tuple[dict[str, Any], dict[str, Any], int]:

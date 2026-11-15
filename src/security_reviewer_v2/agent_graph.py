@@ -24,7 +24,7 @@ from security_reviewer_v2.policy import evaluate_policy
 from security_reviewer_v2.prioritization.models import RiskResult
 from security_reviewer_v2.triage import TriageResult, triage_candidates
 from security_reviewer_v2.verification import VerificationResult, verify_discovery
-from security_reviewer_v2.verification.models import VerificationRecord
+from security_reviewer_v2.verification.models import VerificationDisposition, VerificationRecord
 
 
 class AgentReviewState(TypedDict, total=False):
@@ -123,35 +123,49 @@ def run_agent_review_graph(
         return {"verification": result, "verification_payload": payload}
 
     def penetration_node(state: AgentReviewState) -> AgentReviewState:
-        # Opt-in only (see the docstring above); still a no-op when the caller forgot the resolver.
-        if penetration_access is None or penetration_target_resolver is None:
-            payload = {"schema_version": "1.0", "status": "not_run", "results": [], "usage": {},
-                       "warnings": ["dynamic_penetration_agent was not configured for this run."]}
+        from security_reviewer_v2.agents.tracing import node_trace
+
+        confirmed = sum(1 for record in getattr(state["verification"], "records", ())
+                        if getattr(record, "disposition", None) is VerificationDisposition.CONFIRMED)
+        # A named, visible span in LangSmith for this node specifically: it makes no model calls of its
+        # own (pure Python), so without this it would otherwise leave nothing of its own in the trace
+        # tree beyond whatever the bare graph invocation shows. No-ops when tracing is off.
+        with node_trace("dynamic_penetration_agent",
+                        inputs={"candidates_confirmed_by_verification": confirmed,
+                                "configured": penetration_access is not None}) as run:
+            # Opt-in only (see the docstring above); still a no-op when the caller forgot the resolver.
+            if penetration_access is None or penetration_target_resolver is None:
+                payload = {"schema_version": "1.0", "status": "not_run", "results": [], "usage": {},
+                          "warnings": ["dynamic_penetration_agent was not configured for this run."]}
+                write_artifact("dynamic-penetration-test.json", payload)
+                if run is not None:
+                    run.end(outputs={"status": "not_run"})
+                return {"penetration_test_payload": payload}
+
+            report = run_penetration_tests(
+                state["discovery"], state["verification"], access=penetration_access,
+                target_endpoint_resolver=penetration_target_resolver, budget=penetration_budget,
+                transport=penetration_transport,
+            )
+            payload = report.to_dict()
             write_artifact("dynamic-penetration-test.json", payload)
-            return {"penetration_test_payload": payload}
+            if run is not None:
+                run.end(outputs={"status": payload.get("status"), **payload.get("usage", {})})
 
-        report = run_penetration_tests(
-            state["discovery"], state["verification"], access=penetration_access,
-            target_endpoint_resolver=penetration_target_resolver, budget=penetration_budget,
-            transport=penetration_transport,
-        )
-        payload = report.to_dict()
-        write_artifact("dynamic-penetration-test.json", payload)
-
-        # This is the "Verification (evaluates exploitation evidence)" step from the design: it only
-        # annotates an existing CONFIRMED record's notes with what the agent observed — it can never
-        # change a disposition, and it never touches a candidate Verification did not already confirm.
-        by_candidate = {item.candidate_id: item for item in report.results}
-        updated_records = tuple(
-            replace(record, notes=(*record.notes, f"dynamic_penetration_agent: {by_candidate[record.candidate_id].outcome.value} "
-                                                    f"({len(by_candidate[record.candidate_id].attempts)} attempt(s)) "
-                                                    f"\u2014 {by_candidate[record.candidate_id].summary}"))
-            if record.candidate_id in by_candidate else record
-            for record in state["verification"].records
-        )
-        updated_verification = replace(state["verification"], records=updated_records)
-        return {"penetration_test_payload": payload, "verification": updated_verification,
-                "verification_payload": updated_verification.to_dict()}
+            # This is the "Verification (evaluates exploitation evidence)" step from the design: it only
+            # annotates an existing CONFIRMED record's notes with what the agent observed — it can never
+            # change a disposition, and it never touches a candidate Verification did not already confirm.
+            by_candidate = {item.candidate_id: item for item in report.results}
+            updated_records = tuple(
+                replace(record, notes=(*record.notes, f"dynamic_penetration_agent: {by_candidate[record.candidate_id].outcome.value} "
+                                                        f"({len(by_candidate[record.candidate_id].attempts)} attempt(s)) "
+                                                        f"\u2014 {by_candidate[record.candidate_id].summary}"))
+                if record.candidate_id in by_candidate else record
+                for record in state["verification"].records
+            )
+            updated_verification = replace(state["verification"], records=updated_records)
+            return {"penetration_test_payload": payload, "verification": updated_verification,
+                    "verification_payload": updated_verification.to_dict()}
 
     def triage_node(state: AgentReviewState) -> AgentReviewState:
         result = triage_candidates(state["discovery"], state["verification"], merged,

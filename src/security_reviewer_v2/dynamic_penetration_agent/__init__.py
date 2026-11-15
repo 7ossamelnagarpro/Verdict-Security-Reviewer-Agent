@@ -5,6 +5,7 @@ Public entry point: :func:`run_penetration_tests`. See ``agent.py`` for scope an
 """
 
 from .agent import RuntimeAccess, run_penetration_tests
+from .ai_planner import AIPlanDecision, AttackPlanProvider, choose_next_strategy
 from .models import (
     ExecutionBudget,
     HypothesisTestResult,
@@ -18,6 +19,9 @@ from .models import (
 __all__ = [
     "RuntimeAccess",
     "run_penetration_tests",
+    "AIPlanDecision",
+    "AttackPlanProvider",
+    "choose_next_strategy",
     "ExecutionBudget",
     "HypothesisTestResult",
     "PenetrationAttempt",

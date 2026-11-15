@@ -163,7 +163,7 @@ def _route_index(project: Path, profile_result) -> list:
 
 
 @contextmanager
-def _penetration_session(args, project: Path, profile_result):
+def _penetration_session(args, project: Path, profile_result, discovery_provider=None):
     """Section 6: the Agent's OWN isolated stack, provisioned, held open for the adaptive loop, then torn down.
 
     Yields ``(access, resolver, plan_payload)``. Both ``access`` and ``resolver`` are ``None`` — the agent
@@ -213,9 +213,13 @@ def _penetration_session(args, project: Path, profile_result):
         zap_context = ({"stack_name": session.project_name, "app_service": spec.app_service}
                        if session.mode == "docker_compose" and session.project_name and spec.app_service
                        else None)
+        # Reuses the SAME Discovery provider/model the caller already configured (same API key, same
+        # trust decision) — this is not a second, separate AI integration.
+        ai_provider = discovery_provider if args.penetration_ai_planner else None
         access = RuntimeAccess(base_url=session.base_url, allowed_endpoints=allowed_endpoints,
                                accounts=accounts, account_definitions=account_definitions,
-                               zap_context=zap_context, playwright_enabled=args.penetration_enable_playwright)
+                               zap_context=zap_context, playwright_enabled=args.penetration_enable_playwright,
+                               ai_provider=ai_provider)
         yield access, resolver, {**plan.to_dict(), "base_url": session.base_url}
 
 
@@ -276,6 +280,13 @@ def main() -> int:
     parser.add_argument("--penetration-enable-playwright", action="store_true",
                         help="let the agent corroborate an inconclusive/clean HTTP result with one real "
                              "browser visit (requires Node.js + Playwright; same trust level as --browser-dast)")
+    parser.add_argument("--penetration-ai-planner", action="store_true",
+                        help="let an AI model choose which attack template to try next for each "
+                             "hypothesis, reasoning over the hypothesis and every prior attempt's actual "
+                             "result, instead of the fixed keyword table. Reuses the SAME --ai-provider/ "
+                             "--ai-model already configured for Discovery. The model only ever picks among "
+                             "the three existing templates (it gains no new execution capability); any AI "
+                             "failure falls back to the keyword-based choice for that one attempt")
     parser.add_argument("--penetration-max-attempts-per-hypothesis", type=int, default=4)
     parser.add_argument("--penetration-max-requests-per-hypothesis", type=int, default=40)
     parser.add_argument("--penetration-max-total-requests", type=int, default=300)
@@ -542,7 +553,7 @@ def main() -> int:
     penetration_budget = None
     penetration_plan_payload = {"status": "not_requested"}
     with _penetration_session(
-        args, project, profile_result,
+        args, project, profile_result, provider,
     ) as (penetration_access, penetration_resolver, penetration_plan_payload):
         penetration_budget = ExecutionBudget(
             max_attempts_per_hypothesis=args.penetration_max_attempts_per_hypothesis,

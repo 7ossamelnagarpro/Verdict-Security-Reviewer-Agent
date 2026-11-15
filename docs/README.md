@@ -30,6 +30,10 @@ safety boundaries.
   evidence-gated AI candidates.
 - [Risk Prioritization](risk-prioritization.md): review ordering and limits.
 - [IDOR DAST](idor-dast.md): authorization-probe scope.
+- [Autonomous Penetration Testing Agent](dynamic-penetration-agent.md)
+  (implementation notes, in Arabic): the adaptive agent that reproduces a
+  source-grounded candidate's suspicion against an isolated stack — what it
+  tries, how it decides, the optional AI planner, and current limitations.
 
 The [benchmark index](../benchmark/README.md) describes the held-out labels
 and their evaluation limits. The
