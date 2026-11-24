@@ -21,6 +21,13 @@ class TestStrategy(str, Enum):
     UNAUTHENTICATED_ACCESS = "unauthenticated_access"
     AUTHORIZATION_MATRIX = "authorization_matrix"
     IDOR = "idor"
+    PRIVILEGE_ESCALATION = "privilege_escalation"
+    HEAD_METHOD_BYPASS = "head_method_bypass"
+    TRAILING_SLASH_BYPASS = "trailing_slash_bypass"
+    CASE_SENSITIVITY_BYPASS = "case_sensitivity_bypass"
+    PATH_NORMALIZATION_BYPASS = "path_normalization_bypass"
+    IDOR_PARAMETER_POLLUTION = "idor_parameter_pollution"
+    EXTENSION_SUFFIX_BYPASS = "extension_suffix_bypass"
 
 
 class NextAction(str, Enum):
@@ -53,7 +60,7 @@ class TestOutcome(str, Enum):
 class ExecutionBudget:
     """Hard ceilings enforced by :mod:`execution_budget`, never exceeded by the controller."""
 
-    max_attempts_per_hypothesis: int = 4
+    max_attempts_per_hypothesis: int = 10  # one per template, now that there are ~10 of them
     max_requests_per_hypothesis: int = 40
     max_total_requests: int = 300
     max_seconds_per_hypothesis: float = 180.0

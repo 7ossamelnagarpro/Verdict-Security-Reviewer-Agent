@@ -16,7 +16,7 @@ def main():
     parser.add_argument("project", type=Path)
     parser.add_argument("saved", type=Path)
     parser.add_argument("output", type=Path)
-    parser.add_argument("--provider", choices=("groq", "ollama"), default="groq")
+    parser.add_argument("--provider", choices=("groq", "ollama", "openai", "openrouter", "gemini"), default="groq")
     parser.add_argument("--model", default="openai/gpt-oss-120b")
     args = parser.parse_args()
     if args.output.exists() or args.output.resolve().is_relative_to(args.project.resolve()):
@@ -28,7 +28,8 @@ def main():
             parser.error("Saved static evidence is incomplete")
     args.output.mkdir(parents=True)
     for name in ("profile.json", "merged.json", "context.json", "plan.json", "coverage-gaps.json",
-                 "runtime.json", "workflow-evidence.json", "docker-runtime-evidence.json", "ai-discovery.json", "pre-review-summary.json"):
+                 "runtime.json", "workflow-evidence.json", "docker-runtime-evidence.json", "ai-discovery.json", "pre-review-summary.json",
+                 "dynamic-penetration-test.json"):
         if (args.saved / name).is_file():
             shutil.copy2(args.saved / name, args.output / name)
     scripts = Path(__file__).resolve().parent
@@ -48,7 +49,8 @@ def main():
                "--model", args.model]
     for flag, name in (("--prior-review", "security-review.json"),
                        ("--docker-runtime-evidence", "docker-runtime-evidence.json"),
-                       ("--runtime-evidence", "runtime.json"), ("--coverage-summary", "pre-review-summary.json")):
+                       ("--runtime-evidence", "runtime.json"), ("--coverage-summary", "pre-review-summary.json"),
+                       ("--penetration-test", "dynamic-penetration-test.json")):
         if (args.saved / name).is_file():
             command.extend([flag, str(args.saved / name)])
     result = subprocess.run(command, check=False).returncode

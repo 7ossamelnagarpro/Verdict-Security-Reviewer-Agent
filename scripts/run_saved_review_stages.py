@@ -37,11 +37,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--docker-runtime-evidence", type=Path,
                         help="include saved Docker DAST evidence in the derived final report")
     parser.add_argument("--review", action="store_true", help="call the model for every eligible issue group")
-    parser.add_argument("--provider", choices=("groq", "ollama"), default="groq")
+    parser.add_argument("--provider", choices=("groq", "ollama", "openai", "openrouter", "gemini"), default="groq")
     parser.add_argument("--model", default="openai/gpt-oss-120b")
     parser.add_argument("--review-batch-size", type=int, default=2)
     parser.add_argument("--runtime-evidence", type=Path)
     parser.add_argument("--coverage-summary", type=Path)
+    parser.add_argument("--penetration-test", type=Path,
+                        help="saved dynamic-penetration-test.json; keeps the Penetration testing section in the report")
     args = parser.parse_args(argv)
     if args.prior_review is not None and not args.prior_review.is_file():
         parser.error("--prior-review must point to an existing security-review.json")
@@ -135,11 +137,15 @@ def main(argv: list[str] | None = None) -> int:
         policy = evaluate_policy(review_payload, triage_payload=triage.to_dict(),
                                  merged_payload=merged.to_dict(), verification_payload=verification.to_dict())
         _write(args.output / "policy-gate.json", policy.to_dict())
+        penetration_options: dict[str, object] = {}
+        if args.penetration_test is not None and args.penetration_test.is_file():
+            penetration_options = {"penetration_test": json.loads(args.penetration_test.read_text(encoding="utf-8")),
+                                   "discovery": discovery.to_dict()}
         write_final_report(args.output / "security-review-report.md", project=str(args.project),
                            review=review_payload, policy=policy.to_dict(), triage=triage.to_dict(),
                            verification=verification.to_dict(), merged=merged.to_dict(),
                            docker_runtime=docker_runtime, runtime_evidence=runtime_evidence,
-                           coverage_gaps=coverage_summary.get("coverage_gaps", []))
+                           coverage_gaps=coverage_summary.get("coverage_gaps", []), **penetration_options)
         summary["review"] = {"status": review_payload["status"], "reviewed": len(review_payload["reviews"]),
                              "pending": len(review_payload.get("pending_ids", []))}
         if args.re_review_id:

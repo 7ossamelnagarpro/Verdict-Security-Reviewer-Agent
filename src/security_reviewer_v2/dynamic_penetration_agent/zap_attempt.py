@@ -48,7 +48,7 @@ def run_scoped_attempt(
         runtime_path = Path(directory) / "runtime.json"
         runtime_path.write_text(json.dumps({"results": []}), encoding="utf-8")
         try:
-            run_zap(base_url, runtime_path, engine="zap-active", stack_name=stack_name,
+            run_zap(base_url, runtime_path, engine="zap-automated-scan", stack_name=stack_name,
                    app_service=app_service, auth=dict(auth) if auth else None,
                    scope_path=target_endpoint, max_seconds=max_seconds)
         except (ValueError, RuntimeError) as error:

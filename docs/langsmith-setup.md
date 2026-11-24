@@ -105,3 +105,13 @@ LANGSMITH_PROJECT=security-reviewer-v2
 
 Every run prints one line, `LangSmith tracing: ON (...)` or `OFF - missing ...`, so a missing key is never
 silent. Both agents are grouped under one `pre-review-pipeline` trace and queued spans are flushed before exit.
+
+## Large runs: keeping uploads small and non-blocking
+
+* `metadata` / `redacted` modes send only the first 40 entries of any large list/dict (plus a count) and at most 8 nesting
+  levels, because LangGraph traces every node with the whole graph state. Tune with `SECURITY_REVIEWER_TRACE_MAX_ITEMS`
+  (`full` mode is not capped).
+* Upload batches default to 128 KB (`SECURITY_REVIEWER_LANGSMITH_BATCH_BYTES`) with a 120 s read timeout
+  (`SECURITY_REVIEWER_LANGSMITH_TIMEOUT_SECONDS`).
+* The end-of-run flush waits at most 30 s (`SECURITY_REVIEWER_LANGSMITH_FLUSH_SECONDS`); undelivered traces are dropped with a
+  warning and never affect the review result.

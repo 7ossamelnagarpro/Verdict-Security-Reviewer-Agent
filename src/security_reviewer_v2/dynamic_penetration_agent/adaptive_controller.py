@@ -64,10 +64,22 @@ def run_hypothesis(
     planning_gaps: list[dict[str, str]] = []
     tried: list[TestStrategy] = []
     corroboration_used = False
+    # Distinct from `evaluations[-1]`: with more templates now in play, the most RECENT entry can be a
+    # planning-gap ("blocked", never executed) even though the last attempt that actually ran produced a
+    # real HTTP result — the stop/corroboration decisions below must react to that real result, not to
+    # whichever strategy happened to be tried last (and failed to even plan).
+    last_executed_evaluation: evidence_evaluator.AttemptEvaluation | None = None
+    last_executed_strategy: TestStrategy | None = None
     menu_size = len(TestStrategy) if ai_provider is not None else len(assessment.candidate_strategies)
+    account_roles = {account_id: defn.get("role") for account_id, defn in account_definitions.items()}
 
     def pick_strategy() -> tuple[TestStrategy | None, str | None]:
-        """The next untried strategy to run, and the AI's stated reasoning for it (if any)."""
+        """The next untried strategy to run, and the AI's stated reasoning for it (if any).
+
+        When an AI planner is configured, :func:`ai_planner.choose_next_strategy` itself opens the
+        ``ai_planner.choose_next_strategy`` LangSmith span (as an ``llm``-type run, showing the actual
+        prompt and reply) around its one model call — this function makes no tracing calls of its own.
+        """
         if ai_provider is None:
             return hypothesis_analyzer.next_strategy(assessment, tried=tuple(tried)), None
         decision = ai_planner.choose_next_strategy(candidate, assessment, tuple(attempts), tried=tuple(tried),
@@ -83,23 +95,25 @@ def run_hypothesis(
     while True:
         attempt_number = len(attempts) + 1
         budget_ok, budget_reason = tracker.can_attempt(candidate.candidate_id)
-        strategy, ai_reasoning = pick_strategy()
+        # Once the budget is spent the loop ends whatever the model would say, so do not pay for (or wait on) a
+        # planner call whose answer can only be discarded.
+        strategy, ai_reasoning = pick_strategy() if budget_ok else (None, None)
         tools = ("runtime_workflows",)
 
         if strategy is None and budget_ok and corroboration_tools and not corroboration_used and tried and (
-            evaluations and evaluations[-1].outcome in {"passed", "inconclusive"}
+            last_executed_evaluation is not None and last_executed_evaluation.outcome in {"passed", "inconclusive"}
         ):
-            # One corroboration round on the LAST strategy tried, with a different tool — not a new
-            # strategy, and never run when runtime_workflows already produced a violation or every
-            # attempt so far was blocked (nothing to corroborate in that case).
-            strategy = tried[-1]
+            # One corroboration round on the LAST strategy that actually EXECUTED (never one that only
+            # ever failed to plan — there would be nothing real to corroborate), with a different tool —
+            # not a new strategy, and never run when runtime_workflows already produced a violation.
+            strategy = last_executed_strategy
             tools = corroboration_tools
             corroboration_used = True
 
         if not budget_ok or strategy is None:
-            if attempts:
+            if attempts and last_executed_evaluation is not None:
                 _, final_stop = evidence_evaluator.decide_next(
-                    evaluations[-1].outcome, budget_ok=budget_ok, budget_stop_reason=budget_reason,
+                    last_executed_evaluation.outcome, budget_ok=budget_ok, budget_stop_reason=budget_reason,
                     has_more_strategies=False,
                 )
                 attempts[-1] = _with_stop(attempts[-1], NextAction.STOP, final_stop)
@@ -110,7 +124,8 @@ def run_hypothesis(
             tried.append(strategy)
         try:
             plan = attack_planner.build_plan(candidate, strategy, attempt_number=attempt_number,
-                                             target_endpoint=target_endpoint, accounts=accounts, tools=tools)
+                                             target_endpoint=target_endpoint, accounts=accounts, tools=tools,
+                                             account_roles=account_roles)
             scenario_validator.validate_plan(plan, allowed_endpoints=allowed_endpoints,
                                              allowed_accounts=frozenset(account_definitions))
             suite = scenario_validator.build_and_validate_suite(plan, account_definitions=account_definitions)
@@ -145,7 +160,13 @@ def run_hypothesis(
         label = strategy.value + ("_corroboration" if is_corroboration else "")
         evaluation = evidence_evaluator.evaluate_attempt(result, label)
         evaluations.append(evaluation)
+        last_executed_evaluation = evaluation
+        last_executed_strategy = strategy
 
+        # An AI reading of this ALREADY-DECIDED verdict, purely for richer future-planning context —
+        # see ai_planner.interpret_evidence's own docstring for why this can never change `evaluation`.
+        # It opens its own ``ai_planner.interpret_evidence`` LangSmith span internally (an ``llm``-type
+        # run showing the actual prompt and reply); nothing to wrap here.
         # Cheap existence check only (never a second AI call per attempt): does any untried template
         # remain at all? The real choice of which one, AI or rule-based, happens on the next iteration.
         has_remaining = len(tried) < menu_size
@@ -156,12 +177,23 @@ def run_hypothesis(
             evaluation.outcome, budget_ok=still_ok, budget_stop_reason=still_reason,
             has_more_strategies=has_remaining or can_corroborate_next,
         )
+
+        # The interpretation is computed after the stop decision (which does not depend on it).  It is skipped where it
+        # cannot add anything: a "blocked" attempt produced no evidence to read, and when the budget just ran out the
+        # extra model call would only spend more of the time/requests that were meant to be the ceiling.
+        reasoning_summary = evaluation.reasoning
+        budget_stop = next_action is NextAction.STOP and stop_reason in {StopReason.BUDGET_EXHAUSTED, StopReason.TIME_EXPIRED}
+        if ai_provider is not None and evaluation.outcome != "blocked" and not budget_stop:
+            interpretation = ai_planner.interpret_evidence(candidate, strategy, evaluation, response_evidence,
+                                                           provider=ai_provider)
+            if interpretation:
+                reasoning_summary = f"{reasoning_summary} AI interpretation: {interpretation}"
         attempts.append(PenetrationAttempt(
             candidate_id=candidate.candidate_id, hypothesis=assessment.hypothesis,
             entry_point=assessment.entry_point, target_endpoint=target_endpoint or "",
             attack_plan=plan.rationale, selected_tools=plan.selected_tools, attempt_number=attempt_number,
             test_strategy=strategy.value, request_evidence=request_evidence, response_evidence=response_evidence,
-            observation=evaluation.observation, agent_reasoning_summary=evaluation.reasoning,
+            observation=evaluation.observation, agent_reasoning_summary=reasoning_summary,
             next_action=next_action.value, stop_reason=stop_reason.value,
         ))
         if next_action is NextAction.STOP:

@@ -15,7 +15,8 @@ from security_reviewer_v2.discovery.models import CandidateFinding
 from .models import TestStrategy
 
 _IDOR_HINTS = ("idor", "object reference", "ownership", "other user", "another user", "belongs to")
-_AUTH_HINTS = ("authorization", "access control", "permission", "broken access", "admin access", "role")
+_AUTH_HINTS = ("authorization", "access control", "permission", "broken access", "role")
+_PRIVILEGE_HINTS = ("privilege", "admin-only", "admin access", "elevated", "superuser", "escalation")
 
 
 @dataclass(frozen=True)
@@ -40,13 +41,24 @@ def assess(candidate: CandidateFinding, *, target_endpoint: str | None) -> Hypot
                                     "Runtime Contract; there is nothing a read-only HTTP probe can test.", ())
 
     strategies: list[TestStrategy] = []
-    if any(hint in text for hint in _IDOR_HINTS):
+    has_idor_hint = any(hint in text for hint in _IDOR_HINTS)
+    if has_idor_hint:
         strategies.append(TestStrategy.IDOR)
+    if any(hint in text for hint in _PRIVILEGE_HINTS):
+        strategies.append(TestStrategy.PRIVILEGE_ESCALATION)
     if any(hint in text for hint in _AUTH_HINTS):
         strategies.append(TestStrategy.AUTHORIZATION_MATRIX)
     # Unauthenticated access is always a cheap, safe first probe for a route-bearing candidate, regardless
-    # of how the candidate is categorized, so it is always offered last if nothing more specific applies.
+    # of how the candidate is categorized.
     strategies.append(TestStrategy.UNAUTHENTICATED_ACCESS)
+    # These framework-level bypass probes (HEAD-vs-GET, trailing slash, re-casing, dot-segment detour,
+    # a fixed suffix list) are generic to almost any route-level access-control hypothesis, not gated on
+    # specific wording, so the rule-based fallback always offers them too — not just the AI planner.
+    strategies += [TestStrategy.HEAD_METHOD_BYPASS, TestStrategy.TRAILING_SLASH_BYPASS,
+                  TestStrategy.CASE_SENSITIVITY_BYPASS, TestStrategy.PATH_NORMALIZATION_BYPASS,
+                  TestStrategy.EXTENSION_SUFFIX_BYPASS]
+    if has_idor_hint:
+        strategies.append(TestStrategy.IDOR_PARAMETER_POLLUTION)
     ordered = tuple(dict.fromkeys(strategies))
 
     return HypothesisAssessment(candidate.candidate_id, hypothesis, entry_point, True,

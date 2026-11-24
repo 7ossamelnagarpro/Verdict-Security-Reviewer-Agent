@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .penetration_summary import OUTCOMES, PenetrationOverview, build_overview, rows_by_group
+
 from .view import _scanner_rows, build_view
 
 
@@ -144,7 +146,30 @@ def _render_observations(merged: dict[str, Any], risk: dict[str, Any] | None,
     return lines
 
 
-def _render_penetration_tests(penetration_test: dict[str, Any]) -> list[str]:
+def _render_penetration_overview(overview: PenetrationOverview) -> list[str]:
+    """The reviewer's first question: for each AI Discovery finding, did the penetration test prove it or not?"""
+    rows = overview.rows
+    if not rows:
+        return []
+    counts = ", ".join(f"**{overview.count(key)}** {OUTCOMES[key][0].lower()}" for key in OUTCOMES if overview.count(key))
+    lines = ["", "### Did the penetration test prove each AI Discovery finding?", "",
+             f"{len(rows)} source-confirmed AI Discovery finding(s): {counts}."]
+    if overview.not_sent:
+        lines.append(f"{overview.not_sent} further AI Discovery candidate(s) were not source-confirmed by Verification, "
+                     "so they were never sent to the penetration agent and are not listed here.")
+    lines += ["", "| # | AI Discovery finding | Severity | Location | Penetration test result | Attempts |",
+              "|---|---|---|---|---|---|"]
+    for index, row in enumerate(rows, 1):
+        mark = "\u2705 " if row.proven else ""
+        lines.append(f"| {index} | {_plain(row.title)} (`{_plain(row.candidate_id)}`) | {_plain(row.severity)} | "
+                     f"{_plain(row.location or '-')} | {mark}**{_plain(row.label)}** | {len(row.attempts)} |")
+    lines += ["", "How to read the result:", ""]
+    lines += [f"- **{_plain(OUTCOMES[key][0])}**: {_plain(OUTCOMES[key][1])}" for key in OUTCOMES if overview.count(key)]
+    lines += ["", "### What the penetration agent did, attempt by attempt", ""]
+    return lines
+
+
+def _render_penetration_tests(penetration_test: dict[str, Any], overview: PenetrationOverview | None = None) -> list[str]:
     """Section 7's attempt record, in full, as literal reproduction steps for a human reviewer.
 
     Every attempt the Penetration Agent made against every tested hypothesis is listed — not just the
@@ -166,10 +191,14 @@ def _render_penetration_tests(penetration_test: dict[str, Any]) -> list[str]:
     lines.append("Every probe below is read-only (GET/HEAD) against an isolated test stack with test "
                  "accounts; nothing here mutated real data. Re-run the same method and path after a fix "
                  "and confirm the response status changes to a denial status.")
+    titles = {row.candidate_id: row.title for row in overview.rows} if overview is not None else {}
+    if overview is not None:
+        lines.extend(_render_penetration_overview(overview))
     for result in penetration_test.get("results", []) or []:
         candidate_id = result.get("candidate_id", "unknown")
         outcome = result.get("outcome", "unknown")
-        lines += ["", f"### Hypothesis `{_plain(candidate_id)}` \u2014 outcome: **{_label(outcome)}**", "",
+        title = f" \u2014 {_plain(titles[str(candidate_id)])}" if str(candidate_id) in titles else ""
+        lines += ["", f"#### Hypothesis `{_plain(candidate_id)}`{title} \u2014 outcome: **{_label(outcome)}**", "",
                   f"{_prose(result.get('summary', ''))}", ""]
         attempts = result.get("attempts", []) or []
         gaps = result.get("considered_but_not_executed", []) or []
@@ -314,8 +343,9 @@ def render_final_report(*, project: str, review: dict[str, Any], policy: dict[st
         else:
             lines.append("- Account and business workflows: **not requested**.")
         lines.append("- These observations do not prove complete vulnerability coverage or exploitation.")
+    overview = build_overview(penetration_test, discovery, verification)
     if penetration_test is not None:
-        lines.extend(_render_penetration_tests(penetration_test))
+        lines.extend(_render_penetration_tests(penetration_test, overview))
     if execution is not None:
         lines += ["", "## Scanner Execution", ""]
         tasks = execution.get("tasks", [])
@@ -331,6 +361,7 @@ def render_final_report(*, project: str, review: dict[str, Any], policy: dict[st
             lines.extend(f"- {_plain(row.role)}: **{_plain(row.outcome)}**" + "".join(f" — {_plain(n)}" for n in row.notes) for row in idle)
             lines.append("Registered but not scheduled (nothing to scan): " + ", ".join(_code(row.scanner) for row in idle) + ".")
     penetration_confirmed = _penetration_confirmed_group_ids(penetration_test, triage)
+    pen_by_group = rows_by_group(overview.rows, triage) if overview is not None else {}
     if merged is not None:
         lines.extend(_render_observations(merged, risk, penetration_confirmed))
     lines += ["", "## Security Review Agent Verdicts", ""]
@@ -342,6 +373,9 @@ def render_final_report(*, project: str, review: dict[str, Any], policy: dict[st
         if str(item.get("candidate_id")) in penetration_confirmed:
             lines.append("- \u2705 **Independently confirmed by the Autonomous Penetration Agent** "
                          "\u2014 see Autonomous Penetration Testing above for the exact reproduction steps.")
+        elif overview is not None and str(item.get("candidate_id")) in pen_by_group:
+            tested = pen_by_group[str(item.get("candidate_id"))]
+            lines.append(f"- Penetration test: **{_plain(tested.label)}** \u2014 {_plain(tested.meaning)}")
         if item.get("source_ids"):
             formatted_sources = ", ".join(_inline_code(source_id) for source_id in item["source_ids"])
             lines.append(f"- Source IDs: {formatted_sources}")

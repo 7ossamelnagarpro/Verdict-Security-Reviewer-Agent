@@ -124,6 +124,34 @@ def test_scrubber_modes() -> None:
     assert "abc123" not in json.dumps(full) and len(full["long"]) > 4_000   # secrets are removed in every mode
 
 
+def test_scrubber_caps_huge_collections_except_in_full_mode() -> None:
+    payload = {"targets": [{"id": i} for i in range(5_000)], "snippets": {f"t{i}": "code" for i in range(5_000)}}
+    for mode in ("metadata", "redacted"):
+        out = tracing.make_scrubber(mode)(payload)
+        assert len(out["targets"]) == tracing._DEFAULT_MAX_ITEMS + 1 and "more items" in out["targets"][-1]
+        assert len(out["snippets"]) == tracing._DEFAULT_MAX_ITEMS + 1 and "<omitted>" in out["snippets"]
+        assert len(json.dumps(out)) < 20_000
+    assert len(tracing.make_scrubber("full")(payload)["targets"]) == 5_000
+    deep: dict = {}
+    node = deep
+    for _ in range(20):
+        node["x"] = {}
+        node = node["x"]
+    assert "nested data omitted" in json.dumps(tracing.make_scrubber("metadata")(deep))
+
+
+def test_flush_never_blocks_longer_than_its_timeout() -> None:
+    import time
+
+    class Stuck:
+        def flush(self) -> None:
+            time.sleep(5)
+
+    started = time.monotonic()
+    tracing.flush_traces(Stuck(), timeout_seconds=0.2)
+    assert time.monotonic() - started < 2
+
+
 def test_usage_metadata_maps_provider_specific_keys() -> None:
     assert tracing.usage_metadata({"prompt_tokens": 7, "completion_tokens": 3}) == {
         "input_tokens": 7, "output_tokens": 3, "total_tokens": 10}

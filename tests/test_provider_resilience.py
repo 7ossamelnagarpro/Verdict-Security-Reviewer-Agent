@@ -195,6 +195,38 @@ def test_http_429_without_retry_after_waits_the_opt_in_fallback_and_retries(monk
     assert wire.calls == 2 and wire.sleeps == [65.0]
 
 
+def test_http_429_retry_after_above_default_cap_is_usable_once_the_single_wait_cap_is_raised(monkeypatch):
+    """A Retry-After of 120s is unusable by default (>90s) but becomes usable once explicitly widened."""
+    monkeypatch.setenv("GROQ_SINGLE_RETRY_AFTER_CAP_SECONDS", "150")
+    wire = Wire(monkeypatch, http_error(429, {"Retry-After": "120"}), completion())
+    discover()
+    assert wire.calls == 2 and wire.sleeps == [120.0]
+
+
+def test_http_429_cumulative_wait_budget_is_raisable(monkeypatch):
+    """With GROQ_MAX_RATE_LIMIT_WAIT_SECONDS widened, more 90s retries fit before giving up."""
+    monkeypatch.setenv("GROQ_MAX_RATE_LIMIT_WAIT_SECONDS", "1000")
+    wire = Wire(monkeypatch, http_error(429, {"Retry-After": "90"}))
+    with pytest.raises(RuntimeError, match="HTTP 429"):
+        discover()
+    assert wire.sleeps == [90.0] * 10 and wire.calls == 11  # retries < 10 is the other, independent cap
+
+
+def test_http_429_caps_default_unchanged_when_the_env_vars_are_unset_or_invalid(monkeypatch):
+    for name in ("GROQ_SINGLE_RETRY_AFTER_CAP_SECONDS", "GROQ_MAX_RATE_LIMIT_WAIT_SECONDS"):
+        monkeypatch.delenv(name, raising=False)
+    wire = Wire(monkeypatch, http_error(429, {"Retry-After": "120"}))  # still > the default 90s cap
+    with pytest.raises(RuntimeError, match="HTTP 429"):
+        discover()
+    assert wire.calls == 1 and wire.sleeps == []
+
+    monkeypatch.setenv("GROQ_SINGLE_RETRY_AFTER_CAP_SECONDS", "not-a-number")
+    wire = Wire(monkeypatch, http_error(429, {"Retry-After": "120"}))
+    with pytest.raises(RuntimeError, match="HTTP 429"):
+        discover()
+    assert wire.calls == 1 and wire.sleeps == []
+
+
 def test_http_429_with_a_long_retry_after_still_fails_fast_even_with_the_fallback(monkeypatch):
     monkeypatch.setenv("GROQ_RATE_LIMIT_FALLBACK_SECONDS", "65")
     wire = Wire(monkeypatch, http_error(429, {"Retry-After": "1140"}))

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from scripts.evaluate_verdict_comprehensive import TRUTH, _matches, evaluate, html_report, markdown
+from scripts.evaluate_verdict_comprehensive import TRUTH, SIGNATURES, _matches, _normalize_path_template, evaluate, html_report, markdown
 
 
 def test_runtime_assertion_mismatch_counts_even_with_expected_http_status() -> None:
@@ -32,6 +32,58 @@ def test_known_case_with_false_positive_verdict_needs_review() -> None:
     assert "S01" in markdown(result)
     assert "All 63 benchmark cases" in html_report(result)
     assert "S01" in html_report(result)
+
+
+def test_penetration_agent_confirmation_counts_as_detected_with_no_scanner_signature() -> None:
+    """C01's path is /orders/{{order_id}}. If the Penetration Agent alone reaches exploitation_confirmed
+    on the matching concrete endpoint, that case must count as detected — on its own, auditable origin —
+    even with zero scanner/workflow findings at all."""
+    truth = json.loads(TRUTH.read_text(encoding="utf-8"))
+    rule_id, known_path, _lines = SIGNATURES["C01"][0]
+    assert _normalize_path_template(known_path) == "/orders/{}"
+    penetration_test = {"status": "completed", "results": [{
+        "candidate_id": "ai-xyz", "outcome": "exploitation_confirmed",
+        "attempts": [{"target_endpoint": "/orders/5"}],
+    }]}
+    result = evaluate(truth, {"project": "targets/verdict-comprehensive-lab"},
+        {"status": "completed", "findings": []},
+        {"groups": []}, {"status": "completed", "reviews": []},
+        penetration_test=penetration_test)
+    case = next(item for item in result["cases"] if item["id"] == "C01")
+    assert case["status"] == "detected"
+    assert case["origins"] == ["penetration_agent"]
+    assert result["summary"]["detected_via_penetration_agent"] == 1
+
+
+def test_penetration_agent_confirmation_on_a_different_endpoint_does_not_count() -> None:
+    """The match is on the exact endpoint, not "the Penetration Agent found something, somewhere"."""
+    truth = json.loads(TRUTH.read_text(encoding="utf-8"))
+    penetration_test = {"status": "completed", "results": [{
+        "candidate_id": "ai-xyz", "outcome": "exploitation_confirmed",
+        "attempts": [{"target_endpoint": "/completely/unrelated/path"}],
+    }]}
+    result = evaluate(truth, {"project": "targets/verdict-comprehensive-lab"},
+        {"status": "completed", "findings": []},
+        {"groups": []}, {"status": "completed", "reviews": []},
+        penetration_test=penetration_test)
+    case = next(item for item in result["cases"] if item["id"] == "C01")
+    assert case["status"] == "not_detected"
+    assert result["summary"]["detected_via_penetration_agent"] == 0
+
+
+def test_a_not_reproduced_penetration_outcome_never_counts_as_detected() -> None:
+    """Only exploitation_confirmed counts — not_reproduced/inconclusive/blocked/cannot_test never do."""
+    truth = json.loads(TRUTH.read_text(encoding="utf-8"))
+    penetration_test = {"status": "completed", "results": [{
+        "candidate_id": "ai-xyz", "outcome": "not_reproduced",
+        "attempts": [{"target_endpoint": "/orders/5"}],
+    }]}
+    result = evaluate(truth, {"project": "targets/verdict-comprehensive-lab"},
+        {"status": "completed", "findings": []},
+        {"groups": []}, {"status": "completed", "reviews": []},
+        penetration_test=penetration_test)
+    case = next(item for item in result["cases"] if item["id"] == "C01")
+    assert case["status"] == "not_detected"
 
 
 def _workflow_source(evidence):

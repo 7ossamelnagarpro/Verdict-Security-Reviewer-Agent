@@ -30,7 +30,7 @@ from security_reviewer_v2.test_environment import (
     plan_environment,
     provision_environment,
 )
-from security_reviewer_v2.discovery.provider import provider_from_environment
+from security_reviewer_v2.discovery.provider import api_keys_from_environment, provider_from_environment
 import shutil
 
 
@@ -49,10 +49,23 @@ def _parser() -> argparse.ArgumentParser:
                         help="opt in to running a trusted local project's reviewed Compose recipe")
     parser.add_argument("--codeql-bundle", type=Path,
                         help="CodeQL bundle directory containing codeql (Linux/macOS) or codeql.exe (Windows/WSL)")
-    parser.add_argument("--ai-provider", choices=("groq", "ollama"), default="groq")
+    parser.add_argument("--ai-provider", choices=("groq", "ollama", "openai", "openrouter", "gemini"), default="groq")
     parser.add_argument("--ai-model", default=None)
+    parser.add_argument("--review-ai-provider", choices=("groq", "ollama", "openai", "openrouter", "gemini"), default=None,
+                        help="provider for Security Review specifically (its own API key/rate-limit "
+                             "budget); defaults to --ai-provider if omitted")
+    parser.add_argument("--review-ai-model", default=None,
+                        help="model for Security Review specifically; defaults to --ai-model if omitted")
+    parser.add_argument("--penetration-ai-provider", choices=("groq", "ollama", "openai", "openrouter", "gemini"), default=None,
+                        help="provider for the Penetration Agent's AI planner specifically (its own API "
+                             "key/rate-limit budget); defaults to --ai-provider if omitted. Has no effect "
+                             "without --penetration-ai-planner")
+    parser.add_argument("--penetration-ai-model", default=None,
+                        help="model for the Penetration Agent's AI planner specifically; defaults to "
+                             "--ai-model if omitted")
     parser.add_argument("--ai-max-targets", type=int, default=10)
     parser.add_argument("--ai-max-batches", type=int, default=20)
+    parser.add_argument("--ai-max-batch-overflow", type=int, default=10)
     parser.add_argument("--ai-max-files", type=int, default=64)
     parser.add_argument("--ai-max-context-chars", type=int, default=20_000)
     parser.add_argument("--ai-max-planned-targets", type=int, default=128)
@@ -66,7 +79,11 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--runtime-entrypoint", default="app:app")
     parser.add_argument("--health-path", default="/")
     parser.add_argument("--health-status", type=int, default=200)
-    parser.add_argument("--dast-engine", choices=("baseline", "zap-passive", "zap-active"), default="baseline")
+    parser.add_argument("--dast-engine", choices=("baseline", "zap-passive", "zap-active", "zap-automated-scan"),
+                        default="baseline",
+                        help="'zap-active' and 'zap-automated-scan' are the same engine (spider -> passive "
+                             "-> active -> passive -> report, i.e. ZAP's own Automated Scan composition) — "
+                             "'zap-automated-scan' is just the clearer name for it")
     parser.add_argument("--zap-auth-config", type=Path)
     parser.add_argument("--browser-dast", action="store_true",
                         help="run an optional bounded same-origin Playwright crawl; missing Playwright is reported as a gap")
@@ -80,9 +97,11 @@ def _parser() -> argparse.ArgumentParser:
                              "same way for the agent's own Compose stack and browser corroboration")
     parser.add_argument("--penetration-ai-planner", action="store_true",
                         help="let an AI model choose which attack template the Penetration Agent tries "
-                             "next, reasoning over the hypothesis and every prior attempt's actual result, "
-                             "instead of the fixed keyword table. Reuses the SAME --ai-provider/--ai-model "
-                             "already configured for Discovery; has no effect with --no-penetration-agent")
+                             "next and write a narrative reading of each result, reasoning over the "
+                             "hypothesis and every prior attempt's actual result, instead of the fixed "
+                             "keyword table. Reuses the SAME --ai-provider/--ai-model already configured "
+                             "for Discovery; never overrides the deterministic HTTP-status verdict; has no "
+                             "effect with --no-penetration-agent")
     return parser
 
 
@@ -115,8 +134,9 @@ def _validate(args: argparse.Namespace) -> tuple[Path, Path]:
         bundle = args.codeql_bundle.resolve()
         if find_codeql(bundle) is None:
             raise ValueError(f"Required CodeQL executable is missing from {bundle}")
-    if args.ai_provider == "groq" and not os.environ.get("GROQ_API_KEY"):
-        raise ValueError("GROQ_API_KEY is required for Groq; set it only in the current shell")
+    if args.ai_provider == "groq" and not api_keys_from_environment("groq"):
+        raise ValueError("GROQ_API_KEY is required for Groq (add GROQ_API_KEY_2 or GROQ_API_KEYS to share the work "
+                         "between several keys); set them only in the current shell")
     return project, output
 
 
@@ -216,21 +236,30 @@ def _zap(args, runtime_path, base_url, stack_name=None, app_service=None):
             stack_name=stack_name, app_service=app_service, auth=auth)
 
 
+def _default_model(provider_name: str) -> str:
+    return {"groq": "openai/gpt-oss-120b", "ollama": "qwen2.5-coder:7b", "openai": "gpt-4o-mini",
+            "openrouter": "openai/gpt-oss-120b",
+            "gemini": os.environ.get("GEMINI_MODEL", "gemini-flash-latest")}.get(provider_name, "qwen2.5-coder:7b")
+
+
 def _command(args: argparse.Namespace, *, project: Path, output: Path,
              runtime_path: Path | None = None) -> list[str]:
     repository = Path(__file__).resolve().parents[1]
     pipeline = repository / "scripts" / "run_pre_review_pipeline.py"
-    model = args.ai_model or (
-        "openai/gpt-oss-120b" if args.ai_provider == "groq" else "qwen2.5-coder:7b"
-    )
+    model = args.ai_model or _default_model(args.ai_provider)
     command = [
         sys.executable, str(pipeline), str(project),
         "--output", str(output),
         "--require-sast",
         "--ai-provider", args.ai_provider,
         "--ai-model", model,
+        *(["--review-ai-provider", review_ai_provider] if (review_ai_provider := getattr(args, "review_ai_provider", None)) else []),
+        *(["--review-ai-model", review_ai_model] if (review_ai_model := getattr(args, "review_ai_model", None)) else []),
+        *(["--penetration-ai-provider", penetration_ai_provider] if (penetration_ai_provider := getattr(args, "penetration_ai_provider", None)) else []),
+        *(["--penetration-ai-model", penetration_ai_model] if (penetration_ai_model := getattr(args, "penetration_ai_model", None)) else []),
         "--ai-max-targets", str(args.ai_max_targets),
         "--ai-max-batches", str(args.ai_max_batches),
+        "--ai-max-batch-overflow", str(getattr(args, "ai_max_batch_overflow", 10)),
         "--ai-max-files", str(args.ai_max_files),
         "--ai-max-context-chars", str(args.ai_max_context_chars),
         "--ai-max-planned-targets", str(args.ai_max_planned_targets),
@@ -271,7 +300,7 @@ def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
         project, output = _validate(args)
-        model = args.ai_model or ("openai/gpt-oss-120b" if args.ai_provider == "groq" else "qwen2.5-coder:7b")
+        model = args.ai_model or _default_model(args.ai_provider)
         provider_from_environment(args.ai_provider, model)
         if not args.static_only and args.allow_trusted_local_compose:
             pipeline = Path(__file__).resolve().parents[1] / "scripts" / "run_pre_review_pipeline.py"

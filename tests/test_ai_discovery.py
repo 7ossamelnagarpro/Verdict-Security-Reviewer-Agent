@@ -108,7 +108,7 @@ def test_saved_regrounding_keeps_original_scope_and_rejected_candidates(tmp_path
     assert unchanged.candidates[0] == rejected
 
 
-@pytest.mark.parametrize("operation", ("discover", "review", "plan_attack"))
+@pytest.mark.parametrize("operation", ("discover", "review", "plan_attack", "interpret_evidence"))
 def test_groq_failure_reports_status_without_response_body(monkeypatch, operation):
     def reject(_request, _timeout):
         assert _request.get_header("User-agent").startswith("agentic-security-reviewer-v2/")
@@ -121,8 +121,10 @@ def test_groq_failure_reports_status_without_response_body(monkeypatch, operatio
             provider.discover("sample", timeout_seconds=10, max_candidates=1)
         elif operation == "review":
             provider.review("sample", timeout_seconds=10, max_reviews=1)
-        else:
+        elif operation == "plan_attack":
             provider.plan_attack("sample", timeout_seconds=10)
+        else:
+            provider.interpret_evidence("sample", timeout_seconds=10)
     assert "sensitive details" not in str(error.value)
     assert "test-secret" not in str(error.value)
 
@@ -142,6 +144,59 @@ def test_groq_plan_attack_parses_the_models_decision_and_reasoning(monkeypatch):
     parsed, usage = provider.plan_attack("some prompt", timeout_seconds=10)
     assert parsed == {"decision": "idor", "reasoning": "Evidence cites another account's resource."}
     assert usage["provider"] == "groq"
+
+
+def test_groq_interpret_evidence_parses_the_models_narrative(monkeypatch):
+    """GroqProvider.interpret_evidence, used by dynamic_penetration_agent.ai_planner.interpret_evidence."""
+    def fake_open(_request, _timeout):
+        body = json.loads(_request.data)
+        assert body["messages"][0]["content"].startswith("You are helping a penetration tester")
+        content = json.dumps({"interpretation": "This denial looks solid; no further probing is useful."})
+        return io.BytesIO(json.dumps({"choices": [{"message": {"content": content}}],
+                                      "usage": {"prompt_tokens": 30}}).encode("utf-8"))
+
+    monkeypatch.setattr(provider_module, "_urlopen", fake_open)
+    provider = GroqProvider(model="test-model", api_key="test-secret")
+    parsed, usage = provider.interpret_evidence("some prompt", timeout_seconds=10)
+    assert parsed == {"interpretation": "This denial looks solid; no further probing is useful."}
+    assert usage["provider"] == "groq"
+
+
+@pytest.mark.parametrize("name,provider_class,endpoint,env_var", [
+    ("openai", "OpenAIProvider", "https://api.openai.com/v1/chat/completions", "OPENAI_API_KEY"),
+    ("openrouter", "OpenRouterProvider", "https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY"),
+])
+def test_provider_from_environment_builds_the_right_class_for_each_new_provider(
+    monkeypatch, name, provider_class, endpoint, env_var,
+):
+    monkeypatch.setenv(env_var, "test-key")
+    provider = provider_module.provider_from_environment(name, "some-model")
+    assert type(provider).__name__ == provider_class
+    assert provider.endpoint == endpoint
+    assert provider.name == name
+    assert provider.api_key == "test-key"
+
+
+def test_provider_from_environment_requires_its_own_key_per_provider(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    with pytest.raises(RuntimeError, match="OPENAI_API_KEY"):
+        provider_module.provider_from_environment("openai", "gpt-4o-mini")
+
+
+def test_openai_and_openrouter_providers_reuse_groqproviders_methods_and_retry_logic(monkeypatch):
+    """They inherit discover/review/plan_attack/interpret_evidence and the retry/backoff behavior
+    unchanged — only the endpoint and provider name differ."""
+    def fake_open(request, _timeout):
+        assert request.full_url == "https://api.openai.com/v1/chat/completions"
+        content = json.dumps({"decision": "unauthenticated_access", "reasoning": "x"})
+        return io.BytesIO(json.dumps({"choices": [{"message": {"content": content}}],
+                                      "usage": {}}).encode("utf-8"))
+
+    monkeypatch.setattr(provider_module, "_urlopen", fake_open)
+    provider = provider_module.OpenAIProvider(model="gpt-4o-mini", api_key="sk-test")
+    parsed, usage = provider.plan_attack("prompt", timeout_seconds=10)
+    assert parsed == {"decision": "unauthenticated_access", "reasoning": "x"}
+    assert usage["provider"] == "openai"
 
 
 def test_groq_discovery_uses_strict_schema_for_supported_model():
@@ -529,6 +584,73 @@ def test_many_handlers_with_a_small_batch_budget_still_complete_the_plan(tmp_pat
         empty, empty, empty, project_root=tmp_path, profile_artifact=profile)
     assert roomy.status.value == "completed" and roomy.usage["planned_targets"] == 40
     assert not any("not planned" in gap for gap in roomy.coverage_gaps)
+
+
+class _CapsTargetsPerRequest:
+    """Answers 413 whenever a prompt carries more than ``cap`` targets, so batches are shrunk and re-queued at runtime."""
+
+    name = "fake"
+    model = "test"
+
+    def __init__(self, cap: int) -> None:
+        self.cap, self.calls = cap, 0
+
+    def discover(self, prompt, *, timeout_seconds, max_candidates):
+        from security_reviewer_v2.discovery.provider import RequestTooLargeError
+        self.calls += 1
+        if len(json.loads(prompt.split("\n\n", 1)[1])["targets"]) > self.cap:
+            raise RequestTooLargeError("AI provider request failed with HTTP 413 (rate_limit_exceeded)", 413, 0, 0.0)
+        return {"candidates": [], "context_requests": []}, {}
+
+
+def _shrunk_batches_run(tmp_path: Path, **overrides):
+    profile = _file_profile(tmp_path, {"routes.py": _routes_file(40)})
+    empty = SimpleNamespace(findings=(), coverage_gaps=())
+    config = DiscoveryConfig(max_targets=5, max_batches=8, **overrides)
+    return DiscoveryAgent(_CapsTargetsPerRequest(cap=3), config).run(
+        empty, empty, empty, project_root=tmp_path, profile_artifact=profile)
+
+
+def test_runtime_batch_shrinking_does_not_strand_planned_targets(tmp_path: Path):
+    """The plan (40 targets = 8 batches of 5) fits max_batches.  A provider that only accepts 3 targets per request makes
+    the run need ~14 batches; planned targets used to be left uninspected ('batch or candidate budget was exhausted')."""
+    from security_reviewer_v2.discovery.completion import required_discovery_satisfied
+    result = _shrunk_batches_run(tmp_path)
+    assert result.usage["planned_targets"] == 40
+    assert result.usage["targets"] == result.usage["planned_targets"]
+    assert len(result.batches) > 8                                  # more batches than the plan assumed, within the overflow
+    assert not any("planned discovery targets were not inspected" in gap for gap in result.coverage_gaps)
+    assert required_discovery_satisfied(result.to_dict())
+
+
+def test_batch_overflow_is_bounded_and_the_leftover_is_still_reported(tmp_path: Path):
+    result = _shrunk_batches_run(tmp_path, max_batch_overflow=0)    # no grace: the old behaviour, still honest
+    assert result.usage["targets"] < result.usage["planned_targets"]
+    assert any("planned discovery targets were not inspected" in gap and "max_batch_overflow=0" in gap
+               for gap in result.coverage_gaps)
+    capped = _shrunk_batches_run(tmp_path, max_batch_overflow=2)
+    assert len(capped.batches) <= 8 + 2                             # the grace never exceeds the configured overflow
+    assert capped.usage["targets"] < capped.usage["planned_targets"]
+
+
+def test_overflow_does_not_apply_when_nothing_was_shrunk(tmp_path: Path):
+    profile = _file_profile(tmp_path, {"routes.py": _routes_file(40)})
+    empty = SimpleNamespace(findings=(), coverage_gaps=())
+    class EmptyProvider:
+        name, model = "fake", "test"
+        def __init__(self): self.calls = 0
+        def discover(self, prompt, *, timeout_seconds, max_candidates):
+            self.calls += 1
+            return {"candidates": [], "context_requests": []}, {}
+    provider = EmptyProvider()
+    DiscoveryAgent(provider, DiscoveryConfig(max_targets=5, max_batches=2, max_batch_overflow=10)).run(
+        empty, empty, empty, project_root=tmp_path, profile_artifact=profile)
+    assert provider.calls <= 2                                       # the plan is cut to the budget; no recovery -> no grace
+
+
+def test_negative_batch_overflow_is_rejected():
+    with pytest.raises(ValueError):
+        DiscoveryConfig(max_batch_overflow=-1).validate()
 
 
 def test_known_findings_for_files_not_in_the_prompt_are_not_repeated_in_every_batch():

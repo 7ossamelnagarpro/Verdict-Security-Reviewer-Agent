@@ -16,6 +16,7 @@ from typing import Iterable
 
 from security_reviewer_v2.policy.rules import RULES
 
+from .penetration_summary import OUTCOMES, HypothesisRow
 from .view import ACTION_ICON, DynamicEvidence, Finding, FoundNode, ReportView, first_sentence
 
 _CSS = r"""
@@ -71,6 +72,10 @@ h2.sec{margin:36px 0 12px;font-size:20px;display:flex;align-items:baseline;gap:1
 .fc:hover,.fc:focus-visible{border-color:var(--acc)}.fc strong{display:block;margin:7px 0 3px}.fc p{margin:4px 0 0;color:var(--mut);font-size:12.5px}
 .chip{display:inline-block;border-radius:4px;padding:1px 7px;font-size:11.5px;font-weight:650;border:1px solid var(--ln);background:var(--pn2);color:var(--mut);white-space:nowrap;margin:0 4px 3px 0}
 .chip.block,.chip.sev-critical,.chip.sev-high{color:var(--high);border-color:currentColor;background:transparent}.chip.sev-critical{color:var(--crit)}
+.chip.pen-exploitation_confirmed{color:var(--crit);border-color:currentColor;background:transparent}.chip.pen-not_reproduced{color:var(--mi);border-color:currentColor;background:transparent}
+.chip.pen-inconclusive,.chip.pen-blocked,.chip.pen-cannot_test{color:var(--medium);border-color:currentColor;background:transparent}
+.pen-sum{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px}.pen-sum span{border:1px solid var(--ln);border-radius:var(--r);padding:6px 12px;background:var(--pn)}.pen-sum b{font-size:18px;margin-right:6px}
+.pen-steps{margin:4px 0 10px;padding-left:18px}.pen-steps li{font-family:var(--mono);font-size:12.5px;overflow-wrap:anywhere}
 .chip.warn,.chip.sev-medium{color:var(--medium);border-color:currentColor;background:transparent}.chip.allow{color:var(--mi);border-color:currentColor;background:transparent}.chip.sev-low{color:var(--low);border-color:currentColor;background:transparent}
 .tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
 .tools input{flex:1 1 240px;background:var(--pn);border:1px solid var(--ln);color:var(--ink);border-radius:var(--r);padding:9px 13px;font:inherit}.tools input:focus-visible{border-color:var(--acc)}
@@ -465,8 +470,12 @@ def _row(f: Finding) -> str:
             f'<td>{_action(f.action, f.rule_id)}</td></tr>')
 
 
+def _pentest_chip(f: Finding) -> str:
+    return f'<span class="chip pen-{_e(f.pentest_key)}" title="{_e(f.pentest_meaning)}">Pen-test: {_e(f.pentest_label)}</span>' if f.pentest_key else ""
+
+
 def _chips(f: Finding) -> str:
-    return (_sev(f.severity) + _action(f.action, f.rule_id) + _origins(f) + "".join(f'<span class="chip">{_e(c)}</span>' for c in f.cwes)
+    return (_sev(f.severity) + _action(f.action, f.rule_id) + _origins(f) + _pentest_chip(f) + "".join(f'<span class="chip">{_e(c)}</span>' for c in f.cwes)
             + "".join(f'<span class="chip">OWASP {_e(o)}</span>' for o in f.owasp))
 
 
@@ -484,7 +493,9 @@ def _sections(f: Finding) -> dict[str, str]:
         + (f"<h4>Limitations</h4>{_lines(f.limitations, True)}" if f.limitations else "")
     fx = f"<h4>Recommended fix</h4><p>{_rich(f.remediation)}</p>" if f.remediation else ""
     basis = f"<p class=\"mut\"><small>Evidence basis: {_e(f.evidence_basis.replace('_', ' '))}</small></p>" if f.evidence_basis else ""
-    wh = ("<h4>Why this decision</h4>" + _lines([x for x in (f.reason, *f.policy_evidence) if x]) + basis
+    pen = (f"<h4>Penetration test</h4><p><b>{_e(f.pentest_label)}</b> — {_e(f.pentest_meaning)} See the Penetration testing section for every attempt.</p>"
+           if f.pentest_key else "")
+    wh = ("<h4>Why this decision</h4>" + _lines([x for x in (f.reason, *f.policy_evidence) if x]) + pen + basis
           + f'<p class="mut"><small>Issue group <code>{_e(f.group_id)}</code></small></p>')
     return {"ov": ov, "ev": ev, "fx": fx, "wh": wh}
 
@@ -570,6 +581,57 @@ def _dynamic(view: ReportView) -> str:
     return "".join(out)
 
 
+def _pen_chip(row: HypothesisRow) -> str:
+    return f'<span class="chip pen-{_e(row.outcome)}" title="{_e(row.meaning)}">{_e(row.label)}</span>'
+
+
+def _pen_detail(row: HypothesisRow) -> str:
+    body = [f'<p class="mut">{_e(row.meaning)}</p>']
+    if row.summary:
+        body.append(f"<p>{_e(row.summary)}</p>")
+    meta = [("Source location", row.location), ("Tested endpoint", row.endpoint), ("Verification", row.verification.replace("_", " "))]
+    body.append('<p class="mut">' + " · ".join(f"{_e(k)}: <code>{_e(v)}</code>" for k, v in meta if v) + "</p>")
+    for a in row.attempts:
+        steps = ('<ol class="pen-steps">' + "".join(f"<li>{_e(s)}</li>" for s in a.steps) + "</ol>") if a.steps else '<p class="mut">No request was sent.</p>'
+        nxt = a.next_action.replace("_", " ") + (f" ({a.stop_reason.replace('_', ' ')})" if a.stop_reason not in ("", "none") else "")
+        body.append(f'<h4>Attempt {a.number} · <code>{_e(a.strategy)}</code> via {_e(", ".join(a.tools) or "unknown")}</h4>'
+                    f'<p class="mut"><small>Plan: {_e(a.plan)}</small></p>{steps}<p><b>Observation:</b> {_e(a.observation)}</p>'
+                    + (f'<p class="mut"><small>Reasoning: {_e(a.reasoning)}</small></p>' if a.reasoning else "")
+                    + f'<p class="mut"><small>Next action: {_e(nxt)}</small></p>')
+    if row.not_executed:
+        body.append('<h4>Scenarios drawn up but never sent</h4><ul class="tight">' + "".join(f"<li>{_e(g)}</li>" for g in row.not_executed) + "</ul>")
+    return (f'<details class="panel"><summary>{_pen_chip(row)} <b>{_e(row.title)}</b> <small>· {len(row.attempts)} attempt(s)</small></summary>'
+            + "".join(body) + "</details>")
+
+
+def _penetration(view: ReportView) -> str:
+    pen = view.penetration
+    if pen is None:
+        return ""
+    out = ['<h2 class="sec" id="pentest">Penetration testing <small>Did the penetration agent prove each AI Discovery finding?</small></h2>']
+    if pen.status != "completed":
+        out.append(f'<div class="note"><b>The penetration stage did not complete (status: {_e(pen.status)}).</b>'
+                   + "".join(f"<br><small>{_e(w)}</small>" for w in pen.warnings) + "</div>")
+        return "".join(out)
+    u = pen.usage
+    out.append('<p class="mut">The agent only sends read-only requests to an isolated test stack with test accounts. '
+               f'{_e(u.get("hypotheses_tested", 0))} hypothesis(es) tested, {_e(u.get("total_attempts", 0))} attempt(s), {_e(u.get("total_requests", 0))} request(s).</p>')
+    if not pen.rows:
+        out.append('<div class="empty"><b>No AI Discovery finding was eligible for penetration testing</b>Only findings that Verification confirmed in the source are tested.</div>')
+        return "".join(out)
+    out.append('<div class="pen-sum">' + "".join(f'<span class="pen-{k}"><b>{pen.count(k)}</b>{_e(OUTCOMES[k][0])}</span>' for k in OUTCOMES if pen.count(k)) + "</div>")
+    if pen.not_sent:
+        out.append(f'<p class="mut"><small>{pen.not_sent} more AI Discovery candidate(s) were not source-confirmed by Verification, so they were never sent to the penetration agent.</small></p>')
+    rows = "".join(f'<tr><td>{i}</td><td><strong>{_e(r.title)}</strong><br><small><code>{_e(r.candidate_id)}</code></small></td><td>{_e(r.severity)}</td>'
+                   f'<td>{f"<code>{_e(r.location)}</code>" if r.location else "—"}</td><td>{_pen_chip(r)}</td><td>{len(r.attempts)}</td></tr>' for i, r in enumerate(pen.rows, 1))
+    out.append('<div class="scroll"><table><thead><tr><th>#</th><th>AI Discovery finding</th><th>Severity</th><th>Location</th><th>Penetration test result</th><th>Attempts</th></tr></thead>'
+               f"<tbody>{rows}</tbody></table></div>")
+    out.append('<p class="mut"><small>“Not reproduced” means every attempt was denied as expected; it is not proof that the flaw does not exist. '
+               "“Proven” means the probe reproduced the access violation against the test stack.</small></p>")
+    out.append("<h3>What the agent did, finding by finding</h3>" + "".join(_pen_detail(r) for r in pen.rows))
+    return "".join(out)
+
+
 def _appendix(view: ReportView) -> str:
     out = ['<h2 id="appendix">Appendix</h2>']
     if view.policy_rows:
@@ -643,6 +705,8 @@ def render_html(view: ReportView) -> str:
     pipe_badge = f"<em>{len(open_agents)} {'partial' if all(a.state == 'warn' for a in open_agents) else 'issue'}</em>" if open_agents else ""
     nav = [("#overview", "Summary", ""), ("#fix", "Fix first", str(len(view.blocking)) if view.blocking else ""), ("#findings", "Findings", str(len(view.findings))),
            ("#coverage", "Coverage & trust", "")]
+    if view.penetration is not None:
+        nav.append(("#pentest", "Penetration testing", f"{view.penetration.count('exploitation_confirmed')} proven" if view.penetration.rows else ""))
     if view.dynamic:
         nav.append(("#dynamic", "Dynamic scan log", str(len(view.probe_log)) if view.probe_log else ""))
     nav.append(("#appendix", "Appendix", ""))
@@ -683,6 +747,6 @@ def render_html(view: ReportView) -> str:
             "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:\">"
             f"<title>Security Review · {_e(title)}</title><script>{_THEME_BOOT}</script><style>{_CSS}{_REPORT_CSS}</style></head><body>"
             f'<a class="skip" href="#overview">Skip to report</a><div class="app wide">{side}<div><main><header class="doc-head"><small>Security assessment report</small><h1>{_e(title)}</h1>'
-            f'<div class="meta">{meta}</div></header>{summary}{fix}{findings}{_coverage(view)}{_dynamic(view)}{_appendix(view)}'
+            f'<div class="meta">{meta}</div></header>{summary}{fix}{findings}{_coverage(view)}{_penetration(view)}{_dynamic(view)}{_appendix(view)}'
             f'<footer>Static report · no external requests · generated {_e(view.generated)}</footer></main></div></div>'
             f'<div class="scrim" id="scrim"></div><aside class="dr" id="dr" aria-hidden="true"></aside><div hidden>{panes}</div><script>{_JS}</script></body></html>')

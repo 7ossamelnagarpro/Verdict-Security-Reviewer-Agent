@@ -215,7 +215,19 @@ def _penetration_session(args, project: Path, profile_result, discovery_provider
                        else None)
         # Reuses the SAME Discovery provider/model the caller already configured (same API key, same
         # trust decision) — this is not a second, separate AI integration.
-        ai_provider = discovery_provider if args.penetration_ai_planner else None
+        ai_provider = None
+        if args.penetration_ai_planner:
+            # Its own independent provider (and so its own rate-limit budget) whenever a different
+            # provider/model was named for it; otherwise safely reuse Discovery's existing instance.
+            same_as_discovery = (args.penetration_ai_provider == args.ai_provider
+                                 and args.penetration_ai_model == args.ai_model)
+            if same_as_discovery:
+                ai_provider = discovery_provider
+            else:
+                try:
+                    ai_provider = provider_from_environment(args.penetration_ai_provider, args.penetration_ai_model)
+                except (RuntimeError, ValueError) as error:
+                    raise SystemExit(f"--penetration-ai-provider/--penetration-ai-model: {error}")
         access = RuntimeAccess(base_url=session.base_url, allowed_endpoints=allowed_endpoints,
                                accounts=accounts, account_definitions=account_definitions,
                                zap_context=zap_context, playwright_enabled=args.penetration_enable_playwright,
@@ -244,10 +256,22 @@ def main() -> int:
     parser.add_argument("--endpoint-coverage", action="store_true", help="collect endpoint and auth-matrix coverage when a runtime URL is supplied")
     parser.add_argument("--workflow-checks", action="store_true", help="run safe explicit checkout/coupon/review/upload workflow checks")
     parser.add_argument("--ai-discovery", action="store_true", help="legacy compatibility flag; AI Discovery is always required")
-    parser.add_argument("--ai-provider", choices=("ollama", "groq"), default="groq")
-    parser.add_argument("--ai-model", default=None, help="defaults to openai/gpt-oss-120b for Groq or qwen2.5-coder:7b for Ollama")
+    parser.add_argument("--ai-provider", choices=("ollama", "groq", "openai", "openrouter", "gemini"), default="groq",
+                        help="provider for AI Discovery. Each of --ai-provider/--review-ai-provider/"
+                             "--penetration-ai-provider is built independently from its own API key env "
+                             "var (GROQ_API_KEY, OPENAI_API_KEY, OPENROUTER_API_KEY), so pointing two "
+                             "stages at different providers (or the same provider with different keys) "
+                             "means one stage hitting a rate limit never blocks the other stages")
+    parser.add_argument("--ai-model", default=None, help="defaults to openai/gpt-oss-120b for Groq, qwen2.5-coder:7b for Ollama, gpt-4o-mini for OpenAI, or openai/gpt-oss-120b for OpenRouter")
+    parser.add_argument("--review-ai-provider", choices=("ollama", "groq", "openai", "openrouter", "gemini"), default=None,
+                        help="provider for Security Review specifically; defaults to --ai-provider if omitted")
+    parser.add_argument("--review-ai-model", default=None,
+                        help="model for Security Review specifically; defaults to --ai-model's default for "
+                             "--review-ai-provider if omitted")
     parser.add_argument("--ai-max-targets", type=int, default=10, help="maximum targets per AI Discovery batch")
     parser.add_argument("--ai-max-batches", type=int, default=20)
+    parser.add_argument("--ai-max-batch-overflow", type=int, default=10,
+                        help="extra AI Discovery batches allowed only to finish already-planned targets that a smaller-batch recovery re-queued")
     parser.add_argument("--ai-max-files", type=int, default=64, help="source files AI Discovery scores for its plan; raise to cover more of a large repository")
     parser.add_argument("--ai-max-context-chars", type=int, default=20_000, help="prompt size per Discovery model call; larger values send more source per batch")
     parser.add_argument("--ai-max-planned-targets", type=int, default=128)
@@ -281,13 +305,24 @@ def main() -> int:
                         help="let the agent corroborate an inconclusive/clean HTTP result with one real "
                              "browser visit (requires Node.js + Playwright; same trust level as --browser-dast)")
     parser.add_argument("--penetration-ai-planner", action="store_true",
-                        help="let an AI model choose which attack template to try next for each "
+                        help="let an AI model (a) choose which attack template to try next for each "
                              "hypothesis, reasoning over the hypothesis and every prior attempt's actual "
-                             "result, instead of the fixed keyword table. Reuses the SAME --ai-provider/ "
-                             "--ai-model already configured for Discovery. The model only ever picks among "
-                             "the three existing templates (it gains no new execution capability); any AI "
-                             "failure falls back to the keyword-based choice for that one attempt")
-    parser.add_argument("--penetration-max-attempts-per-hypothesis", type=int, default=4)
+                             "result instead of the fixed keyword table, and (b) write a short narrative "
+                             "reading of each already-decided result to inform that choice. By default "
+                             "reuses the SAME --ai-provider/--ai-model as Discovery; use "
+                             "--penetration-ai-provider/--penetration-ai-model to point it at a different "
+                             "provider or key instead (its own independent rate-limit budget). The model "
+                             "only ever picks among the existing templates and never changes a verdict "
+                             "(it gains no new execution capability and cannot override the deterministic "
+                             "HTTP-status judgment); any AI failure falls back to the keyword-based choice "
+                             "for that one attempt")
+    parser.add_argument("--penetration-ai-provider", choices=("ollama", "groq", "openai", "openrouter", "gemini"), default=None,
+                        help="provider for the Penetration Agent's AI planner specifically; defaults to "
+                             "--ai-provider if omitted. Has no effect without --penetration-ai-planner")
+    parser.add_argument("--penetration-ai-model", default=None,
+                        help="model for the Penetration Agent's AI planner specifically; defaults to "
+                             "--ai-model's default for --penetration-ai-provider if omitted")
+    parser.add_argument("--penetration-max-attempts-per-hypothesis", type=int, default=10)
     parser.add_argument("--penetration-max-requests-per-hypothesis", type=int, default=40)
     parser.add_argument("--penetration-max-total-requests", type=int, default=300)
     parser.add_argument("--penetration-max-seconds-per-hypothesis", type=float, default=180.0)
@@ -316,8 +351,23 @@ def main() -> int:
         return 0 if not failures else 1
     if args.output is None:
         parser.error("--output is required for a full scan")
+    def _default_model_for(provider_name: str) -> str:
+        return {"groq": "openai/gpt-oss-120b", "ollama": "qwen2.5-coder:7b",
+                "openai": "gpt-4o-mini", "openrouter": "openai/gpt-oss-120b",
+                "gemini": os.environ.get("GEMINI_MODEL", "gemini-flash-latest")}[provider_name]
+
     if args.ai_model is None:
-        args.ai_model = "openai/gpt-oss-120b" if args.ai_provider == "groq" else "qwen2.5-coder:7b"
+        args.ai_model = _default_model_for(args.ai_provider)
+    if args.review_ai_provider is None:
+        args.review_ai_provider = args.ai_provider
+    if args.review_ai_model is None:
+        args.review_ai_model = args.ai_model if args.review_ai_provider == args.ai_provider \
+            else _default_model_for(args.review_ai_provider)
+    if args.penetration_ai_provider is None:
+        args.penetration_ai_provider = args.ai_provider
+    if args.penetration_ai_model is None:
+        args.penetration_ai_model = args.ai_model if args.penetration_ai_provider == args.ai_provider \
+            else _default_model_for(args.penetration_ai_provider)
     # Runtime checks are part of every full scan when the caller has declared
     # an authorized target.  We still require an explicit URL (or environment
     # variable) so a source-only project is never probed accidentally.
@@ -336,6 +386,13 @@ def main() -> int:
         provider = provider_from_environment(args.ai_provider, args.ai_model)
     except (RuntimeError, ValueError) as error:
         parser.error(f"AI Discovery is required for every full scan: {error}")
+    try:
+        # Built independently (its own provider instance, and its own API key if a different provider
+        # was named) so a rate limit hit by Discovery's provider never blocks Security Review.
+        review_provider = provider if args.review_ai_provider == args.ai_provider and args.review_ai_model == args.ai_model \
+            else provider_from_environment(args.review_ai_provider, args.review_ai_model)
+    except (RuntimeError, ValueError) as error:
+        parser.error(f"--review-ai-provider/--review-ai-model: {error}")
     project = args.project.resolve()
     repository_root = Path(__file__).resolve().parents[1]
     docker_runtime_payload = None
@@ -566,12 +623,14 @@ def main() -> int:
         with pipeline_trace("pre-review-pipeline", metadata={"provider": args.ai_provider, "model": str(args.ai_model)}):
             agent_state = run_agent_review_graph(
                 provider=provider,
+                review_provider=review_provider,
                 penetration_access=penetration_access,
                 penetration_target_resolver=penetration_resolver,
                 penetration_budget=penetration_budget,
                 discovery_config=DiscoveryConfig(
                     provider=args.ai_provider, model=args.ai_model, max_targets=args.ai_max_targets,
-                    max_batches=args.ai_max_batches, max_planned_targets=args.ai_max_planned_targets, max_hotspots_per_file=getattr(args, "ai_max_hotspots_per_file", 100),
+                    max_batches=args.ai_max_batches, max_batch_overflow=getattr(args, "ai_max_batch_overflow", 10),
+                    max_planned_targets=args.ai_max_planned_targets, max_hotspots_per_file=getattr(args, "ai_max_hotspots_per_file", 100),
                     max_files_considered=args.ai_max_files, max_context_chars=args.ai_max_context_chars,
                     max_candidates=args.ai_max_candidates, max_enrichment_rounds=args.ai_max_enrichment_rounds,
                     input_cost_per_million_tokens_usd=args.ai_input_cost_per_million,

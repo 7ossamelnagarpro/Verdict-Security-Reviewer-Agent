@@ -47,6 +47,7 @@ class AgentReviewState(TypedDict, total=False):
 def run_agent_review_graph(
     *,
     provider: Any,
+    review_provider: Any = None,
     discovery_config: DiscoveryConfig,
     project_root: Path,
     profile_artifact: dict[str, Any],
@@ -208,7 +209,7 @@ def run_agent_review_graph(
             source_id in selected_ids for source_id in group.scanner_finding_ids)))
         review_triage = replace(state["triage"], groups=ordered_groups)
         result = review_runner(
-            state["discovery"], state["verification"], provider=provider,
+            state["discovery"], state["verification"], provider=review_provider or provider,
             project_root=project_root, merged=merged, context=context,
             candidate_context=state["candidate_context"], triage=review_triage,
             timeout_seconds=None, deployment_context=deployment_context,

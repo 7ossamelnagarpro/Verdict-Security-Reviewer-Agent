@@ -12,6 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable, Mapping
 
+from security_reviewer_v2.agents.tracing import node_trace
 from security_reviewer_v2.discovery.models import CandidateFinding, DiscoveryResult
 from security_reviewer_v2.verification.models import VerificationDisposition, VerificationResult
 
@@ -72,14 +73,20 @@ def run_penetration_tests(
         if candidate is None:
             continue
         target_endpoint = target_endpoint_resolver(candidate)
-        attempts, evaluations, planning_gaps = adaptive_controller.run_hypothesis(
-            candidate, target_endpoint=target_endpoint, base_url=access.base_url,
-            accounts=access.accounts, account_definitions=access.account_definitions,
-            allowed_endpoints=access.allowed_endpoints, tracker=tracker,
-            environment=access.environment, transport=transport,
-            zap_context=access.zap_context, corroboration_tools=access.corroboration_tools,
-            ai_provider=access.ai_provider,
-        )
+        # One parent span per hypothesis, so LangSmith shows a short, readable list of hypotheses (each holding its own
+        # planner/interpretation calls) instead of every model call of the whole stage as one flat list.
+        with node_trace("penetration_hypothesis", inputs={"candidate_id": candidate_id, "endpoint": target_endpoint or ""}) as span:
+            attempts, evaluations, planning_gaps = adaptive_controller.run_hypothesis(
+                candidate, target_endpoint=target_endpoint, base_url=access.base_url,
+                accounts=access.accounts, account_definitions=access.account_definitions,
+                allowed_endpoints=access.allowed_endpoints, tracker=tracker,
+                environment=access.environment, transport=transport,
+                zap_context=access.zap_context, corroboration_tools=access.corroboration_tools,
+                ai_provider=access.ai_provider,
+            )
+            if span is not None:
+                span.end(outputs={"attempts": len(attempts), "strategies": [a.test_strategy for a in attempts],
+                                  "last_stop_reason": attempts[-1].stop_reason if attempts else "none"})
         outcome = evidence_evaluator.hypothesis_outcome(evaluations, planning_blocked=target_endpoint is None)
         if attempts:
             summary = attempts[-1].observation

@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from typing import Any
+
+from .penetration_summary import PenetrationOverview, build_overview, rows_by_group
 
 SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
 ACTION_ORDER = {"block": 0, "warn": 1, "allow": 2}
@@ -299,6 +301,9 @@ class Finding:
     snippets: tuple[tuple[str, str], ...] = ()               # (location, code) captured by scanners
     origins: tuple[str, ...] = ()                            # any of: static, dynamic, ai (a finding can have several)
     tools: tuple[str, ...] = ()                              # tool keys: scanner ids, zap, workflow, web-probe, ai-discovery
+    pentest_key: str = ""                                    # penetration_summary outcome key, "" when the agent did not see it
+    pentest_label: str = ""
+    pentest_meaning: str = ""
 
 
 @dataclass(frozen=True)
@@ -377,6 +382,7 @@ class ReportView:
     test_runs: tuple[TestRun, ...] = ()
     workflow_steps: tuple[WorkflowStep, ...] = ()
     ai_only_groups: int = 0
+    penetration: PenetrationOverview | None = None           # None: the penetration agent was not part of this run
 
 
 # ----------------------------------------------------------------------------- evidence index
@@ -586,8 +592,8 @@ def _runtime_lines(isolated_pilot: dict[str, Any] | None, isolated_runtime: dict
                   f"total attempts: **{usage.get('total_attempts', 0)}**; "
                   f"exploitation confirmed: **{usage.get('exploitation_confirmed', 0)}**.",
                   "- Every probe is read-only against an isolated test stack with test accounts.",
-                  "- Full per-attempt reproduction steps (exact method/path/account and response for each "
-                  "try) are in the Markdown report and `dynamic-penetration-test.json`, not summarized here."]
+                  "- Which AI Discovery findings were proven, and every attempt the agent made, are listed in the "
+                  "Penetration testing section; raw data is in `dynamic-penetration-test.json`."]
     return lines
 
 
@@ -721,6 +727,11 @@ def build_view(*, project: str, review: dict[str, Any], policy: dict[str, Any], 
             str(decision.get("evidence_basis") or ""), tuple(str(e) for e in decision.get("evidence", []) or []),
             extra["origin"], w_path, w_start, w_end, extra["rules"], extra["static"], extra["dynamic_sources"],
             extra["dynamic"], extra["snippets"], extra["origins"], extra["tools"]))
+    overview = build_overview(penetration_test, discovery, verification)
+    if overview is not None:
+        pen_by_group = rows_by_group(overview.rows, triage)
+        findings = [replace(f, pentest_key=pen_by_group[f.group_id].outcome, pentest_label=pen_by_group[f.group_id].label,
+                            pentest_meaning=pen_by_group[f.group_id].meaning) if f.group_id in pen_by_group else f for f in findings]
     blocking = tuple(f for f in findings if f.action == "block")
     counts = {"reviewed": len(findings), "block": len(blocking),
               "warn": sum(f.action == "warn" for f in findings), "allow": sum(f.action == "allow" for f in findings)}
@@ -964,4 +975,4 @@ def build_view(*, project: str, review: dict[str, Any], policy: dict[str, Any], 
         origin_counts=origin_counts, cwe_counts=rank_count(cwe_tally), file_counts=rank_count(file_tally),
         reliability=tuple(checks), reliability_state=reliability_state, probe_log=tuple(probe_rows),
         dynamic_facts=tuple(dyn_facts), display_name=display_name, found_by=found_by, agents=tuple(agents),
-        test_runs=tuple(runs), workflow_steps=tuple(wf_steps), ai_only_groups=ai_only)
+        test_runs=tuple(runs), workflow_steps=tuple(wf_steps), ai_only_groups=ai_only, penetration=overview)

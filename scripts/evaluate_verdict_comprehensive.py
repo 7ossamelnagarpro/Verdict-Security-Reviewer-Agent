@@ -7,6 +7,7 @@ Only exact rule/location evidence in saved artifacts counts as a signal.
 from __future__ import annotations
 
 import argparse
+import re
 from collections import Counter
 from datetime import datetime, timezone
 import json
@@ -82,13 +83,49 @@ def _matches(case_id: str, source: dict[str, Any]) -> bool:
     return False
 
 
+def _normalize_path_template(path: str) -> str:
+    """``/orders/{{order_id}}`` (ground truth), ``/orders/{order_id}`` (route-index style), and a
+    concrete, already-resolved ``/orders/5`` (what the Penetration Agent actually tested) all become
+    ``/orders/{}`` — collapsing both placeholder spellings AND any purely numeric path segment onto the
+    same wildcard is what lets a ground-truth signature be compared against a real tested endpoint."""
+    collapsed = re.sub(r"\{\{?[^{}]+\}\}?", "{}", path or "")
+    return "/".join("{}" if segment.isdigit() else segment for segment in collapsed.split("/"))
+
+
+def _penetration_agent_signals(case_id: str, penetration_test: dict[str, Any] | None) -> list[dict[str, Any]]:
+    """Independent of any scanner rule_id: a case counts as detected this way only when the Penetration
+    Agent itself reached ``exploitation_confirmed`` for a candidate whose own tested endpoint matches this
+    case's known path — i.e. the agent actually exploited it, not merely that some tool flagged it."""
+    if not isinstance(penetration_test, dict):
+        return []
+    known_paths = {_normalize_path_template(path) for _rule, path, _lines in SIGNATURES.get(case_id, ())}
+    if not known_paths:
+        return []
+    signals = []
+    for result in penetration_test.get("results", []) or []:
+        if not isinstance(result, dict) or result.get("outcome") != "exploitation_confirmed":
+            continue
+        attempts = result.get("attempts") or []
+        endpoint = attempts[-1].get("target_endpoint") if attempts else None
+        if endpoint and _normalize_path_template(endpoint) in known_paths:
+            signals.append({"group_id": None, "finding_id": None, "source_finding_id": result.get("candidate_id"),
+                            "scanner": None, "rule_id": None, "path": endpoint, "line": None,
+                            "origin": "penetration_agent", "verdict": "confirmed_vulnerability"})
+    return signals
+
+
 def evaluate(truth: dict[str, Any], scan: dict[str, Any], merged: dict[str, Any],
              triage: dict[str, Any], review: dict[str, Any], *, source_root: Path | None = None,
-             discovery: dict[str, Any] | None = None) -> dict[str, Any]:
+             discovery: dict[str, Any] | None = None,
+             penetration_test: dict[str, Any] | None = None) -> dict[str, Any]:
     """Strict signature audit; with ``source_root`` it also measures safe-control specificity and precision bounds.
 
-    ``source_root`` is the audited application's source (never the answer key); ``discovery`` is the saved AI discovery
-    result, used to place AI candidates on routes.
+    ``source_root`` is the audited application's source (never the answer key); ``discovery`` is the saved AI
+    discovery result, used to place AI candidates on routes. ``penetration_test`` is the saved
+    ``dynamic-penetration-test.json``: a case that no scanner/workflow signature reaches can still be counted
+    as detected when the Penetration Agent independently reached ``exploitation_confirmed`` on that exact
+    endpoint — this is tracked as its own distinct origin (``summary.detected_via_penetration_agent``), never
+    silently merged into the strict scanner-signature count, so the two remain separately auditable.
     """
     if truth.get("target") != "targets/verdict-comprehensive-lab":
         raise ValueError("Wrong benchmark fixture")
@@ -130,6 +167,7 @@ def evaluate(truth: dict[str, Any], scan: dict[str, Any], merged: dict[str, Any]
                                         "path": location.get("path"), "line": location.get("start_line"),
                                         "origin": source_origin(source), "verdict": reviews[group_id]["verdict"]})
                         strict_matches.setdefault(group_id, set()).add(case["id"])
+            signals.extend(_penetration_agent_signals(case["id"], penetration_test))
         if case["label"] != "confirmed_vulnerability":
             status = "excluded" if case["label"] == "candidate_only" else "safe_control_not_assessed"
         elif not signals:
@@ -145,11 +183,18 @@ def evaluate(truth: dict[str, Any], scan: dict[str, Any], merged: dict[str, Any]
                      "source": case.get("source"), "expected_behavior": case.get("evidence"),
                      "proof_ref": case.get("proof_ref"), "origin": case.get("origin", []),
                      "status": status, "expected_signatures": signatures, "signals": signals,
-                     "ai_in_detecting_group": any(groups[item["group_id"]].get("candidate_ids") for item in signals),
                      "has_signature": bool(signatures),
                      "origins": sorted({item["origin"] for item in signals})})
     positive = [row for row in rows if row["ground_truth"] == "confirmed_vulnerability"]
     detected = sum(row["status"] == "detected" for row in positive)
+    # Cases detected ONLY via the Penetration Agent's own exploitation_confirmed result (no independent
+    # scanner/workflow signature) — tracked separately so this never gets silently folded into, or
+    # mistaken for, the strict scanner-signature count above.
+    detected_via_penetration_agent = sum(
+        row["status"] == "detected" and "penetration_agent" in row["origins"]
+        and not (set(row["origins"]) - {"penetration_agent"})
+        for row in positive
+    )
     result = {"schema_version": "1.1", "target": truth["target"],
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "scan_provenance": {"project": scan.get("project"), "scan_status": scan.get("status"),
@@ -163,6 +208,7 @@ def evaluate(truth: dict[str, Any], scan: dict[str, Any], merged: dict[str, Any]
                                 "coverage_gaps": scan.get("coverage_gaps", []),
                                 "merged_findings": len(findings), "reviewed_groups": len(groups)},
             "summary": {"known_positive_cases": len(positive), "detected": detected,
+                        "detected_via_penetration_agent": detected_via_penetration_agent,
                         "needs_review": sum(row["status"] == "needs_review" for row in positive),
                         "not_detected": sum(row["status"] == "not_detected" for row in positive),
                         "positive_case_recall_lower_bound": round(detected / len(positive), 4),
@@ -170,7 +216,10 @@ def evaluate(truth: dict[str, Any], scan: dict[str, Any], merged: dict[str, Any]
                         "candidate_only_excluded": sum(row["status"] == "excluded" for row in rows),
                         "precision": None, "f1": None},
             "limitations": ["Held-out comparison of one saved run; the benchmark was not supplied to scanning or AI.",
-                            "Only exact source signatures and positive reviewed verdicts count as detected.",
+                            "Only exact source signatures and positive reviewed verdicts count as detected, "
+                            "OR the Penetration Agent independently reaching exploitation_confirmed on that "
+                            "exact endpoint (see summary.detected_via_penetration_agent for how many of the "
+                            "detected cases rest on that second path rather than a scanner/workflow signature).",
                             "A case without a defined signature remains not detected by this strict audit, even if a broader finding might deserve manual review.",
                             "Needs-review evidence is not counted as detected; not-detected does not mean safe.",
                             "Safe controls need a separate specificity audit; precision and F1 are not estimated.",
@@ -182,81 +231,7 @@ def evaluate(truth: dict[str, Any], scan: dict[str, Any], merged: dict[str, Any]
         _add_precision_audit(result, cases=cases, groups=groups, reviews=reviews, findings=findings,
                              candidates=candidates, strict_matches=strict_matches, handlers=load_handlers(source_root),
                              discovery=discovery)
-    _add_found_by(result, audited=source_root is not None)
     return result
-
-
-_SOURCE_LABELS = {"static": "Static scanners", "dynamic": "Dynamic (runtime)", "ai_discovery": "AI discovery"}
-
-
-def _add_found_by(result: dict[str, Any], *, audited: bool) -> None:
-    """Say, for every known-positive case, which parts of the pipeline produced evidence for it.
-
-    Static and dynamic come from the exact signature match that decides ``detected``. AI discovery is shown beside them
-    when an AI candidate sits in the detecting group or (audited runs) on the case's endpoint; its issue class is not
-    verified, so it never changes a case's status and is never counted as a detection.
-    """
-    positive = [row for row in result["cases"] if row["ground_truth"] == "confirmed_vulnerability"]
-    for row in positive:
-        sources = [origin for origin in ("static", "dynamic") if origin in row["origins"]]
-        if row.pop("ai_in_detecting_group", False):
-            basis = "an AI candidate was grouped with the detecting evidence"
-        elif any("ai_discovery" in item["origins"] for item in row.get("endpoint_findings", [])):
-            basis = "an AI candidate was reported on this case's endpoint (issue class not verified)"
-        else:
-            basis = None
-        if basis:
-            sources.append("ai_discovery")
-        row["found_by"], row["ai_discovery_basis"] = sources, basis
-    for row in result["cases"]:
-        row.pop("ai_in_detecting_group", None)
-    detected = [row for row in positive if row["status"] == "detected"]
-    count = lambda rows, *need: sum(all(source in row["found_by"] for source in need) for row in rows)
-    result["summary"]["found_by"] = {
-        "detected_cases": len(detected),
-        "static": count(detected, "static"), "dynamic": count(detected, "dynamic"), "ai_discovery": count(detected, "ai_discovery"),
-        "static_only": sum(row["found_by"] == ["static"] for row in detected),
-        "dynamic_only": sum(row["found_by"] == ["dynamic"] for row in detected),
-        "static_and_dynamic": sum(row["found_by"][:2] == ["static", "dynamic"] for row in detected),
-        "ai_discovery_only_not_detected": [row["id"] for row in positive if row["found_by"] == ["ai_discovery"] and row["status"] != "detected"],
-        "ai_discovery_assessed_on_endpoints": audited}
-    result["limitations"].append(
-        "Found by: static and dynamic come from the exact signature match; AI discovery is listed when its candidate is in the "
-        "detecting group" + (" or on the case's endpoint" if audited else " (endpoint placement needs the audited run)") +
-        ", is never counted as a detection, and does not prove the same issue class.")
-
-
-def found_by_text(row: dict[str, Any]) -> str:
-    """Short table text: ``Static scanners + Dynamic (runtime) + AI discovery``; an AI-only hit is marked as not counted."""
-    if row["ground_truth"] != "confirmed_vulnerability":
-        return "—"
-    sources = row.get("found_by") or []
-    if not sources:
-        return "none"
-    text = " + ".join(_SOURCE_LABELS[source] for source in sources)
-    return text + " (not counted)" if sources == ["ai_discovery"] and row["status"] != "detected" else text
-
-
-def _found_by_note(summary: dict[str, Any]) -> str:
-    found = summary["found_by"]
-    return (f"Of {found['detected_cases']} detected cases: {found['static']} have static-scanner evidence, {found['dynamic']} have dynamic "
-            f"(runtime) evidence and {found['static_and_dynamic']} have both; AI discovery also reported on {found['ai_discovery']} of them "
-            "(not counted as a detection, issue class not verified).")
-
-
-def _found_by_section(result: dict[str, Any]) -> list[tuple[str, list[str]]]:
-    summary = result["summary"].get("found_by")
-    if not summary:
-        return []
-    rows = [row for row in result["cases"] if row["ground_truth"] == "confirmed_vulnerability"]
-    ids = lambda source: ", ".join(row["id"] for row in rows if row["status"] == "detected" and source in row["found_by"]) or "none"
-    return [("Detected cases by source (one case can have several sources)", [
-        f"Static scanners: {summary['static']} of {summary['detected_cases']} detected — {ids('static')}",
-        f"Dynamic (runtime): {summary['dynamic']} of {summary['detected_cases']} detected — {ids('dynamic')}",
-        f"AI discovery also present: {summary['ai_discovery']} of {summary['detected_cases']} detected — {ids('ai_discovery')}",
-        f"Static only {summary['static_only']} · dynamic only {summary['dynamic_only']} · static and dynamic {summary['static_and_dynamic']}",
-        "Not detected, but AI discovery reported on the same endpoint (not counted, issue class not verified): "
-        + (", ".join(summary["ai_discovery_only_not_detected"]) or "none")])]
 
 
 _DISCOVERY_USAGE_KEYS = ("provider_calls", "batches", "retry_count", "rate_limit_wait_seconds", "wall_seconds",
@@ -372,7 +347,9 @@ def markdown(result: dict[str, Any]) -> str:
     lines = ["# Comprehensive lab · held-out scan audit", "",
              "Ground truth was used only after the saved scan and review were complete.", "",
              f"Known-positive cases detected: **{summary['detected']}/{summary['known_positive_cases']}** "
-             f"({summary['positive_case_recall_lower_bound']:.1%} conservative lower bound). "
+             f"({summary['positive_case_recall_lower_bound']:.1%} conservative lower bound), of which "
+             f"**{summary['detected_via_penetration_agent']}** rest only on the Penetration Agent's own "
+             f"exploitation_confirmed result (no independent scanner/workflow signature). "
              f"Needs review: **{summary['needs_review']}**. Not detected by exact signal: **{summary['not_detected']}**.",
              *(_audit_headline(summary) if "adjudication_queue" in result else
                [f"Safe controls not assessed for specificity: **{summary['safe_controls_not_assessed']}**. "
@@ -414,8 +391,6 @@ def markdown(result: dict[str, Any]) -> str:
                 lines.append("- Exact audit signatures: none defined")
             if "origins" in row and row["ground_truth"] == "confirmed_vulnerability" and row["signals"]:
                 lines.append(f"- Detection origin: {', '.join(row['origins'])}")
-            if row["ground_truth"] == "confirmed_vulnerability":
-                lines.append(f"- Found by: {found_by_text(row)}" + (f" — {row['ai_discovery_basis']}" if row.get("ai_discovery_basis") else ""))
             if row.get("endpoint_findings"):
                 lines.append("- Other findings on this endpoint (not counted as detections):")
                 lines.extend(f"  - {_finding_line(item)}" for item in row["endpoint_findings"])
@@ -430,7 +405,7 @@ def markdown(result: dict[str, Any]) -> str:
             else:
                 lines.append("- Matched reviewed signals: none")
             lines.append("")
-    for heading, items in [*_found_by_section(result), *_audit_sections(result)]:
+    for heading, items in _audit_sections(result):
         lines += [f"## {heading}", ""] + ([f"- {item}" for item in items] or ["- None recorded"]) + [""]
     lines += ["## Limits", ""] + [f"- {item}" for item in result["limitations"]]
     return "\n".join(lines) + "\n"
@@ -455,11 +430,8 @@ def html_report(result: dict[str, Any]) -> str:
                              ("Flagged by", row["flagged_by"] or ["No positive finding of the same issue class on this route"])]
         rows.append({
             "id": row["id"], "status": row["status"],
-            "cells": [(row["category"], row["location"]), row["ground_truth"].replace("_", " "), (row["severity"] or "not assigned").replace("_", " "),
-                      found_by_text(row)],
+            "cells": [(row["category"], row["location"]), row["ground_truth"].replace("_", " "), (row["severity"] or "not assigned").replace("_", " ")],
             "details": [
-                *([("Found by", found_by_text(row) + (f" — {row['ai_discovery_basis']}" if row.get("ai_discovery_basis") else ""))]
-                  if row["ground_truth"] == "confirmed_vulnerability" else []),
                 ("Expected behavior", row["expected_behavior"]), ("Proof", row["proof_ref"]),
                 ("Source / origin", f"{row['source'] or 'not recorded'}; origin: {', '.join(row['origin']) or 'not recorded'}"),
                 ("Audit signatures", [f"{item['rule_id']} @ {item['path']}" for item in row["expected_signatures"]] or ["No exact signature defined"]),
@@ -473,7 +445,7 @@ def html_report(result: dict[str, Any]) -> str:
         headline="Known vulnerabilities found by the saved scan",
         intro="Ground truth was used only after the saved scan and review were complete. This is not a claim of exhaustive vulnerability coverage.",
         gauge=(summary["detected"], summary["known_positive_cases"], "known-positive cases detected"),
-        notes=([_found_by_note(summary)] if summary.get("found_by") else []) + ([f"Precision bounds, not a point estimate: labeled-only {_percent(summary['precision_on_labeled'])} (optimistic), "
+        notes=([f"Precision bounds, not a point estimate: labeled-only {_percent(summary['precision_on_labeled'])} (optimistic), "
                 f"in-scope lower bound {_percent(summary['precision_lower_bound_in_scope'])}, strict lower bound "
                 f"{_percent(summary['precision_lower_bound'])} (pessimistic). Safe-control specificity: "
                 f"{_percent(summary['safe_control_specificity'])} ({summary['safe_controls_flagged']} flagged).",
@@ -498,9 +470,9 @@ def html_report(result: dict[str, Any]) -> str:
                  [("Safe controls", summary["safe_controls_not_assessed"], "var(--low)")]),
                ("Candidate only", summary["candidate_only_excluded"], "var(--ln)")],
         table_title=f"All {len(result['cases'])} benchmark cases",
-        columns=["Case", "Category / location", "Ground truth", "Severity", "Found by"], outcome_header="Outcome",
+        columns=["Case", "Category / location", "Ground truth", "Severity"], outcome_header="Outcome",
         rows=rows,
-        sections=[("Recorded coverage gaps", provenance["coverage_gaps"]), *_found_by_section(result), *_audit_sections(result),
+        sections=[("Recorded coverage gaps", provenance["coverage_gaps"]), *_audit_sections(result),
                   ("Limits", result["limitations"])])
 
 
@@ -515,12 +487,14 @@ def main() -> None:
                         help="keep only the strict signature audit (no safe-control or precision analysis)")
     args = parser.parse_args()
     discovery_path = args.scan_dir / "ai-discovery.json"
+    penetration_path = args.scan_dir / "dynamic-penetration-test.json"
     audit_root = None if args.no_precision_audit or not args.source_root.is_dir() else args.source_root
     result = evaluate(_read(TRUTH), _read(args.scan_dir / "pre-review-summary.json"),
                       _read(args.scan_dir / "merged.json"),
                       _read(args.review_dir / "candidate-triage.json"),
                       _read(args.review_dir / "security-review.json"),
-                      source_root=audit_root, discovery=_read(discovery_path) if discovery_path.is_file() else None)
+                      source_root=audit_root, discovery=_read(discovery_path) if discovery_path.is_file() else None,
+                      penetration_test=_read(penetration_path) if penetration_path.is_file() else None)
     args.output_dir.mkdir(parents=True, exist_ok=False)
     (args.output_dir / "evaluation.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     (args.output_dir / "evaluation.md").write_text(markdown(result), encoding="utf-8")

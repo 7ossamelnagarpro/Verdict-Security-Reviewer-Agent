@@ -174,3 +174,24 @@ visible in the triage artifact and report; they are not security verdicts.
   `scripts/resume_local_review.py` for the review stage. None of these run scanners again.
 - **Duplicate hints.** Known findings are sent only for files the prompt shows (runtime findings, which are URL-based, are
   always eligible), not repeated for the whole project in every batch.
+
+## Several API keys, or Gemini
+
+Set the keys only in the shell that launches the run (never in a file):
+
+```powershell
+# Two Groq keys: calls alternate between them, and a key that hits a rate limit hands the call to the other one
+$env:GROQ_API_KEY   = "gsk_first..."
+$env:GROQ_API_KEY_2 = "gsk_second..."      # or: $env:GROQ_API_KEYS = "gsk_first...,gsk_second..."
+
+# Gemini (OpenAI-compatible endpoint); pass the exact model id shown in Google AI Studio
+$env:GEMINI_API_KEY = "AIza..."
+python scripts/run_project_pipeline.py <project> --output <out> --ai-provider gemini --ai-model <gemini-model-id>
+```
+
+* Up to 9 keys per provider (`<NAME>_API_KEY`, `<NAME>_API_KEY_2` ... `_9`, or the comma-separated `<NAME>_API_KEYS`).
+* Failover happens only on HTTP 429. Other errors (413, 400, 5xx, network) are not repeated on another key.
+* The AI Discovery usage records show `key_slot` (for example `2/2`), never the key.
+* Gemini has no `Retry-After` header on a 429; if you hit its per-minute limit with a single key set
+  `GROQ_RATE_LIMIT_FALLBACK_SECONDS=65` so the call waits for the window instead of failing.
+* Each stage can use a different provider: `--ai-provider groq --review-ai-provider gemini --penetration-ai-provider groq`.

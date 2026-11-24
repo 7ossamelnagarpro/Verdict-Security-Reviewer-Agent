@@ -115,12 +115,14 @@ def run_zap(base_url: str, runtime_path: Path, *, engine: str, stack_name=None, 
     Agent's scoped one-endpoint attempts (:mod:`dynamic_penetration_agent.zap_attempt`); every
     existing caller passes neither and gets the original whole-origin behavior unchanged.
     """
+    if engine == "zap-automated-scan":
+        engine = "zap-active"  # same engine (spider -> passive -> active -> passive -> report); clearer name
     if engine == "baseline":
         return
     if engine not in {"zap-passive", "zap-active"}:
         raise ValueError("Unsupported DAST engine")
     if engine == "zap-active" and not stack_name:
-        raise ValueError("Active ZAP is limited to disposable Compose targets")
+        raise ValueError("Active ZAP (Automated Scan) is limited to disposable Compose targets")
     docker = shutil.which("docker")
     if not docker:
         raise ValueError("Docker is required for ZAP")

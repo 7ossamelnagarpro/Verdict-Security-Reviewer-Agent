@@ -36,6 +36,10 @@ class DiscoveryConfig:
     max_total_source_bytes: int = 2_000_000
     max_planned_targets: int = 128
     max_batches: int = 20
+    # Extra batches allowed ONLY to finish targets that were already planned inside ``max_batches`` when a runtime
+    # recovery (HTTP 413 / unusable output / lost response -> smaller batch, or a target that did not fit a prompt)
+    # re-queued them.  It never widens the plan; it only stops recovery from silently starving the tail of the plan.
+    max_batch_overflow: int = 10
     max_total_candidates: int = 100
     max_enrichment_rounds: int = 2
     max_context_requests_per_batch: int = 4
@@ -67,6 +71,8 @@ class DiscoveryConfig:
             raise ValueError("max_planned_targets must be between 1 and 10000")
         if not 1 <= self.max_batches <= 1_000:
             raise ValueError("max_batches must be between 1 and 1000")
+        if not 0 <= self.max_batch_overflow <= 1_000:
+            raise ValueError("max_batch_overflow must be between 0 and 1000")
         if not 1 <= self.max_total_candidates <= 10_000:
             raise ValueError("max_total_candidates must be between 1 and 10000")
         if not 0 <= self.max_enrichment_rounds <= 10:

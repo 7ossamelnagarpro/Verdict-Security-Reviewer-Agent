@@ -29,6 +29,7 @@ import logging
 import inspect
 import os
 import sys
+import threading
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager, nullcontext
 from functools import lru_cache
@@ -46,6 +47,11 @@ CONTENT_ENV = "SECURITY_REVIEWER_TRACE_CONTENT"
 _VISIBLE_CHARS = 200          # strings up to this length are metadata (ids, statuses, titles)
 _TRUNCATE_CHARS = 4_000       # "redacted" mode limit per string
 _MODES = ("metadata", "redacted", "full")
+# LangGraph traces every node with the WHOLE graph state (target plans, snippet maps, candidate dicts).  On a large run
+# that is thousands of entries per span and makes the upload time out, so ``metadata``/``redacted`` modes keep only the
+# first entries of a big collection plus a count.  ``full`` is untouched.  Tune with SECURITY_REVIEWER_TRACE_MAX_ITEMS.
+_DEFAULT_MAX_ITEMS = 40
+_MAX_DEPTH = 8
 
 JsonScrubber = Callable[[Any], Any]
 
@@ -58,6 +64,7 @@ def content_mode() -> str:
 def make_scrubber(mode: str | None = None) -> JsonScrubber:
     """Return a recursive scrubber implementing the privacy mode (see module docstring)."""
     selected = mode or content_mode()
+    limit = _env_int("SECURITY_REVIEWER_TRACE_MAX_ITEMS", _DEFAULT_MAX_ITEMS, 5) if selected != "full" else None
 
     def scrub_text(text: str) -> str:
         if selected == "metadata":
@@ -70,16 +77,28 @@ def make_scrubber(mode: str | None = None) -> JsonScrubber:
             return cleaned[:_TRUNCATE_CHARS] + f"…[+{len(cleaned) - _TRUNCATE_CHARS} chars truncated]"
         return cleaned
 
-    def scrub(value: Any) -> Any:
+    def scrub(value: Any, depth: int = 0) -> Any:
         if isinstance(value, str):
             return scrub_text(value)
+        container = isinstance(value, (Mapping, list, tuple, set, frozenset)) or (
+            hasattr(value, "__dataclass_fields__") and not isinstance(value, type))
+        if not container:
+            return value
+        if limit is not None and depth >= _MAX_DEPTH:
+            return "<nested data omitted>"
         if isinstance(value, Mapping):
-            return {str(key): scrub(item) for key, item in value.items()}
+            items = list(value.items())
+            result = {str(key): scrub(item, depth + 1) for key, item in (items if limit is None else items[:limit])}
+            if limit is not None and len(items) > limit:
+                result["<omitted>"] = f"{len(items) - limit} more entries not sent to LangSmith"
+            return result
         if isinstance(value, (list, tuple, set, frozenset)):
-            return [scrub(item) for item in value]
-        if hasattr(value, "__dataclass_fields__") and not isinstance(value, type):
-            return {name: scrub(getattr(value, name)) for name in value.__dataclass_fields__}
-        return value
+            items = list(value)
+            kept = [scrub(item, depth + 1) for item in (items if limit is None else items[:limit])]
+            if limit is not None and len(items) > limit:
+                kept.append(f"<{len(items) - limit} more items not sent to LangSmith>")
+            return kept
+        return {name: scrub(getattr(value, name), depth + 1) for name in value.__dataclass_fields__}
 
     return scrub
 
@@ -124,7 +143,7 @@ def _upload_options() -> dict[str, object]:
     Tracing is best-effort telemetry: these only make uploads likelier to finish, they never affect scan results.
     Override with SECURITY_REVIEWER_LANGSMITH_BATCH_BYTES and SECURITY_REVIEWER_LANGSMITH_TIMEOUT_SECONDS.
     """
-    wanted = {"max_batch_size_bytes": _env_int("SECURITY_REVIEWER_LANGSMITH_BATCH_BYTES", 262_144, 16_384),
+    wanted = {"max_batch_size_bytes": _env_int("SECURITY_REVIEWER_LANGSMITH_BATCH_BYTES", 131_072, 16_384),
               "timeout_ms": (10_000, _env_int("SECURITY_REVIEWER_LANGSMITH_TIMEOUT_SECONDS", 120, 5) * 1000)}
     supported = inspect.signature(Client.__init__).parameters     # older langsmith releases lack some options
     return {key: value for key, value in wanted.items() if key in supported}
@@ -167,12 +186,28 @@ def agent_tracing(agent: str, *, metadata: Mapping[str, Any] | None = None,
         yield
 
 
-def flush_traces(client: Client | None = None) -> None:
-    """Send queued spans now. A short-lived CLI process can exit before LangSmith's background thread uploads."""
-    try:
-        (client or _client(content_mode())).flush()
-    except Exception:  # tracing is best-effort and must never affect a security review
-        log.debug("LangSmith flush failed", exc_info=True)
+def flush_traces(client: Client | None = None, *, timeout_seconds: float | None = None) -> None:
+    """Send queued spans now, but never wait longer than ``timeout_seconds`` (default 30 s, env
+    SECURITY_REVIEWER_LANGSMITH_FLUSH_SECONDS).
+
+    A short-lived CLI process can exit before LangSmith's background thread uploads, yet a slow or failing uplink must not
+    hold the finished pipeline hostage: telemetry that cannot be delivered in time is dropped (and logged), the review
+    result is unaffected.
+    """
+    wait = float(timeout_seconds if timeout_seconds is not None
+                 else _env_int("SECURITY_REVIEWER_LANGSMITH_FLUSH_SECONDS", 30, 1))
+
+    def work() -> None:
+        try:
+            (client or _client(content_mode())).flush()
+        except Exception:  # tracing is best-effort and must never affect a security review
+            log.debug("LangSmith flush failed", exc_info=True)
+
+    worker = threading.Thread(target=work, name="langsmith-flush", daemon=True)
+    worker.start()
+    worker.join(wait)
+    if worker.is_alive():
+        log.warning("LangSmith flush did not finish within %.0f s; continuing without waiting (traces may be incomplete).", wait)
 
 
 @contextmanager
@@ -192,7 +227,7 @@ def pipeline_trace(name: str, *, metadata: Mapping[str, Any] | None = None,
 
 
 @contextmanager
-def node_trace(name: str, *, inputs: Mapping[str, Any] | None = None) -> Iterator[Any]:
+def node_trace(name: str, *, inputs: Mapping[str, Any] | None = None, run_type: str = "chain") -> Iterator[Any]:
     """A named child run for one graph node, so it shows up as its own entry in LangSmith's trace tree.
 
     ``graph.compile().invoke({})`` passes no run config, so a node that itself makes no traced model
@@ -201,7 +236,11 @@ def node_trace(name: str, *, inputs: Mapping[str, Any] | None = None) -> Iterato
     visible span with real input/output metadata, nested under the pipeline's existing trace.
 
     No-ops (yields ``None``) when tracing isn't active, so it costs nothing when disabled and a caller
-    that gets ``None`` back should skip calling ``.end(...)`` on it. Usage::
+    that gets ``None`` back should skip calling ``.end(...)`` on it. Pass ``run_type="llm"`` (with
+    ``inputs={"messages": [...]}``, and later ``run.end(outputs={"messages": [...]})``) for a span that
+    wraps an actual model call — LangSmith then renders it with its chat/completion UI (the prompt and
+    the model's reply laid out as a transcript) instead of a plain, collapsed "chain" input/output dict,
+    so a reviewer opening the span actually sees what the model was asked and what it answered. Usage::
 
         with node_trace("my_node", inputs={"candidates": 5}) as run:
             result = do_work()
@@ -212,7 +251,7 @@ def node_trace(name: str, *, inputs: Mapping[str, Any] | None = None) -> Iterato
         yield None
         return
     try:
-        manager = trace(name=name, run_type="chain", inputs=dict(inputs or {}))
+        manager = trace(name=name, run_type=run_type, inputs=dict(inputs or {}))
         run = manager.__enter__()
     except Exception:  # tracing is optional: a broken LangSmith call must never fail a security review
         log.debug("LangSmith node span failed for %s", name, exc_info=True)

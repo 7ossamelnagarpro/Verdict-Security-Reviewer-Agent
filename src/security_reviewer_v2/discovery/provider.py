@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import contextvars
+import hashlib
 import http.client
+import itertools
 import json
 import math
 import os
 import re
 import socket
 import ssl
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -19,8 +23,40 @@ _GROQ_USER_AGENT = "agentic-security-reviewer-v2/0.1"
 _GROQ_STRICT_JSON_MODELS = frozenset({"openai/gpt-oss-20b", "openai/gpt-oss-120b"})
 _HOSTED_DEFAULT_TIMEOUT_SECONDS = 120   # a hosted API must never hang forever, even if the caller passes no timeout
 _TRANSIENT_BACKOFF_SECONDS = (1.0, 3.0)  # 3 attempts in total for connection errors and HTTP 5xx
-_MAX_RATE_LIMIT_WAIT_SECONDS = 600
+_MAX_RATE_LIMIT_WAIT_SECONDS = 600  # default cumulative cap; see _max_rate_limit_wait_seconds() for the opt-in override
+_DEFAULT_SINGLE_RETRY_AFTER_CAP_SECONDS = 90.0  # default per-wait cap; see _single_retry_after_cap_seconds() below
+
+
+def _max_rate_limit_wait_seconds() -> float:
+    """Cumulative 429-wait budget for one call (env GROQ_MAX_RATE_LIMIT_WAIT_SECONDS, 60-3600 s).
+
+    Unset (or out of range) keeps the original, always-safe 600 s default — this never shortens or
+    removes the cap, it only lets an operator who is willing to wait longer for a provider-specified
+    Retry-After opt into that explicitly, instead of the run failing fast and leaving groups pending.
+    """
+    try:
+        seconds = float(os.environ.get("GROQ_MAX_RATE_LIMIT_WAIT_SECONDS", ""))
+    except ValueError:
+        return _MAX_RATE_LIMIT_WAIT_SECONDS
+    return seconds if 60 <= seconds <= 3600 else _MAX_RATE_LIMIT_WAIT_SECONDS
+
+
+def _single_retry_after_cap_seconds() -> float:
+    """Per-wait cap on a single usable Retry-After (env GROQ_SINGLE_RETRY_AFTER_CAP_SECONDS, 10-900 s).
+
+    Unset (or out of range) keeps the original 90 s default. A Retry-After ABOVE this cap is still
+    treated as unusable (same as before: the fallback-seconds path or a fail-fast still applies) —
+    raising this only widens how long a single provider-specified wait may be before it is trusted.
+    """
+    try:
+        seconds = float(os.environ.get("GROQ_SINGLE_RETRY_AFTER_CAP_SECONDS", ""))
+    except ValueError:
+        return _DEFAULT_SINGLE_RETRY_AFTER_CAP_SECONDS
+    return seconds if 10 <= seconds <= 900 else _DEFAULT_SINGLE_RETRY_AFTER_CAP_SECONDS
 _FORMAT_ERROR_CATEGORIES = frozenset({"json_validate_failed", "tool_use_failed"})
+# Set by KeyPoolProvider while another key is still available: an HTTP 429 then fails immediately (so the call moves to the
+# next key) instead of sleeping out a Retry-After that a free key would not have needed.  Default False: unchanged behaviour.
+_FAIL_FAST_ON_429: contextvars.ContextVar[bool] = contextvars.ContextVar("fail_fast_on_429", default=False)
 
 
 def _object_schema(properties: dict[str, Any]) -> dict[str, Any]:
@@ -64,6 +100,22 @@ _ATTACK_PLAN_SYSTEM_PROMPT = (
     "choosing which pre-approved template runs next, not designing the HTTP request yourself. "
     "Reply with a JSON object: {\"decision\": \"<one template id from the menu, or 'stop'>\", "
     "\"reasoning\": \"<one or two sentences, grounded in the evidence above>\"}."
+)
+
+
+_EVIDENCE_INTERPRETATION_SYSTEM_PROMPT = (
+    "You are helping a penetration tester read ONE already-completed attempt's result. You are given the "
+    "hypothesis, which template was tried, and a DETERMINISTIC, already-final verdict (confirmed violation, "
+    "correct denial, inconclusive, or blocked) together with the exact bounded HTTP facts (status codes, "
+    "expected statuses, any assertion results) that verdict was computed from. "
+    "You do NOT get to change that verdict — it is already decided and will not be affected by your answer. "
+    "Your only job is to write ONE OR TWO SENTENCES of plain-language interpretation of what this result "
+    "actually suggests for retesting: for example, whether an 'inconclusive' result still looks worth "
+    "probing from a different angle, or whether a 'blocked' result looks like a transient problem versus "
+    "a real dead end. Ground every sentence only in the bounded facts given to you; never reference an "
+    "endpoint, account, payload or response body that was not explicitly given, and never assert that "
+    "exploitation did or did not happen beyond what the given verdict already states. "
+    "Reply with a JSON object: {\"interpretation\": \"<one or two sentences>\"}."
 )
 
 
@@ -257,6 +309,61 @@ class GroqProvider:
             "rate_limit_wait_seconds": waited, "finish_reason": finish_reason,
             "wall_seconds": round(time.monotonic() - started, 3)}
 
+    def interpret_evidence(self, prompt: str, *, timeout_seconds: int | None) -> tuple[dict[str, Any], dict[str, Any]]:
+        """A narrative interpretation of one already-finalized attempt's bounded evidence (see
+        ``ai_planner.interpret_evidence``): never changes the deterministic verdict, only enriches the
+        reasoning text later attempts' planning prompts see.
+        """
+        body = {"model": self.model, "temperature": 0, "response_format": {"type": "json_object"},
+                "messages": [{"role": "system", "content": _EVIDENCE_INTERPRETATION_SYSTEM_PROMPT},
+                            {"role": "user", "content": prompt}]}
+        started = time.monotonic()
+        try:
+            payload, retries, waited = self._post(body, timeout_seconds)
+        except _GroqHTTPFailure as error:
+            raise _as_response_error(error)
+        parsed, finish_reason, usage = _completion_json(payload, "evidence interpretation content")
+        return parsed if isinstance(parsed, dict) else {}, {
+            **usage, "provider": self.name, "model": self.model, "retry_count": retries,
+            "rate_limit_wait_seconds": waited, "finish_reason": finish_reason,
+            "wall_seconds": round(time.monotonic() - started, 3)}
+
+
+@dataclass(frozen=True)
+class OpenAIProvider(GroqProvider):
+    """OpenAI's Chat Completions API. Same request/response shape as Groq's (both OpenAI-compatible),
+    so every method (``discover``/``review``/``plan_attack``/``interpret_evidence``) and all of
+    ``GroqProvider``'s retry/backoff/rate-limit handling are inherited unchanged — only the endpoint and
+    the provider name differ. Configured independently of Groq (its own ``OPENAI_API_KEY``), so Discovery,
+    Security Review and the Penetration Agent's AI planner can each use a different account's quota —
+    see ``provider_from_environment`` and each stage's own ``--*-ai-provider`` flag.
+    """
+
+    name: str = "openai"
+    endpoint: str = "https://api.openai.com/v1/chat/completions"
+
+
+@dataclass(frozen=True)
+class OpenRouterProvider(GroqProvider):
+    """OpenRouter's Chat Completions API (also OpenAI-compatible; routes to many underlying model
+    providers under one key). Same inheritance reasoning as ``OpenAIProvider`` — only the endpoint and
+    name differ; configured via its own ``OPENROUTER_API_KEY``.
+    """
+
+    name: str = "openrouter"
+    endpoint: str = "https://openrouter.ai/api/v1/chat/completions"
+
+
+@dataclass(frozen=True)
+class GeminiProvider(GroqProvider):
+    """Google Gemini through its OpenAI-compatible Chat Completions endpoint (Bearer ``GEMINI_API_KEY``, or
+    ``GOOGLE_API_KEY``).  Same inheritance reasoning as ``OpenAIProvider``: request/response shape, retry/backoff and the
+    JSON handling are shared; only the endpoint and name differ.  Pass the exact Gemini model id with ``--*-ai-model``.
+    """
+
+    name: str = "gemini"
+    endpoint: str = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+
 
 @dataclass(frozen=True)
 class OllamaProvider:
@@ -299,6 +406,18 @@ class OllamaProvider:
         body = {"model": self.model, "stream": False, "think": False, "format": "json",
                 "options": {"temperature": 0},
                 "messages": [{"role": "system", "content": _ATTACK_PLAN_SYSTEM_PROMPT},
+                            {"role": "user", "content": prompt}]}
+        request = urllib.request.Request(self.endpoint, data=json.dumps(body).encode("utf-8"),
+                                         headers={"Content-Type": "application/json"}, method="POST")
+        parsed, payload, retries = _ollama_json_response(request, timeout_seconds)
+        return parsed if isinstance(parsed, dict) else {}, {
+            "provider": self.name, "model": self.model,
+            "total_duration_ns": payload.get("total_duration"), "retry_count": retries}
+
+    def interpret_evidence(self, prompt: str, *, timeout_seconds: int | None) -> tuple[dict[str, Any], dict[str, Any]]:
+        body = {"model": self.model, "stream": False, "think": False, "format": "json",
+                "options": {"temperature": 0},
+                "messages": [{"role": "system", "content": _EVIDENCE_INTERPRETATION_SYSTEM_PROMPT},
                             {"role": "user", "content": prompt}]}
         request = urllib.request.Request(self.endpoint, data=json.dumps(body).encode("utf-8"),
                                          headers={"Content-Type": "application/json"}, method="POST")
@@ -352,7 +471,9 @@ def _rate_limit_fallback_seconds() -> float | None:
     return seconds if 1 <= seconds <= 300 else None
 
 
-_RATE_STATE: dict[str, float] = {}
+# Per-minute token budget the provider reported on its last answer, kept PER API KEY: with several keys, one key's
+# nearly-empty window must never slow requests that go out on another key.
+_RATE_STATE: dict[str, dict[str, float]] = {}
 _ESTIMATED_COMPLETION_TOKENS = 2500   # observed discovery answers are ~1-3K tokens, mostly model reasoning
 _DURATION_PART = re.compile(r"(\d+(?:\.\d+)?)(ms|h|m|s)")
 _UNIT_SECONDS = {"ms": 0.001, "s": 1.0, "m": 60.0, "h": 3600.0}
@@ -368,7 +489,13 @@ def _duration_seconds(text: Any) -> float | None:
     return sum(float(number) * _UNIT_SECONDS[unit] for number, unit in parts) if parts else None
 
 
-def _remember_rate_limits(headers: Any) -> None:
+def _rate_bucket(request: urllib.request.Request) -> str:
+    """A non-reversible id of the API key a request is sent with (never the key itself)."""
+    auth = request.get_header("Authorization") or ""
+    return hashlib.sha256(auth.encode("utf-8")).hexdigest()[:12] if auth else ""
+
+
+def _remember_rate_limits(headers: Any, bucket: str = "") -> None:
     """Keep the per-minute token budget the provider reported on its last successful answer."""
     if headers is None or not _pacing_enabled():
         return
@@ -378,7 +505,7 @@ def _remember_rate_limits(headers: Any) -> None:
         return
     reset = _duration_seconds(headers.get("x-ratelimit-reset-tokens"))
     if reset is not None:
-        _RATE_STATE.update(remaining=remaining, reset_at=time.monotonic() + reset)
+        _RATE_STATE[bucket] = {"remaining": remaining, "reset_at": time.monotonic() + reset}
 
 
 def _pace_before_request(request: urllib.request.Request) -> float:
@@ -387,12 +514,14 @@ def _pace_before_request(request: urllib.request.Request) -> float:
     Uses only the provider's own headers from the previous answer; with none (first call, other providers, tests) it
     does nothing.  Set GROQ_PACE_RATE_LIMITS=0 to disable.  Returns the seconds slept.
     """
-    if not _pacing_enabled() or "reset_at" not in _RATE_STATE:
+    bucket = _rate_bucket(request)
+    state = _RATE_STATE.get(bucket)
+    if not _pacing_enabled() or state is None:
         return 0.0
     data = request.data if isinstance(request.data, (bytes, bytearray)) else b""
     needed = len(data) / 3 + _ESTIMATED_COMPLETION_TOKENS
-    wait, remaining = _RATE_STATE["reset_at"] - time.monotonic(), _RATE_STATE["remaining"]
-    _RATE_STATE.clear()
+    wait, remaining = state["reset_at"] - time.monotonic(), state["remaining"]
+    _RATE_STATE.pop(bucket, None)
     if remaining >= needed or wait <= 0:
         return 0.0
     wait = min(wait + 0.25, 90.0)
@@ -410,9 +539,9 @@ def _retry_after_header(headers: Any) -> float | None:
 
 
 def _retry_after_seconds(headers: Any) -> float | None:
-    """A usable server-provided delay (1-90 s), or None."""
+    """A usable server-provided delay (1 s to the configured single-wait cap, 90 s by default), or None."""
     delay = _retry_after_header(headers)
-    return max(1.0, delay) if delay is not None and delay <= 90 else None
+    return max(1.0, delay) if delay is not None and delay <= _single_retry_after_cap_seconds() else None
 
 
 def _http_error_details(error: urllib.error.HTTPError) -> dict[str, Any]:
@@ -492,7 +621,9 @@ def _classify_url_error(reason: Any) -> tuple[str, str, bool]:
 def _groq_json_request(request: urllib.request.Request, timeout_seconds: int | None) -> tuple[dict[str, Any], int, float]:
     """One bounded request: rate limits wait, transient errors retry, everything else fails with a safe message.
 
-    * HTTP 429 honours a usable ``Retry-After`` (<= 90 s, <= 600 s in total); never retried without one.
+    * HTTP 429 honours a usable ``Retry-After`` (<= 90 s per wait, <= 600 s cumulative by default — both
+      raisable via ``GROQ_SINGLE_RETRY_AFTER_CAP_SECONDS``/``GROQ_MAX_RATE_LIMIT_WAIT_SECONDS``); never
+      retried without one.
     * HTTP 5xx and connect-phase errors (DNS blip, reset, refused, connect timeout) retry twice with backoff.
     * One ``json_validate_failed`` / ``tool_use_failed`` is retried immediately (model formatting failure).
     * Errors after the request was sent (response timeout, connection dropped) are never retried: it may be billed.
@@ -511,7 +642,7 @@ def _groq_json_request(request: urllib.request.Request, timeout_seconds: int | N
         try:
             with _urlopen(request, timeout) as response:
                 raw = response.read(2_000_000)
-                _remember_rate_limits(getattr(response, "headers", None))
+                _remember_rate_limits(getattr(response, "headers", None), _rate_bucket(request))
             try:
                 return json.loads(raw.decode("utf-8", errors="replace")), retries, waited
             except ValueError as error:
@@ -525,7 +656,9 @@ def _groq_json_request(request: urllib.request.Request, timeout_seconds: int | N
             delay = _retry_after_seconds(error.headers)
             if error.code == 429 and delay is None and _retry_after_header(error.headers) is None:
                 delay = _rate_limit_fallback_seconds()  # opt-in: a per-minute window always reopens within ~60 s
-            if error.code == 429 and retries < 10 and delay is not None and waited + delay <= _MAX_RATE_LIMIT_WAIT_SECONDS:
+            if error.code == 429 and _FAIL_FAST_ON_429.get():
+                raise _http_failure(error.code, details, retries, waited, _retry_after_header(error.headers)) from error
+            if error.code == 429 and retries < 10 and delay is not None and waited + delay <= _max_rate_limit_wait_seconds():
                 time.sleep(delay)
                 waited += delay
                 retries += 1
@@ -674,15 +807,132 @@ def _fill_missing_nullable(parsed: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
+_PROVIDER_KEY_ENV_VARS = {"groq": "GROQ_API_KEY", "openai": "OPENAI_API_KEY", "openrouter": "OPENROUTER_API_KEY",
+                          "gemini": "GEMINI_API_KEY"}
+_PROVIDER_KEY_ENV_ALIASES = {"gemini": ("GOOGLE_API_KEY",)}
+_PROVIDER_CLASSES = {"groq": GroqProvider, "openai": OpenAIProvider, "openrouter": OpenRouterProvider, "gemini": GeminiProvider}
+_MAX_KEYS = 9
+
+
+def api_keys_from_environment(name: str) -> list[str]:
+    """Every API key configured for one provider, in a stable order, without duplicates.
+
+    ``<VAR>S`` (comma/semicolon/space separated, e.g. ``GROQ_API_KEYS=k1,k2``), then ``<VAR>``, then ``<VAR>_2`` ...
+    ``<VAR>_9`` (e.g. ``GROQ_API_KEY`` + ``GROQ_API_KEY_2``), then the provider's alias variables.  Keys are only ever
+    read from the process environment; they are never written to a file, a log or a report.
+    """
+    var = _PROVIDER_KEY_ENV_VARS.get(name)
+    if var is None:
+        return []
+    raw: list[str] = [part for part in re.split(r"[,;\s]+", os.environ.get(var + "S", "")) if part]
+    raw.append(os.environ.get(var, "").strip())
+    raw += [os.environ.get(f"{var}_{index}", "").strip() for index in range(2, _MAX_KEYS + 1)]
+    raw += [os.environ.get(alias, "").strip() for alias in _PROVIDER_KEY_ENV_ALIASES.get(name, ())]
+    return list(dict.fromkeys(key for key in raw if key))
+
+
+# Process-wide so every stage (Discovery, Review, Penetration planner) sees the same "this key is rate-limited" fact.
+_KEY_COOLDOWN: dict[str, float] = {}
+_KEY_LOCK = threading.Lock()
+_DEFAULT_KEY_COOLDOWN_SECONDS = 60.0     # a per-minute limit reopens within about a minute
+_ASKED_TO_WAIT = re.compile(r"asked to wait (\d+) s")
+
+
+def _key_id(provider: Any) -> str:
+    return hashlib.sha256(str(getattr(provider, "api_key", id(provider))).encode("utf-8")).hexdigest()[:12]
+
+
+class KeyPoolProvider:
+    """Splits one provider's work across several API keys of the same account type, and fails over when one is limited.
+
+    * Each call goes to the next key in turn (round-robin), so the load is shared even though the pipeline is sequential.
+    * If a key answers HTTP 429 (per-minute or daily limit), that call moves to another key at once instead of waiting, and
+      the limited key rests for the time the provider asked for (60 s when it did not say).  Only when every key is
+      limited does the last one fall back to the normal wait-and-retry behaviour.
+    * Every other error (413, 400, 5xx, network) is NOT retried on another key: it would fail the same way and a second
+      request could be billed twice.
+    * Usage records carry ``key_slot`` (``"2/3"``), never the key.
+    """
+
+    def __init__(self, providers: list[Any] | tuple[Any, ...]) -> None:
+        if len(providers) < 2:
+            raise ValueError("KeyPoolProvider needs at least two providers")
+        self._providers = tuple(providers)
+        self._cursor = itertools.count()
+        self.name = providers[0].name
+        self.model = providers[0].model
+        self.max_review_groups_per_request = getattr(providers[0], "max_review_groups_per_request", 1)
+
+    @property
+    def key_count(self) -> int:
+        return len(self._providers)
+
+    def _order(self) -> list[int]:
+        with _KEY_LOCK:
+            start = next(self._cursor) % len(self._providers)
+            now = time.monotonic()
+            rotated = [(start + offset) % len(self._providers) for offset in range(len(self._providers))]
+            ready = [i for i in rotated if _KEY_COOLDOWN.get(_key_id(self._providers[i]), 0.0) <= now]
+            resting = sorted((i for i in rotated if i not in ready), key=lambda i: _KEY_COOLDOWN[_key_id(self._providers[i])])
+        return ready + resting
+
+    def _call(self, method: str, *args: Any, **kwargs: Any) -> Any:
+        order = self._order()
+        for position, index in enumerate(order):
+            provider, last = self._providers[index], position == len(order) - 1
+            token = _FAIL_FAST_ON_429.set(not last)
+            try:
+                result = getattr(provider, method)(*args, **kwargs)
+            except _GroqHTTPFailure as error:
+                if error.code != 429 or last:
+                    raise
+                match = _ASKED_TO_WAIT.search(str(error))
+                rest = min(float(match.group(1)), 3600.0) if match else _DEFAULT_KEY_COOLDOWN_SECONDS
+                with _KEY_LOCK:
+                    _KEY_COOLDOWN[_key_id(provider)] = time.monotonic() + max(rest, 1.0)
+                continue
+            finally:
+                _FAIL_FAST_ON_429.reset(token)
+            payload, usage = result
+            if isinstance(usage, dict):
+                usage = {**usage, "key_slot": f"{index + 1}/{len(self._providers)}"}
+            return payload, usage
+        raise RuntimeError("unreachable: the last key always returns or raises")  # pragma: no cover
+
+    def discover(self, prompt: str, *, timeout_seconds: int | None, max_candidates: int) -> tuple[dict[str, Any], dict[str, Any]]:
+        return self._call("discover", prompt, timeout_seconds=timeout_seconds, max_candidates=max_candidates)
+
+    def discover_rescue(self, prompt: str, *, timeout_seconds: int | None, max_candidates: int) -> tuple[dict[str, Any], dict[str, Any]]:
+        return self._call("discover_rescue", prompt, timeout_seconds=timeout_seconds, max_candidates=max_candidates)
+
+    def review(self, prompt: str, *, timeout_seconds: int | None, max_reviews: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        return self._call("review", prompt, timeout_seconds=timeout_seconds, max_reviews=max_reviews)
+
+    def plan_attack(self, prompt: str, *, timeout_seconds: int | None) -> tuple[dict[str, Any], dict[str, Any]]:
+        return self._call("plan_attack", prompt, timeout_seconds=timeout_seconds)
+
+    def interpret_evidence(self, prompt: str, *, timeout_seconds: int | None) -> tuple[dict[str, Any], dict[str, Any]]:
+        return self._call("interpret_evidence", prompt, timeout_seconds=timeout_seconds)
+
+
 def provider_from_environment(name: str, model: str) -> DiscoveryProvider:
+    """Build one provider from its own, independent API key(s).
+
+    ``name`` is one of ``groq``, ``openai``, ``openrouter``, ``gemini`` (each reads its own env vars, so different stages
+    can point at different accounts/providers) or ``ollama`` (local, no key).  With ONE key this returns the plain
+    provider; with several keys (see :func:`api_keys_from_environment`) it returns a :class:`KeyPoolProvider` that shares
+    the work between them.  Two calls make two independent provider objects; only the "this key is rate-limited" fact is
+    shared process-wide on purpose.
+    """
     if name == "ollama":
         return OllamaProvider(model=model)
-    if name != "groq":
+    if name not in _PROVIDER_CLASSES:
         raise ValueError(f"Unsupported discovery provider: {name}")
-    key = os.environ.get("GROQ_API_KEY")
-    if not key:
-        raise RuntimeError("GROQ_API_KEY is required when AI Discovery is enabled")
-    return GroqProvider(model=model, api_key=key)
+    keys = api_keys_from_environment(name)
+    if not keys:
+        raise RuntimeError(f"{_PROVIDER_KEY_ENV_VARS[name]} is required to use the '{name}' provider")
+    providers = [_PROVIDER_CLASSES[name](model=model, api_key=key) for key in keys]
+    return providers[0] if len(providers) == 1 else KeyPoolProvider(providers)  # type: ignore[return-value]
 
 
 def _discovery_response(parsed: Any, max_candidates: int) -> dict[str, Any]:

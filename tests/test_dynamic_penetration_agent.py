@@ -18,6 +18,7 @@ from security_reviewer_v2.dynamic_penetration_agent import (
 )
 from security_reviewer_v2.dynamic_penetration_agent.scenario_validator import ScenarioRejected, validate_plan
 from security_reviewer_v2.dynamic_penetration_agent.models import AttackPlan, AttackStep, TestStrategy
+from security_reviewer_v2.dynamic_penetration_agent.hypothesis_analyzer import assess
 from security_reviewer_v2.verification.models import VerificationDisposition, VerificationRecord, VerificationResult
 
 ACCOUNT_DEFINITIONS = {
@@ -377,6 +378,182 @@ def test_a_blocked_login_does_not_stop_the_loop_while_an_untried_template_remain
     assert len(result.attempts) >= 2  # did not stop after the one blocked attempt
     assert any(a.test_strategy == "unauthenticated_access" for a in result.attempts)
     assert result.attempts[-1].stop_reason == "exploitation_confirmed"
+
+
+def test_ai_evidence_interpretation_enriches_the_attempt_without_changing_the_verdict():
+    """The AI's narrative reading of a finalized attempt reaches the report but never flips the outcome."""
+    class _FakeAIProvider:
+        def plan_attack(self, prompt, *, timeout_seconds):
+            return {"decision": "authorization_matrix", "reasoning": "Start with cross-account access."}, {}
+
+        def interpret_evidence(self, prompt, *, timeout_seconds):
+            return {"interpretation": "The denial looks solid; no further probing of this account is useful."}, {}
+
+    candidate = _candidate()
+    access, transport = _access("/orders/5", transport_status=403)  # correctly denied
+    access = RuntimeAccess(access.base_url, access.allowed_endpoints, access.accounts,
+                           access.account_definitions, access.environment, ai_provider=_FakeAIProvider())
+    report = run_penetration_tests(
+        _discovery(candidate), _confirmed("c1"), access=access,
+        target_endpoint_resolver=lambda c: "/orders/5", transport=transport,
+    )
+    result = report.results[0]
+    assert result.outcome is TestOutcome.NOT_REPRODUCED  # the deterministic verdict is unchanged
+    assert "AI interpretation:" in result.attempts[0].agent_reasoning_summary
+    assert "denial looks solid" in result.attempts[0].agent_reasoning_summary
+
+
+class _CountingAIProvider:
+    """Picks the first template on the menu and counts every model call, to prove no call is wasted."""
+
+    def __init__(self) -> None:
+        self.plan_calls = 0
+        self.interpret_calls = 0
+
+    def plan_attack(self, prompt, *, timeout_seconds):
+        self.plan_calls += 1
+        menu = prompt.split("choose exactly one id", 1)[1].split("\n\n", 1)[0].splitlines()[1:]
+        return {"decision": menu[0].lstrip("- ").strip(), "reasoning": "next"}, {}
+
+    def interpret_evidence(self, prompt, *, timeout_seconds):
+        self.interpret_calls += 1
+        return {"interpretation": "read"}, {}
+
+
+def test_no_planner_or_interpretation_call_is_spent_after_the_budget_is_exhausted():
+    provider = _CountingAIProvider()
+    access, transport = _access("/orders/5", transport_status=403)
+    access = RuntimeAccess(access.base_url, access.allowed_endpoints, access.accounts,
+                           access.account_definitions, access.environment, ai_provider=provider)
+    report = run_penetration_tests(
+        _discovery(_candidate()), _confirmed("c1"), access=access, budget=ExecutionBudget(max_attempts_per_hypothesis=2),
+        target_endpoint_resolver=lambda c: "/orders/5", transport=transport,
+    )
+    result = report.results[0]
+    assert len(result.attempts) == 2 and result.attempts[-1].stop_reason == "budget_exhausted"
+    # one planner call per decision that could still lead to an attempt - none for the stop that the budget forced
+    assert provider.plan_calls == len(result.attempts) + len(result.considered_but_not_executed)
+    # the attempt that exhausted the budget is not interpreted; the one before it is
+    assert provider.interpret_calls == len(result.attempts) - 1
+    assert "AI interpretation:" not in result.attempts[-1].agent_reasoning_summary
+
+
+def test_rule_based_menu_now_offers_many_templates_not_just_a_few():
+    """The deterministic fallback itself now draws from ~9 templates for a typical authz hypothesis."""
+    candidate = _candidate()  # mentions "ownership" and "authorization"
+    assessment = assess(candidate, target_endpoint="/orders/5")
+    assert len(assessment.candidate_strategies) >= 8
+    names = {s.value for s in assessment.candidate_strategies}
+    assert {"head_method_bypass", "trailing_slash_bypass", "case_sensitivity_bypass",
+            "path_normalization_bypass", "extension_suffix_bypass"}.issubset(names)
+
+
+def test_bypass_templates_find_the_vulnerability_when_other_templates_are_denied():
+    """Each new bypass template can independently confirm exploitation when the 'normal' path is denied
+    but the bypassed variant is not."""
+    candidate = _candidate()
+
+    class _OnlyTrailingSlashVulnerable:
+        def __init__(self, *a): pass
+        def request(self, actor, method, path, body=None, headers=None, encoding="json"):
+            if path == "/orders/5/":
+                return 200, {"id": 5}  # the bypassed variant leaks data
+            return 403, {}  # everything else, including the canonical path, is denied
+
+    access = RuntimeAccess("http://127.0.0.1:5000", frozenset({"/orders/5"}), (), {})
+    report = run_penetration_tests(
+        _discovery(candidate), _confirmed("c1"), access=access,
+        target_endpoint_resolver=lambda c: "/orders/5", transport=_OnlyTrailingSlashVulnerable(),
+    )
+    result = report.results[0]
+    assert result.outcome is TestOutcome.EXPLOITATION_CONFIRMED
+    assert any(a.test_strategy == "trailing_slash_bypass" for a in result.attempts)
+
+
+def test_corroboration_uses_the_last_strategy_that_actually_executed_not_the_last_tried():
+    """Regression: with many templates, the strategy picked LAST for 'tried' can be one that never
+    executed (planning-gap) — corroboration must still target the last one that actually ran."""
+    from security_reviewer_v2.dynamic_penetration_agent import zap_attempt
+
+    def fake_zap(base_url, target_endpoint, *, stack_name, app_service, auth, max_seconds=180):
+        return {"workflows": [{"status": "completed", "steps": [{
+            "step": 1, "actor": "anonymous", "method": "ZAP_ACTIVE_SCAN", "path": target_endpoint,
+            "security_check": True, "status": "violation", "reason": "ZAP found an alert here.",
+            "http_status": None, "expected_status": [],
+        }]}]}
+
+    original = zap_attempt.run_scoped_attempt
+    zap_attempt.run_scoped_attempt = fake_zap
+    try:
+        candidate = _candidate()  # offers idor + idor_parameter_pollution, both blocked (no evidence/account)
+        access, transport = _access("/orders/5", transport_status=403)  # every real template: denied
+        access = RuntimeAccess(access.base_url, access.allowed_endpoints, access.accounts,
+                               access.account_definitions, access.environment,
+                               zap_context={"stack_name": "sr-test-stack", "app_service": "app"})
+        report = run_penetration_tests(
+            _discovery(candidate), _confirmed("c1"), access=access,
+            target_endpoint_resolver=lambda c: "/orders/5", transport=transport,
+        )
+    finally:
+        zap_attempt.run_scoped_attempt = original
+    result = report.results[0]
+    assert result.outcome is TestOutcome.EXPLOITATION_CONFIRMED
+    assert any("zap" in a.selected_tools for a in result.attempts)
+    # idor and idor_parameter_pollution never executed at all (no evidence/account) — they must not be
+    # mistaken for "the last executed strategy" that gets corroborated.
+    gap_strategies = {g["strategy"] for g in result.considered_but_not_executed}
+    assert "idor" in gap_strategies and "idor_parameter_pollution" in gap_strategies
+
+
+def test_path_normalization_bypass_only_ever_uses_a_proven_equivalent_path():
+    from security_reviewer_v2.dynamic_penetration_agent import path_variants
+
+    for path in ("/orders/5", "/admin/panel", "/a/b/c/5", "/x"):
+        variant = path_variants.dot_segment_detour(path)
+        if variant is not None:
+            import posixpath
+            assert posixpath.normpath(variant) == posixpath.normpath(path)
+
+
+def test_each_ai_call_gets_its_own_named_langsmith_span(monkeypatch):
+    """Regression: previously only the outer 'dynamic_penetration_agent' node had a span, so individual
+    LLM decisions never showed up in LangSmith at all — each AI call must now open its own named,
+    llm-typed span (around the actual model call, in ai_planner.py) showing the real prompt/reply."""
+    from security_reviewer_v2.dynamic_penetration_agent import ai_planner
+
+    seen = []
+
+    class _FakeRun:
+        def end(self, outputs=None):
+            pass
+
+    from contextlib import contextmanager
+
+    @contextmanager
+    def fake_node_trace(name, inputs=None, run_type="chain"):
+        seen.append((name, run_type))
+        yield _FakeRun()
+
+    monkeypatch.setattr(ai_planner, "node_trace", fake_node_trace)
+
+    class _FakeAIProvider:
+        def plan_attack(self, prompt, *, timeout_seconds):
+            return {"decision": "unauthenticated_access", "reasoning": "x"}, {}
+
+        def interpret_evidence(self, prompt, *, timeout_seconds):
+            return {"interpretation": "y"}, {}
+
+    candidate = _candidate()
+    access, transport = _access("/orders/5", transport_status=403)
+    access = RuntimeAccess(access.base_url, access.allowed_endpoints, access.accounts,
+                           access.account_definitions, access.environment, ai_provider=_FakeAIProvider())
+    run_penetration_tests(_discovery(candidate), _confirmed("c1"), access=access,
+                          target_endpoint_resolver=lambda c: "/orders/5", transport=transport)
+    seen_names = {name for name, _run_type in seen}
+    assert "ai_planner.choose_next_strategy" in seen_names
+    assert "ai_planner.interpret_evidence" in seen_names
+    # Both are llm-typed so LangSmith renders the actual prompt/reply transcript, not a plain chain span.
+    assert all(run_type == "llm" for _name, run_type in seen)
 
 
 def test_scenario_validator_rejects_an_account_outside_the_contract():

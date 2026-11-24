@@ -28,6 +28,7 @@ def main() -> int:
     parser.add_argument("--max-candidates", type=int, default=20)
     parser.add_argument("--max-context-chars", type=int, default=20_000)
     parser.add_argument("--max-batches", type=int, default=20)
+    parser.add_argument("--max-batch-overflow", type=int, default=10)
     parser.add_argument("--max-planned-targets", type=int, default=128)
     parser.add_argument("--max-hotspots-per-file", type=int, default=100)
     parser.add_argument("--max-enrichment-rounds", type=int, default=2)
@@ -49,6 +50,7 @@ def main() -> int:
         max_candidates=args.max_candidates,
         max_context_chars=args.max_context_chars,
         max_batches=args.max_batches,
+        max_batch_overflow=args.max_batch_overflow,
         max_planned_targets=args.max_planned_targets,
         max_hotspots_per_file=args.max_hotspots_per_file,
         max_enrichment_rounds=args.max_enrichment_rounds,

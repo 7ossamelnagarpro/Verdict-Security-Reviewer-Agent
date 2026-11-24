@@ -123,6 +123,7 @@ class DiscoveryState(TypedDict, total=False):
     totals: dict[str, int]
     failed: bool
     transport_failures: int           # consecutive lost responses; any successful model call resets it
+    recovery_used: bool               # a shrink/skip re-queued planned targets, so they may need batches beyond the plan
     inspected: Annotated[list[DiscoveryTarget], operator.add]
     batches: Annotated[list[DiscoveryBatch], operator.add]
     exchanges: Annotated[list[Any], operator.add]
@@ -148,7 +149,7 @@ class DiscoveryWorkflow:
 
     def _step_budget(self) -> int:
         per_batch = 3 + 3 * (self.config.max_enrichment_rounds + 1) + 2 * _MAX_SHRINKS
-        return (self.config.max_batches + 1) * per_batch + 10
+        return (self.config.max_batches + self.config.max_batch_overflow + 1) * per_batch + 10
 
     @staticmethod
     def build_graph(provider: DiscoveryProvider, config: DiscoveryConfig, inputs: DiscoveryInputs):
@@ -158,7 +159,7 @@ class DiscoveryWorkflow:
 
 def _initial_state() -> DiscoveryState:
     return {"phase": "ready", "batch_index": 0, "batch": None, "candidates": {}, "totals": {}, "failed": False,
-            "inspected": [], "batches": [], "exchanges": [], "warnings": [], "gaps": set()}
+            "recovery_used": False, "inspected": [], "batches": [], "exchanges": [], "warnings": [], "gaps": set()}
 
 
 class _Nodes:
@@ -208,7 +209,15 @@ class _Nodes:
     def select_batch(self, state: DiscoveryState) -> DiscoveryState:
         index = state["batch_index"] + 1
         pending = state["pending"]
-        if not pending or index > self.config.max_batches:
+        # The plan was already cut to fit ``max_batches`` (scope._fit_to_batches).  Runtime recovery (a shrunk batch
+        # re-queues its tail, a target that does not fit a prompt is skipped) can need more batches than that estimate,
+        # so once recovery has happened the planned tail may use a bounded overflow instead of being dropped.
+        # The grace is for runs that are making progress: while the latest batch failed, no extra batches are spent, so a
+        # provider that rejects everything cannot turn the overflow into extra paid calls.
+        batches = state.get("batches") or []
+        progressing = bool(state.get("inspected")) and (not batches or batches[-1].status == "completed")
+        allowance = self.config.max_batches + (self.config.max_batch_overflow if state.get("recovery_used") and progressing else 0)
+        if not pending or index > allowance:
             return {"batch_index": index, "batch": None, "phase": "done"}
         scope, cfg = state["scope"], self.config
         selection = pending[:min(cfg.max_targets, state["target_limit"])]
@@ -219,6 +228,7 @@ class _Nodes:
                                                       batch_scope, budget)
         if not targets:
             return {"batch_index": index, "batch": None, "phase": "skipped", "pending": pending[1:],
+                    "recovery_used": True,
                     "gaps": {f"Discovery target {selection[0].target_id} did not fit the prompt budget."}}
         included = {item.target_id for item in targets}
         return {
@@ -335,6 +345,7 @@ class _Nodes:
         # by particular targets, so later batches start at full size again (only the offender is isolated).
         learned = min(state["target_limit"], len(targets)) if len(batch.targets) > 1 and batch.reason == "size" else state["target_limit"]
         return {"phase": "call", "pending": [*requeue, *state["pending"]], "target_limit": learned,
+                "recovery_used": bool(state.get("recovery_used")) or bool(requeue),
                 "batch": replace(batch, targets=targets, prompt=prompt, budget=budget, shrinks=batch.shrinks + 1,
                                  size_ratio=None, last_error="",
                                  allowed_paths=frozenset(item.path.replace("\\", "/") for item in targets if item.path))}
@@ -418,7 +429,9 @@ class _Nodes:
         inspected = [item for item in state["inspected"] if not (item.target_id in seen or seen.add(item.target_id))]
         pending, scope = state["pending"], state["scope"]
         if pending:
-            gaps.add(f"{len(pending)} planned discovery targets were not inspected; batch or candidate budget was exhausted: "
+            gaps.add(f"{len(pending)} planned discovery targets were not inspected; batch or candidate budget was exhausted "
+                     f"(max_batches={self.config.max_batches}, max_batch_overflow={self.config.max_batch_overflow}; raise "
+                     "--ai-max-batches / --ai-max-batch-overflow, or resume only these targets): "
                      + ", ".join(item.target_id for item in pending[:20]))
         if not inspected:
             gaps.add("No discovery target was inspected.")

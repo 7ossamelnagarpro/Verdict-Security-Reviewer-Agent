@@ -217,6 +217,9 @@ def _accumulate_usage(usage: dict[str, Any], batch_usage: dict[str, Any] | None)
             value = batch_usage.get(key)
             if type(value) is int:
                 usage[key] = int(usage.get(key, 0)) + value
+        slot = batch_usage.get("key_slot")   # set by KeyPoolProvider: which of several API keys answered ("2/3"), never the key
+        if isinstance(slot, str):
+            usage["key_slots"] = {**dict(usage.get("key_slots") or {}), slot: int((usage.get("key_slots") or {}).get(slot, 0)) + 1}
 
 
 def _accept_reviews(

@@ -274,10 +274,14 @@ and metadata and has a `-NoLangSmith` escape hatch; see
 [LangSmith setup](docs/langsmith-setup.md). Tracing does not replace the local
 security evaluation report. The graph coordinates Discovery, evidence
 collection, verification, the Penetration Testing Agent, triage, Security Review
-and Policy Gate; because the Penetration Agent makes no model calls of its
-own (it is rule-based by default), it carries an explicit named trace span
-with its own input/output metadata so it still shows up as its own entry in
-LangSmith rather than leaving nothing beyond the bare graph invocation.
+and Policy Gate; the Penetration Agent carries an explicit named trace span
+(``dynamic_penetration_agent``) with its own input/output metadata so it
+shows up as its own entry even on a run with no AI planner. When
+`--penetration-ai-planner` is on, each actual model call also gets its own
+nested child span (`ai_planner.choose_next_strategy`,
+`ai_planner.interpret_evidence`) showing that one call's prompt context and
+the model's decision or interpretation — so the model's own reasoning is
+visible per attempt, not folded into one opaque node-level span.
 Agent 1 also has its own graph in `discovery/agent.py`: it plans
 the scope, runs bounded model batches, checks candidates, and loops through
 on-demand context only within its configured limits. Agent 3 has its own graph
@@ -310,13 +314,13 @@ Unreviewed groups or unresolved candidates can leave the overall gate **incomple
 
 Discovery and Security Review can both *suspect* a runtime issue, but a suspicion is not evidence. This agent exists to close that gap: for every candidate Verification has already source-grounded, it tries to actually reproduce the issue against an isolated test stack — and records every attempt, not only the ones that succeeded.
 
-**How it decides what to try.** Three fixed, read-only templates: `unauthenticated_access` (no session at all), `authorization_matrix` (an authenticated account that is not the resource's owner), and `idor` (a concrete other-account resource id cited in the candidate's own evidence — never an invented one). By default the next template is chosen from a small keyword table on the hypothesis text; with `--penetration-ai-planner`, an LLM instead reasons over the hypothesis and the full record of every prior attempt's actual result and picks the next template (or says "stop") — the model only ever names one of the three known template ids, so it gains no new execution capability, and any unusable or failed AI reply falls back to the keyword table for that one attempt.
+**How it decides what to try.** Ten fixed, read-only templates, not just a handful — `unauthenticated_access`, `authorization_matrix`, `privilege_escalation` (an account the Runtime Contract itself declares with a non-admin `role`), `idor` and `idor_parameter_pollution` (a concrete other-account resource id cited in the candidate's own evidence — never an invented one), plus five framework-level bypass probes (`head_method_bypass`, `trailing_slash_bypass`, `case_sensitivity_bypass`, `path_normalization_bypass`, `extension_suffix_bypass`) whose every variant path is derived by fixed, code-reviewed transforms in `path_variants.py` — never by the model — and, for the normalization one, only after it is mathematically proven (`posixpath.normpath`) to resolve to the exact same canonical endpoint. By default the next template is chosen from a keyword table on the hypothesis text (itself now offering most of these ten for a typical access-control hypothesis, not just two or three); with `--penetration-ai-planner`, an LLM instead reasons over the hypothesis and the full record of every prior attempt's actual result and picks freely among all ten (or says "stop") — the model only ever names one of the known template ids, so it gains no new execution capability (it cannot invent an eleventh template, a method, or a literal path of its own), and any unusable or failed AI reply falls back to the keyword table for that one attempt.
 
-**How it decides what happened.** Deterministically: each template declares the expected *denial* HTTP status (401/403/404); a response outside that set is the "violation" (confirmed exploitation), never a bare, unexamined `200`. This judgment is never delegated to an LLM.
+**How it decides what happened.** Deterministically, always: each template declares the expected *denial* HTTP status (401/403/404); a response outside that set is the "violation" (confirmed exploitation), never a bare, unexamined `200`. This judgment is never delegated to an LLM, with or without `--penetration-ai-planner`. What the flag adds on top is a short AI narrative reading of that already-decided verdict ("this denial looks solid" / "this blocked attempt looks transient, worth trying a different template") — appended to the attempt's own reasoning text, never substituted for it, and because it becomes part of that hypothesis's history, the AI planner's *next* choice is made with a genuinely richer understanding of what just happened, not just the bare status code.
 
 **How it executes.** Through `scanners/runtime_workflows.py` (the same bounded HTTP executor the DAST stage already uses) by default; it can corroborate a clean/inconclusive HTTP result once per hypothesis with a scoped ZAP active-scan attempt (needs the Agent's own disposable Compose stack) or a real, authenticated Playwright browser visit (needs Node.js), via `--dast-engine`/`--zap-auth-config` and `--browser-dast` respectively. Neither tool is ever used for free-form requests.
 
-**When it stops.** On confirmed exploitation, on exhausting every applicable template, or on hitting its request/attempt/time budget (`--penetration-max-*` flags) — whichever comes first. Final per-hypothesis states are `exploitation_confirmed`, `not_reproduced`, `inconclusive`, `blocked`, or `cannot_test`; these describe the *test result*, never the final vulnerability verdict, which still belongs to Security Review and the Policy Gate.
+**When it stops.** On confirmed exploitation, on exhausting every applicable template (now up to ten per hypothesis, hence the higher default `--penetration-max-attempts-per-hypothesis 10`), or on hitting its request/attempt/time budget (`--penetration-max-*` flags) — whichever comes first. It is always bounded, never a literal infinite loop, however many templates exist. Final per-hypothesis states are `exploitation_confirmed`, `not_reproduced`, `inconclusive`, `blocked`, or `cannot_test`; these describe the *test result*, never the final vulnerability verdict, which still belongs to Security Review and the Policy Gate.
 
 **What ends up in the report.** The Markdown and JSON reports list every attempt — including templates the Agent drew up but could never execute at all (no account available, tool unavailable) — with the exact method, path, account, expected vs. actual HTTP status, and reasoning, so a reviewer can reproduce the same request after a fix. Wherever the Agent independently confirmed exploitation, the Scanner Observations, Security Review Verdicts, and Policy Decisions sections carry an explicit "✅ Independently confirmed by the Autonomous Penetration Agent" marker next to that specific finding.
 
@@ -335,7 +339,7 @@ coverage, but do not guarantee that every vulnerability is tested.
 | Command Injection | Static scanner evidence; no fixed runtime exploitation probe |
 | Path Traversal | Static scanner evidence; no fixed runtime exploitation probe |
 | Hardcoded Secrets | Gitleaks and applicable Trivy filesystem secret checks |
-| Broken Authorization / Missing Access Control | Fixed two-user HTTP probes in Security Lab Web, **and**, for other projects with a Runtime Contract, the Penetration Agent's `authorization_matrix`/`unauthenticated_access` templates |
+| Broken Authorization / Missing Access Control | Fixed two-user HTTP probes in Security Lab Web, **and**, for other projects with a Runtime Contract, the Penetration Agent's `authorization_matrix`/`unauthenticated_access`/`privilege_escalation` templates |
 | IDOR | Fixed two-user order and profile HTTP probes in Security Lab Web, **and** the Penetration Agent's `idor` template where the candidate's own evidence cites a concrete other-account resource id |
 | CORS Misconfiguration | Fixed HTTP check for reflected origin with credentials |
 | Vulnerable Dependencies | Trivy filesystem scan where supported manifests and vulnerability data exist |
