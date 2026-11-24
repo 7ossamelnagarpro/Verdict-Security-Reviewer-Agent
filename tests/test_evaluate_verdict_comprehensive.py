@@ -107,3 +107,34 @@ def test_normalizer_keeps_the_workflow_assertion_facts_the_audit_needs():
                                      "expected_statuses": [403], "assertion_results": [False], "token": "secret"})
     assert kept == {"assertion_results": [False], "expected_statuses": [403], "method": "GET", "status": 200,
                     "step": 3, "workflow_id": "order_owner"}
+
+
+def _penetration_only_result() -> dict:
+    truth = json.loads(TRUTH.read_text(encoding="utf-8"))
+    penetration_test = {"status": "completed", "results": [{
+        "candidate_id": "ai-xyz", "outcome": "exploitation_confirmed", "attempts": [{"target_endpoint": "/orders/5"}]}]}
+    return evaluate(truth, {"project": "targets/verdict-comprehensive-lab",
+                            "status": "partial", "security_review": {"status": "partial"}},   # the pre-review summary is stale
+                    {"status": "completed", "findings": []}, {"groups": []}, {"status": "completed", "reviews": []},
+                    penetration_test=penetration_test)
+
+
+def test_penetration_signal_is_described_in_words_not_as_group_none() -> None:
+    result = _penetration_only_result()
+    for text in (html_report(result), markdown(result)):
+        assert "group None" not in text and "`None`" not in text
+        assert "Penetration Agent reproduced the issue at /orders/5" in text
+        assert "no scanner rule or review group" in text
+
+
+def test_review_status_comes_from_the_review_that_was_scored_not_the_pre_review_summary() -> None:
+    provenance = _penetration_only_result()["scan_provenance"]
+    assert provenance["security_review"]["status"] == "completed"       # not the stale "partial"
+    assert provenance["security_review"]["reviewed_groups"] == provenance["security_review"]["expected_groups"] == 0
+    assert "completed · 0/0 groups" in html_report(_penetration_only_result())
+
+
+def test_headline_says_how_many_detections_rest_only_on_the_penetration_agent() -> None:
+    result = _penetration_only_result()
+    assert "1 rest only on the Penetration Agent" in html_report(result)
+    assert "detected_via_penetration_agent" not in html_report(result)  # no raw JSON key in user-facing text

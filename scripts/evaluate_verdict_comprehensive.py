@@ -203,7 +203,10 @@ def evaluate(truth: dict[str, Any], scan: dict[str, Any], merged: dict[str, Any]
                                 "sast_requirement": scan.get("sast_requirement"),
                                 "scanner_requirement": scan.get("scanner_requirement"),
                                 "ai_discovery": scan.get("ai_discovery"),
-                                "security_review": scan.get("security_review"),
+                                # The audit above only runs on a completed review, so report THAT review. The pre-review
+                                # summary was written before the review stage and still says "partial".
+                                "security_review": {**(scan.get("security_review") or {}), "status": review.get("status"),
+                                                    "reviewed_groups": len(reviews), "expected_groups": len(groups)},
                                 "endpoint_coverage": scan.get("endpoint_coverage"),
                                 "coverage_gaps": scan.get("coverage_gaps", []),
                                 "merged_findings": len(findings), "reviewed_groups": len(groups)},
@@ -218,8 +221,8 @@ def evaluate(truth: dict[str, Any], scan: dict[str, Any], merged: dict[str, Any]
             "limitations": ["Held-out comparison of one saved run; the benchmark was not supplied to scanning or AI.",
                             "Only exact source signatures and positive reviewed verdicts count as detected, "
                             "OR the Penetration Agent independently reaching exploitation_confirmed on that "
-                            "exact endpoint (see summary.detected_via_penetration_agent for how many of the "
-                            "detected cases rest on that second path rather than a scanner/workflow signature).",
+                            "exact endpoint; the number of detected cases that rest only on that second path is listed "
+                            "under 'Detections by origin'.",
                             "A case without a defined signature remains not detected by this strict audit, even if a broader finding might deserve manual review.",
                             "Needs-review evidence is not counted as detected; not-detected does not mean safe.",
                             "Safe controls need a separate specificity audit; precision and F1 are not estimated.",
@@ -296,6 +299,15 @@ def _percent(value: float | None) -> str:
     return "n/a" if value is None else f"{value:.1%}"
 
 
+def _signal_text(item: dict[str, Any]) -> str:
+    """One matched signal in words. A Penetration Agent signal has no scanner and no review group by design."""
+    if item.get("origin") == "penetration_agent":
+        return (f"Penetration Agent reproduced the issue at {item['path']} (exploitation_confirmed, candidate "
+                f"{item.get('source_finding_id') or 'n/a'}) \u2192 counted as detected; this signal has no scanner rule or review group")
+    return (f"{item['scanner'] or 'unknown'} / {item['rule_id']} @ {item['path']} \u2192 {item['verdict']} "
+            f"(group {item['group_id']})")
+
+
 def _finding_line(item: dict[str, Any]) -> str:
     where = ", ".join(item["routes"]) or "no route resolved"
     near = f" · near known case {', '.join(item['known_cases'])}" if item.get("known_cases") else ""
@@ -326,8 +338,10 @@ def _audit_sections(result: dict[str, Any]) -> list[tuple[str, list[str]]]:
     calibration = summary["verdict_calibration"]
     usage = result["scan_provenance"].get("ai_discovery_usage") or {}
     return [
-        ("Detections by origin (static / dynamic)",
-         [f"{origin.replace('+', ' + ')}: {count} case(s)" for origin, count in summary["detections_by_origin"].items()]),
+        ("Detections by origin (scanner signal, dynamic test, penetration agent)",
+         [f"{origin.replace('+', ' + ')}: {count} case(s)" for origin, count in summary["detections_by_origin"].items()]
+         + [f"Detected ONLY because the Penetration Agent reproduced it (no scanner/workflow signature): "
+            f"{summary['detected_via_penetration_agent']} case(s)"]),
         ("Verdict calibration (how each outcome class was judged)",
          [f"{outcome.replace('_', ' ')}: " + ", ".join(f"{verdict.replace('_', ' ')} {count}" for verdict, count in counts.items())
           for outcome, counts in calibration.items()]),
@@ -398,10 +412,7 @@ def markdown(result: dict[str, Any]) -> str:
                 lines.append(f"- Flagged by group(s): {', '.join(row['flagged_by'])}")
             if row["signals"]:
                 lines.append("- Matched reviewed signals:")
-                lines.extend(f"  - `{item['group_id']}` / `{item['finding_id']}`: "
-                             f"{item['scanner'] or 'unknown scanner'} · `{item['rule_id']}` at "
-                             f"`{item['path']}`; review verdict `{item['verdict']}`"
-                             for item in row["signals"])
+                lines.extend(f"  - {_signal_text(item)}" for item in row["signals"])
             else:
                 lines.append("- Matched reviewed signals: none")
             lines.append("")
@@ -435,8 +446,7 @@ def html_report(result: dict[str, Any]) -> str:
                 ("Expected behavior", row["expected_behavior"]), ("Proof", row["proof_ref"]),
                 ("Source / origin", f"{row['source'] or 'not recorded'}; origin: {', '.join(row['origin']) or 'not recorded'}"),
                 ("Audit signatures", [f"{item['rule_id']} @ {item['path']}" for item in row["expected_signatures"]] or ["No exact signature defined"]),
-                ("Matched evidence", [f"{item['scanner'] or 'unknown'} / {item['rule_id']} @ {item['path']} → {item['verdict']} (group {item['group_id']})"
-                                      for item in row["signals"]] or ["No exact reviewed signal"]),
+                ("Matched evidence", [_signal_text(item) for item in row["signals"]] or ["No exact reviewed signal"]),
                 *extra_details,
             ],
         })
@@ -445,20 +455,24 @@ def html_report(result: dict[str, Any]) -> str:
         headline="Known vulnerabilities found by the saved scan",
         intro="Ground truth was used only after the saved scan and review were complete. This is not a claim of exhaustive vulnerability coverage.",
         gauge=(summary["detected"], summary["known_positive_cases"], "known-positive cases detected"),
-        notes=([f"Precision bounds, not a point estimate: labeled-only {_percent(summary['precision_on_labeled'])} (optimistic), "
+        notes=([f"Of the {summary['detected']} detected cases, {summary['detected_via_penetration_agent']} rest only on the "
+                f"Penetration Agent reproducing the issue on a running test stack; the rest have a scanner, workflow or reviewed signal.",
+                f"Precision bounds, not a point estimate: labeled-only {_percent(summary['precision_on_labeled'])} (optimistic), "
                 f"in-scope lower bound {_percent(summary['precision_lower_bound_in_scope'])}, strict lower bound "
                 f"{_percent(summary['precision_lower_bound'])} (pessimistic). Safe-control specificity: "
                 f"{_percent(summary['safe_control_specificity'])} ({summary['safe_controls_flagged']} flagged).",
                 f"{summary['not_detected_without_signature']} of {summary['not_detected']} not-detected cases have no signature at all, "
                 "so this audit could never credit them. A missing exact match does not prove the application is safe."]
                if audited else
-               ["Precision and F1 are not calculated: safe controls and unmatched findings require manual adjudication. "
+               [f"Of the {summary['detected']} detected cases, {summary['detected_via_penetration_agent']} rest only on the "
+                "Penetration Agent reproducing the issue on a running test stack.",
+                "Precision and F1 are not calculated: safe controls and unmatched findings require manual adjudication. "
                 "A missing exact match does not prove the application is safe."]),
-        provenance=[("Project", friendly_name(provenance["project"])), ("Scan status", provenance["scan_status"]),
+        provenance=[("Project", friendly_name(provenance["project"])), ("Scan status (before AI review)", provenance["scan_status"]),
                     ("Scanners", ", ".join(provenance["adapters"])),
-                    ("Findings", f"{provenance['merged_findings']} merged · {provenance['reviewed_groups']} reviewed groups"),
+                    ("Findings", f"{provenance['merged_findings']} merged · {provenance['reviewed_groups']} issue groups"),
                     ("AI discovery", f"{discovery.get('provider', 'unknown')} / {discovery.get('model', 'unknown')}"),
-                    ("AI review", review.get("status", "unknown")),
+                    ("AI review", f"{review.get('status', 'unknown')} · {review.get('reviewed_groups', '?')}/{review.get('expected_groups', '?')} groups"),
                     *([("Precision (in-scope lower bound)", _percent(summary["precision_lower_bound_in_scope"])),
                        ("Safe-control specificity", _percent(summary["safe_control_specificity"])),
                        ("Findings awaiting adjudication", len(result["adjudication_queue"]))] if audited else [])],
