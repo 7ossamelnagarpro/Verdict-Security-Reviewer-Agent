@@ -1,0 +1,747 @@
+{
+  "schema_version": "1.0",
+  "status": "partial",
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "reviews": [
+    {
+      "candidate_id": "merged-4c6d36222f8ebf7f1f68",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "medium",
+      "title": "X-Content-Type-Options Header Missing",
+      "explanation": "The scanner (zap.10021) observed that a GET request to '/' did not include the X-Content-Type-Options header in the response. The provided source code does not set this header anywhere, so the application likely returns responses without the protective header.",
+      "impact": "Without the X-Content-Type-Options: nosniff header, browsers may attempt to MIME-sniff the content, potentially allowing content-type confusion attacks such as cross-site scripting (XSS).",
+      "remediation": "Configure the FastAPI application to include the X-Content-Type-Options header on all responses, e.g., using a middleware that adds `response.headers['X-Content-Type-Options'] = 'nosniff'`.",
+      "evidence": [
+        "Scanner rule zap.10021 reported missing X-Content-Type-Options on GET /",
+        "Source excerpt shows no header-setting logic"
+      ],
+      "limitations": [
+        "No direct capture of the actual HTTP response headers from the running application; confirmation relies on scanner observation only."
+      ],
+      "source_ids": [
+        "merged-4c6d36222f8ebf7f1f68"
+      ]
+    },
+    {
+      "candidate_id": "merged-15dd977d52312c30635a",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Job listing endpoint may lack proper admin authorization check",
+      "explanation": "The endpoint /admin/jobs calls a function principal(authorization) before accessing the database, but the supplied source excerpt does not show the implementation of principal. The runtime probe observed that a GET request to /admin/jobs returned HTTP 200 instead of the expected 403/404, indicating that the authorization check either does not reject non‑admin users or is ineffective. No additional scanner evidence of higher severity or independent corroboration is provided.",
+      "impact": "If the authorization check is missing or ineffective, any authenticated user (or possibly unauthenticated users) could retrieve the full list of jobs, potentially exposing sensitive internal data and enabling further attacks.",
+      "remediation": "Implement or verify that the principal function enforces that the caller has an admin role before proceeding. Return an appropriate error (e.g., 403 Forbidden) for non‑admin requests. Add unit and integration tests to confirm the enforcement.",
+      "evidence": [
+        "Source excerpt shows admin_jobs endpoint calling principal(authorization) but does not reveal its logic",
+        "Runtime probe fact: GET /admin/jobs returned status 200 when 403/404 were expected"
+      ],
+      "limitations": [
+        "Missing the implementation of principal() to confirm whether it performs an admin role check",
+        "No independent scanner finding of medium or higher severity confirming the flaw"
+      ],
+      "source_ids": [
+        "merged-15dd977d52312c30635a"
+      ]
+    },
+    {
+      "candidate_id": "merged-d58491aad5be35b48233",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Potential privilege escalation via /admin/token-report",
+      "explanation": "The endpoint checks the role field in the token and raises a 403 for non‑admin users. However, the runtime probe reports a 200 response for a GET request, indicating the check may be ineffective or bypassed. The source code alone shows a guard, but the observed behavior contradicts it, suggesting a possible flaw in token extraction or validation.",
+      "impact": "An attacker could access administrative functionality without proper privileges, leading to data leakage or unauthorized actions.",
+      "remediation": "Verify that the principal function correctly validates and extracts the role from the Authorization header. Ensure that missing or malformed tokens are rejected and that role checks cannot be bypassed. Add explicit validation and logging for token parsing failures.",
+      "evidence": [
+        "Source excerpt shows role check and 403 raise (lines 661‑664).",
+        "Runtime probe fact: GET /admin/token-report returned status 200, assertion_results false (expected 403)."
+      ],
+      "limitations": [
+        "Missing implementation of the principal() function to confirm how the token is parsed and role is determined.",
+        "No evidence of token values used in the probe; cannot determine if a valid admin token was supplied.",
+        "Unclear whether other middleware or guards affect the endpoint."
+      ],
+      "source_ids": [
+        "merged-d58491aad5be35b48233"
+      ]
+    },
+    {
+      "candidate_id": "merged-c5b44871f1955b338344",
+      "verdict": "confirmed_vulnerability",
+      "severity": "high",
+      "confidence": "high",
+      "title": "User listing endpoint lacks proper admin authorization check",
+      "explanation": "The /admin/users endpoint calls a generic principal() function but does not enforce that the authenticated principal has an admin role before querying and returning all user records, including sensitive fields such as SSN. No role‑based guard is visible in the supplied code snippet.",
+      "impact": "An attacker who can obtain any valid authorization header can retrieve the full list of users and their sensitive data, leading to privacy breaches and potential credential harvesting.",
+      "remediation": "Add an explicit check that the authenticated principal has the required admin role before executing the database query, and return a 403 response when the check fails. Example:\n```python\nif not principal_has_role(authorization, \"admin\"):\n    raise HTTPException(status_code=403, detail=\"Forbidden\")\n```",
+      "evidence": [
+        "Source code shows admin_users endpoint calls principal() but lacks role verification (lines 278‑282).",
+        "Runtime probe fact indicates a GET request to /admin/users returned HTTP 200 instead of the expected 403/404, confirming the endpoint is accessible without admin rights."
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-c5b44871f1955b338344"
+      ]
+    },
+    {
+      "candidate_id": "merged-0bcbb317cfb96e7d5505",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "medium",
+      "title": "Cookie No HttpOnly Flag",
+      "explanation": "The source code sets a session cookie with `response.set_cookie(\"lab_session\", f\"session-{row['id']}\")` and does not specify the `HttpOnly` attribute. The runtime probe confirms the endpoint is reachable via POST, but does not capture the Set-Cookie header to verify the flag. No guard or security header is present in the supplied context to mitigate client‑side script access to the cookie.",
+      "impact": "An attacker who can execute JavaScript in the victim's browser could read the `lab_session` cookie, potentially hijack the user's session and gain unauthorized access to protected resources.",
+      "remediation": "Set the `HttpOnly` flag when creating the cookie, e.g., `response.set_cookie(\"lab_session\", f\"session-{row['id']}\", httponly=True)`. Consider also adding `Secure` and `SameSite` attributes as appropriate.",
+      "evidence": [
+        "source_excerpt lines 288‑301 show the cookie being set without HttpOnly",
+        "runtime_probe_facts indicate the POST endpoint is exercised"
+      ],
+      "limitations": [
+        "Missing captured HTTP response showing the Set-Cookie header without the HttpOnly attribute",
+        "No independent scanner finding of medium or higher severity confirming the flag is absent"
+      ],
+      "source_ids": [
+        "merged-0bcbb317cfb96e7d5505"
+      ]
+    },
+    {
+      "candidate_id": "merged-56ecc860a2c48330a29a",
+      "verdict": "confirmed_vulnerability",
+      "severity": "medium",
+      "confidence": "medium",
+      "title": "Missing Anti-clickjacking Header",
+      "explanation": "The /auth/form-login endpoint returns an HTMLResponse without setting any anti-clickjacking header such as X-Frame-Options or Content-Security-Policy frame-ancestors. The source excerpt shows no call to response.headers.set or similar. The runtime probe confirms the endpoint is reachable via POST, and the scanner finding flags the missing header, providing independent corroboration.",
+      "impact": "An attacker can embed the login page in a hidden iframe on a malicious site and potentially trick users into submitting credentials (clickjacking), leading to credential theft or session hijacking.",
+      "remediation": "Add an appropriate anti-clickjacking header to the response, e.g., `response.headers['X-Frame-Options'] = 'DENY'` or configure a Content‑Security‑Policy with `frame-ancestors 'none'`. Ensure this header is applied to all HTML responses.",
+      "evidence": [
+        "Source excerpt shows response creation without header setting",
+        "Runtime probe fact indicates POST method to /auth/form-login",
+        "Scanner finding (zap.10020) reports missing anti-clickjacking header"
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-56ecc860a2c48330a29a"
+      ]
+    },
+    {
+      "candidate_id": "merged-69b75a0aa3f8fc9fb800",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "high",
+      "title": "Content Security Policy (CSP) Header Not Set",
+      "explanation": "The source code for the `/auth/form-login` endpoint does not set any security‑related response headers. The scanner reported that the CSP header is missing for POST requests to this path. No code fragment shows a `response.headers['Content‑Security‑Policy']` assignment or a middleware that would add it, and the runtime probe only confirms the request method and that values were redacted, not the presence or absence of CSP. Consequently, the finding is plausible but lacks direct evidence that the header is indeed omitted in the running application.",
+      "impact": "Without a CSP header, the application is vulnerable to client‑side injection attacks such as cross‑site scripting (XSS). An attacker could inject malicious scripts that execute in the victim’s browser, potentially stealing session cookies or performing actions on behalf of the user.",
+      "remediation": "Add a strict Content‑Security‑Policy header to all responses, preferably via a centralized middleware. Example (FastAPI):\n```python\nfrom starlette.middleware.base import BaseHTTPMiddleware\n\nclass CSPMiddleware(BaseHTTPMiddleware):\n    async def dispatch(self, request, call_next):\n        response = await call_next(request)\n        response.headers['Content-Security-Policy'] = \"default-src 'self'; script-src 'self'\"\n        return response\n```\nRegister the middleware in the FastAPI app. Adjust the policy to match the application’s needs.",
+      "evidence": [
+        "Scanner finding: \"Content Security Policy (CSP) Header Not Set\" for path /auth/form-login",
+        "Source excerpt shows no CSP header being set in the form_login handler"
+      ],
+      "limitations": [
+        "No runtime observation of the actual response headers confirming that CSP is missing",
+        "No evidence that a global middleware or server configuration adds the CSP header elsewhere"
+      ],
+      "source_ids": [
+        "merged-69b75a0aa3f8fc9fb800"
+      ]
+    },
+    {
+      "candidate_id": "merged-efce9419c25ced2d8892",
+      "verdict": "confirmed_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Password reset tokens must be single use",
+      "explanation": "The source code for the password reset confirmation endpoint retrieves a token from the database but does not invalidate or delete the token after a successful password change. The runtime probe shows that a POST to /auth/reset/confirm with a reused token returns HTTP 200, indicating the token can be used multiple times. This demonstrates a missing single‑use enforcement, allowing token replay attacks.",
+      "impact": "An attacker who obtains a valid password reset token can reuse it to reset the victim's password multiple times, leading to account takeover.",
+      "remediation": "Invalidate or delete the reset token after a successful password change, and optionally add a used‑flag column with a check before processing. Ensure the token is single‑use and has an expiration.",
+      "evidence": [
+        "Source excerpt shows token lookup without deletion (lines 577‑585)",
+        "Runtime probe fact indicates POST to /auth/reset/confirm returned 200 instead of expected error codes, confirming token reuse"
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-efce9419c25ced2d8892"
+      ]
+    },
+    {
+      "candidate_id": "merged-4a2311054cdc2bfe890d",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "high",
+      "title": "Content Security Policy (CSP) Header Not Set",
+      "explanation": "The endpoint /catalog/query returns HTML content but the supplied source excerpt does not show any middleware or response handling that adds a Content‑Security‑Policy header. The runtime probe records a GET request to this path but does not capture response headers, so the absence of CSP is not directly observed. The scanner flagged the missing CSP header, providing medium‑severity evidence, but without concrete header data the finding cannot be confirmed.",
+      "impact": "Without a CSP header, browsers may allow execution of unsafe inline scripts or loading of resources from untrusted origins, increasing the risk of cross‑site scripting (XSS) and data‑exfiltration attacks.",
+      "remediation": "Add a CSP header to the response, e.g., via FastAPI middleware or a custom response class:\n```python\nfrom starlette.middleware.base import BaseHTTPMiddleware\n\nclass CSPMiddleware(BaseHTTPMiddleware):\n    async def dispatch(self, request, call_next):\n        response = await call_next(request)\n        response.headers['Content‑Security‑Policy'] = \"default-src 'self'; script-src 'self'\"\n        return response\n\napp.add_middleware(CSPMiddleware)\n```",
+      "evidence": [
+        "Scanner finding: Content Security Policy (CSP) Header Not Set (zap.10038) for /catalog/query"
+      ],
+      "limitations": [
+        "No captured response headers from the runtime probe to definitively show the CSP header is missing.",
+        "No code evidence of CSP header being set elsewhere in the application (e.g., middleware, global response handling)."
+      ],
+      "source_ids": [
+        "merged-4a2311054cdc2bfe890d"
+      ]
+    },
+    {
+      "candidate_id": "merged-a6e788cfc5d9d1297feb",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "medium",
+      "title": "X-Content-Type-Options Header Missing",
+      "explanation": "The endpoint /catalog/query returns HTML content without setting the X-Content-Type-Options: nosniff header. The supplied source excerpt shows the route definition but does not include any response header manipulation. A runtime probe confirms the endpoint is reachable via GET, but no response header data is provided to prove the header is absent. No guard or configuration is shown that would add the header elsewhere in the application.",
+      "impact": "Browsers may perform MIME type sniffing on the response, potentially allowing content injection attacks such as cross‑site scripting if an attacker can influence the response body.",
+      "remediation": "Add the X-Content-Type-Options header with the value \"nosniff\" to the response, e.g., by using FastAPI's Response class or a middleware that sets the header for all HTML responses.",
+      "evidence": [
+        "Source excerpt shows the /catalog/query route returning HTMLResponse without header handling.",
+        "Runtime probe fact indicates a GET request to /catalog/query was made (web-runtime zap.10021)."
+      ],
+      "limitations": [
+        "No captured HTTP response headers to definitively demonstrate the header is missing.",
+        "No evidence that the application sets the header globally via middleware or server configuration."
+      ],
+      "source_ids": [
+        "merged-a6e788cfc5d9d1297feb"
+      ]
+    },
+    {
+      "candidate_id": "merged-a9a9a0b97f19f8bf52ae",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "medium",
+      "title": "Missing Anti-clickjacking Header",
+      "explanation": "The endpoint /catalog/query returns HTML content but the supplied source excerpt and runtime probe do not show any X-Frame-Options or Content‑Security‑Policy frame‑ancestors header being set. The scanner flagged the missing anti‑clickjacking header, and the runtime probe confirms the endpoint is reachable via GET, but no response header evidence is provided.",
+      "impact": "An attacker could embed the page in a malicious iframe, enabling clickjacking attacks that trick users into performing unintended actions.",
+      "remediation": "Add an appropriate anti‑clickjacking header (e.g., `X-Frame-Options: SAMEORIGIN` or a CSP `frame‑ancestors` directive) to the response for the /catalog/query endpoint.",
+      "evidence": [
+        "Runtime probe indicates GET request to /catalog/query (web-runtime zap.10020)"
+      ],
+      "limitations": [
+        "Missing captured HTTP response headers showing the absence of X-Frame-Options or CSP frame‑ancestors header; no evidence that the application sets these headers elsewhere."
+      ],
+      "source_ids": [
+        "merged-a9a9a0b97f19f8bf52ae"
+      ]
+    },
+    {
+      "candidate_id": "merged-6e468e09eab3ca889e3d",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "medium",
+      "title": "Missing Anti-clickjacking Header",
+      "explanation": "The endpoint /comments returns HTML content without any anti-clickjacking headers such as X-Frame-Options or Content-Security-Policy frame-ancestors. The source excerpt shows the response is built as a plain string and returned via FastAPI's HTMLResponse, and no header manipulation is visible. The runtime probe confirms the endpoint is reachable via GET, but does not capture response headers, so the missing header is not directly observed.",
+      "impact": "An attacker could embed the page in a malicious iframe, enabling clickjacking attacks that trick users into performing unintended actions.",
+      "remediation": "Add appropriate anti-clickjacking headers to the response, e.g., set X-Frame-Options: SAMEORIGIN or Content-Security-Policy: frame-ancestors 'self' on the FastAPI route or globally via middleware.",
+      "evidence": [
+        "Source excerpt shows HTMLResponse returned without header modifications (lines 173-177).",
+        "Runtime probe fact confirms GET request to /comments (web-runtime zap.10020)."
+      ],
+      "limitations": [
+        "No captured response headers confirming the header is absent; need runtime evidence that X-Frame-Options or CSP headers are missing."
+      ],
+      "source_ids": [
+        "merged-6e468e09eab3ca889e3d"
+      ]
+    },
+    {
+      "candidate_id": "merged-81ff94e895c53dbc2029",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "high",
+      "title": "Content Security Policy (CSP) Header Not Set",
+      "explanation": "The /comments endpoint returns an HTML response constructed from database rows without any indication that a Content‑Security‑Policy header is added to the response. The source excerpt shows only the HTML generation logic and no header manipulation. The scanner flagged the missing CSP header based on the observed HTTP response, but no runtime probe fact confirming the absence of the header is provided.",
+      "impact": "Without a CSP header, browsers are free to execute inline scripts and load resources from any origin, increasing the risk of cross‑site scripting (XSS) and data‑injection attacks.",
+      "remediation": "Add a CSP header to the response, e.g., using FastAPI's Response class or a middleware to set `Content‑Security‑Policy: default-src 'self';` (or a policy appropriate to the application).",
+      "evidence": [
+        "Source excerpt shows HTML response generation without CSP header logic (lines 173‑177).",
+        "Scanner reported \"Content Security Policy (CSP) Header Not Set\" for /comments."
+      ],
+      "limitations": [
+        "No runtime probe fact confirming that the CSP header is absent in the actual HTTP response.",
+        "No evidence that the application sets CSP headers globally via middleware or server configuration."
+      ],
+      "source_ids": [
+        "merged-81ff94e895c53dbc2029"
+      ]
+    },
+    {
+      "candidate_id": "merged-d716d5afb61da294d286",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "medium",
+      "title": "X-Content-Type-Options Header Missing",
+      "explanation": "The endpoint `/comments` returns HTML content without setting the `X-Content-Type-Options: nosniff` header. The source excerpt shows the response is built and returned directly, and no middleware or response‑modifying code is visible that would add security headers. The scanner runtime probe reports a GET request to this path and flags the missing header.",
+      "impact": "Without the `X-Content-Type-Options` header, browsers may perform MIME type sniffing, potentially allowing content injection attacks such as cross‑site scripting if an attacker can influence the response body.",
+      "remediation": "Add a middleware or response decorator that sets `X-Content-Type-Options: nosniff` for all HTML responses, e.g., using FastAPI's `Response` headers or a Starlette middleware.",
+      "evidence": [
+        "Source excerpt shows `/comments` endpoint returns HTML without header manipulation",
+        "Scanner runtime probe (zap.10021) flagged missing X-Content-Type-Options header for GET /comments"
+      ],
+      "limitations": [
+        "No captured HTTP response headers confirming the header is absent; the assessment relies on the scanner’s claim rather than direct evidence"
+      ],
+      "source_ids": [
+        "merged-d716d5afb61da294d286"
+      ]
+    },
+    {
+      "candidate_id": "merged-f5fff899f9294177dc70",
+      "verdict": "confirmed_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Debug configuration is unavailable anonymously",
+      "explanation": "The source code defines a GET endpoint at /debug/config that returns sensitive configuration values (database URL, mock external URL, and application secret) without any authentication or authorization checks. A runtime probe confirms that an unauthenticated GET request to this endpoint receives a 200 OK response, whereas the expected behavior would be a 401/403/404. The combination of the source excerpt and independent runtime observation satisfies the criteria for a confirmed vulnerability.",
+      "impact": "An attacker can retrieve critical configuration data, including database connection strings and secret keys, enabling further attacks such as database compromise, credential reuse, or service impersonation.",
+      "remediation": "Add proper authentication and authorization checks to the /debug/config endpoint, ensuring that only authorized personnel can access configuration data. Consider removing the endpoint from production or restricting it to internal use only. Also, avoid exposing secrets via environment variables in responses.",
+      "evidence": [
+        "Source code defines /debug/config endpoint returning DATABASE_URL, MOCK_EXTERNAL_URL, and APP_SECRET without checks (lines 320-322).",
+        "Runtime probe fact: GET /debug/config returned status 200, while expected statuses were 401, 403, or 404 (web-runtime rule workflow.debug_access.1)."
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-f5fff899f9294177dc70"
+      ]
+    },
+    {
+      "candidate_id": "merged-19f4a13e0b2d4f7413d0",
+      "verdict": "needs_more_evidence",
+      "severity": "low",
+      "confidence": "high",
+      "title": "Missing Content-Security-Policy header",
+      "explanation": "The scanner reports that the /healthz endpoint returned a 200 response without a Content‑Security‑Policy header. The source code for the endpoint does not set any response headers, but the provided data does not include the actual HTTP response headers to confirm that the header is absent. Without concrete response data or additional runtime probing that captures the headers, the claim cannot be confirmed.",
+      "impact": "Absence of a CSP header can allow certain classes of cross‑site scripting or data‑injection attacks if the endpoint is ever rendered in a browser context, potentially leading to content injection or data leakage.",
+      "remediation": "Configure the FastAPI application (or the underlying ASGI server) to include a Content‑Security‑Policy header on all responses, e.g., using a middleware that adds the header with an appropriate policy directive.",
+      "evidence": [
+        "Scanner runtime probe fact: web.missing-content-security-policy reported for path /healthz with status 200"
+      ],
+      "limitations": [
+        "Missing concrete HTTP response header capture for /healthz; need runtime observation of response headers to verify that CSP is indeed absent."
+      ],
+      "source_ids": [
+        "merged-19f4a13e0b2d4f7413d0"
+      ]
+    },
+    {
+      "candidate_id": "merged-87e0399272a390813ea5",
+      "verdict": "needs_more_evidence",
+      "severity": "low",
+      "confidence": "medium",
+      "title": "Missing clickjacking protection header",
+      "explanation": "The healthz endpoint is defined and returns a 200 response, but no evidence is provided that the X‑Frame‑Options or Content‑Security‑Policy headers are absent or present. The runtime probe only reports the HTTP status code, not the response headers, and the scanner finding is not corroborated by concrete header data.",
+      "impact": "Without clickjacking protection headers, the endpoint could be embedded in a malicious site, potentially allowing UI redressing attacks.",
+      "remediation": "Add appropriate clickjacking protection headers (e.g., X‑Frame‑Options: SAMEORIGIN or Content‑Security‑Policy: frame‑ancestors 'self') to the response for the /healthz endpoint.",
+      "evidence": [
+        "Source excerpt defining the /healthz endpoint",
+        "Runtime probe fact showing status 200 for /healthz"
+      ],
+      "limitations": [
+        "No response header data showing the absence of X‑Frame‑Options or CSP headers",
+        "No independent scanner confirmation beyond the rule trigger"
+      ],
+      "source_ids": [
+        "merged-87e0399272a390813ea5"
+      ]
+    },
+    {
+      "candidate_id": "merged-916563c278b3e6b62930",
+      "verdict": "needs_more_evidence",
+      "severity": "low",
+      "confidence": "medium",
+      "title": "X-Content-Type-Options Header Missing",
+      "explanation": "The scanner reports that the HTTP response for GET /healthz does not include the X-Content-Type-Options header. The provided source excerpt shows only the FastAPI endpoint implementation and does not demonstrate how response headers are set. No code or configuration evidence is supplied that confirms the header is omitted, nor is there runtime probe data showing the actual response headers. Without concrete evidence of the missing header in the observed response, the finding cannot be confirmed.",
+      "impact": "If the X-Content-Type-Options header is absent, browsers may perform MIME type sniffing, potentially allowing content injection attacks such as cross‑site scripting when the response is interpreted as a different type than intended.",
+      "remediation": "Configure the FastAPI application or the underlying ASGI server to include the header, e.g., using a middleware that adds `X-Content-Type-Options: nosniff` to all responses, or set it explicitly in the endpoint response.",
+      "evidence": [
+        "Scanner report: X-Content-Type-Options Header Missing for path /healthz (zap.10021)"
+      ],
+      "limitations": [
+        "No source code showing header handling or omission",
+        "No runtime probe showing actual response headers for /healthz",
+        "No configuration or middleware evidence that would add or omit the header"
+      ],
+      "source_ids": [
+        "merged-916563c278b3e6b62930"
+      ]
+    },
+    {
+      "candidate_id": "merged-bbf1646deeb18d1e95db",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "high",
+      "title": "Missing X-Content-Type-Options header",
+      "explanation": "The /healthz endpoint returns a 200 response but the runtime probe did not observe an X-Content-Type-Options header. The source code shows the endpoint implementation but does not set any security headers. This suggests the header may be omitted in production, which can allow MIME type sniffing attacks. However, the evidence is limited to a single runtime probe and the scanner finding; there is no direct observation of the header in the actual response or a guard that adds it elsewhere in the codebase.",
+      "impact": "An attacker could exploit MIME type sniffing to execute malicious content in the context of the application, potentially leading to cross‑site scripting or other client‑side attacks.",
+      "remediation": "Add the X-Content-Type-Options: nosniff header to all HTTP responses, e.g., by configuring the web framework or adding middleware that sets this header globally.",
+      "evidence": [
+        "Source excerpt shows the /healthz endpoint implementation without header handling",
+        "Runtime probe fact: web.missing-content-type-protection rule triggered for path /healthz with status 200"
+      ],
+      "limitations": [
+        "No captured HTTP response headers confirming the header is absent in the live service",
+        "No evidence that another part of the application adds the header globally (e.g., middleware, reverse proxy)"
+      ],
+      "source_ids": [
+        "merged-bbf1646deeb18d1e95db"
+      ]
+    },
+    {
+      "candidate_id": "merged-b98074828fe298997980",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Incoming webhook events require a valid signature",
+      "explanation": "The endpoint `/integrations/hook` accepts a POST request, reads the raw body, and stores it directly in the database without any verification of a cryptographic signature or authentication token. The supplied source excerpt shows no signature validation logic before the insert. A runtime probe sent a POST request to this endpoint and received HTTP 200, whereas the probe contract expected a 4xx response for unsigned requests, indicating the endpoint processes unauthenticated payloads.",
+      "impact": "An attacker can craft arbitrary webhook payloads and submit them to the endpoint, causing unauthorized data insertion, potential injection attacks, or abuse of downstream processing that trusts the stored data. This may lead to data corruption, privilege escalation, or denial‑of‑service.",
+      "remediation": "Add verification of a request signature (e.g., HMAC with a shared secret) or require authentication before processing the payload. Reject requests that fail verification with an appropriate 4xx status code. Log verification failures for monitoring.",
+      "evidence": [
+        "Source excerpt shows the hook handler inserts the raw request body into the database without validation (lines 629‑633).",
+        "Runtime probe fact reports a POST to `/integrations/hook` returned HTTP 200, while the expected statuses for an unsigned request were 400, 401, or 403."
+      ],
+      "limitations": [
+        "No evidence is provided that signature verification or other guard logic exists elsewhere in the codebase (e.g., middleware, decorators).",
+        "The runtime probe does not show the exact payload used; a signed request could have been sent inadvertently, though the probe expected a failure."
+      ],
+      "source_ids": [
+        "merged-b98074828fe298997980"
+      ]
+    },
+    {
+      "candidate_id": "merged-54b1ddb055358b3579a2",
+      "verdict": "confirmed_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Only the owner can read an invoice",
+      "explanation": "The endpoint `/invoices/{invoice_id}` authenticates the request via `principal(authorization)` but does not verify that the authenticated user is the owner of the requested invoice before returning the record. The source excerpt shows no ownership check after the database query. A runtime probe for the same endpoint returned HTTP 200 for a request that should have been denied (expected 403), confirming that the missing authorization check is exploitable.",
+      "impact": "An attacker who can obtain a valid authorization token can retrieve any invoice by ID, leading to exposure of sensitive financial data across users.",
+      "remediation": "Add an ownership verification step after fetching the invoice, e.g., compare `row['owner_id']` with the authenticated principal’s ID and raise `HTTPException(403)` if they differ. Ensure the check is performed before returning the invoice data.",
+      "evidence": [
+        "Source code shows `principal(authorization)` is called but no subsequent owner verification before returning the invoice record.",
+        "Runtime probe fact: GET /invoices/{{invoice_id}} returned status 200 instead of expected 403, indicating the missing owner check is exploitable."
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-54b1ddb055358b3579a2"
+      ]
+    },
+    {
+      "candidate_id": "merged-b7e0b624f8cddd0a9e8c",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Users cannot submit an admin job",
+      "explanation": "The POST /jobs endpoint inserts a job record without any visible authorization enforcement beyond the call to `principal(authorization)`. The supplied source excerpt does not show what `principal` does, and no explicit role check is present before the database insert. A runtime probe observed that a POST request to /jobs returned HTTP 200, whereas the probe contract expected error statuses (400, 403, 422) for unauthorized or malformed requests, indicating that the endpoint accepted the request without rejecting it.",
+      "impact": "An attacker could create arbitrary jobs, potentially with elevated privileges, leading to unauthorized actions or privilege escalation within the system.",
+      "remediation": "Ensure that the `principal` function validates the caller’s role and that the endpoint checks the caller’s permissions before inserting the job. Return appropriate error codes (e.g., 403) when the user lacks the required role.",
+      "evidence": [
+        "Runtime probe fact: POST /jobs returned status 200 (expected 400/403/422)"
+      ],
+      "limitations": [
+        "The implementation of `principal` is not provided, so it is unclear whether it performs sufficient role validation. No additional scanner evidence of a guard check is present."
+      ],
+      "source_ids": [
+        "merged-b7e0b624f8cddd0a9e8c"
+      ]
+    },
+    {
+      "candidate_id": "merged-c0dcf73e8d7a6a1fbf02",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "medium",
+      "title": "Identity endpoint may expose SSN",
+      "explanation": "The /me endpoint queries the users table for the column \"ssn\" and returns the entire row as a dictionary. No filtering or masking of the SSN field is present in the supplied code snippet, indicating a potential data‑exposure issue. The scanner flagged this as a medium‑severity finding, and a runtime probe was performed, but the probe report indicates that values were redacted, so the actual exposure was not observed.",
+      "impact": "If an attacker can obtain a valid authorization token, they could retrieve the full user record, including the social security number, leading to privacy violations and potential identity theft.",
+      "remediation": "Modify the endpoint to exclude sensitive fields such as \"ssn\" from the response or mask them before returning the data. For example, construct the response dictionary explicitly without the SSN, or apply a transformation that redacts the value.",
+      "evidence": [
+        "Source code line 203 selects the \"ssn\" column and returns the full row: \"SELECT id,username,role,email,ssn FROM users ...\"",
+        "Runtime probe fact shows the request succeeded (status 200) but marks values as redacted, indicating the probe did not capture the actual SSN value."
+      ],
+      "limitations": [
+        "The runtime probe did not reveal the actual SSN value because it reports values_redacted=true; therefore we cannot confirm that the SSN is sent to the client. Additional evidence such as an uncensored response payload or a higher‑severity scanner confirmation would be needed to upgrade this to a confirmed vulnerability."
+      ],
+      "source_ids": [
+        "merged-c0dcf73e8d7a6a1fbf02"
+      ]
+    },
+    {
+      "candidate_id": "merged-218d6fc43fe64432894a",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Catalog price must be set by the server",
+      "explanation": "The create_order endpoint inserts the order into the database using the unit_price value supplied in the request body (body.unit_price). No validation or server‑side enforcement of the price is shown in the provided code snippet, allowing a client to specify arbitrary prices for items. The runtime probe confirms that a POST to /orders succeeds (status 200) but does not demonstrate that the price is validated or overridden by the server.",
+      "impact": "An attacker can manipulate order prices, leading to under‑charging for goods or over‑charging customers, resulting in financial loss and potential fraud.",
+      "remediation": "Enforce server‑side price determination by looking up the official price from a trusted catalog based on the item identifier, and ignore any client‑provided price. Add validation to ensure the supplied price matches the catalog price or reject the request. Log and monitor mismatched price attempts.",
+      "evidence": [
+        "Source excerpt shows unit_price taken directly from the request body and inserted into the orders table (lines 213‑215).",
+        "Runtime probe fact indicates a successful POST to /orders with status 200 (web-runtime rule workflow.price_catalog.1)."
+      ],
+      "limitations": [
+        "No evidence that the server performs any price validation or overrides the client‑provided price. Guard checks (e.g., lookup against a catalog, price range validation) are not present in the supplied context. Independent scanner confirmation of the vulnerability beyond the single finding is absent."
+      ],
+      "source_ids": [
+        "merged-218d6fc43fe64432894a"
+      ]
+    },
+    {
+      "candidate_id": "merged-3202e1e1074cfd44b9bf",
+      "verdict": "confirmed_vulnerability",
+      "severity": "high",
+      "confidence": "high",
+      "title": "Clear-text logging of sensitive information",
+      "explanation": "The code logs the application secret (APP_SECRET) in clear text via a standard logger call. The log statement at line 137 includes the environment variable value without any redaction or protection, providing an attacker with direct access to a credential if logs are exposed. No conditional check or masking is present around the logging operation.",
+      "impact": "Exposure of the application secret can lead to credential compromise, allowing attackers to impersonate the service, forge tokens, or access protected resources.",
+      "remediation": "Remove the secret from log statements. If logging is required for debugging, redact or mask the secret value (e.g., replace with ***). Consider using a dedicated secure logger that filters sensitive fields. Also review logging configuration to ensure logs are stored securely and access‑controlled.",
+      "evidence": [
+        "log.info(\"login user=%s app_secret=%s\", username, os.environ.get(\"APP_SECRET\", \"lab-only\")) at api/app.py:137",
+        "Scanner finding (semgrep) flagged line 137 for credential disclosure (python-logger-credential-disclosure)"
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-3202e1e1074cfd44b9bf"
+      ]
+    },
+    {
+      "candidate_id": "merged-18f1abe978f9fdaad8e6",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "SQL query built from user-controlled sources",
+      "explanation": "The legacy_login endpoint constructs an SQL query by directly interpolating the user‑provided username and password into the query string. No parameterized query or input sanitization is visible, and there is no guard or validation step that would prevent malicious input from altering the query logic.",
+      "impact": "An attacker could supply specially crafted values for username or password to perform SQL injection, potentially retrieving or modifying data in the users table, bypassing authentication, or executing arbitrary SQL commands.",
+      "remediation": "Refactor the query to use parameterized statements (e.g., prepared statements) provided by the database library. Validate and sanitize input where appropriate. Example: `query = \"SELECT id, username, role FROM users WHERE username = ? AND password = ?\"; row = conn.execute(query, (body.username, body.password)).fetchone()`. Also consider hashing passwords instead of storing them in plain text.",
+      "evidence": [
+        "Source excerpt shows f‑string interpolation of `body.username` and `body.password` into the SQL query (lines 117‑119).",
+        "Scanner finding categorizes this as a high‑severity SQL injection risk."
+      ],
+      "limitations": [
+        "No runtime probe or exploit evidence demonstrating that injection is possible in practice.",
+        "No additional guard checks or input validation are present in the supplied context, but external code could add safeguards not shown."
+      ],
+      "source_ids": [
+        "merged-18f1abe978f9fdaad8e6"
+      ]
+    },
+    {
+      "candidate_id": "merged-24d14609e3893220ea16",
+      "verdict": "false_positive",
+      "severity": "high",
+      "confidence": "high",
+      "title": "Uncontrolled data used in path expression",
+      "explanation": "The endpoint constructs a file path from a user‑provided `name` but immediately resolves it and checks `file.is_relative_to(root)` and `file.is_file()`. The `is_relative_to` guard ensures the resolved path cannot escape the designated `public` directory, effectively preventing path traversal. The subsequent existence check further validates the target. Thus the code includes the necessary safety checks, and the scanner’s finding is a false positive.",
+      "impact": "If the guard were missing, an attacker could read arbitrary files on the server, leading to data disclosure. However, the guard is present, so this risk is mitigated.",
+      "remediation": "No remediation needed for this finding; the existing checks are sufficient. Ensure future code follows the same pattern when handling user‑controlled paths.",
+      "evidence": [
+        "source_excerpt lines 219‑224 show the guard `if not file.is_relative_to(root) or not file.is_file(): raise HTTPException(404, \"File not found\")`",
+        "source_symbol repeats the same guard logic"
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-24d14609e3893220ea16"
+      ]
+    },
+    {
+      "candidate_id": "merged-794dcb4921076779cef0",
+      "verdict": "false_positive",
+      "severity": "high",
+      "confidence": "high",
+      "title": "Uncontrolled data used in path expression",
+      "explanation": "The endpoint verifies that the resolved file path is a sub‑path of the designated public directory using `is_relative_to(root)` and also checks that the target is a regular file before reading it. This prevents directory‑traversal attacks despite the user‑controlled `name` parameter.",
+      "impact": "None – the check blocks attempts to access files outside the intended directory, so no unauthorized file disclosure can occur via this endpoint.",
+      "remediation": "No remediation needed for path traversal; ensure the check remains in place and that the `FILES` directory is correctly configured.",
+      "evidence": [
+        "source_excerpt lines 220‑223 show the `is_relative_to(root)` guard and file existence check"
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-794dcb4921076779cef0"
+      ]
+    },
+    {
+      "candidate_id": "merged-83d97da4516adf20e20f",
+      "verdict": "false_positive",
+      "severity": "high",
+      "confidence": "high",
+      "title": "Uncontrolled data used in path expression",
+      "explanation": "The endpoint constructs a file path from a user‑provided `name` but then resolves it and verifies that the resulting path is within the allowed `FILES/public` directory using `is_relative_to(FILES.resolve())` and also checks that it is a file. These checks prevent directory traversal, so the path expression is controlled and the finding is a false positive.",
+      "impact": "If the check were ineffective, an attacker could read arbitrary files on the server, leading to information disclosure. However, the code correctly restricts access to the intended directory, mitigating this risk.",
+      "remediation": "No remediation needed; the existing checks are sufficient. Ensure that `FILES` is correctly set to the intended base directory and that the Python version supports `Path.is_relative_to` (Python 3.9+).",
+      "evidence": [
+        "source_excerpt lines 211‑214 show the use of `resolve()` and `is_relative_to(FILES.resolve())` to enforce the file resides within the allowed directory"
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-83d97da4516adf20e20f"
+      ]
+    },
+    {
+      "candidate_id": "merged-b3c734b4cef8dd70fce0",
+      "verdict": "false_positive",
+      "severity": "high",
+      "confidence": "high",
+      "title": "Uncontrolled data used in path expression",
+      "explanation": "The function verifies that the resolved file path is within the designated public directory using `is_relative_to(root)` and also checks that the path points to an existing file before reading it. These checks mitigate path traversal, so the supplied code does not exhibit an uncontrolled path vulnerability.",
+      "impact": "None, as the code correctly restricts file access to the intended directory.",
+      "remediation": "No remediation needed for this finding; the existing checks are sufficient.",
+      "evidence": [
+        "The code resolves the requested file against a known root directory and validates `file.is_relative_to(root)` and `file.is_file()` before reading the file."
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-b3c734b4cef8dd70fce0"
+      ]
+    },
+    {
+      "candidate_id": "merged-b527b3ed30e57aac5ec5",
+      "verdict": "false_positive",
+      "severity": "high",
+      "confidence": "high",
+      "title": "Uncontrolled data used in path expression",
+      "explanation": "The function constructs the file path using the user‑provided `name` but immediately resolves it and verifies that the resulting path is still within the intended `FILES/public` directory via `is_relative_to(FILES.resolve())`. If the check fails, a 404 error is raised, preventing access to files outside the allowed directory. This guard mitigates path traversal, so the reported uncontrolled data usage does not constitute a vulnerability.",
+      "impact": "None – the check blocks attempts to read files outside the permitted directory, preventing unauthorized file disclosure.",
+      "remediation": "No remediation needed for this specific issue; the existing relative‑path check is sufficient. Ensure that similar checks are applied consistently across all file‑access endpoints.",
+      "evidence": [
+        "source_excerpt lines 211‑215 show the path resolution and the `is_relative_to` guard that blocks traversal"
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-b527b3ed30e57aac5ec5"
+      ]
+    },
+    {
+      "candidate_id": "merged-ea527a7d7441e2b11700",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "high",
+      "title": "Reflected server-side cross-site scripting",
+      "explanation": "The endpoint `GET /catalog/search` directly interpolates the user‑controlled query parameter `q` into an HTML response (`<h1>Results for {q}</h1>` and `<p>{row['name']}</p>`). No escaping or sanitisation is performed before the value is embedded in the page, allowing an attacker to inject arbitrary HTML/JavaScript that will be rendered by the victim's browser. The same unsanitised value is also used in a raw SQL string, indicating additional risk (SQL injection). No defensive checks (e.g., input validation, output encoding) are visible in the supplied excerpt.",
+      "impact": "An attacker can craft a malicious URL such as `/catalog/search?q=<script>alert(1)</script>` that, when visited, executes arbitrary JavaScript in the context of the vulnerable site. This can lead to session hijacking, credential theft, defacement, or further attacks against users of the application.",
+      "remediation": "* Apply proper output encoding/escaping for HTML contexts (e.g., use a templating engine that auto‑escapes or explicitly escape `q` with `html.escape`).\n* Validate and sanitise the `q` parameter before using it in SQL queries; use parameterised queries instead of string interpolation.\n* Consider implementing a Content Security Policy (CSP) to mitigate the impact of any injected scripts.\n* Review other endpoints for similar patterns of unsanitised user input.",
+      "evidence": [
+        "Source excerpt shows `q` directly inserted into HTML response without escaping (lines 142‑145).",
+        "Scanner flagged the finding as a reflected XSS based on the same code pattern."
+      ],
+      "limitations": [
+        "No runtime probe evidence confirming that injected payloads are actually executed in a browser context is provided.",
+        "No additional guard checks (e.g., input validation, sanitisation functions) are visible in the supplied code, but they could exist elsewhere in the application."
+      ],
+      "source_ids": [
+        "merged-ea527a7d7441e2b11700"
+      ]
+    },
+    {
+      "candidate_id": "merged-f4eaf141df049c63545d",
+      "verdict": "false_positive",
+      "severity": "high",
+      "confidence": "high",
+      "title": "Uncontrolled data used in path expression",
+      "explanation": "The endpoint constructs a file path from a user‑provided \"name\" parameter but immediately resolves it and checks both that the resulting path is within the allowed directory (is_relative_to(FILES.resolve())) and that it points to an existing file (is_file()). These checks prevent directory traversal and arbitrary file access, mitigating the reported risk.",
+      "impact": "If the checks were absent, an attacker could read arbitrary files on the server. However, the present code enforces the directory constraint, so the vulnerability does not exist.",
+      "remediation": "No remediation needed for this specific issue; the existing path validation is sufficient. Ensure that similar checks are maintained for any future file‑access endpoints.",
+      "evidence": [
+        "source_excerpt lines 211‑214 show the path resolution and the is_relative_to and is_file checks that guard against path traversal."
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-f4eaf141df049c63545d"
+      ]
+    },
+    {
+      "candidate_id": "merged-f60fee7d82fbca512208",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "high",
+      "title": "SQL query built from user-controlled sources",
+      "explanation": "The endpoint `catalog_search` constructs an SQL query by directly interpolating the user‑provided parameter `q` into the query string without any sanitization or parameterization. This creates a classic SQL injection vector where an attacker can inject arbitrary SQL syntax via the `q` query parameter.",
+      "impact": "An attacker could manipulate the `q` parameter to execute unintended SQL commands, potentially exposing or modifying data in the `products` table or other database objects.",
+      "remediation": "Use parameterized queries or an ORM that safely escapes user input. For example, replace the f‑string with a prepared statement: `rows = conn.execute(\"SELECT name FROM products WHERE name ILIKE %s\", (f\"%{q}%\",)).fetchall()`. Additionally, validate or whitelist allowed characters for `q`.",
+      "evidence": [
+        "Source excerpt shows f‑string interpolation of `q` into SQL at line 144.",
+        "Scanner finding flagged this as high severity."
+      ],
+      "limitations": [
+        "No runtime probe demonstrating successful injection.",
+        "No independent scanner of medium or higher severity confirming exploitability.",
+        "No evidence of existing input validation or escaping mechanisms elsewhere in the code."
+      ],
+      "source_ids": [
+        "merged-f60fee7d82fbca512208"
+      ]
+    }
+  ],
+  "warnings": [
+    "Review provider stopped: AI provider request failed (timeout): no response within 120s after the request was sent"
+  ],
+  "usage": {
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "calls": 0,
+    "expected_groups": 95,
+    "reused_groups": 34,
+    "reviewed_groups": 34,
+    "pending_groups": 61
+  },
+  "pending_ids": [
+    "merged-5a7c783c30e11426af42",
+    "merged-767d54ff7a729b156819",
+    "merged-d0789be823f0fd7fa381",
+    "merged-0f6fe31b81367808748c",
+    "merged-fe4ca713f11faf9b96d6",
+    "merged-7ed325c02dd6cf8227d2",
+    "merged-ccc894903304aa8847bd",
+    "merged-1bcb1da144dffdcf3fd8",
+    "merged-18063ba27bc289f53c8a",
+    "merged-4ae7658c2abfbf689e2b",
+    "merged-a4473061f97f0a366678",
+    "merged-cad468186f9fd0b4e99b",
+    "merged-8cdc677a9810b317840f",
+    "merged-70f8087c412d06924742",
+    "merged-9c6fcf61fc01168b15e2",
+    "merged-51bf51abe866bf8d3d67",
+    "merged-f41fd10802e7c4dd22bb",
+    "merged-58377a692410b6446bbd",
+    "merged-0de42012099941c48e01",
+    "merged-df83daf10f817c7aa965",
+    "merged-051697f9b8567d596874",
+    "merged-3503f2dec888990b31f2",
+    "merged-74bb99c1ff3b5ed1fea8",
+    "merged-8a5f28db4eebc517239e",
+    "merged-8ce42d9c8b52a95b109d",
+    "merged-e76230cbef200116e4ae",
+    "merged-f15e42abb7b2acd921f1",
+    "merged-7711056ee3332442a201",
+    "merged-c150b78349615dd9bc2d",
+    "ai-e9f07f09faabf60f",
+    "ai-fa74e88d2fd254fe",
+    "ai-b7171bc6020b1e2f",
+    "ai-0252de9ab903d777",
+    "ai-ead464655e9a69a7",
+    "ai-fab37354b02d1ba0",
+    "ai-932b1f16764907f8",
+    "ai-ff620dfaa2a8ee41",
+    "ai-f0ccc3b9d38ddce1",
+    "ai-5d3ce9356b31af8b",
+    "ai-d5f84eecf5bce40d",
+    "ai-dd1c0f6e6c60b708",
+    "ai-76182088c965a98d",
+    "ai-1380895ee2c458ad",
+    "ai-e6b4aa4b31fd8b3a",
+    "ai-86f7e15d23cea03d",
+    "ai-9725570d578c01b3",
+    "ai-b3cac087a919243e",
+    "ai-dbc5515ff9f6fbe9",
+    "ai-6322be0c6e12b177",
+    "ai-e2aafc49ce7556a2",
+    "ai-e34f01e4e6651bde",
+    "ai-8b80c3773de74246",
+    "ai-f743fe703518ba34",
+    "ai-2c0b423220c16ecb",
+    "ai-84d790e7ca885d16",
+    "ai-f69e77e901449ba6",
+    "ai-26620151b8264cfe",
+    "ai-b5057777207eb439",
+    "ai-7267ef84c8754429",
+    "ai-1c2e3095524918b0",
+    "ai-492db277b819e281"
+  ]
+}

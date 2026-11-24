@@ -1,0 +1,873 @@
+{
+  "schema_version": "1.0",
+  "status": "partial",
+  "project_root": "/mnt/c/Users/ASUS/Downloads/2update/verdict-integrated/targets/verdict-comprehensive-lab",
+  "records": [
+    {
+      "candidate_id": "ai-e42cbca7f84d6eae",
+      "disposition": "needs_more_evidence",
+      "path": "api/extra.py",
+      "start_line": 161,
+      "end_line": 168,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "161 | @router.post(\"/comments\")",
+        "162 | def add_comment(body: Comment, authorization: str | None = Header(default=None)) -> dict:",
+        "163 |     user = identity(authorization)",
+        "164 |     with connection() as conn:",
+        "165 |         row = conn.execute(",
+        "166 |             \"INSERT INTO comments(author_id,body) VALUES (%s,%s) RETURNING id\",",
+        "167 |             (user[\"id\"], body.body),",
+        "168 |         ).fetchone()"
+      ],
+      "notes": [
+        "AI evidence was not found in the reported source excerpt."
+      ]
+    },
+    {
+      "candidate_id": "ai-bed84194d5313af2",
+      "disposition": "confirmed",
+      "path": "api/extra.py",
+      "start_line": 107,
+      "end_line": 111,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "107: @router.get(\"/profiles/{profile_id}/verified\")",
+        "108: def verified_profile(profile_id: int, authorization: str | None = Header(default=None)) -> dict:",
+        "109:     user = verified_identity(authorization)",
+        "110:     if profile_id != user[\"id\"]:",
+        "111:         raise HTTPException(403, \"Not your profile\")"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-4a14d82a7cc9c5d6",
+      "disposition": "confirmed",
+      "path": "api/extra.py",
+      "start_line": 204,
+      "end_line": 207,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "204: @router.get(\"/admin/audit\")",
+        "205: def admin_audit(authorization: str | None = Header(default=None)) -> dict:",
+        "206:     require_admin(authorization)",
+        "207:     return {\"status\": \"authorized\"}"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-d3c8ae68a75d8b90",
+      "disposition": "confirmed",
+      "path": "api/extra.py",
+      "start_line": 210,
+      "end_line": 214,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "210: @router.get(\"/files\")",
+        "211: def file_read(name: str) -> Response:",
+        "212:     file = (FILES / \"public\" / name).resolve()",
+        "213:     if not file.is_relative_to(FILES.resolve()) or not file.is_file():",
+        "214:         raise HTTPException(404, \"File not found\")"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-eb33fbefb86b87d2",
+      "disposition": "needs_more_evidence",
+      "path": "api/app.py",
+      "start_line": 175,
+      "end_line": 186,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "175: @app.post(\"/auth/register\")",
+        "176: def register(body: LoginBody) -> dict[str, Any]:",
+        "177:     with connection() as conn:",
+        "178:         try:",
+        "179:             user = conn.execute(",
+        "180:                 \"INSERT INTO users (username,password,role,email,ssn) VALUES (%s,%s,'user',%s,'000-00-9999') RETURNING id,username,role\",",
+        "181:                 (body.username, body.password, f\"{body.username}@example.test\"),",
+        "182:             ).fetchone()"
+      ],
+      "notes": [
+        "Discovery stage could not ground all required structured evidence."
+      ]
+    },
+    {
+      "candidate_id": "ai-e8ec08f388c6f0b9",
+      "disposition": "confirmed",
+      "path": "api/app.py",
+      "start_line": 189,
+      "end_line": 196,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "189: @app.post(\"/auth/refresh\")",
+        "190: def refresh(authorization: str | None = Header(default=None)) -> dict[str, str]:",
+        "191:     user = principal(authorization)",
+        "192:     with connection() as conn:",
+        "193:         row = conn.execute(\"SELECT id,username,role FROM users WHERE id=%s\", (user[\"sub\"],)).fetchone()",
+        "194:     if not row:",
+        "195:         raise HTTPException(401, \"Unknown account\")",
+        "196:     return {\"access_token\": make_token(row), \"token_type\": \"bearer\"}"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-23b97c0090929eb8",
+      "disposition": "needs_more_evidence",
+      "path": "api/app.py",
+      "start_line": 207,
+      "end_line": 215,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "owner_id = body.owner_id or user[\"sub\"]",
+        "row = conn.execute(\"INSERT INTO orders (owner_id,item,quantity,unit_price,status) VALUES (%s,%s,%s,%s,%s) RETURNING *\", (owner_id, body.item, body.quantity, body.unit_price, body.status),).fetchone()"
+      ],
+      "notes": [
+        "Some AI evidence was not found at its cited source lines."
+      ]
+    },
+    {
+      "candidate_id": "ai-1826d2fcbfeb295d",
+      "disposition": "confirmed",
+      "path": "api/app.py",
+      "start_line": 230,
+      "end_line": 237,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "principal(authorization)",
+        "coupon = conn.execute(\"SELECT percent FROM coupons WHERE code=%s\", (body.code,)).fetchone()",
+        "row = conn.execute(\"UPDATE orders SET discount=%s WHERE id=%s RETURNING *\", (percent, order_id)).fetchone()"
+      ],
+      "notes": [
+        "source_citation_reanchored:entry_point:api/app.py:230->231",
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-2e196d6bab5427c0",
+      "disposition": "needs_more_evidence",
+      "path": "api/app.py",
+      "start_line": 241,
+      "end_line": 250,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "order = conn.execute(\"SELECT * FROM orders WHERE id=%s\", (order_id,)).fetchone()",
+        "conn.execute(\"UPDATE orders SET status='paid' WHERE id=%s\", (order_id,))",
+        "invoice = conn.execute(\"INSERT INTO invoices (order_id,amount,payment_reference) VALUES (%s,%s,%s) RETURNING *\", (order_id, amount, f\"pay-{int(time.time())}\"),).fetchone()"
+      ],
+      "notes": [
+        "source_citation_reanchored:entry_point:api/app.py:241->242",
+        "Some AI evidence was not found at its cited source lines.",
+        "Discovery stage could not ground all required structured evidence."
+      ]
+    },
+    {
+      "candidate_id": "ai-079e75dcf14f91a8",
+      "disposition": "needs_more_evidence",
+      "path": "api/app.py",
+      "start_line": 293,
+      "end_line": 303,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "principal(authorization)",
+        "row = conn.execute(\"INSERT INTO jobs (kind,payload,run_as) VALUES ('webhook',%s,%s) RETURNING *\", (json.dumps({\"target_url\": target_url, \"body\": body.get(\"body\", {})}), str(body.get(\"run_as\", \"user\"))),).fetchone()"
+      ],
+      "notes": [
+        "Some AI evidence was not found at its cited source lines."
+      ]
+    },
+    {
+      "candidate_id": "ai-f0dce5b04fc274c8",
+      "disposition": "confirmed",
+      "path": "api/app.py",
+      "start_line": 258,
+      "end_line": 264,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "def cancel_order(order_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+        "principal(authorization)",
+        "row = conn.execute(\"UPDATE orders SET status='cancelled' WHERE id=%s RETURNING *\", (order_id,)).fetchone()"
+      ],
+      "notes": [
+        "source_citation_reanchored:entry_point:api/app.py:258->259",
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-2610f6087fbda613",
+      "disposition": "confirmed",
+      "path": "api/app.py",
+      "start_line": 277,
+      "end_line": 282,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "@app.get(\"/admin/users\")",
+        "def admin_users(authorization: str | None = Header(default=None)) -> list[dict[str, Any]]:",
+        "principal(authorization)",
+        "rows = conn.execute(\"SELECT id,username,email,role,ssn FROM users ORDER BY id\").fetchall()"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-1dd6334868544586",
+      "disposition": "confirmed",
+      "path": "api/app.py",
+      "start_line": 285,
+      "end_line": 290,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "@app.get(\"/admin/jobs\")",
+        "def admin_jobs(authorization: str | None = Header(default=None)) -> list[dict[str, Any]]:",
+        "principal(authorization)",
+        "rows = conn.execute(\"SELECT * FROM jobs ORDER BY id DESC\").fetchall()"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-ae177f098ffafcec",
+      "disposition": "confirmed",
+      "path": "api/app.py",
+      "start_line": 267,
+      "end_line": 274,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "@app.get(\"/invoices/{invoice_id}\")",
+        "def invoice(invoice_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+        "principal(authorization)",
+        "row = conn.execute(\"SELECT * FROM invoices WHERE id=%s\", (invoice_id,)).fetchone()"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-8f2e97ab78cee25c",
+      "disposition": "confirmed",
+      "path": "api/app.py",
+      "start_line": 220,
+      "end_line": 227,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "@app.get(\"/orders/{order_id}\")",
+        "def get_order(order_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+        "principal(authorization)",
+        "row = conn.execute(\"SELECT * FROM orders WHERE id=%s\", (order_id,)).fetchone()"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-9076c561b9f4f9db",
+      "disposition": "needs_more_evidence",
+      "path": "api/app.py",
+      "start_line": 308,
+      "end_line": 317,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "@app.post(\"/jobs\")",
+        "def create_job(body: JobBody, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+        "principal(authorization)",
+        "row = conn.execute(\"INSERT INTO jobs (kind,payload,run_as) VALUES (%s,%s,%s) RETURNING *\", (body.kind, json.dumps(body.payload), body.run_as),).fetchone()"
+      ],
+      "notes": [
+        "Some AI evidence was not found at its cited source lines.",
+        "Discovery stage could not ground all required structured evidence."
+      ]
+    },
+    {
+      "candidate_id": "ai-d30ea28564e18126",
+      "disposition": "confirmed",
+      "path": "api/app.py",
+      "start_line": 320,
+      "end_line": 322,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "@app.get(\"/debug/config\")",
+        "def debug_config() -> dict[str, Any]:",
+        "return {\"database_url\": DATABASE_URL, \"mock_external_url\": MOCK_EXTERNAL_URL, \"app_secret\": os.environ.get(\"APP_SECRET\")}"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-f6a68f3e73ee86ba",
+      "disposition": "confirmed",
+      "path": "api/extra.py",
+      "start_line": 271,
+      "end_line": 279,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "271: @router.get(\"/session/start\")",
+        "272: def session_start(username: str) -> Response:",
+        "274:         user = conn.execute(\"SELECT id FROM users WHERE username=%s\", (username,)).fetchone()",
+        "277:     response = Response(\"session started\")",
+        "278:     response.set_cookie(\"lab_session\", f\"session-{user['id']}\")"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-f10815aecca0a812",
+      "disposition": "confirmed",
+      "path": "api/extra.py",
+      "start_line": 564,
+      "end_line": 573,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "564: @router.post(\"/auth/reset/request\")",
+        "565: def request_reset(body: dict) -> dict:",
+        "567:         user = conn.execute(\"SELECT id FROM users WHERE username=%s\", (str(body.get(\"username\", \"\")),)).fetchone()",
+        "571:         conn.execute(\"INSERT INTO reset_tokens(token,user_id) VALUES (%s,%s)\", (token, user[\"id\"]))",
+        "572:         conn.commit()",
+        "573:     return {\"reset_token\": token}"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-ef134b384e616736",
+      "disposition": "needs_more_evidence",
+      "path": "api/extra.py",
+      "start_line": 334,
+      "end_line": 344,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "def secure_session_whoami(request: Request) -> dict:",
+        "row = conn.execute(\"SELECT username FROM sessions JOIN users ON sessions.user_id=users.id WHERE [REDACTED]\", (token,),).fetchone()",
+        "if not row:",
+        "raise HTTPException(401, \"Session required\")"
+      ],
+      "notes": [
+        "Some AI evidence was not found at its cited source lines.",
+        "Discovery stage could not ground all required structured evidence."
+      ]
+    },
+    {
+      "candidate_id": "ai-7efa66b32b8aa71e",
+      "disposition": "needs_more_evidence",
+      "path": "api/extra.py",
+      "start_line": 347,
+      "end_line": 363,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "@router.post(\"/uploads\")",
+        "identity(authorization)",
+        "file = form.get(\"file\")",
+        "if not file or not hasattr(file, \"read\"): raise HTTPException(400, \"file required\")",
+        "payload = await file.read()",
+        "if len(payload) > 65536: raise HTTPException(413, \"file too large\")",
+        "conn.execute(\"INSERT INTO uploads(name,mime,body) VALUES (%s,%s,%s) RETURNING id\", (file.filename or \"file\", file.content_type or \"application/octet-stream\", payload),)"
+      ],
+      "notes": [
+        "Some AI evidence was not found at its cited source lines.",
+        "Discovery stage could not ground all required structured evidence."
+      ]
+    },
+    {
+      "candidate_id": "ai-96473a6b7da1cf0c",
+      "disposition": "needs_more_evidence",
+      "path": "api/extra.py",
+      "start_line": 576,
+      "end_line": 586,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "@router.post(\"/auth/reset/confirm\")",
+        "row = conn.execute(\"SELECT user_id FROM reset_tokens WHERE [REDACTED], (str(body.get(\"token\", \"\")),)).fetchone()",
+        "if not row: raise HTTPException(400, \"Invalid token\")",
+        "conn.execute(\"UPDATE users SET [REDACTED] WHERE id=%s\", (str(body.get(\"password\", \"\")), row[\"user_id\"]))"
+      ],
+      "notes": [
+        "Some AI evidence was not found at its cited source lines.",
+        "Discovery stage could not ground all required structured evidence."
+      ]
+    },
+    {
+      "candidate_id": "ai-566d1aaed3b9bcca",
+      "disposition": "needs_more_evidence",
+      "path": "api/extra.py",
+      "start_line": 660,
+      "end_line": 665,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "@router.get(\"/admin/token-report\")",
+        "[REDACTED]",
+        "if token.get(\"role\") != \"admin\": raise HTTPException(403, \"Administrator required\")",
+        "return {\"status\": \"authorized\"}"
+      ],
+      "notes": [
+        "Some AI evidence was not found at its cited source lines."
+      ]
+    },
+    {
+      "candidate_id": "ai-9754798dd354f31c",
+      "disposition": "needs_more_evidence",
+      "path": "api/extra.py",
+      "start_line": 453,
+      "end_line": 466,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "@router.post(\"/orders/{order_id}/verified-coupon\")",
+        "order, _ = owned_order(order_id, authorization)",
+        "if order[\"status\"] != \"new\": raise HTTPException(409, \"Order no longer editable\")",
+        "coupon = conn.execute(\"SELECT percent FROM coupons WHERE code=%s\", (str(body.get(\"code\", \"\")),)).fetchone()",
+        "if not coupon: raise HTTPException(400, \"Unknown coupon\")",
+        "conn.execute(\"UPDATE orders SET discount=%s WHERE id=%s RETURNING *\", (coupon[\"percent\"], order_id))"
+      ],
+      "notes": [
+        "Some AI evidence was not found at its cited source lines.",
+        "Discovery stage could not ground all required structured evidence."
+      ]
+    },
+    {
+      "candidate_id": "ai-e7fb3d015898f5f9",
+      "disposition": "needs_more_evidence",
+      "path": "api/extra.py",
+      "start_line": 347,
+      "end_line": 363,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "def upload(request: Request, authorization: str | None = Header(default=None)) -> dict:",
+        "identity(authorization)",
+        "return {\"id\": row[\"id\"]}"
+      ],
+      "notes": [
+        "Discovery stage could not ground all required structured evidence."
+      ]
+    },
+    {
+      "candidate_id": "ai-90fabfa5626d27dd",
+      "disposition": "needs_more_evidence",
+      "path": "api/extra.py",
+      "start_line": 453,
+      "end_line": 466,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "order, _ = owned_order(order_id, authorization)",
+        "if order[\"status\"] != \"new\":",
+        "row = conn.execute(\"UPDATE orders SET discount=%s WHERE id=%s RETURNING *\", (coupon[\"percent\"], order_id))"
+      ],
+      "notes": [
+        "source_citation_reanchored:entry_point:api/extra.py:453->454",
+        "Some AI evidence was not found at its cited source lines."
+      ]
+    },
+    {
+      "candidate_id": "ai-898d5cb5922e446d",
+      "disposition": "needs_more_evidence",
+      "path": "api/extra.py",
+      "start_line": 576,
+      "end_line": 586,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "row = conn.execute(\"SELECT user_id FROM reset_tokens WHERE [REDACTED], (str(body.get(\"token\", \"\")),))",
+        "if not row:",
+        "conn.execute(\"UPDATE users SET [REDACTED] WHERE id=%s\", (str(body.get(\"password\", \"\")), row[\"user_id\"]))"
+      ],
+      "notes": [
+        "source_citation_reanchored:entry_point:api/extra.py:576->577",
+        "Some AI evidence was not found at its cited source lines.",
+        "Discovery stage could not ground all required structured evidence."
+      ]
+    },
+    {
+      "candidate_id": "ai-059ccb76c6b286f3",
+      "disposition": "needs_more_evidence",
+      "path": "api/extra.py",
+      "start_line": 526,
+      "end_line": 539,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "parts = urlsplit(target)",
+        "if parts.scheme != \"http\" or parts.hostname != \"mock-external\" or parts.netloc != \"mock-external:9000\":",
+        "row = conn.execute(\"INSERT INTO jobs(kind,payload,run_as) VALUES ('webhook',%s,%s) RETURNING id,run_as\","
+      ],
+      "notes": [
+        "source_citation_reanchored:entry_point:api/extra.py:526->527",
+        "Some AI evidence was not found at its cited source lines."
+      ]
+    },
+    {
+      "candidate_id": "ai-93787ef734989eda",
+      "disposition": "confirmed",
+      "path": "api/extra.py",
+      "start_line": 196,
+      "end_line": 201,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "197: def admin_overview(authorization: str | None = Header(default=None)) -> dict:",
+        "198:     principal(authorization)",
+        "199:     with connection() as conn:",
+        "200:         count = conn.execute(\"SELECT count(*) AS n FROM users\").fetchone()[\"n\"]",
+        "201:     return {\"users\": count}"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-fbb70c87492b9215",
+      "disposition": "confirmed",
+      "path": "api/extra.py",
+      "start_line": 97,
+      "end_line": 104,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "97: @router.get(\"/profiles/{profile_id}\")",
+        "98: def profile(profile_id: int, authorization: str | None = Header(default=None)) -> dict:",
+        "99:     principal(authorization)",
+        "100:     with connection() as conn:",
+        "101:         row = conn.execute(\"SELECT id,username,email,ssn FROM users WHERE id=%s\", (profile_id,)).fetchone()",
+        "102:     if not row:",
+        "103:         raise HTTPException(404, \"Profile not found\")",
+        "104:     return dict(row)"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-8b80c3773de74246",
+      "disposition": "confirmed",
+      "path": "api/extra.py",
+      "start_line": 542,
+      "end_line": 549,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "542: @router.get(\"/orders/{order_id}/notes/{note_id}\")",
+        "543: def order_note(order_id: int, note_id: int, authorization: str | None = Header(default=None)) -> dict:",
+        "544:     principal(authorization)",
+        "545:     with connection() as conn:",
+        "546:         row = conn.execute(\"SELECT id,order_id,body FROM notes WHERE id=%s\", (note_id,)).fetchone()",
+        "547:     if not row:",
+        "548:         raise HTTPException(404, \"Note not found\")",
+        "549:     return dict(row)"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-151dd4fdecd4573d",
+      "disposition": "needs_more_evidence",
+      "path": "api/extra.py",
+      "start_line": 512,
+      "end_line": 523,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "512: @router.post(\"/jobs/verified\")",
+        "513: def verified_job(body: dict, authorization: str | None = Header(default=None)) -> dict:",
+        "514:     user = verified_identity(authorization)",
+        "515:     if body.get(\"kind\") not in {\"echo\", \"report\"}:",
+        "516:         raise HTTPException(400, \"Unsupported job\")",
+        "517: with connection() as conn:",
+        "518: row = conn.execute(",
+        "519: \"INSERT INTO jobs(kind,payload,run_as) VALUES (%s,%s,%s) RETURNING id,kind,run_as\","
+      ],
+      "notes": [
+        "source_citation_reanchored:evidence:api/extra.py:518->517",
+        "source_citation_reanchored:evidence:api/extra.py:519->518",
+        "source_citation_reanchored:evidence:api/extra.py:520->519",
+        "Discovery stage could not ground all required structured evidence."
+      ]
+    },
+    {
+      "candidate_id": "ai-7da0208dca8f390c",
+      "disposition": "confirmed",
+      "path": "api/extra.py",
+      "start_line": 366,
+      "end_line": 372,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "def view_upload(upload_id: int) -> Response:",
+        "row = conn.execute(\"SELECT mime,body FROM uploads WHERE id=%s\", (upload_id,)).fetchone()",
+        "return Response(bytes(row[\"body\"]), media_type=row[\"mime\"])"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-3b4f492446748f7f",
+      "disposition": "needs_more_evidence",
+      "path": "api/extra.py",
+      "start_line": 406,
+      "end_line": 409,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "def verified_me(authorization: str | None = Header(default=None)) -> dict:",
+        "user = verified_identity(authorization)",
+        "return {\"id\": user[\"id\"], \"username\": user[\"username\"], \"role\": user[\"role\"]}"
+      ],
+      "notes": [
+        "Discovery stage could not ground all required structured evidence."
+      ]
+    },
+    {
+      "candidate_id": "ai-2b29d4ee02a18f9b",
+      "disposition": "confirmed",
+      "path": "api/extra.py",
+      "start_line": 366,
+      "end_line": 372,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "return Response(bytes(row[\"body\"]), media_type=row[\"mime\"])"
+      ],
+      "notes": [
+        "source_citation_reanchored:sensitive_operation:api/extra.py:371->372",
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-b94262d4b5d7ef8e",
+      "disposition": "confirmed",
+      "path": "api/extra.py",
+      "start_line": 628,
+      "end_line": 634,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "@router.post(\"/integrations/hook\")",
+        "body = await request.body()",
+        "conn.execute(\"INSERT INTO visits(destination,accepted) VALUES (%s,true)\", (body.decode(\"utf-8\", \"replace\"),))"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-981d194322a5245a",
+      "disposition": "confirmed",
+      "path": "api/extra.py",
+      "start_line": 189,
+      "end_line": 193,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "189: @router.get(\"/forum/messages\", response_class=HTMLResponse)",
+        "190: def show_messages() -> str:",
+        "191:     with connection() as conn:",
+        "192:         rows = conn.execute(\"SELECT body FROM comments ORDER BY id\").fetchall()",
+        "193:     return \"<h1>Messages</h1>\" + \"\".join(f\"<p>{html.escape(row['body'])}</p>\" for row in rows)"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    },
+    {
+      "candidate_id": "ai-118e8dd460abde2d",
+      "disposition": "confirmed",
+      "path": "api/extra.py",
+      "start_line": 227,
+      "end_line": 233,
+      "checks": [
+        "file_exists",
+        "line_range_valid",
+        "evidence_present_in_excerpt",
+        "candidate_context_snapshot_matches"
+      ],
+      "evidence": [
+        "227: @router.get(\"/errors/query\")",
+        "228: def error_query() -> dict:",
+        "229:     try:",
+        "230:         with connection() as conn:",
+        "231:             conn.execute(\"SELECT unavailable_column FROM products\")",
+        "232:     except Exception as error:",
+        "233:         raise HTTPException(500, f\"Query failed: {error}\") from error"
+      ],
+      "notes": [
+        "Repository and source evidence checks passed; security impact still requires review."
+      ]
+    }
+  ],
+  "warnings": [
+    "3 empty source file(s) were skipped; they contain nothing to review.",
+    "The duplicate-avoidance list in the discovery prompt was trimmed; candidates are de-duplicated against scanner findings downstream.",
+    "Some background coverage gaps were not sent to the model; they remain in the report's coverage gaps."
+  ]
+}

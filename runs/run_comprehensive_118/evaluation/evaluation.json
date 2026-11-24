@@ -1,0 +1,3224 @@
+{
+  "schema_version": "1.2",
+  "target": "targets/verdict-comprehensive-lab",
+  "generated_at": "2026-11-16T21:39:08.888509+00:00",
+  "scan_provenance": {
+    "project": "/mnt/c/Users/ASUS/Downloads/2update/verdict-integrated/targets/verdict-comprehensive-lab",
+    "scan_status": "partial",
+    "adapters": [
+      "codeql-cli",
+      "gitleaks",
+      "semgrep-ce",
+      "trivy"
+    ],
+    "dast_requirement": {
+      "requested": true,
+      "satisfied": true
+    },
+    "sast_requirement": {
+      "requested": true,
+      "satisfied": true
+    },
+    "scanner_requirement": {
+      "requested": false,
+      "required": [],
+      "satisfied": true,
+      "failures": []
+    },
+    "ai_discovery": {
+      "required": true,
+      "satisfied": true,
+      "status": "completed",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "provider_calls": 8,
+      "planned_targets": 71,
+      "inspected_targets": 71,
+      "failed_batches": 0,
+      "candidate_count": 31,
+      "supported_candidates": 24,
+      "coverage_gaps": [],
+      "warnings": [
+        "3 empty source file(s) were skipped; they contain nothing to review.",
+        "The duplicate-avoidance list in the discovery prompt was trimmed; candidates are de-duplicated against scanner findings downstream.",
+        "Some background coverage gaps were not sent to the model; they remain in the report's coverage gaps."
+      ]
+    },
+    "security_review": {
+      "status": "partial",
+      "satisfied": false,
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "review_count": 82,
+      "pending_ids": [
+        "merged-a6e788cfc5d9d1297feb"
+      ],
+      "warnings": [
+        "Provider returned an unknown or missing issue group ID; it was ignored.",
+        "Provider returned an unknown or missing issue group ID; it was ignored."
+      ]
+    },
+    "endpoint_coverage": {
+      "status": "generic_completed",
+      "endpoint_count": null,
+      "probe_count": 51,
+      "probed_count": 0,
+      "authentication": null,
+      "workflows": null,
+      "coverage_gaps": [
+        "Baseline checks use bounded HTTP GET observations for an authorized target; declared paths must be safe to visit.",
+        "This baseline phase only makes bounded HTTP GET observations; browser crawling, ZAP and account workflows are separate phases, reported only when they ran.",
+        "A negative result means only that this probe did not observe the behavior.",
+        "Coverage applies only to declared assertions, accounts and workflows.",
+        "A violation is an observed contract mismatch requiring security review.",
+        "Fresh stack resets the run; workflows must create independent test data. No per-step database reset is performed.",
+        "Browser crawl is same-origin and GET-only; forms, clicks, OAuth/MFA and destructive workflows were not submitted."
+      ]
+    },
+    "coverage_gaps": [
+      "A negative result means only that this probe did not observe the behavior.",
+      "A violation is an observed contract mismatch requiring security review.",
+      "Baseline checks use bounded HTTP GET observations for an authorized target; declared paths must be safe to visit.",
+      "Browser crawl is same-origin and GET-only; forms, clicks, OAuth/MFA and destructive workflows were not submitted.",
+      "Coverage applies only to declared assertions, accounts and workflows.",
+      "Fresh stack resets the run; workflows must create independent test data. No per-step database reset is performed.",
+      "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile. All 4 direct dependencies are exactly pinned; their transitive dependencies are not recorded.",
+      "This baseline phase only makes bounded HTTP GET observations; browser crawling, ZAP and account workflows are separate phases, reported only when they ran."
+    ],
+    "merged_findings": 63,
+    "reviewed_groups": 83,
+    "ai_discovery_usage": {
+      "provider_calls": 8,
+      "batches": 8,
+      "retry_count": 4,
+      "rate_limit_wait_seconds": 390.1700716410002,
+      "wall_seconds": 441.681,
+      "total_time": 35.964006303000005,
+      "total_tokens": 47571,
+      "duplicate_candidates_merged": 0
+    }
+  },
+  "summary": {
+    "known_positive_cases": 35,
+    "detected": 24,
+    "needs_review": 1,
+    "not_detected": 10,
+    "positive_case_recall_lower_bound": 0.6857,
+    "safe_controls_not_assessed": 0,
+    "candidate_only_excluded": 1,
+    "precision": null,
+    "f1": null,
+    "positive_groups": 69,
+    "matched_groups": 26,
+    "known_endpoint_groups": 14,
+    "safe_control_groups": 1,
+    "outside_scope_groups": 19,
+    "unlabeled_groups": 9,
+    "precision_on_labeled": 0.963,
+    "precision_lower_bound": 0.3768,
+    "precision_lower_bound_in_scope": 0.52,
+    "safe_controls_clean": 26,
+    "safe_controls_flagged": 1,
+    "safe_controls_not_assessable": 0,
+    "safe_control_specificity": 0.963,
+    "verdict_calibration": {
+      "matched": {
+        "confirmed_vulnerability": 15,
+        "likely_vulnerability": 11,
+        "needs_more_evidence": 0,
+        "false_positive": 3
+      },
+      "known_endpoint": {
+        "confirmed_vulnerability": 2,
+        "likely_vulnerability": 12,
+        "needs_more_evidence": 2,
+        "false_positive": 0
+      },
+      "safe_control": {
+        "confirmed_vulnerability": 1,
+        "likely_vulnerability": 0,
+        "needs_more_evidence": 1,
+        "false_positive": 4
+      },
+      "outside_scope": {
+        "confirmed_vulnerability": 4,
+        "likely_vulnerability": 15,
+        "needs_more_evidence": 0,
+        "false_positive": 0
+      },
+      "unlabeled": {
+        "confirmed_vulnerability": 0,
+        "likely_vulnerability": 9,
+        "needs_more_evidence": 2,
+        "false_positive": 2
+      }
+    },
+    "detections_by_origin": {
+      "dynamic": 18,
+      "static": 6
+    },
+    "cases_without_signature": [
+      "C06",
+      "C10",
+      "C12",
+      "C13",
+      "C15",
+      "C16",
+      "C17",
+      "C28",
+      "C29",
+      "N06"
+    ],
+    "not_detected_without_signature": 10,
+    "ai_discovery_on_undetected_endpoints": [
+      "C06",
+      "C08",
+      "C12",
+      "C17",
+      "N06"
+    ],
+    "found_by": {
+      "detected_cases": 24,
+      "static": 6,
+      "dynamic": 18,
+      "ai_discovery": 7,
+      "static_only": 6,
+      "dynamic_only": 11,
+      "static_and_dynamic": 0,
+      "ai_discovery_only_not_detected": [
+        "C06",
+        "C12",
+        "C17",
+        "N06"
+      ],
+      "ai_discovery_assessed_on_endpoints": true
+    }
+  },
+  "limitations": [
+    "Held-out comparison of one saved run; the benchmark was not supplied to scanning or AI.",
+    "Only exact source signatures and positive reviewed verdicts count as detected.",
+    "A case without a defined signature remains not detected by this strict audit, even if a broader finding might deserve manual review.",
+    "Needs-review evidence is not counted as detected; not-detected does not mean safe.",
+    "One case may generate several observations, so issue-group counts are not vulnerability counts.",
+    "Safe-control and precision figures place findings on routes using the lab's source code. A positive finding on a safe control's route is a false-positive signal that still needs a human check that it is the same issue class.",
+    "Precision is reported only as bounds, never as a point estimate. precision_on_labeled counts only the findings the key can label (matches against safe-control hits, so it is optimistic); precision_lower_bound treats every other positive finding as wrong (pessimistic); precision_lower_bound_in_scope first sets aside dependency advisories and header/cookie hardening alerts, which the answer key does not cover. Positive findings that match no case are an adjudication queue, because the answer key is not exhaustive.",
+    "AI-discovery candidates are never counted as detections here; one on a known endpoint is listed for adjudication, because its issue class is not verified against the case.",
+    "A clean safe control means no positive finding of its issue class landed on its route; it does not prove the scan exercised that route, so read specificity together with the recorded endpoint coverage.",
+    "Cases with no defined signature cannot be credited by this audit at all, whatever the scan found.",
+    "Found by: static and dynamic come from the exact signature match; AI discovery is listed when its candidate is in the detecting group or on the case's endpoint, is never counted as a detection, and does not prove the same issue class."
+  ],
+  "cases": [
+    {
+      "id": "C01",
+      "category": "cross_user_order",
+      "location": "GET /orders/{id}",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "high",
+      "source": "dast+static",
+      "expected_behavior": "user_a reads user_b order",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C01",
+      "origin": [
+        "SL01",
+        "MS04"
+      ],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "workflow.order_owner.3",
+          "path": "/orders/{{order_id}}",
+          "line_range": null
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-fe4ca713f11faf9b96d6",
+          "finding_id": "merged-fe4ca713f11faf9b96d6",
+          "source_finding_id": "runtime-ed0dc0a1678724040424e4a2",
+          "scanner": {
+            "scanner_id": "web-runtime",
+            "scanner_name": "Bounded Web Runtime Checks",
+            "scanner_version": "1.0",
+            "run_index": 0,
+            "result_index": 17,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "workflow.order_owner.3",
+          "path": "/orders/{{order_id}}",
+          "line": null,
+          "origin": "dynamic",
+          "verdict": "confirmed_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "dynamic"
+      ],
+      "endpoint_findings": [],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "C02",
+      "category": "cross_user_profile",
+      "location": "GET /profiles/{id}",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "high",
+      "source": "dast+static",
+      "expected_behavior": "user_a reads user_b profile",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C02",
+      "origin": [
+        "SL02"
+      ],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "workflow.profile_owner.2",
+          "path": "/profiles/{{other_id}}",
+          "line_range": null
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-18063ba27bc289f53c8a",
+          "finding_id": "merged-18063ba27bc289f53c8a",
+          "source_finding_id": "runtime-3982bc4eac58ce8d5c2fe5ad",
+          "scanner": {
+            "scanner_id": "web-runtime",
+            "scanner_name": "Bounded Web Runtime Checks",
+            "scanner_version": "1.0",
+            "run_index": 0,
+            "result_index": 29,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "workflow.profile_owner.2",
+          "path": "/profiles/{{other_id}}",
+          "line": null,
+          "origin": "dynamic",
+          "verdict": "confirmed_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "dynamic"
+      ],
+      "endpoint_findings": [
+        {
+          "group_id": "ai-6322be0c6e12b177",
+          "verdict": "likely_vulnerability",
+          "severity": "high",
+          "title": "Insecure Direct Object Reference (CWE-639) in profile endpoint",
+          "origins": [
+            "ai_discovery"
+          ],
+          "routes": [
+            "GET /profiles/{}"
+          ]
+        }
+      ],
+      "found_by": [
+        "dynamic",
+        "ai_discovery"
+      ],
+      "ai_discovery_basis": "an AI candidate was reported on this case's endpoint (issue class not verified)"
+    },
+    {
+      "id": "C03",
+      "category": "sql_injection_login",
+      "location": "POST /auth/legacy-login",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "high",
+      "source": "dast+static",
+      "expected_behavior": "quoted username bypasses password",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C03",
+      "origin": [
+        "SL03"
+      ],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "py/sql-injection",
+          "path": "api/extra.py",
+          "line_range": [
+            119,
+            119
+          ]
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-18f1abe978f9fdaad8e6",
+          "finding_id": "merged-18f1abe978f9fdaad8e6",
+          "source_finding_id": "finding-5e7b731c6445970909c9",
+          "scanner": {
+            "scanner_id": "codeql-cli",
+            "scanner_name": "CodeQL",
+            "scanner_version": "2.27.2",
+            "run_index": 0,
+            "result_index": 7,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "py/sql-injection",
+          "path": "api/extra.py",
+          "line": 119,
+          "origin": "static",
+          "verdict": "likely_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "static"
+      ],
+      "endpoint_findings": [],
+      "found_by": [
+        "static"
+      ],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "C04",
+      "category": "sql_injection_search",
+      "location": "GET /catalog/search",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "high",
+      "source": "dast+static",
+      "expected_behavior": "query returns unrelated item",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C04",
+      "origin": [
+        "SL04"
+      ],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "py/sql-injection",
+          "path": "api/extra.py",
+          "line_range": [
+            144,
+            144
+          ]
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-f60fee7d82fbca512208",
+          "finding_id": "merged-f60fee7d82fbca512208",
+          "source_finding_id": "finding-7605384fbc7aee3bcd8a",
+          "scanner": {
+            "scanner_id": "codeql-cli",
+            "scanner_name": "CodeQL",
+            "scanner_version": "2.27.2",
+            "run_index": 0,
+            "result_index": 8,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "py/sql-injection",
+          "path": "api/extra.py",
+          "line": 144,
+          "origin": "static",
+          "verdict": "likely_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "static"
+      ],
+      "endpoint_findings": [
+        {
+          "group_id": "merged-ea527a7d7441e2b11700",
+          "verdict": "confirmed_vulnerability",
+          "severity": "high",
+          "title": "Reflected server-side cross-site scripting",
+          "origins": [
+            "static"
+          ],
+          "routes": [
+            "GET /catalog/search"
+          ]
+        }
+      ],
+      "found_by": [
+        "static"
+      ],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "C05",
+      "category": "reflected_xss",
+      "location": "GET /catalog/search",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "medium",
+      "source": "browser+static",
+      "expected_behavior": "script markup returned unescaped",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C05",
+      "origin": [
+        "SL05"
+      ],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "py/reflective-xss",
+          "path": "api/extra.py",
+          "line_range": [
+            145,
+            145
+          ]
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-ea527a7d7441e2b11700",
+          "finding_id": "merged-ea527a7d7441e2b11700",
+          "source_finding_id": "finding-a8c8d9148f5e4ee9d3fd",
+          "scanner": {
+            "scanner_id": "codeql-cli",
+            "scanner_name": "CodeQL",
+            "scanner_version": "2.27.2",
+            "run_index": 0,
+            "result_index": 6,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "py/reflective-xss",
+          "path": "api/extra.py",
+          "line": 145,
+          "origin": "static",
+          "verdict": "confirmed_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "static"
+      ],
+      "endpoint_findings": [
+        {
+          "group_id": "merged-f60fee7d82fbca512208",
+          "verdict": "likely_vulnerability",
+          "severity": "high",
+          "title": "SQL query built from user-controlled sources",
+          "origins": [
+            "static"
+          ],
+          "routes": [
+            "GET /catalog/search"
+          ]
+        }
+      ],
+      "found_by": [
+        "static"
+      ],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "C06",
+      "category": "stored_xss",
+      "location": "POST+GET /comments",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "high",
+      "source": "browser+static",
+      "expected_behavior": "stored markup returned unescaped",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C06",
+      "origin": [
+        "SL06"
+      ],
+      "status": "not_detected",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "endpoint_findings": [
+        {
+          "group_id": "merged-6e468e09eab3ca889e3d",
+          "verdict": "likely_vulnerability",
+          "severity": "medium",
+          "title": "Missing Anti-clickjacking Header",
+          "origins": [
+            "dynamic"
+          ],
+          "routes": [
+            "GET /comments"
+          ]
+        },
+        {
+          "group_id": "merged-81ff94e895c53dbc2029",
+          "verdict": "likely_vulnerability",
+          "severity": "medium",
+          "title": "Content Security Policy (CSP) Header Not Set",
+          "origins": [
+            "dynamic"
+          ],
+          "routes": [
+            "GET /comments"
+          ]
+        },
+        {
+          "group_id": "merged-d716d5afb61da294d286",
+          "verdict": "likely_vulnerability",
+          "severity": "low",
+          "title": "X-Content-Type-Options Header Missing",
+          "origins": [
+            "dynamic"
+          ],
+          "routes": [
+            "GET /comments"
+          ]
+        },
+        {
+          "group_id": "ai-cfd2d2f7a41c1178",
+          "verdict": "likely_vulnerability",
+          "severity": "low",
+          "title": "Potential mass assignment in comment creation (CWE-915)",
+          "origins": [
+            "ai_discovery"
+          ],
+          "routes": [
+            "POST /comments"
+          ]
+        }
+      ],
+      "found_by": [
+        "ai_discovery"
+      ],
+      "ai_discovery_basis": "an AI candidate was reported on this case's endpoint (issue class not verified)"
+    },
+    {
+      "id": "C07",
+      "category": "admin_authorization",
+      "location": "GET /admin/users",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "high",
+      "source": "workflow+static",
+      "expected_behavior": "ordinary user obtains admin listing",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C07",
+      "origin": [
+        "SL07",
+        "MS05"
+      ],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "workflow.admin_users.2",
+          "path": "/admin/users",
+          "line_range": null
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-c5b44871f1955b338344",
+          "finding_id": "merged-c5b44871f1955b338344",
+          "source_finding_id": "runtime-946a5bf2b3aeb375da4de266",
+          "scanner": {
+            "scanner_id": "web-runtime",
+            "scanner_name": "Bounded Web Runtime Checks",
+            "scanner_version": "1.0",
+            "run_index": 0,
+            "result_index": 19,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "workflow.admin_users.2",
+          "path": "/admin/users",
+          "line": null,
+          "origin": "dynamic",
+          "verdict": "confirmed_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "dynamic"
+      ],
+      "endpoint_findings": [
+        {
+          "group_id": "ai-13705465b5427a14",
+          "verdict": "likely_vulnerability",
+          "severity": "high",
+          "title": "Missing authorization on admin user listing (CWE-284)",
+          "origins": [
+            "ai_discovery"
+          ],
+          "routes": [
+            "GET /admin/users"
+          ]
+        }
+      ],
+      "found_by": [
+        "dynamic",
+        "ai_discovery"
+      ],
+      "ai_discovery_basis": "an AI candidate was reported on this case's endpoint (issue class not verified)"
+    },
+    {
+      "id": "C08",
+      "category": "path_traversal",
+      "location": "GET /files?name=",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "high",
+      "source": "dast+static",
+      "expected_behavior": "parent path reads lab-private note",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C08",
+      "origin": [
+        "SL08"
+      ],
+      "status": "needs_review",
+      "expected_signatures": [
+        {
+          "rule_id": "py/path-injection",
+          "path": "api/extra.py",
+          "line_range": [
+            212,
+            215
+          ]
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-83d97da4516adf20e20f",
+          "finding_id": "merged-83d97da4516adf20e20f",
+          "source_finding_id": "finding-26bd24fa5794fd60d9e9",
+          "scanner": {
+            "scanner_id": "codeql-cli",
+            "scanner_name": "CodeQL",
+            "scanner_version": "2.27.2",
+            "run_index": 0,
+            "result_index": 1,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "py/path-injection",
+          "path": "api/extra.py",
+          "line": 213,
+          "origin": "static",
+          "verdict": "false_positive"
+        },
+        {
+          "group_id": "merged-b527b3ed30e57aac5ec5",
+          "finding_id": "merged-b527b3ed30e57aac5ec5",
+          "source_finding_id": "finding-aa95c189edc76290622b",
+          "scanner": {
+            "scanner_id": "codeql-cli",
+            "scanner_name": "CodeQL",
+            "scanner_version": "2.27.2",
+            "run_index": 0,
+            "result_index": 2,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "py/path-injection",
+          "path": "api/extra.py",
+          "line": 215,
+          "origin": "static",
+          "verdict": "false_positive"
+        },
+        {
+          "group_id": "merged-f4eaf141df049c63545d",
+          "finding_id": "merged-f4eaf141df049c63545d",
+          "source_finding_id": "finding-480ccba498d117b3450e",
+          "scanner": {
+            "scanner_id": "codeql-cli",
+            "scanner_name": "CodeQL",
+            "scanner_version": "2.27.2",
+            "run_index": 0,
+            "result_index": 0,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "py/path-injection",
+          "path": "api/extra.py",
+          "line": 212,
+          "origin": "static",
+          "verdict": "false_positive"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "static"
+      ],
+      "endpoint_findings": [
+        {
+          "group_id": "ai-bf1824ec21fc73f8",
+          "verdict": "likely_vulnerability",
+          "severity": "medium",
+          "title": "Missing authentication on public file download (CWE-284)",
+          "origins": [
+            "ai_discovery"
+          ],
+          "routes": [
+            "GET /files"
+          ]
+        },
+        {
+          "group_id": "ai-cd57b8a32df8fcc3",
+          "verdict": "likely_vulnerability",
+          "severity": "medium",
+          "title": "Potential path traversal in file_read endpoint (CWE-22)",
+          "origins": [
+            "ai_discovery"
+          ],
+          "routes": [
+            "GET /files"
+          ]
+        }
+      ],
+      "found_by": [
+        "static",
+        "ai_discovery"
+      ],
+      "ai_discovery_basis": "an AI candidate was reported on this case's endpoint (issue class not verified)"
+    },
+    {
+      "id": "C09",
+      "category": "command_injection",
+      "location": "not implemented",
+      "ground_truth": "candidate_only",
+      "severity": "not_assigned",
+      "source": "not_testable",
+      "expected_behavior": "Arbitrary shell execution was excluded from the Docker-only safety boundary",
+      "proof_ref": null,
+      "origin": [
+        "SL09"
+      ],
+      "status": "excluded",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": []
+    },
+    {
+      "id": "C10",
+      "category": "predictable_session",
+      "location": "GET /session/whoami",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "medium",
+      "source": "dast+static",
+      "expected_behavior": "guessed session ID impersonates admin",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C10",
+      "origin": [
+        "SL10"
+      ],
+      "status": "not_detected",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "endpoint_findings": [],
+      "found_by": [],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "C11",
+      "category": "debug_exposure",
+      "location": "GET /debug/config",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "medium",
+      "source": "dast+static",
+      "expected_behavior": "response includes lab secret",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C11",
+      "origin": [
+        "SL11",
+        "MS13"
+      ],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "workflow.debug_access.1",
+          "path": "/debug/config",
+          "line_range": null
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-f5fff899f9294177dc70",
+          "finding_id": "merged-f5fff899f9294177dc70",
+          "source_finding_id": "runtime-e929732019082549893b68d0",
+          "scanner": {
+            "scanner_id": "web-runtime",
+            "scanner_name": "Bounded Web Runtime Checks",
+            "scanner_version": "1.0",
+            "run_index": 0,
+            "result_index": 28,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "workflow.debug_access.1",
+          "path": "/debug/config",
+          "line": null,
+          "origin": "dynamic",
+          "verdict": "likely_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "dynamic"
+      ],
+      "endpoint_findings": [
+        {
+          "group_id": "ai-b545bf0884ed98c5",
+          "verdict": "confirmed_vulnerability",
+          "severity": "high",
+          "title": "Debug configuration endpoint exposes secrets (CWE-200)",
+          "origins": [
+            "ai_discovery"
+          ],
+          "routes": [
+            "GET /debug/config"
+          ]
+        }
+      ],
+      "found_by": [
+        "dynamic",
+        "ai_discovery"
+      ],
+      "ai_discovery_basis": "an AI candidate was reported on this case's endpoint (issue class not verified)"
+    },
+    {
+      "id": "C12",
+      "category": "verbose_error",
+      "location": "GET /errors/query",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "medium",
+      "source": "dast",
+      "expected_behavior": "database column name in error response",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C12",
+      "origin": [
+        "SL12"
+      ],
+      "status": "not_detected",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "endpoint_findings": [
+        {
+          "group_id": "ai-1fc4f9193a923e69",
+          "verdict": "likely_vulnerability",
+          "severity": "low",
+          "title": "Information Disclosure via Detailed Error Message (CWE-200)",
+          "origins": [
+            "ai_discovery"
+          ],
+          "routes": [
+            "GET /errors/query"
+          ]
+        }
+      ],
+      "found_by": [
+        "ai_discovery"
+      ],
+      "ai_discovery_basis": "an AI candidate was reported on this case's endpoint (issue class not verified)"
+    },
+    {
+      "id": "C13",
+      "category": "login_brute_force",
+      "location": "POST /auth/login",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "medium",
+      "source": "workflow",
+      "expected_behavior": "correct password succeeds after repeated failures",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C13",
+      "origin": [
+        "SL13"
+      ],
+      "status": "not_detected",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "endpoint_findings": [],
+      "found_by": [],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "C14",
+      "category": "cors",
+      "location": "GET /healthz",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "medium",
+      "source": "dast+static",
+      "expected_behavior": "untrusted Origin is allowed",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C14",
+      "origin": [
+        "SL14",
+        "MS12"
+      ],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "python.fastapi.security.wildcard-cors.wildcard-cors",
+          "path": "api/app.py",
+          "line_range": [
+            26,
+            26
+          ]
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-70f8087c412d06924742",
+          "finding_id": "merged-70f8087c412d06924742",
+          "source_finding_id": "finding-243196a7a6a7f4370cd1",
+          "scanner": {
+            "scanner_id": "semgrep-ce",
+            "scanner_name": "Semgrep",
+            "scanner_version": "1.178.0",
+            "run_index": 0,
+            "result_index": 0,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "python.fastapi.security.wildcard-cors.wildcard-cors",
+          "path": "api/app.py",
+          "line": 26,
+          "origin": "static",
+          "verdict": "likely_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "static"
+      ],
+      "endpoint_findings": [
+        {
+          "group_id": "merged-19f4a13e0b2d4f7413d0",
+          "verdict": "needs_more_evidence",
+          "severity": "low",
+          "title": "Missing Content-Security-Policy header",
+          "origins": [
+            "dynamic"
+          ],
+          "routes": [
+            "GET /healthz"
+          ]
+        },
+        {
+          "group_id": "merged-87e0399272a390813ea5",
+          "verdict": "likely_vulnerability",
+          "severity": "low",
+          "title": "Missing clickjacking protection header",
+          "origins": [
+            "dynamic"
+          ],
+          "routes": [
+            "GET /healthz"
+          ]
+        },
+        {
+          "group_id": "merged-916563c278b3e6b62930",
+          "verdict": "needs_more_evidence",
+          "severity": "low",
+          "title": "X-Content-Type-Options Header Missing",
+          "origins": [
+            "dynamic"
+          ],
+          "routes": [
+            "GET /healthz"
+          ]
+        },
+        {
+          "group_id": "merged-bbf1646deeb18d1e95db",
+          "verdict": "likely_vulnerability",
+          "severity": "low",
+          "title": "Missing X-Content-Type-Options header",
+          "origins": [
+            "dynamic"
+          ],
+          "routes": [
+            "GET /healthz"
+          ]
+        }
+      ],
+      "found_by": [
+        "static"
+      ],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "C15",
+      "category": "unsafe_upload",
+      "location": "POST+GET /uploads",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "high",
+      "source": "workflow+static",
+      "expected_behavior": "HTML uploaded and served as text/html",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C15",
+      "origin": [
+        "SL15"
+      ],
+      "status": "not_detected",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "endpoint_findings": [],
+      "found_by": [],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "C16",
+      "category": "unsigned_token",
+      "location": "api/app.py:principal",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "high",
+      "source": "workflow+static",
+      "expected_behavior": "tampered role is accepted",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C16",
+      "origin": [
+        "MS01"
+      ],
+      "status": "not_detected",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "endpoint_findings": [],
+      "found_by": [],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "C17",
+      "category": "refresh_token",
+      "location": "POST /auth/refresh",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "high",
+      "source": "workflow+static",
+      "expected_behavior": "tampered bearer token obtains fresh token",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C17",
+      "origin": [
+        "MS02"
+      ],
+      "status": "not_detected",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "endpoint_findings": [
+        {
+          "group_id": "ai-c39cb4040816d8a1",
+          "verdict": "likely_vulnerability",
+          "severity": "medium",
+          "title": "Potential token replay via refresh endpoint without revocation check (CWE-613)",
+          "origins": [
+            "ai_discovery"
+          ],
+          "routes": [
+            "POST /auth/refresh"
+          ]
+        }
+      ],
+      "found_by": [
+        "ai_discovery"
+      ],
+      "ai_discovery_basis": "an AI candidate was reported on this case's endpoint (issue class not verified)"
+    },
+    {
+      "id": "C18",
+      "category": "mass_assignment",
+      "location": "POST /orders",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "high",
+      "source": "workflow+static",
+      "expected_behavior": "client controls owner, price and status",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C18",
+      "origin": [
+        "MS03"
+      ],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "workflow.owner_assignment.2",
+          "path": "/orders",
+          "line_range": null
+        },
+        {
+          "rule_id": "workflow.order_initial_state.1",
+          "path": "/orders",
+          "line_range": null
+        },
+        {
+          "rule_id": "workflow.negative_price.1",
+          "path": "/orders",
+          "line_range": null
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-5a7c783c30e11426af42",
+          "finding_id": "merged-5a7c783c30e11426af42",
+          "source_finding_id": "runtime-97a2403badc5307e87389e70",
+          "scanner": {
+            "scanner_id": "web-runtime",
+            "scanner_name": "Bounded Web Runtime Checks",
+            "scanner_version": "1.0",
+            "run_index": 0,
+            "result_index": 25,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "workflow.order_initial_state.1",
+          "path": "/orders",
+          "line": null,
+          "origin": "dynamic",
+          "verdict": "confirmed_vulnerability"
+        },
+        {
+          "group_id": "merged-767d54ff7a729b156819",
+          "finding_id": "merged-767d54ff7a729b156819",
+          "source_finding_id": "runtime-289a562cf581d69d3a6c7d63",
+          "scanner": {
+            "scanner_id": "web-runtime",
+            "scanner_name": "Bounded Web Runtime Checks",
+            "scanner_version": "1.0",
+            "run_index": 0,
+            "result_index": 24,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "workflow.negative_price.1",
+          "path": "/orders",
+          "line": null,
+          "origin": "dynamic",
+          "verdict": "confirmed_vulnerability"
+        },
+        {
+          "group_id": "merged-d0789be823f0fd7fa381",
+          "finding_id": "merged-d0789be823f0fd7fa381",
+          "source_finding_id": "runtime-e6fad5bfce7f957806254d9e",
+          "scanner": {
+            "scanner_id": "web-runtime",
+            "scanner_name": "Bounded Web Runtime Checks",
+            "scanner_version": "1.0",
+            "run_index": 0,
+            "result_index": 26,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "workflow.owner_assignment.2",
+          "path": "/orders",
+          "line": null,
+          "origin": "dynamic",
+          "verdict": "likely_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "dynamic"
+      ],
+      "endpoint_findings": [
+        {
+          "group_id": "merged-218d6fc43fe64432894a",
+          "verdict": "confirmed_vulnerability",
+          "severity": "high",
+          "title": "Catalog price must be set by the server",
+          "origins": [
+            "dynamic"
+          ],
+          "routes": [
+            "POST /orders"
+          ]
+        }
+      ],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "C19",
+      "category": "invoice_authorization",
+      "location": "GET /invoices/{id}",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "high",
+      "source": "workflow",
+      "expected_behavior": "user_b reads user_a invoice",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C19",
+      "origin": [
+        "MS11"
+      ],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "workflow.invoice_owner.3",
+          "path": "/invoices/{{invoice_id}}",
+          "line_range": null
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-54b1ddb055358b3579a2",
+          "finding_id": "merged-54b1ddb055358b3579a2",
+          "source_finding_id": "runtime-bc7d0d0a77b4619ba22d0b25",
+          "scanner": {
+            "scanner_id": "web-runtime",
+            "scanner_name": "Bounded Web Runtime Checks",
+            "scanner_version": "1.0",
+            "run_index": 0,
+            "result_index": 18,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "workflow.invoice_owner.3",
+          "path": "/invoices/{{invoice_id}}",
+          "line": null,
+          "origin": "dynamic",
+          "verdict": "confirmed_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "dynamic"
+      ],
+      "endpoint_findings": [],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "C20",
+      "category": "price_tampering",
+      "location": "POST /orders",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "high",
+      "source": "workflow",
+      "expected_behavior": "client sets item price below catalog value",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C20",
+      "origin": [
+        "MS06"
+      ],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "workflow.price_catalog.1",
+          "path": "/orders",
+          "line_range": null
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-218d6fc43fe64432894a",
+          "finding_id": "merged-218d6fc43fe64432894a",
+          "source_finding_id": "runtime-19ac26bfd96baf1f15d8f0f0",
+          "scanner": {
+            "scanner_id": "web-runtime",
+            "scanner_name": "Bounded Web Runtime Checks",
+            "scanner_version": "1.0",
+            "run_index": 0,
+            "result_index": 31,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "workflow.price_catalog.1",
+          "path": "/orders",
+          "line": null,
+          "origin": "dynamic",
+          "verdict": "confirmed_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "dynamic"
+      ],
+      "endpoint_findings": [
+        {
+          "group_id": "merged-5a7c783c30e11426af42",
+          "verdict": "confirmed_vulnerability",
+          "severity": "high",
+          "title": "Unrestricted order status on creation",
+          "origins": [
+            "dynamic"
+          ],
+          "routes": [
+            "POST /orders"
+          ]
+        },
+        {
+          "group_id": "merged-767d54ff7a729b156819",
+          "verdict": "confirmed_vulnerability",
+          "severity": "high",
+          "title": "Negative order prices are accepted without validation",
+          "origins": [
+            "dynamic"
+          ],
+          "routes": [
+            "POST /orders"
+          ]
+        },
+        {
+          "group_id": "merged-d0789be823f0fd7fa381",
+          "verdict": "likely_vulnerability",
+          "severity": "high",
+          "title": "Users can create orders for another owner",
+          "origins": [
+            "dynamic"
+          ],
+          "routes": [
+            "POST /orders"
+          ]
+        }
+      ],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "C21",
+      "category": "coupon_tampering",
+      "location": "POST /orders/{id}/apply-coupon",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "medium",
+      "source": "workflow",
+      "expected_behavior": "client overrides coupon percentage",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C21",
+      "origin": [
+        "MS07"
+      ],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "workflow.coupon_bounds.2",
+          "path": "/orders/{{order_id}}/apply-coupon",
+          "line_range": null
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-7ed325c02dd6cf8227d2",
+          "finding_id": "merged-7ed325c02dd6cf8227d2",
+          "source_finding_id": "runtime-3143beb445281415043c6a2c",
+          "scanner": {
+            "scanner_id": "web-runtime",
+            "scanner_name": "Bounded Web Runtime Checks",
+            "scanner_version": "1.0",
+            "run_index": 0,
+            "result_index": 23,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "workflow.coupon_bounds.2",
+          "path": "/orders/{{order_id}}/apply-coupon",
+          "line": null,
+          "origin": "dynamic",
+          "verdict": "confirmed_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "dynamic"
+      ],
+      "endpoint_findings": [
+        {
+          "group_id": "ai-a8a36fd7f927dc98",
+          "verdict": "likely_vulnerability",
+          "severity": "medium",
+          "title": "Unrestricted coupon discount manipulation (CWE-640)",
+          "origins": [
+            "ai_discovery"
+          ],
+          "routes": [
+            "POST /orders/{}/apply-coupon"
+          ]
+        }
+      ],
+      "found_by": [
+        "dynamic",
+        "ai_discovery"
+      ],
+      "ai_discovery_basis": "an AI candidate was reported on this case's endpoint (issue class not verified)"
+    },
+    {
+      "id": "C22",
+      "category": "payment_replay",
+      "location": "POST /orders/{id}/pay",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "high",
+      "source": "workflow",
+      "expected_behavior": "second payment accepted",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C22",
+      "origin": [
+        "MS08"
+      ],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "workflow.payment_replay.3",
+          "path": "/orders/{{order_id}}/pay",
+          "line_range": null
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-1bcb1da144dffdcf3fd8",
+          "finding_id": "merged-1bcb1da144dffdcf3fd8",
+          "source_finding_id": "runtime-12d8f92bbda0b009c94e4b17",
+          "scanner": {
+            "scanner_id": "web-runtime",
+            "scanner_name": "Bounded Web Runtime Checks",
+            "scanner_version": "1.0",
+            "run_index": 0,
+            "result_index": 21,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "workflow.payment_replay.3",
+          "path": "/orders/{{order_id}}/pay",
+          "line": null,
+          "origin": "dynamic",
+          "verdict": "confirmed_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "dynamic"
+      ],
+      "endpoint_findings": [
+        {
+          "group_id": "ai-a815919b2f2f9d7a",
+          "verdict": "likely_vulnerability",
+          "severity": "high",
+          "title": "Missing ownership verification on order payment (CWE-639)",
+          "origins": [
+            "ai_discovery"
+          ],
+          "routes": [
+            "POST /orders/{}/pay"
+          ]
+        }
+      ],
+      "found_by": [
+        "dynamic",
+        "ai_discovery"
+      ],
+      "ai_discovery_basis": "an AI candidate was reported on this case's endpoint (issue class not verified)"
+    },
+    {
+      "id": "C23",
+      "category": "order_state",
+      "location": "POST /orders/{id}/cancel",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "medium",
+      "source": "workflow",
+      "expected_behavior": "paid order cancelled",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C23",
+      "origin": [
+        "MS09"
+      ],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "workflow.paid_cancel.3",
+          "path": "/orders/{{order_id}}/cancel",
+          "line_range": null
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-ccc894903304aa8847bd",
+          "finding_id": "merged-ccc894903304aa8847bd",
+          "source_finding_id": "runtime-128e83b73f127060c05a7721",
+          "scanner": {
+            "scanner_id": "web-runtime",
+            "scanner_name": "Bounded Web Runtime Checks",
+            "scanner_version": "1.0",
+            "run_index": 0,
+            "result_index": 22,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "workflow.paid_cancel.3",
+          "path": "/orders/{{order_id}}/cancel",
+          "line": null,
+          "origin": "dynamic",
+          "verdict": "likely_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "dynamic"
+      ],
+      "endpoint_findings": [
+        {
+          "group_id": "ai-f0dce5b04fc274c8",
+          "verdict": "likely_vulnerability",
+          "severity": "high",
+          "title": "Missing ownership check on order cancellation (CWE-639)",
+          "origins": [
+            "ai_discovery"
+          ],
+          "routes": [
+            "POST /orders/{}/cancel"
+          ]
+        }
+      ],
+      "found_by": [
+        "dynamic",
+        "ai_discovery"
+      ],
+      "ai_discovery_basis": "an AI candidate was reported on this case's endpoint (issue class not verified)"
+    },
+    {
+      "id": "C24",
+      "category": "excessive_data",
+      "location": "GET /me",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "medium",
+      "source": "dast+static",
+      "expected_behavior": "SSN returned to client",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C24",
+      "origin": [
+        "MS10"
+      ],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "workflow.excessive_data.1",
+          "path": "/me",
+          "line_range": null
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-c0dcf73e8d7a6a1fbf02",
+          "finding_id": "merged-c0dcf73e8d7a6a1fbf02",
+          "source_finding_id": "runtime-dfd12f00e32f16e74be8fee3",
+          "scanner": {
+            "scanner_id": "web-runtime",
+            "scanner_name": "Bounded Web Runtime Checks",
+            "scanner_version": "1.0",
+            "run_index": 0,
+            "result_index": 30,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "workflow.excessive_data.1",
+          "path": "/me",
+          "line": null,
+          "origin": "dynamic",
+          "verdict": "likely_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "dynamic"
+      ],
+      "endpoint_findings": [],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "C25",
+      "category": "worker_trust",
+      "location": "POST /jobs",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "high",
+      "source": "workflow+static",
+      "expected_behavior": "ordinary user assigns admin worker role",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C25",
+      "origin": [
+        "MS14"
+      ],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "workflow.worker_role.1",
+          "path": "/jobs",
+          "line_range": null
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-b7e0b624f8cddd0a9e8c",
+          "finding_id": "merged-b7e0b624f8cddd0a9e8c",
+          "source_finding_id": "runtime-d47d5c27b4e143571ef5f9e3",
+          "scanner": {
+            "scanner_id": "web-runtime",
+            "scanner_name": "Bounded Web Runtime Checks",
+            "scanner_version": "1.0",
+            "run_index": 0,
+            "result_index": 27,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "workflow.worker_role.1",
+          "path": "/jobs",
+          "line": null,
+          "origin": "dynamic",
+          "verdict": "confirmed_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "dynamic"
+      ],
+      "endpoint_findings": [],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "C26",
+      "category": "webhook_destination",
+      "location": "POST /webhooks",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "high",
+      "source": "workflow+static",
+      "expected_behavior": "different internal host passes substring path validation and receives callback",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C26",
+      "origin": [
+        "MS15"
+      ],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "workflow.webhook_destination.1",
+          "path": "/webhooks",
+          "line_range": null
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-8cdc677a9810b317840f",
+          "finding_id": "merged-8cdc677a9810b317840f",
+          "source_finding_id": "runtime-79fa84ef4d90b0b35afc2e33",
+          "scanner": {
+            "scanner_id": "web-runtime",
+            "scanner_name": "Bounded Web Runtime Checks",
+            "scanner_version": "1.0",
+            "run_index": 0,
+            "result_index": 32,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "workflow.webhook_destination.1",
+          "path": "/webhooks",
+          "line": null,
+          "origin": "dynamic",
+          "verdict": "confirmed_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "dynamic"
+      ],
+      "endpoint_findings": [],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "C27",
+      "category": "sensitive_logging",
+      "location": "api/app.py:_login",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "medium",
+      "source": "static+log",
+      "expected_behavior": "fake application secret appears in container log",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C27",
+      "origin": [
+        "MS16"
+      ],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "py/clear-text-logging-sensitive-data",
+          "path": "api/app.py",
+          "line_range": [
+            137,
+            137
+          ]
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-3202e1e1074cfd44b9bf",
+          "finding_id": "merged-3202e1e1074cfd44b9bf",
+          "source_finding_id": "finding-cfe66151dbff24377948",
+          "scanner": {
+            "scanner_id": "codeql-cli",
+            "scanner_name": "CodeQL",
+            "scanner_version": "2.27.2",
+            "run_index": 0,
+            "result_index": 9,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "py/clear-text-logging-sensitive-data",
+          "path": "api/app.py",
+          "line": 137,
+          "origin": "static",
+          "verdict": "likely_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "static"
+      ],
+      "endpoint_findings": [],
+      "found_by": [
+        "static"
+      ],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "C28",
+      "category": "weak_config",
+      "location": "compose.yaml",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "low",
+      "source": "static+config",
+      "expected_behavior": "fixed lab secret in Compose environment",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C28",
+      "origin": [
+        "MS17"
+      ],
+      "status": "not_detected",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "endpoint_findings": [],
+      "found_by": [],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "C29",
+      "category": "cross_service_trust",
+      "location": "webhook -> worker -> mock",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "high",
+      "source": "workflow",
+      "expected_behavior": "user-provided admin role reaches worker result",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:C29",
+      "origin": [
+        "MS18"
+      ],
+      "status": "not_detected",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "endpoint_findings": [],
+      "found_by": [],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "N01",
+      "category": "reset_replay",
+      "location": "POST /auth/reset/confirm",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "high",
+      "source": "workflow+static",
+      "expected_behavior": "same reset token changes password twice",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:N01",
+      "origin": [],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "workflow.reset_replay.3",
+          "path": "/auth/reset/confirm",
+          "line_range": null
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-efce9419c25ced2d8892",
+          "finding_id": "merged-efce9419c25ced2d8892",
+          "source_finding_id": "runtime-18719503314710a3e71c38c9",
+          "scanner": {
+            "scanner_id": "web-runtime",
+            "scanner_name": "Bounded Web Runtime Checks",
+            "scanner_version": "1.0",
+            "run_index": 0,
+            "result_index": 35,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "workflow.reset_replay.3",
+          "path": "/auth/reset/confirm",
+          "line": null,
+          "origin": "dynamic",
+          "verdict": "confirmed_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "dynamic"
+      ],
+      "endpoint_findings": [],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "N02",
+      "category": "open_redirect",
+      "location": "GET /auth/continue",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "medium",
+      "source": "dast+static",
+      "expected_behavior": "external Location is accepted",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:N02",
+      "origin": [],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "py/url-redirection",
+          "path": "api/extra.py",
+          "line_range": [
+            617,
+            617
+          ]
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-51bf51abe866bf8d3d67",
+          "finding_id": "merged-51bf51abe866bf8d3d67",
+          "source_finding_id": "finding-ce61cc3f35454cc194f9",
+          "scanner": {
+            "scanner_id": "codeql-cli",
+            "scanner_name": "CodeQL",
+            "scanner_version": "2.27.2",
+            "run_index": 0,
+            "result_index": 10,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "py/url-redirection",
+          "path": "api/extra.py",
+          "line": 617,
+          "origin": "static",
+          "verdict": "likely_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "static"
+      ],
+      "endpoint_findings": [],
+      "found_by": [
+        "static"
+      ],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "N03",
+      "category": "webhook_signature",
+      "location": "POST /integrations/hook",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "high",
+      "source": "workflow+static",
+      "expected_behavior": "unsigned event is accepted",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:N03",
+      "origin": [],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "workflow.unsigned_hook.1",
+          "path": "/integrations/hook",
+          "line_range": null
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-b98074828fe298997980",
+          "finding_id": "merged-b98074828fe298997980",
+          "source_finding_id": "runtime-267f3aec1133283c14739667",
+          "scanner": {
+            "scanner_id": "web-runtime",
+            "scanner_name": "Bounded Web Runtime Checks",
+            "scanner_version": "1.0",
+            "run_index": 0,
+            "result_index": 34,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "workflow.unsigned_hook.1",
+          "path": "/integrations/hook",
+          "line": null,
+          "origin": "dynamic",
+          "verdict": "confirmed_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "dynamic"
+      ],
+      "endpoint_findings": [],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "N04",
+      "category": "nested_resource_access",
+      "location": "GET /orders/{id}/notes/{note_id}",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "high",
+      "source": "workflow+static",
+      "expected_behavior": "note does not belong to path order",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:N04",
+      "origin": [],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "workflow.nested_note.1",
+          "path": "/orders/1/notes/2",
+          "line_range": null
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-0f6fe31b81367808748c",
+          "finding_id": "merged-0f6fe31b81367808748c",
+          "source_finding_id": "runtime-22221f4054533f30bbaf73ba",
+          "scanner": {
+            "scanner_id": "web-runtime",
+            "scanner_name": "Bounded Web Runtime Checks",
+            "scanner_version": "1.0",
+            "run_index": 0,
+            "result_index": 33,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "workflow.nested_note.1",
+          "path": "/orders/1/notes/2",
+          "line": null,
+          "origin": "dynamic",
+          "verdict": "confirmed_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "dynamic"
+      ],
+      "endpoint_findings": [
+        {
+          "group_id": "ai-b1bd5e39cd49c99c",
+          "verdict": "confirmed_vulnerability",
+          "severity": "medium",
+          "title": "Insecure Direct Object Reference (CWE-639) in order_note endpoint",
+          "origins": [
+            "ai_discovery"
+          ],
+          "routes": [
+            "GET /orders/{}/notes/{}"
+          ]
+        }
+      ],
+      "found_by": [
+        "dynamic",
+        "ai_discovery"
+      ],
+      "ai_discovery_basis": "an AI candidate was reported on this case's endpoint (issue class not verified)"
+    },
+    {
+      "id": "N05",
+      "category": "stale_role",
+      "location": "GET /admin/token-report",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "high",
+      "source": "workflow+static",
+      "expected_behavior": "demoted admin retains token role",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:N05",
+      "origin": [],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "workflow.stale_role.3",
+          "path": "/admin/token-report",
+          "line_range": null
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-d58491aad5be35b48233",
+          "finding_id": "merged-d58491aad5be35b48233",
+          "source_finding_id": "runtime-2a9764dfddf0c017eff71be0",
+          "scanner": {
+            "scanner_id": "web-runtime",
+            "scanner_name": "Bounded Web Runtime Checks",
+            "scanner_version": "1.0",
+            "run_index": 0,
+            "result_index": 36,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "workflow.stale_role.3",
+          "path": "/admin/token-report",
+          "line": null,
+          "origin": "dynamic",
+          "verdict": "likely_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "dynamic"
+      ],
+      "endpoint_findings": [],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "N06",
+      "category": "cookie_flags",
+      "location": "GET /session/start",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "medium",
+      "source": "dast",
+      "expected_behavior": "session cookie omits HttpOnly",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:N06",
+      "origin": [],
+      "status": "not_detected",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "endpoint_findings": [
+        {
+          "group_id": "ai-61405af653af249e",
+          "verdict": "likely_vulnerability",
+          "severity": "medium",
+          "title": "Insecure session cookie attributes (CWE-614)",
+          "origins": [
+            "ai_discovery"
+          ],
+          "routes": [
+            "GET /session/start"
+          ]
+        }
+      ],
+      "found_by": [
+        "ai_discovery"
+      ],
+      "ai_discovery_basis": "an AI candidate was reported on this case's endpoint (issue class not verified)"
+    },
+    {
+      "id": "N07",
+      "category": "security_headers",
+      "location": "GET /view",
+      "ground_truth": "confirmed_vulnerability",
+      "severity": "low",
+      "source": "dast",
+      "expected_behavior": "CSP absent on HTML page",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:N07",
+      "origin": [],
+      "status": "detected",
+      "expected_signatures": [
+        {
+          "rule_id": "zap.10038",
+          "path": "/view",
+          "line_range": null
+        }
+      ],
+      "signals": [
+        {
+          "group_id": "merged-a4473061f97f0a366678",
+          "finding_id": "merged-a4473061f97f0a366678",
+          "source_finding_id": "runtime-7a357b5bf54222b07b45d1ba",
+          "scanner": {
+            "scanner_id": "web-runtime",
+            "scanner_name": "Bounded Web Runtime Checks",
+            "scanner_version": "1.0",
+            "run_index": 0,
+            "result_index": 39,
+            "automation_id": null,
+            "task_id": null
+          },
+          "rule_id": "zap.10038",
+          "path": "/view",
+          "line": null,
+          "origin": "dynamic",
+          "verdict": "likely_vulnerability"
+        }
+      ],
+      "has_signature": true,
+      "origins": [
+        "dynamic"
+      ],
+      "endpoint_findings": [
+        {
+          "group_id": "merged-4ae7658c2abfbf689e2b",
+          "verdict": "likely_vulnerability",
+          "severity": "medium",
+          "title": "Missing Anti-clickjacking Header",
+          "origins": [
+            "dynamic"
+          ],
+          "routes": [
+            "GET /view"
+          ]
+        },
+        {
+          "group_id": "merged-cad468186f9fd0b4e99b",
+          "verdict": "likely_vulnerability",
+          "severity": "low",
+          "title": "X-Content-Type-Options Header Missing",
+          "origins": [
+            "dynamic"
+          ],
+          "routes": [
+            "GET /view"
+          ]
+        }
+      ],
+      "found_by": [
+        "dynamic"
+      ],
+      "ai_discovery_basis": null
+    },
+    {
+      "id": "S01",
+      "category": "order_ownership",
+      "location": "GET /orders/{id}/verified",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "cross-user read denied",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S01",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S02",
+      "category": "profile_ownership",
+      "location": "GET /profiles/{id}/verified",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "cross-user read denied",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S02",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S03",
+      "category": "parameterized_login",
+      "location": "POST /auth/checked-login",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "SQL payload denied",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S03",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S04",
+      "category": "parameterized_search",
+      "location": "GET /catalog/query",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "SQL payload does not broaden results",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S04",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S05",
+      "category": "escaped_reflection",
+      "location": "GET /catalog/query",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "script markup escaped",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S05",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S06",
+      "category": "escaped_comments",
+      "location": "GET /forum/messages",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "stored markup escaped",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S06",
+      "origin": [],
+      "status": "safe_control_flagged",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": [
+        "ai-4800f588e9a977c1"
+      ]
+    },
+    {
+      "id": "S07",
+      "category": "admin_role",
+      "location": "GET /admin/audit",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "ordinary user denied",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S07",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S08",
+      "category": "file_boundary",
+      "location": "GET /files/verified",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "parent path denied",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S08",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S09",
+      "category": "generic_errors",
+      "location": "GET /errors/checked",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "database details hidden",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S09",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S10",
+      "category": "login_lockout",
+      "location": "POST /auth/limited-login",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "repeated failures lock account",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S10",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S11",
+      "category": "document_upload",
+      "location": "POST /documents",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "HTML upload rejected",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S11",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S12",
+      "category": "server_order_fields",
+      "location": "POST /orders/verified",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "owner, price and state set by server",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S12",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S13",
+      "category": "server_coupon",
+      "location": "POST /orders/{id}/verified-coupon",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "client percentage ignored",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S13",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S14",
+      "category": "payment_idempotency",
+      "location": "POST /orders/{id}/verified-pay",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "second payment denied",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S14",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S15",
+      "category": "order_transition",
+      "location": "POST /orders/{id}/verified-cancel",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "paid order cannot cancel",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S15",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S16",
+      "category": "invoice_ownership",
+      "location": "GET /invoices/{id}/verified",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "cross-user read denied",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S16",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S17",
+      "category": "minimal_identity",
+      "location": "GET /me/verified",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "SSN omitted",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S17",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S18",
+      "category": "worker_identity",
+      "location": "POST /jobs/verified",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "worker role set from account",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S18",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S19",
+      "category": "webhook_host",
+      "location": "POST /webhooks/verified",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "alternate internal host rejected",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S19",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S20",
+      "category": "nested_resource_binding",
+      "location": "GET /orders/{id}/notes/{note_id}/verified",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "note must match order ID",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S20",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S21",
+      "category": "local_redirect",
+      "location": "GET /auth/continue/verified",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "external Location rejected",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S21",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S22",
+      "category": "hook_hmac",
+      "location": "POST /integrations/hook-verified",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "unsigned event rejected",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S22",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S23",
+      "category": "cookie_flags",
+      "location": "GET /session/secure-start",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "HttpOnly, Secure and SameSite present",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S23",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S24",
+      "category": "response_headers",
+      "location": "GET /status/secure",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "CSP present",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S24",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S25",
+      "category": "current_admin_role",
+      "location": "GET /admin/current-report",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "ordinary user denied",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S25",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S26",
+      "category": "nested_ownership",
+      "location": "GET /orders/{id}/notes/{note_id}/verified",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "foreign owner denied",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S26",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    },
+    {
+      "id": "S27",
+      "category": "single_use_reset",
+      "location": "POST /auth/reset/verified-confirm",
+      "ground_truth": "safe_control",
+      "severity": null,
+      "source": null,
+      "expected_behavior": "second use rejected; token delivery remains lab-only",
+      "proof_ref": "benchmark/check_comprehensive_lab.py:S27",
+      "origin": [],
+      "status": "safe_control_clean",
+      "expected_signatures": [],
+      "signals": [],
+      "has_signature": false,
+      "origins": [],
+      "flagged_by": []
+    }
+  ],
+  "adjudication_queue": [
+    {
+      "group_id": "merged-15dd977d52312c30635a",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "title": "Job listing requires admin role",
+      "origins": [
+        "dynamic"
+      ],
+      "routes": [
+        "GET /admin/jobs"
+      ],
+      "outcome": "unlabeled",
+      "known_cases": []
+    },
+    {
+      "group_id": "merged-87e0399272a390813ea5",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "title": "Missing clickjacking protection header",
+      "origins": [
+        "dynamic"
+      ],
+      "routes": [
+        "GET /healthz"
+      ],
+      "outcome": "known_endpoint",
+      "known_cases": [
+        "C14"
+      ]
+    },
+    {
+      "group_id": "merged-bbf1646deeb18d1e95db",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "title": "Missing X-Content-Type-Options header",
+      "origins": [
+        "dynamic"
+      ],
+      "routes": [
+        "GET /healthz"
+      ],
+      "outcome": "known_endpoint",
+      "known_cases": [
+        "C14"
+      ]
+    },
+    {
+      "group_id": "merged-9c6fcf61fc01168b15e2",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "title": "Log Injection / Secret Exposure",
+      "origins": [
+        "static"
+      ],
+      "routes": [],
+      "outcome": "unlabeled",
+      "known_cases": []
+    },
+    {
+      "group_id": "merged-58377a692410b6446bbd",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "title": "No HEALTHCHECK defined",
+      "origins": [
+        "static"
+      ],
+      "routes": [],
+      "outcome": "unlabeled",
+      "known_cases": []
+    },
+    {
+      "group_id": "ai-bf1824ec21fc73f8",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "title": "Missing authentication on public file download (CWE-284)",
+      "origins": [
+        "ai_discovery"
+      ],
+      "routes": [
+        "GET /files"
+      ],
+      "outcome": "known_endpoint",
+      "known_cases": [
+        "C08"
+      ]
+    },
+    {
+      "group_id": "ai-c39cb4040816d8a1",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "title": "Potential token replay via refresh endpoint without revocation check (CWE-613)",
+      "origins": [
+        "ai_discovery"
+      ],
+      "routes": [
+        "POST /auth/refresh"
+      ],
+      "outcome": "known_endpoint",
+      "known_cases": [
+        "C17"
+      ]
+    },
+    {
+      "group_id": "ai-cfd2d2f7a41c1178",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "title": "Potential mass assignment in comment creation (CWE-915)",
+      "origins": [
+        "ai_discovery"
+      ],
+      "routes": [
+        "POST /comments"
+      ],
+      "outcome": "known_endpoint",
+      "known_cases": [
+        "C06"
+      ]
+    },
+    {
+      "group_id": "ai-a815919b2f2f9d7a",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "title": "Missing ownership verification on order payment (CWE-639)",
+      "origins": [
+        "ai_discovery"
+      ],
+      "routes": [
+        "POST /orders/{}/pay"
+      ],
+      "outcome": "known_endpoint",
+      "known_cases": [
+        "C22"
+      ]
+    },
+    {
+      "group_id": "ai-a8a36fd7f927dc98",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "title": "Unrestricted coupon discount manipulation (CWE-640)",
+      "origins": [
+        "ai_discovery"
+      ],
+      "routes": [
+        "POST /orders/{}/apply-coupon"
+      ],
+      "outcome": "known_endpoint",
+      "known_cases": [
+        "C21"
+      ]
+    },
+    {
+      "group_id": "ai-cd57b8a32df8fcc3",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "title": "Potential path traversal in file_read endpoint (CWE-22)",
+      "origins": [
+        "ai_discovery"
+      ],
+      "routes": [
+        "GET /files"
+      ],
+      "outcome": "known_endpoint",
+      "known_cases": [
+        "C08"
+      ]
+    },
+    {
+      "group_id": "ai-f0dce5b04fc274c8",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "title": "Missing ownership check on order cancellation (CWE-639)",
+      "origins": [
+        "ai_discovery"
+      ],
+      "routes": [
+        "POST /orders/{}/cancel"
+      ],
+      "outcome": "known_endpoint",
+      "known_cases": [
+        "C23"
+      ]
+    },
+    {
+      "group_id": "ai-13705465b5427a14",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "title": "Missing authorization on admin user listing (CWE-284)",
+      "origins": [
+        "ai_discovery"
+      ],
+      "routes": [
+        "GET /admin/users"
+      ],
+      "outcome": "known_endpoint",
+      "known_cases": [
+        "C07"
+      ]
+    },
+    {
+      "group_id": "ai-c33ff249638a3733",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "title": "Missing authorization on admin job listing (CWE-284)",
+      "origins": [
+        "ai_discovery"
+      ],
+      "routes": [
+        "GET /admin/jobs"
+      ],
+      "outcome": "unlabeled",
+      "known_cases": []
+    },
+    {
+      "group_id": "ai-b545bf0884ed98c5",
+      "verdict": "confirmed_vulnerability",
+      "severity": "high",
+      "title": "Debug configuration endpoint exposes secrets (CWE-200)",
+      "origins": [
+        "ai_discovery"
+      ],
+      "routes": [
+        "GET /debug/config"
+      ],
+      "outcome": "known_endpoint",
+      "known_cases": [
+        "C11"
+      ]
+    },
+    {
+      "group_id": "ai-61405af653af249e",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "title": "Insecure session cookie attributes (CWE-614)",
+      "origins": [
+        "ai_discovery"
+      ],
+      "routes": [
+        "GET /session/start"
+      ],
+      "outcome": "unlabeled",
+      "known_cases": []
+    },
+    {
+      "group_id": "ai-ad99add32a8324a1",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "title": "Password reset token without expiration (CWE-640)",
+      "origins": [
+        "ai_discovery"
+      ],
+      "routes": [
+        "POST /auth/reset/request"
+      ],
+      "outcome": "unlabeled",
+      "known_cases": []
+    },
+    {
+      "group_id": "ai-52bb7c949fbd132a",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "title": "Password reset request lacks rate limiting (CWE-307)",
+      "origins": [
+        "ai_discovery"
+      ],
+      "routes": [
+        "POST /auth/reset/request"
+      ],
+      "outcome": "unlabeled",
+      "known_cases": []
+    },
+    {
+      "group_id": "ai-6322be0c6e12b177",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "title": "Insecure Direct Object Reference (CWE-639) in profile endpoint",
+      "origins": [
+        "ai_discovery"
+      ],
+      "routes": [
+        "GET /profiles/{}"
+      ],
+      "outcome": "known_endpoint",
+      "known_cases": [
+        "C02"
+      ]
+    },
+    {
+      "group_id": "ai-40fd1ed3ab05cb13",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "title": "Missing Authorization Check (CWE-862) in admin_overview endpoint",
+      "origins": [
+        "ai_discovery"
+      ],
+      "routes": [
+        "GET /admin/overview"
+      ],
+      "outcome": "unlabeled",
+      "known_cases": []
+    },
+    {
+      "group_id": "ai-b1bd5e39cd49c99c",
+      "verdict": "confirmed_vulnerability",
+      "severity": "medium",
+      "title": "Insecure Direct Object Reference (CWE-639) in order_note endpoint",
+      "origins": [
+        "ai_discovery"
+      ],
+      "routes": [
+        "GET /orders/{}/notes/{}"
+      ],
+      "outcome": "known_endpoint",
+      "known_cases": [
+        "N04"
+      ]
+    },
+    {
+      "group_id": "ai-78a9caea45c6fa5b",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "title": "Insecure Direct Object Reference (CWE-639) in view_upload endpoint",
+      "origins": [
+        "ai_discovery"
+      ],
+      "routes": [
+        "GET /uploads/{}"
+      ],
+      "outcome": "unlabeled",
+      "known_cases": []
+    },
+    {
+      "group_id": "ai-1fc4f9193a923e69",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "title": "Information Disclosure via Detailed Error Message (CWE-200)",
+      "origins": [
+        "ai_discovery"
+      ],
+      "routes": [
+        "GET /errors/query"
+      ],
+      "outcome": "known_endpoint",
+      "known_cases": [
+        "C12"
+      ]
+    }
+  ],
+  "outside_scope_findings": [
+    {
+      "group_id": "merged-4c6d36222f8ebf7f1f68",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "title": "X-Content-Type-Options Header Missing",
+      "origins": [
+        "dynamic"
+      ],
+      "routes": [
+        "GET /"
+      ]
+    },
+    {
+      "group_id": "merged-0bcbb317cfb96e7d5505",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "title": "Cookie No HttpOnly Flag",
+      "origins": [
+        "dynamic"
+      ],
+      "routes": [
+        "POST /auth/form-login"
+      ]
+    },
+    {
+      "group_id": "merged-56ecc860a2c48330a29a",
+      "verdict": "confirmed_vulnerability",
+      "severity": "medium",
+      "title": "Missing Anti-clickjacking Header",
+      "origins": [
+        "dynamic"
+      ],
+      "routes": [
+        "POST /auth/form-login"
+      ]
+    },
+    {
+      "group_id": "merged-69b75a0aa3f8fc9fb800",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "title": "Content Security Policy (CSP) Header Not Set",
+      "origins": [
+        "dynamic"
+      ],
+      "routes": [
+        "POST /auth/form-login"
+      ]
+    },
+    {
+      "group_id": "merged-4a2311054cdc2bfe890d",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "title": "Content Security Policy (CSP) Header Not Set",
+      "origins": [
+        "dynamic"
+      ],
+      "routes": [
+        "GET /catalog/query"
+      ]
+    },
+    {
+      "group_id": "merged-a6e788cfc5d9d1297feb",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "title": "X-Content-Type-Options Header Missing",
+      "origins": [
+        "dynamic"
+      ],
+      "routes": [
+        "GET /catalog/query"
+      ]
+    },
+    {
+      "group_id": "merged-a9a9a0b97f19f8bf52ae",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "title": "Missing Anti-clickjacking Header",
+      "origins": [
+        "dynamic"
+      ],
+      "routes": [
+        "GET /catalog/query"
+      ]
+    },
+    {
+      "group_id": "merged-6e468e09eab3ca889e3d",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "title": "Missing Anti-clickjacking Header",
+      "origins": [
+        "dynamic"
+      ],
+      "routes": [
+        "GET /comments"
+      ]
+    },
+    {
+      "group_id": "merged-81ff94e895c53dbc2029",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "title": "Content Security Policy (CSP) Header Not Set",
+      "origins": [
+        "dynamic"
+      ],
+      "routes": [
+        "GET /comments"
+      ]
+    },
+    {
+      "group_id": "merged-d716d5afb61da294d286",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "title": "X-Content-Type-Options Header Missing",
+      "origins": [
+        "dynamic"
+      ],
+      "routes": [
+        "GET /comments"
+      ]
+    },
+    {
+      "group_id": "merged-4ae7658c2abfbf689e2b",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "title": "Missing Anti-clickjacking Header",
+      "origins": [
+        "dynamic"
+      ],
+      "routes": [
+        "GET /view"
+      ]
+    },
+    {
+      "group_id": "merged-cad468186f9fd0b4e99b",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "title": "X-Content-Type-Options Header Missing",
+      "origins": [
+        "dynamic"
+      ],
+      "routes": [
+        "GET /view"
+      ]
+    },
+    {
+      "group_id": "merged-051697f9b8567d596874",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "title": "python-multipart: Denial of Service via crafted form-urlencoded bodies",
+      "origins": [
+        "static"
+      ],
+      "routes": []
+    },
+    {
+      "group_id": "merged-3503f2dec888990b31f2",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "title": "python-multipart: Denial of Service via excessive multipart part headers",
+      "origins": [
+        "static"
+      ],
+      "routes": []
+    },
+    {
+      "group_id": "merged-74bb99c1ff3b5ed1fea8",
+      "verdict": "confirmed_vulnerability",
+      "severity": "low",
+      "title": "python-multipart: Information disclosure due to parser differential in form data handling",
+      "origins": [
+        "static"
+      ],
+      "routes": []
+    },
+    {
+      "group_id": "merged-8a5f28db4eebc517239e",
+      "verdict": "confirmed_vulnerability",
+      "severity": "medium",
+      "title": "python-multipart: Denial of Service via crafted multipart/form-data requests",
+      "origins": [
+        "static"
+      ],
+      "routes": []
+    },
+    {
+      "group_id": "merged-8ce42d9c8b52a95b109d",
+      "verdict": "confirmed_vulnerability",
+      "severity": "high",
+      "title": "python-multipart: Arbitrary file write via path traversal vulnerability (CVE-2026-24486)",
+      "origins": [
+        "static"
+      ],
+      "routes": []
+    },
+    {
+      "group_id": "merged-e76230cbef200116e4ae",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "title": "multipart: Python-Multipart: Information disclosure via header parsing discrepancy",
+      "origins": [
+        "static"
+      ],
+      "routes": []
+    },
+    {
+      "group_id": "merged-f15e42abb7b2acd921f1",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "title": "python-multipart: Negative Content-Length in parse_form buffers the entire body in memory",
+      "origins": [
+        "static"
+      ],
+      "routes": []
+    }
+  ],
+  "safe_control_hits": [
+    {
+      "group_id": "ai-4800f588e9a977c1",
+      "verdict": "confirmed_vulnerability",
+      "severity": "medium",
+      "title": "Missing Authorization for Forum Messages (CWE-862)",
+      "origins": [
+        "ai_discovery"
+      ],
+      "routes": [
+        "GET /forum/messages"
+      ],
+      "safe_controls": [
+        "S06"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0",
+  "status": "generic_completed",
+  "target": "http://127.0.0.1:8091",
+  "probe_count": 37,
+  "browser": {
+    "status": "not_requested",
+    "pages_visited": 0,
+    "discovered_links": 0
+  },
+  "zap": {
+    "status": "not_requested",
+    "engine": null,
+    "alerts": 0
+  },
+  "workflows": {
+    "status": "completed",
+    "declared": 40,
+    "executed": 40,
+    "violations": 20
+  },
+  "endpoint_coverage": {
+    "probe_count": 37
+  },
+  "coverage_gaps": [
+    "A negative result means only that this probe did not observe the behavior.",
+    "A violation is an observed contract mismatch requiring security review.",
+    "Baseline checks use bounded HTTP GET observations for an authorized target; declared paths must be safe to visit.",
+    "Coverage applies only to declared assertions, accounts and workflows.",
+    "Fresh stack resets the run; workflows must create independent test data. No per-step database reset is performed.",
+    "The baseline phase alone does not crawl browsers, test account workflows or confirm exploitation; additional phases are recorded separately."
+  ],
+  "interpretation": "Coverage describes executed probes, not proof that untested vulnerabilities are absent."
+}

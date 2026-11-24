@@ -1,0 +1,1066 @@
+{
+  "schema_version": "1.0",
+  "policy_version": "heuristic-v1",
+  "status": "complete",
+  "policy": {
+    "deep_review_threshold": 65,
+    "max_deep_reviews": 20
+  },
+  "findings": [
+    {
+      "rank": 1,
+      "merged_finding_id": "merged-18f1abe978f9fdaad8e6",
+      "title": "SQL query built from user-controlled sources",
+      "primary_location": {
+        "path": "api/extra.py",
+        "start_line": 119,
+        "start_column": 28,
+        "end_line": null,
+        "end_column": 33,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-89"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 74,
+      "priority_band": "high",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 12,
+          "evidence": [
+            "CWE-89"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "3 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 2,
+      "merged_finding_id": "merged-f60fee7d82fbca512208",
+      "title": "SQL query built from user-controlled sources",
+      "primary_location": {
+        "path": "api/extra.py",
+        "start_line": 144,
+        "start_column": 29,
+        "end_line": null,
+        "end_column": 82,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-89"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 74,
+      "priority_band": "high",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 12,
+          "evidence": [
+            "CWE-89"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "2 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 3,
+      "merged_finding_id": "merged-ea527a7d7441e2b11700",
+      "title": "Reflected server-side cross-site scripting",
+      "primary_location": {
+        "path": "api/extra.py",
+        "start_line": 145,
+        "start_column": 12,
+        "end_line": null,
+        "end_column": 90,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-79",
+        "CWE-116"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 70,
+      "priority_band": "high",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-79"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "2 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 4,
+      "merged_finding_id": "merged-f4eaf141df049c63545d",
+      "title": "Uncontrolled data used in path expression",
+      "primary_location": {
+        "path": "api/extra.py",
+        "start_line": 212,
+        "start_column": 13,
+        "end_line": null,
+        "end_column": 36,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-22",
+        "CWE-23",
+        "CWE-36",
+        "CWE-73",
+        "CWE-99"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 70,
+      "priority_band": "high",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-22"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "2 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 5,
+      "merged_finding_id": "merged-83d97da4516adf20e20f",
+      "title": "Uncontrolled data used in path expression",
+      "primary_location": {
+        "path": "api/extra.py",
+        "start_line": 213,
+        "start_column": 56,
+        "end_line": null,
+        "end_column": 60,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-22",
+        "CWE-23",
+        "CWE-36",
+        "CWE-73",
+        "CWE-99"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 70,
+      "priority_band": "high",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-22"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "3 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 6,
+      "merged_finding_id": "merged-b527b3ed30e57aac5ec5",
+      "title": "Uncontrolled data used in path expression",
+      "primary_location": {
+        "path": "api/extra.py",
+        "start_line": 215,
+        "start_column": 21,
+        "end_line": null,
+        "end_column": 25,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-22",
+        "CWE-23",
+        "CWE-36",
+        "CWE-73",
+        "CWE-99"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 70,
+      "priority_band": "high",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-22"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "3 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 7,
+      "merged_finding_id": "merged-24d14609e3893220ea16",
+      "title": "Uncontrolled data used in path expression",
+      "primary_location": {
+        "path": "api/extra.py",
+        "start_line": 221,
+        "start_column": 13,
+        "end_line": null,
+        "end_column": 24,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-22",
+        "CWE-23",
+        "CWE-36",
+        "CWE-73",
+        "CWE-99"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 70,
+      "priority_band": "high",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-22"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "2 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 8,
+      "merged_finding_id": "merged-794dcb4921076779cef0",
+      "title": "Uncontrolled data used in path expression",
+      "primary_location": {
+        "path": "api/extra.py",
+        "start_line": 222,
+        "start_column": 45,
+        "end_line": null,
+        "end_column": 49,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-22",
+        "CWE-23",
+        "CWE-36",
+        "CWE-73",
+        "CWE-99"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 70,
+      "priority_band": "high",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-22"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "3 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 9,
+      "merged_finding_id": "merged-b3c734b4cef8dd70fce0",
+      "title": "Uncontrolled data used in path expression",
+      "primary_location": {
+        "path": "api/extra.py",
+        "start_line": 224,
+        "start_column": 21,
+        "end_line": null,
+        "end_column": 25,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-22",
+        "CWE-23",
+        "CWE-36",
+        "CWE-73",
+        "CWE-99"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 70,
+      "priority_band": "high",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 8,
+          "evidence": [
+            "CWE-22"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "3 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 10,
+      "merged_finding_id": "merged-3202e1e1074cfd44b9bf",
+      "title": "Clear-text logging of sensitive information",
+      "primary_location": {
+        "path": "api/app.py",
+        "start_line": 137,
+        "start_column": 55,
+        "end_line": null,
+        "end_column": 95,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-312",
+        "CWE-359",
+        "CWE-532"
+      ],
+      "scanners": [
+        "codeql-cli",
+        "semgrep-ce"
+      ],
+      "risk_score": 60,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_corroboration",
+          "label": "Independent scanner support",
+          "points": 8,
+          "evidence": [
+            "codeql-cli",
+            "semgrep-ce"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 11,
+      "merged_finding_id": "merged-9c6fcf61fc01168b15e2",
+      "title": "Log Injection",
+      "primary_location": {
+        "path": "api/app.py",
+        "start_line": 137,
+        "start_column": 45,
+        "end_line": null,
+        "end_column": 53,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "medium",
+      "cwes": [
+        "CWE-117"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 54,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "14 steps",
+            "1 files"
+          ]
+        },
+        {
+          "factor_id": "external_input",
+          "label": "External input signal in collected flow",
+          "points": 12,
+          "evidence": [
+            "flask_request_form",
+            "generic_request_json"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 12,
+      "merged_finding_id": "merged-51bf51abe866bf8d3d67",
+      "title": "URL redirection from remote source",
+      "primary_location": {
+        "path": "api/extra.py",
+        "start_line": 617,
+        "start_column": 29,
+        "end_line": null,
+        "end_column": 33,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-601"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 47,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "2 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 13,
+      "merged_finding_id": "merged-f41fd10802e7c4dd22bb",
+      "title": "URL redirection from remote source",
+      "primary_location": {
+        "path": "api/extra.py",
+        "start_line": 625,
+        "start_column": 29,
+        "end_line": null,
+        "end_column": 33,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-601"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 47,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "2 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 14,
+      "merged_finding_id": "merged-70f8087c412d06924742",
+      "title": "Wildcard Cors",
+      "primary_location": {
+        "path": "api/app.py",
+        "start_line": 26,
+        "start_column": 19,
+        "end_line": 26,
+        "end_column": 24,
+        "snippet": null
+      },
+      "scanner_severity": "low",
+      "scanner_confidence": "medium",
+      "cwes": [
+        "CWE-942"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 17,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 10,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 15,
+      "merged_finding_id": "merged-58377a692410b6446bbd",
+      "title": "No HEALTHCHECK defined",
+      "primary_location": {
+        "path": "Dockerfile.api",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "low",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "trivy"
+      ],
+      "risk_score": 17,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 10,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 16,
+      "merged_finding_id": "merged-0de42012099941c48e01",
+      "title": "No HEALTHCHECK defined",
+      "primary_location": {
+        "path": "Dockerfile.mock",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "low",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "trivy"
+      ],
+      "risk_score": 17,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 10,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 17,
+      "merged_finding_id": "merged-df83daf10f817c7aa965",
+      "title": "No HEALTHCHECK defined",
+      "primary_location": {
+        "path": "Dockerfile.worker",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "scanner_severity": "low",
+      "scanner_confidence": "medium",
+      "cwes": [],
+      "scanners": [
+        "trivy"
+      ],
+      "risk_score": 17,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 10,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 18,
+      "merged_finding_id": "merged-c150b78349615dd9bc2d",
+      "title": "Dynamic Urllib Use Detected",
+      "primary_location": {
+        "path": "worker/worker.py",
+        "start_line": 23,
+        "start_column": 14,
+        "end_line": 23,
+        "end_column": 56,
+        "snippet": null
+      },
+      "scanner_severity": "low",
+      "scanner_confidence": "low",
+      "cwes": [
+        "CWE-939"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 12,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 10,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 2,
+          "evidence": [
+            "low"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 19,
+      "merged_finding_id": "merged-7711056ee3332442a201",
+      "title": "Dynamic Urllib Use Detected",
+      "primary_location": {
+        "path": "tests/test_smoke.py",
+        "start_line": 20,
+        "start_column": 10,
+        "end_line": 22,
+        "end_column": 6,
+        "snippet": null
+      },
+      "scanner_severity": "low",
+      "scanner_confidence": "low",
+      "cwes": [
+        "CWE-939"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 0,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 10,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 2,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "non_production_path",
+          "label": "Test, fixture or example path",
+          "points": -15,
+          "evidence": [
+            "tests/test_smoke.py"
+          ]
+        }
+      ]
+    }
+  ],
+  "warnings": [],
+  "coverage_gaps": [],
+  "summary": {
+    "input_findings": 19,
+    "ranked_findings": 19,
+    "selected_for_deep_review": 9,
+    "queued_for_deep_review": 0,
+    "standard_report": 10,
+    "needs_verification": 0
+  }
+}

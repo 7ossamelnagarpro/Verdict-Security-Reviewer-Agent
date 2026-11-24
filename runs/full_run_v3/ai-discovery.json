@@ -1,0 +1,238 @@
+{
+  "schema_version": "1.2",
+  "status": "partial",
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "scope": [
+    "file:app.py#L213-221",
+    "file:app.py#L227-237",
+    "file:app.py#L243-250"
+  ],
+  "candidates": [
+    {
+      "candidate_id": "ai-519e23d1766caa07",
+      "title": "Missing Authorization Check for Order Access",
+      "category": "Authorization",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "app.py",
+      "start_line": 213,
+      "end_line": 221,
+      "evidence": [
+        "if \"user_id\" not in session:",
+        "return redirect(\"/login\")",
+        "row = db.execute(\"SELECT * FROM orders WHERE id = ?\", (order_id,)).fetchone()",
+        "return jsonify(dict(row))"
+      ],
+      "reasoning": "The endpoint returns order details based solely on the order_id path parameter after confirming the requester is logged in, but it does not verify that the logged\u2011in user actually owns the order. An attacker could enumerate order IDs and retrieve other users' orders, leading to broken access control.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "source_citation_reanchored:entry_point:app.py:214->213",
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "app.py",
+        "line": 213,
+        "code": "@app.route(\"/orders/<int:order_id>\")"
+      },
+      "sensitive_operation": {
+        "path": "app.py",
+        "line": 218,
+        "code": "row = db.execute(\"SELECT * FROM orders WHERE id = ?\", (order_id,)).fetchone()"
+      },
+      "missing_check": {
+        "path": "app.py",
+        "line": 218,
+        "expected_check": "Verify that the order belongs to the authenticated user (e.g., compare row['user_id'] with session['user_id']).",
+        "observation": "No such ownership verification is present before returning the order data."
+      },
+      "remaining_questions": [
+        "Is there any higher\u2011level middleware that enforces per\u2011resource ownership?",
+        "Does the orders table contain a user_id column that can be used for the check?"
+      ]
+    },
+    {
+      "candidate_id": "ai-048007af103a4b4c",
+      "title": "Missing Authorization for Profile Viewing",
+      "category": "Authorization",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "app.py",
+      "start_line": 227,
+      "end_line": 237,
+      "evidence": [
+        "if \"user_id\" not in session:",
+        "return redirect(\"/login\")",
+        "row = db.execute(\"SELECT id, username, email, ssn, role FROM users WHERE id = ?\", (user_id,)).fetchone()",
+        "return jsonify(dict(row))"
+      ],
+      "reasoning": "The profile endpoint allows any authenticated user to request any user_id via the URL and returns sensitive fields (email, ssn, role) without confirming that the requester is the same user or has appropriate privileges. This enables enumeration of other users' personal data.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "source_citation_reanchored:entry_point:app.py:228->227",
+        "source_citation_reanchored:sensitive_operation:app.py:233->232",
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "app.py",
+        "line": 227,
+        "code": "@app.route(\"/profile/<int:user_id>\")"
+      },
+      "sensitive_operation": {
+        "path": "app.py",
+        "line": 232,
+        "code": "row = db.execute(\"SELECT id, username, email, ssn, role FROM users WHERE id = ?\", (user_id,)).fetchone()"
+      },
+      "missing_check": {
+        "path": "app.py",
+        "line": 233,
+        "expected_check": "Ensure the authenticated user matches user_id or has admin privileges before returning personal data.",
+        "observation": "No ownership or role check is performed."
+      },
+      "remaining_questions": [
+        "Is there a global decorator that restricts profile access to the owner or admins?",
+        "Are there any audit logs that record profile accesses?"
+      ]
+    },
+    {
+      "candidate_id": "ai-210e11b3c2eb7764",
+      "title": "Improper Admin Role Verification",
+      "category": "Authorization",
+      "severity": "critical",
+      "confidence": "medium",
+      "path": "app.py",
+      "start_line": 243,
+      "end_line": 250,
+      "evidence": [
+        "role = request.args.get(\"role\") or session.get(\"role\")",
+        "if role != \"admin\":",
+        "pass",
+        "users = db.execute(\"SELECT id, username, role, email, ssn FROM users\").fetchall()",
+        "return jsonify([dict(u) for u in users])"
+      ],
+      "reasoning": "The admin panel attempts to restrict access by checking a role value that can be supplied via a query parameter. An attacker can simply set ?role=admin to bypass the check, and the code does not abort or return an error when the role is not admin (the block contains only a pass). Consequently, any authenticated user can retrieve the full list of users, including sensitive fields.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "app.py",
+        "line": 243,
+        "code": "@app.route(\"/admin\")"
+      },
+      "sensitive_operation": {
+        "path": "app.py",
+        "line": 249,
+        "code": "users = db.execute(\"SELECT id, username, role, email, ssn FROM users\").fetchall()"
+      },
+      "missing_check": {
+        "path": "app.py",
+        "line": 246,
+        "expected_check": "Enforce a strict server\u2011side role check (e.g., compare session['role'] only) and abort/return 403 when not admin.",
+        "observation": "The check uses a request parameter and does nothing on failure."
+      },
+      "remaining_questions": [
+        "Is there any other middleware that validates admin privileges before this handler runs?",
+        "Does the session role value get set securely elsewhere?"
+      ]
+    }
+  ],
+  "warnings": [],
+  "coverage_gaps": [
+    "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile.",
+    "codeql-cli task task-e01e4c2db2dc did not complete: adapter_unavailable (No runtime adapter is registered for this scanner).",
+    "gitleaks task task-510db4138e2f did not complete: prerequisite_unverified (Unverified prerequisites: gitleaks_executable).",
+    "semgrep-ce normalization was partial; some scanner results may be unavailable.",
+    "trivy task task-45e5f84af47a did not complete: prerequisite_unverified (Unverified prerequisites: trivy_executable, trivy_databases).",
+    "trivy task task-f535ab2d488a did not complete: prerequisite_unverified (Unverified prerequisites: trivy_executable)."
+  ],
+  "usage": {
+    "retry_count": 0,
+    "rate_limit_wait_seconds": 0.0,
+    "format_fallback_count": 0,
+    "queue_time": 0.213729444,
+    "prompt_tokens": 2439,
+    "prompt_time": 0.12414738,
+    "completion_tokens": 1349,
+    "completion_time": 2.860066179,
+    "total_tokens": 3788,
+    "total_time": 2.984213559,
+    "targets": 3,
+    "planned_targets": 3,
+    "batches": 1,
+    "provider_calls": 1,
+    "estimated_cost_usd": null,
+    "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+  },
+  "target_plan": [
+    {
+      "target_id": "file:app.py#L213-221",
+      "kind": "unflagged_hotspot",
+      "path": "app.py",
+      "start_line": 213,
+      "end_line": 221,
+      "reasons": [
+        "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:app.py#L227-237",
+      "kind": "unflagged_hotspot",
+      "path": "app.py",
+      "start_line": 227,
+      "end_line": 237,
+      "reasons": [
+        "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:app.py#L243-250",
+      "kind": "unflagged_hotspot",
+      "path": "app.py",
+      "start_line": 243,
+      "end_line": 250,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    }
+  ],
+  "batches": [
+    {
+      "batch_index": 1,
+      "target_ids": [
+        "file:app.py#L213-221",
+        "file:app.py#L227-237",
+        "file:app.py#L243-250"
+      ],
+      "status": "completed",
+      "prompt_chars": 5774,
+      "provider_calls": 1,
+      "candidate_count": 3,
+      "context_requests": 0,
+      "usage": {
+        "retry_count": 0,
+        "rate_limit_wait_seconds": 0.0,
+        "format_fallback_count": 0,
+        "queue_time": 0.213729444,
+        "prompt_tokens": 2439,
+        "prompt_time": 0.12414738,
+        "completion_tokens": 1349,
+        "completion_time": 2.860066179,
+        "total_tokens": 3788,
+        "total_time": 2.984213559,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-519e23d1766caa07",
+        "ai-048007af103a4b4c",
+        "ai-210e11b3c2eb7764"
+      ]
+    }
+  ],
+  "context_exchanges": []
+}

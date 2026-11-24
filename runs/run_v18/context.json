@@ -1,0 +1,1170 @@
+{
+  "schema_version": "1.1",
+  "status": "partial",
+  "project_root": "/mnt/c/Users/ASUS/Downloads/2update/verdict-integrated/targets/security-lab-web",
+  "findings": [
+    {
+      "merged_finding_id": "merged-5f86348cac48297047fd",
+      "title": "Sql Injection Db Cursor Execute",
+      "severity": "high",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-89"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.django.security.injection.sql.sql-injection-using-db-cursor-execute.sql-injection-db-cursor-execute",
+        "location": {
+          "path": "app.py",
+          "start_line": 145,
+          "start_column": 5,
+          "end_line": 152,
+          "end_column": 68,
+          "snippet": null
+        },
+        "message": "User-controlled data from a request is passed to 'execute()'. This could lead to a SQL injection and therefore protected information could be leaked. Instead, use django's QuerySets, which are built with query parameterization and therefore not vulnerable to sql injection. For example, you could use `Entry.objects.filter(date=2006)`.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-c5178ee2090abff17478",
+        "symbol_ref": "sym-24e1b4e6b8d61b6288fc02a915cc54c55e594497126a2e40d288e9547a99c047",
+        "excerpt_ref": "ex-b532c2e8c0e1ff6ce50c390892a30be433d37ea20b7b150c39ed9ba4870bbdb0"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-d18be02f5e96fbe63979",
+      "title": "Sql Injection Db Cursor Execute",
+      "severity": "high",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-89"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.django.security.injection.sql.sql-injection-using-db-cursor-execute.sql-injection-db-cursor-execute",
+        "location": {
+          "path": "app.py",
+          "start_line": 146,
+          "start_column": 5,
+          "end_line": 152,
+          "end_column": 68,
+          "snippet": null
+        },
+        "message": "User-controlled data from a request is passed to 'execute()'. This could lead to a SQL injection and therefore protected information could be leaked. Instead, use django's QuerySets, which are built with query parameterization and therefore not vulnerable to sql injection. For example, you could use `Entry.objects.filter(date=2006)`.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-4ea1385857cae833d932",
+        "symbol_ref": "sym-24e1b4e6b8d61b6288fc02a915cc54c55e594497126a2e40d288e9547a99c047",
+        "excerpt_ref": "ex-85dbcda1f724fe8b3ea53a9cdc2fdead56823f8a91fafaf5a12432a360b0816b"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-e7cc7543113dfeaa17e7",
+      "title": "Tainted Sql String",
+      "severity": "medium",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-704"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.flask.security.injection.tainted-sql-string.tainted-sql-string",
+        "location": {
+          "path": "app.py",
+          "start_line": 148,
+          "start_column": 13,
+          "end_line": 148,
+          "end_column": 93,
+          "snippet": null
+        },
+        "message": "Detected user input used to manually construct a SQL string. This is usually bad practice because manual construction could accidentally result in a SQL injection. An attacker could use a SQL injection to steal or modify contents of the database. Instead, use a parameterized query which is available by default in most database engines. Alternatively, consider using an object-relational mapper (ORM) such as SQLAlchemy which will protect your queries.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-9f800bbf0415e750521f",
+        "symbol_ref": "sym-24e1b4e6b8d61b6288fc02a915cc54c55e594497126a2e40d288e9547a99c047",
+        "excerpt_ref": "ex-b82cfab1042e4ae0f3d6fbd54d8e79323a52aa5464a9799325f9706fd23aaad6"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-55bcd5dddfeb7f705ca5",
+      "title": "Raw Html Format",
+      "severity": "medium",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-79"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.flask.security.injection.raw-html-concat.raw-html-format",
+        "location": {
+          "path": "app.py",
+          "start_line": 152,
+          "start_column": 16,
+          "end_line": 152,
+          "end_column": 63,
+          "snippet": null
+        },
+        "message": "Detected user input flowing into a manually constructed HTML string. You may be accidentally bypassing secure methods of rendering HTML by manually constructing HTML and this could create a cross-site scripting vulnerability, which could let attackers steal sensitive user data. To be sure this is safe, check that the HTML is rendered safely. Otherwise, use templates (`flask.render_template`) which will safely render HTML instead.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-90a20b816a749b7b5a6a",
+        "symbol_ref": "sym-24e1b4e6b8d61b6288fc02a915cc54c55e594497126a2e40d288e9547a99c047",
+        "excerpt_ref": "ex-ae6f79de2c5d5426f63b347f5446467d3c8c761ddd16da0f5dee6fb0391c8115"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-c83bf72e51c5d5209cc3",
+      "title": "Raw Html Format",
+      "severity": "medium",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-79"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.django.security.injection.raw-html-format.raw-html-format",
+        "location": {
+          "path": "app.py",
+          "start_line": 152,
+          "start_column": 16,
+          "end_line": 152,
+          "end_column": 63,
+          "snippet": null
+        },
+        "message": "Detected user input flowing into a manually constructed HTML string. You may be accidentally bypassing secure methods of rendering HTML by manually constructing HTML and this could create a cross-site scripting vulnerability, which could let attackers steal sensitive user data. To be sure this is safe, check that the HTML is rendered safely. Otherwise, use templates (`django.shortcuts.render`) which will safely render HTML instead.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-f6a20167487207e45ab7",
+        "symbol_ref": "sym-24e1b4e6b8d61b6288fc02a915cc54c55e594497126a2e40d288e9547a99c047",
+        "excerpt_ref": "ex-ae6f79de2c5d5426f63b347f5446467d3c8c761ddd16da0f5dee6fb0391c8115"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-79b112036e28ecb71fef",
+      "title": "Secure Set Cookie",
+      "severity": "low",
+      "confidence": "low",
+      "cwes": [
+        "CWE-614"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.flask.security.audit.secure-set-cookie.secure-set-cookie",
+        "location": {
+          "path": "app.py",
+          "start_line": 158,
+          "start_column": 9,
+          "end_line": 158,
+          "end_column": 56,
+          "snippet": null
+        },
+        "message": "Found a Flask cookie with insecurely configured properties.  By default the secure, httponly and samesite ar configured insecurely. cookies should be handled securely by setting `secure=True`, `httponly=True`, and `samesite='Lax'` in response.set_cookie(...). If these parameters are not properly set, your cookies are not properly protected and are at risk of being stolen by an attacker. Include the `secure=True`, `httponly=True`, `samesite='Lax'` arguments or set these to be true in the Flask configuration.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-100f32c13338f32d792d",
+        "symbol_ref": "sym-24e1b4e6b8d61b6288fc02a915cc54c55e594497126a2e40d288e9547a99c047",
+        "excerpt_ref": "ex-9cd0be4b78fc7787b26855e5f59f2c2277d6665ceb137b3d46dcacc62af6a0e9"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-5c72ca71a96c2996dd02",
+      "title": "Sql Injection Db Cursor Execute",
+      "severity": "high",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-89"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.django.security.injection.sql.sql-injection-using-db-cursor-execute.sql-injection-db-cursor-execute",
+        "location": {
+          "path": "app.py",
+          "start_line": 168,
+          "start_column": 5,
+          "end_line": 174,
+          "end_column": 64,
+          "snippet": null
+        },
+        "message": "User-controlled data from a request is passed to 'execute()'. This could lead to a SQL injection and therefore protected information could be leaked. Instead, use django's QuerySets, which are built with query parameterization and therefore not vulnerable to sql injection. For example, you could use `Entry.objects.filter(date=2006)`.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-d84b4dca26c73c1dc198",
+        "symbol_ref": "sym-803863ab7b5662e126b9442c8cb34c1b4fa2f640edbf9fc1a37334b7c93c3770",
+        "excerpt_ref": "ex-f63f9ae5ca73f5bbbc9d7ed75dbfc80d599d99bac8637628b9db13c0a8e72f6d"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-c85437c69bca48303290",
+      "title": "Tainted Sql String",
+      "severity": "medium",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-704"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.flask.security.injection.tainted-sql-string.tainted-sql-string",
+        "location": {
+          "path": "app.py",
+          "start_line": 170,
+          "start_column": 13,
+          "end_line": 170,
+          "end_column": 74,
+          "snippet": null
+        },
+        "message": "Detected user input used to manually construct a SQL string. This is usually bad practice because manual construction could accidentally result in a SQL injection. An attacker could use a SQL injection to steal or modify contents of the database. Instead, use a parameterized query which is available by default in most database engines. Alternatively, consider using an object-relational mapper (ORM) such as SQLAlchemy which will protect your queries.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-3b1e347ea67673557b0e",
+        "symbol_ref": "sym-803863ab7b5662e126b9442c8cb34c1b4fa2f640edbf9fc1a37334b7c93c3770",
+        "excerpt_ref": "ex-110d34a2abb413e8c8aa24569cbe4f7f7d1e9d3e7ff24512868246f24fa777e9"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-5372046e1df33d72036a",
+      "title": "Raw Html Format",
+      "severity": "medium",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-79"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.flask.security.injection.raw-html-concat.raw-html-format",
+        "location": {
+          "path": "app.py",
+          "start_line": 174,
+          "start_column": 16,
+          "end_line": 174,
+          "end_column": 59,
+          "snippet": null
+        },
+        "message": "Detected user input flowing into a manually constructed HTML string. You may be accidentally bypassing secure methods of rendering HTML by manually constructing HTML and this could create a cross-site scripting vulnerability, which could let attackers steal sensitive user data. To be sure this is safe, check that the HTML is rendered safely. Otherwise, use templates (`flask.render_template`) which will safely render HTML instead.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-8fe41ff84956c757c1a0",
+        "symbol_ref": "sym-803863ab7b5662e126b9442c8cb34c1b4fa2f640edbf9fc1a37334b7c93c3770",
+        "excerpt_ref": "ex-2da26572782cf9891fc87624e307d46214cee51a56dfcec7dd571b941f30ebd5"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-f725f1b797d3f3302e53",
+      "title": "Raw Html Format",
+      "severity": "medium",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-79"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.django.security.injection.raw-html-format.raw-html-format",
+        "location": {
+          "path": "app.py",
+          "start_line": 174,
+          "start_column": 16,
+          "end_line": 174,
+          "end_column": 59,
+          "snippet": null
+        },
+        "message": "Detected user input flowing into a manually constructed HTML string. You may be accidentally bypassing secure methods of rendering HTML by manually constructing HTML and this could create a cross-site scripting vulnerability, which could let attackers steal sensitive user data. To be sure this is safe, check that the HTML is rendered safely. Otherwise, use templates (`django.shortcuts.render`) which will safely render HTML instead.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-7cd2eb4cee34d0d5975e",
+        "symbol_ref": "sym-803863ab7b5662e126b9442c8cb34c1b4fa2f640edbf9fc1a37334b7c93c3770",
+        "excerpt_ref": "ex-2da26572782cf9891fc87624e307d46214cee51a56dfcec7dd571b941f30ebd5"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-7e0a3c8d48f4c653d087",
+      "title": "Raw Html Format",
+      "severity": "medium",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-79"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.django.security.injection.raw-html-format.raw-html-format",
+        "location": {
+          "path": "app.py",
+          "start_line": 175,
+          "start_column": 12,
+          "end_line": 175,
+          "end_column": 44,
+          "snippet": null
+        },
+        "message": "Detected user input flowing into a manually constructed HTML string. You may be accidentally bypassing secure methods of rendering HTML by manually constructing HTML and this could create a cross-site scripting vulnerability, which could let attackers steal sensitive user data. To be sure this is safe, check that the HTML is rendered safely. Otherwise, use templates (`django.shortcuts.render`) which will safely render HTML instead.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-0e3ac8f60ff8970bf1ef",
+        "symbol_ref": "sym-803863ab7b5662e126b9442c8cb34c1b4fa2f640edbf9fc1a37334b7c93c3770",
+        "excerpt_ref": "ex-c5b713f83a9010c8d488ab80222255509c0d5809d7a844b9b38bc8beb0beb9ae"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-d4ba0d9320e0cb6cc1cf",
+      "title": "Raw Html Format",
+      "severity": "medium",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-79"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.flask.security.injection.raw-html-concat.raw-html-format",
+        "location": {
+          "path": "app.py",
+          "start_line": 175,
+          "start_column": 12,
+          "end_line": 175,
+          "end_column": 44,
+          "snippet": null
+        },
+        "message": "Detected user input flowing into a manually constructed HTML string. You may be accidentally bypassing secure methods of rendering HTML by manually constructing HTML and this could create a cross-site scripting vulnerability, which could let attackers steal sensitive user data. To be sure this is safe, check that the HTML is rendered safely. Otherwise, use templates (`flask.render_template`) which will safely render HTML instead.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-a525cf4812c3aea08f3a",
+        "symbol_ref": "sym-803863ab7b5662e126b9442c8cb34c1b4fa2f640edbf9fc1a37334b7c93c3770",
+        "excerpt_ref": "ex-c5b713f83a9010c8d488ab80222255509c0d5809d7a844b9b38bc8beb0beb9ae"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-6e9ce7004c3beb47f767",
+      "title": "Raw Html Format",
+      "severity": "medium",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-79"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.django.security.injection.raw-html-format.raw-html-format",
+        "location": {
+          "path": "app.py",
+          "start_line": 177,
+          "start_column": 17,
+          "end_line": 177,
+          "end_column": 67,
+          "snippet": null
+        },
+        "message": "Detected user input flowing into a manually constructed HTML string. You may be accidentally bypassing secure methods of rendering HTML by manually constructing HTML and this could create a cross-site scripting vulnerability, which could let attackers steal sensitive user data. To be sure this is safe, check that the HTML is rendered safely. Otherwise, use templates (`django.shortcuts.render`) which will safely render HTML instead.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-82ea49bbe55f73076b19",
+        "symbol_ref": "sym-803863ab7b5662e126b9442c8cb34c1b4fa2f640edbf9fc1a37334b7c93c3770",
+        "excerpt_ref": "ex-9d60a0fbb3eb0e9790fa4ea69067e447c2e383cbb825254ec6c996859ab6ce34"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-858ad77d0291e0ca6a1c",
+      "title": "Raw Html Format",
+      "severity": "medium",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-79"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.flask.security.injection.raw-html-concat.raw-html-format",
+        "location": {
+          "path": "app.py",
+          "start_line": 177,
+          "start_column": 17,
+          "end_line": 177,
+          "end_column": 67,
+          "snippet": null
+        },
+        "message": "Detected user input flowing into a manually constructed HTML string. You may be accidentally bypassing secure methods of rendering HTML by manually constructing HTML and this could create a cross-site scripting vulnerability, which could let attackers steal sensitive user data. To be sure this is safe, check that the HTML is rendered safely. Otherwise, use templates (`flask.render_template`) which will safely render HTML instead.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-1feccc75a05946a822f7",
+        "symbol_ref": "sym-803863ab7b5662e126b9442c8cb34c1b4fa2f640edbf9fc1a37334b7c93c3770",
+        "excerpt_ref": "ex-9d60a0fbb3eb0e9790fa4ea69067e447c2e383cbb825254ec6c996859ab6ce34"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-19d2eb58f6a758cb8aa8",
+      "title": "Directly Returned Format String",
+      "severity": "medium",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-79"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.flask.security.audit.directly-returned-format-string.directly-returned-format-string",
+        "location": {
+          "path": "app.py",
+          "start_line": 179,
+          "start_column": 5,
+          "end_line": 179,
+          "end_column": 16,
+          "snippet": null
+        },
+        "message": "Detected Flask route directly returning a formatted string. This is subject to cross-site scripting if user input can reach the string. Consider using the template engine instead and rendering pages with 'render_template()'.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-8442fa5b1d8da7f6b97c",
+        "symbol_ref": "sym-803863ab7b5662e126b9442c8cb34c1b4fa2f640edbf9fc1a37334b7c93c3770",
+        "excerpt_ref": "ex-27f67261b27cd67c7ff4eccfee3a3621593cf6126c0c9a8a88dec61919aec365"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-c07d4dbd8dde12da0102",
+      "title": "Raw Html Format",
+      "severity": "medium",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-79"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.flask.security.injection.raw-html-concat.raw-html-format",
+        "location": {
+          "path": "app.py",
+          "start_line": 262,
+          "start_column": 16,
+          "end_line": 262,
+          "end_column": 39,
+          "snippet": null
+        },
+        "message": "Detected user input flowing into a manually constructed HTML string. You may be accidentally bypassing secure methods of rendering HTML by manually constructing HTML and this could create a cross-site scripting vulnerability, which could let attackers steal sensitive user data. To be sure this is safe, check that the HTML is rendered safely. Otherwise, use templates (`flask.render_template`) which will safely render HTML instead.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-e863bc0f1c635408d48d",
+        "symbol_ref": "sym-a59e1a417359e4638ab76c0422aa5075c2333833483868ce243d9e1a4f6b86ed",
+        "excerpt_ref": "ex-d4ba16bad01abffd3dbbdde5d68d3c8bc9b951fc10cf4c28af24935a2317ba19"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-fcb92c5dc1b867d3acf4",
+      "title": "Directly Returned Format String",
+      "severity": "medium",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-79"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.flask.security.audit.directly-returned-format-string.directly-returned-format-string",
+        "location": {
+          "path": "app.py",
+          "start_line": 262,
+          "start_column": 9,
+          "end_line": 262,
+          "end_column": 39,
+          "snippet": null
+        },
+        "message": "Detected Flask route directly returning a formatted string. This is subject to cross-site scripting if user input can reach the string. Consider using the template engine instead and rendering pages with 'render_template()'.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-e83a9aba4f4973bbe2bc",
+        "symbol_ref": "sym-a59e1a417359e4638ab76c0422aa5075c2333833483868ce243d9e1a4f6b86ed",
+        "excerpt_ref": "ex-d4ba16bad01abffd3dbbdde5d68d3c8bc9b951fc10cf4c28af24935a2317ba19"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-2eb67a48fe888fa0ca08",
+      "title": "Dangerous Subprocess Use",
+      "severity": "high",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-78"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.lang.security.dangerous-subprocess-use.dangerous-subprocess-use",
+        "location": {
+          "path": "app.py",
+          "start_line": 275,
+          "start_column": 39,
+          "end_line": 275,
+          "end_column": 42,
+          "snippet": null
+        },
+        "message": "Detected subprocess function 'check_output' with user controlled data. A malicious actor could leverage this to perform command injection. You may consider using 'shlex.escape()'.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-eb883de246e8b88f883a",
+        "symbol_ref": "sym-e21607873bf794f15f6151202130899f193b94cf728e96f806753a8ad3db914d",
+        "excerpt_ref": "ex-19a6887c64bb7f3b6f4759ac34df8d4aeae80f70ebd5e1c5a07d6bf3dfb8e908"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-3047e31e5dfa7cce4c1c",
+      "title": "Subprocess Injection",
+      "severity": "medium",
+      "confidence": "high",
+      "cwes": [
+        "CWE-78"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.flask.security.injection.subprocess-injection.subprocess-injection",
+        "location": {
+          "path": "app.py",
+          "start_line": 275,
+          "start_column": 15,
+          "end_line": 275,
+          "end_column": 92,
+          "snippet": null
+        },
+        "message": "Detected user input entering a `subprocess` call unsafely. This could result in a command injection vulnerability. An attacker could use this vulnerability to execute arbitrary commands on the host, which allows them to download malware, scan sensitive data, or run any command they wish on the server. Do not let users choose the command to run. In general, prefer to use Python API versions of system commands. If you must use subprocess, use a dictionary to allowlist a set of commands.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-ad5f4f5a6ac06164d060",
+        "symbol_ref": "sym-e21607873bf794f15f6151202130899f193b94cf728e96f806753a8ad3db914d",
+        "excerpt_ref": "ex-19a6887c64bb7f3b6f4759ac34df8d4aeae80f70ebd5e1c5a07d6bf3dfb8e908"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-9fe77f0c6d37b806781c",
+      "title": "Subprocess Shell True",
+      "severity": "low",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-78"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.lang.security.audit.subprocess-shell-true.subprocess-shell-true",
+        "location": {
+          "path": "app.py",
+          "start_line": 275,
+          "start_column": 50,
+          "end_line": 275,
+          "end_column": 54,
+          "snippet": null
+        },
+        "message": "Found 'subprocess' function 'check_output' with 'shell=True'. This is dangerous because this call will spawn the command using a shell process. Doing so propagates current shell settings and variables, which makes it much easier for a malicious actor to execute commands. Use 'shell=False' instead.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-09ef2da3010a4c5e006f",
+        "symbol_ref": "sym-e21607873bf794f15f6151202130899f193b94cf728e96f806753a8ad3db914d",
+        "excerpt_ref": "ex-19a6887c64bb7f3b6f4759ac34df8d4aeae80f70ebd5e1c5a07d6bf3dfb8e908"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-754cbb6f9da4d83acf5d",
+      "title": "Raw Html Format",
+      "severity": "medium",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-79"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.flask.security.injection.raw-html-concat.raw-html-format",
+        "location": {
+          "path": "app.py",
+          "start_line": 276,
+          "start_column": 16,
+          "end_line": 276,
+          "end_column": 60,
+          "snippet": null
+        },
+        "message": "Detected user input flowing into a manually constructed HTML string. You may be accidentally bypassing secure methods of rendering HTML by manually constructing HTML and this could create a cross-site scripting vulnerability, which could let attackers steal sensitive user data. To be sure this is safe, check that the HTML is rendered safely. Otherwise, use templates (`flask.render_template`) which will safely render HTML instead.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-39972cbed060b2d2e64d",
+        "symbol_ref": "sym-e21607873bf794f15f6151202130899f193b94cf728e96f806753a8ad3db914d",
+        "excerpt_ref": "ex-4af9cd3d76c38836f5564fbf8c0dc1e0fc5c2445368393597fa12a53cfde1347"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-8a13bfb2251523ccb427",
+      "title": "Directly Returned Format String",
+      "severity": "medium",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-79"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.flask.security.audit.directly-returned-format-string.directly-returned-format-string",
+        "location": {
+          "path": "app.py",
+          "start_line": 276,
+          "start_column": 9,
+          "end_line": 276,
+          "end_column": 60,
+          "snippet": null
+        },
+        "message": "Detected Flask route directly returning a formatted string. This is subject to cross-site scripting if user input can reach the string. Consider using the template engine instead and rendering pages with 'render_template()'.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-54e4936eef6d5eb3671d",
+        "symbol_ref": "sym-e21607873bf794f15f6151202130899f193b94cf728e96f806753a8ad3db914d",
+        "excerpt_ref": "ex-4af9cd3d76c38836f5564fbf8c0dc1e0fc5c2445368393597fa12a53cfde1347"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-a4aa52e536644e7773bb",
+      "title": "Raw Html Format",
+      "severity": "medium",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-79"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.django.security.injection.raw-html-format.raw-html-format",
+        "location": {
+          "path": "app.py",
+          "start_line": 276,
+          "start_column": 16,
+          "end_line": 276,
+          "end_column": 60,
+          "snippet": null
+        },
+        "message": "Detected user input flowing into a manually constructed HTML string. You may be accidentally bypassing secure methods of rendering HTML by manually constructing HTML and this could create a cross-site scripting vulnerability, which could let attackers steal sensitive user data. To be sure this is safe, check that the HTML is rendered safely. Otherwise, use templates (`django.shortcuts.render`) which will safely render HTML instead.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-260baae0ec7284adf3b1",
+        "symbol_ref": "sym-e21607873bf794f15f6151202130899f193b94cf728e96f806753a8ad3db914d",
+        "excerpt_ref": "ex-4af9cd3d76c38836f5564fbf8c0dc1e0fc5c2445368393597fa12a53cfde1347"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-dcd5ff4fb074e5f8db32",
+      "title": "Directly Returned Format String",
+      "severity": "medium",
+      "confidence": "medium",
+      "cwes": [
+        "CWE-79"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.flask.security.audit.directly-returned-format-string.directly-returned-format-string",
+        "location": {
+          "path": "app.py",
+          "start_line": 324,
+          "start_column": 5,
+          "end_line": 324,
+          "end_column": 45,
+          "snippet": null
+        },
+        "message": "Detected Flask route directly returning a formatted string. This is subject to cross-site scripting if user input can reach the string. Consider using the template engine instead and rendering pages with 'render_template()'.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-b97f7080860cafb8e54b",
+        "symbol_ref": "sym-1045bc8caf40ac1b3404fbe1fd06a7f1e67ec53370872c742bfdf9808b416120",
+        "excerpt_ref": "ex-5f7f023307c1e8a2e6a0aa185ffa1e2e64ffaf4be9d6cd11bd81d04864a21fa4"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    },
+    {
+      "merged_finding_id": "merged-a4108998657a719ec16d",
+      "title": "Debug Enabled",
+      "severity": "medium",
+      "confidence": "high",
+      "cwes": [
+        "CWE-489"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "primary": {
+        "evidence_type": "primary",
+        "scanner_id": "semgrep-ce",
+        "rule_id": "python.flask.security.audit.debug-enabled.debug-enabled",
+        "location": {
+          "path": "app.py",
+          "start_line": 344,
+          "start_column": 5,
+          "end_line": 344,
+          "end_column": 53,
+          "snippet": null
+        },
+        "message": "Detected Flask app with debug=True. Do not deploy to production with this flag enabled as it will leak sensitive information. Instead, consider using Flask configuration variables or setting 'debug' using system environment variables.",
+        "flow_index": null,
+        "thread_index": null,
+        "step_index": null,
+        "collection_status": "collected",
+        "warning": null,
+        "source_finding_id": "finding-a5cad3e815f2fcc0857b",
+        "excerpt_ref": "ex-bbcd85e11cecc42464aff05c764880ef3286f5fcd69bde768d7ee2d093bb07a3"
+      },
+      "code_flow": [],
+      "related": [],
+      "warnings": [],
+      "additional_primaries": []
+    }
+  ],
+  "warnings": [],
+  "coverage_gaps": [
+    "semgrep-ce normalization was partial; some scanner results may be unavailable."
+  ],
+  "summary": {
+    "input_findings": 25,
+    "contexts_created": 25,
+    "evidence_locations": 25,
+    "excerpts_collected": 25,
+    "files_read": 1,
+    "bytes_read": 11473,
+    "unavailable_locations": 0
+  },
+  "shared_excerpts": {
+    "ex-110d34a2abb413e8c8aa24569cbe4f7f7d1e9d3e7ff24512868246f24fa777e9": {
+      "path": "app.py",
+      "start_line": 166,
+      "end_line": 174,
+      "code": "166 | @app.route(\"/search\")\n167 | def search():\n168 |     q = request.args.get(\"q\", \"\")\n169 |     db = get_db()\n170 |     query = f\"SELECT id, item, total FROM orders WHERE item LIKE '%{q}%'\"\n171 |     try:\n172 |         rows = db.execute(query).fetchall()\n173 |     except sqlite3.Error as e:\n174 |         return f\"<pre>DB ERROR: {e}\\nQuery: {query}</pre>\", 500",
+      "content_sha256": "70c5387cc7c5cc3453cb20c8c6e358d0f70e04053bfce1cce5c60f0f0cb9ce05"
+    },
+    "ex-19a6887c64bb7f3b6f4759ac34df8d4aeae80f70ebd5e1c5a07d6bf3dfb8e908": {
+      "path": "app.py",
+      "start_line": 271,
+      "end_line": 279,
+      "code": "271 | def ping():\n272 |     host = request.args.get(\"host\", \"127.0.0.1\")\n273 |     cmd = f\"ping -c 1 {host}\"\n274 |     try:\n275 |         out = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, timeout=5)\n276 |         return f\"<pre>{out.decode(errors='replace')}</pre>\"\n277 |     except Exception as e:\n278 |         return f\"<pre>{e}</pre>\"\n279 | ",
+      "content_sha256": "70c5387cc7c5cc3453cb20c8c6e358d0f70e04053bfce1cce5c60f0f0cb9ce05"
+    },
+    "ex-27f67261b27cd67c7ff4eccfee3a3621593cf6126c0c9a8a88dec61919aec365": {
+      "path": "app.py",
+      "start_line": 175,
+      "end_line": 183,
+      "code": "175 |     html = f\"<h2>Results for: {q}</h2><ul>\"\n176 |     for r in rows:\n177 |         html += f\"<li>#{r['id']} {r['item']} - ${r['total']}</li>\"\n178 |     html += \"</ul>\"\n179 |     return html\n180 | \n181 | \n182 | # ---------------------------------------------------------------------------\n183 | # Comments",
+      "content_sha256": "70c5387cc7c5cc3453cb20c8c6e358d0f70e04053bfce1cce5c60f0f0cb9ce05"
+    },
+    "ex-2da26572782cf9891fc87624e307d46214cee51a56dfcec7dd571b941f30ebd5": {
+      "path": "app.py",
+      "start_line": 170,
+      "end_line": 178,
+      "code": "170 |     query = f\"SELECT id, item, total FROM orders WHERE item LIKE '%{q}%'\"\n171 |     try:\n172 |         rows = db.execute(query).fetchall()\n173 |     except sqlite3.Error as e:\n174 |         return f\"<pre>DB ERROR: {e}\\nQuery: {query}</pre>\", 500\n175 |     html = f\"<h2>Results for: {q}</h2><ul>\"\n176 |     for r in rows:\n177 |         html += f\"<li>#{r['id']} {r['item']} - ${r['total']}</li>\"\n178 |     html += \"</ul>\"",
+      "content_sha256": "70c5387cc7c5cc3453cb20c8c6e358d0f70e04053bfce1cce5c60f0f0cb9ce05"
+    },
+    "ex-4af9cd3d76c38836f5564fbf8c0dc1e0fc5c2445368393597fa12a53cfde1347": {
+      "path": "app.py",
+      "start_line": 272,
+      "end_line": 280,
+      "code": "272 |     host = request.args.get(\"host\", \"127.0.0.1\")\n273 |     cmd = f\"ping -c 1 {host}\"\n274 |     try:\n275 |         out = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, timeout=5)\n276 |         return f\"<pre>{out.decode(errors='replace')}</pre>\"\n277 |     except Exception as e:\n278 |         return f\"<pre>{e}</pre>\"\n279 | \n280 | ",
+      "content_sha256": "70c5387cc7c5cc3453cb20c8c6e358d0f70e04053bfce1cce5c60f0f0cb9ce05"
+    },
+    "ex-5f7f023307c1e8a2e6a0aa185ffa1e2e64ffaf4be9d6cd11bd81d04864a21fa4": {
+      "path": "app.py",
+      "start_line": 320,
+      "end_line": 328,
+      "code": "320 |     if not f:\n321 |         return \"No file\", 400\n322 |     dest = os.path.join(UPLOAD_DIR, f.filename)\n323 |     f.save(dest)\n324 |     return f\"Saved to /uploads/{f.filename}\"\n325 | \n326 | \n327 | @app.route(\"/uploads/<path:filename>\")\n328 | def serve_upload(filename):",
+      "content_sha256": "70c5387cc7c5cc3453cb20c8c6e358d0f70e04053bfce1cce5c60f0f0cb9ce05"
+    },
+    "ex-6cbf78e00c5edc1334fbf81250fcbfc2e35232c21d4213cd2ce85aa6b23daaa7": {
+      "path": "app.py",
+      "start_line": 167,
+      "end_line": 179,
+      "code": "167 | def search():\n168 |     q = request.args.get(\"q\", \"\")\n169 |     db = get_db()\n170 |     query = f\"SELECT id, item, total FROM orders WHERE item LIKE '%{q}%'\"\n171 |     try:\n172 |         rows = db.execute(query).fetchall()\n173 |     except sqlite3.Error as e:\n174 |         return f\"<pre>DB ERROR: {e}\\nQuery: {query}</pre>\", 500\n175 |     html = f\"<h2>Results for: {q}</h2><ul>\"\n176 |     for r in rows:\n177 |         html += f\"<li>#{r['id']} {r['item']} - ${r['total']}</li>\"\n178 |     html += \"</ul>\"\n179 |     return html",
+      "content_sha256": "70c5387cc7c5cc3453cb20c8c6e358d0f70e04053bfce1cce5c60f0f0cb9ce05"
+    },
+    "ex-7ac7880c1b49564ebd05bfc89bc477008aacfd1b78d513914c34a889e45a0ac9": {
+      "path": "app.py",
+      "start_line": 257,
+      "end_line": 264,
+      "code": "257 | def get_file(filename):\n258 |     full_path = os.path.join(FILES_DIR, filename)\n259 |     try:\n260 |         with open(full_path, \"r\", errors=\"replace\") as f:\n261 |             content = f.read()\n262 |         return f\"<pre>{content}</pre>\"\n263 |     except Exception as e:\n264 |         return f\"<pre>Error: {e}</pre>\", 404",
+      "content_sha256": "70c5387cc7c5cc3453cb20c8c6e358d0f70e04053bfce1cce5c60f0f0cb9ce05"
+    },
+    "ex-856f307d735c68b15139b0fb76044aee64ac3cd4cf0db0bdf9d83460e01eb9bf": {
+      "path": "app.py",
+      "start_line": 312,
+      "end_line": 324,
+      "code": "312 | def upload():\n313 |     if request.method == \"GET\":\n314 |         return \"\"\"\n315 |         <form method=\"post\" enctype=\"multipart/form-data\">\n316 |           <input type=\"file\" name=\"file\"><button type=\"submit\">Upload</button>\n317 |         </form>\n318 |         \"\"\"\n319 |     f = request.files.get(\"file\")\n320 |     if not f:\n321 |         return \"No file\", 400\n322 |     dest = os.path.join(UPLOAD_DIR, f.filename)\n323 |     f.save(dest)\n324 |     return f\"Saved to /uploads/{f.filename}\"",
+      "content_sha256": "70c5387cc7c5cc3453cb20c8c6e358d0f70e04053bfce1cce5c60f0f0cb9ce05"
+    },
+    "ex-85dbcda1f724fe8b3ea53a9cdc2fdead56823f8a91fafaf5a12432a360b0816b": {
+      "path": "app.py",
+      "start_line": 142,
+      "end_line": 150,
+      "code": "142 |           <button type=\"submit\">Login</button>\n143 |         </form>\n144 |         \"\"\"\n145 |     username = request.form.get(\"username\", \"\")\n146 |     password = request.form.get(\"password\", \"\")\n147 |     db = get_db()\n148 |     query = f\"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'\"\n149 |     try:\n150 |         row = db.execute(query).fetchone()",
+      "content_sha256": "70c5387cc7c5cc3453cb20c8c6e358d0f70e04053bfce1cce5c60f0f0cb9ce05"
+    },
+    "ex-8626222fbd3401370940e49f1ea397061d0c7d28829bd1598f63087afb91640f": {
+      "path": "app.py",
+      "start_line": 136,
+      "end_line": 160,
+      "code": "136 | def login():\n137 |     if request.method == \"GET\":\n138 |         return \"\"\"\n139 |         <form method=\"post\">\n140 |           user: <input name=\"username\"><br>\n141 |           pass: <input name=\"password\" type=\"password\"><br>\n142 |           <button type=\"submit\">Login</button>\n143 |         </form>\n144 |         \"\"\"\n145 |     username = request.form.get(\"username\", \"\")\n146 |     password = request.form.get(\"password\", \"\")\n147 |     db = get_db()\n148 |     query = f\"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'\"\n149 |     try:\n150 |         row = db.execute(query).fetchone()\n151 |     except sqlite3.Error as e:\n152 |         return f\"<pre>DB ERROR: {e}\\nQuery was: {query}</pre>\", 500\n153 | \n154 |     if row:\n155 |         session[\"user_id\"] = row[\"id\"]\n156 |         session[\"role\"] = row[\"role\"]\n157 |         resp = make_response(redirect(f\"/profile/{row['id']}\"))\n158 |         resp.set_cookie(\"token\", make_token(row[\"id\"]))\n159 |         return resp\n160 |     return \"Invalid credentials\", 401",
+      "content_sha256": "70c5387cc7c5cc3453cb20c8c6e358d0f70e04053bfce1cce5c60f0f0cb9ce05"
+    },
+    "ex-9cd0be4b78fc7787b26855e5f59f2c2277d6665ceb137b3d46dcacc62af6a0e9": {
+      "path": "app.py",
+      "start_line": 154,
+      "end_line": 162,
+      "code": "154 |     if row:\n155 |         session[\"user_id\"] = row[\"id\"]\n156 |         session[\"role\"] = row[\"role\"]\n157 |         resp = make_response(redirect(f\"/profile/{row['id']}\"))\n158 |         resp.set_cookie(\"token\", make_token(row[\"id\"]))\n159 |         return resp\n160 |     return \"Invalid credentials\", 401\n161 | \n162 | ",
+      "content_sha256": "70c5387cc7c5cc3453cb20c8c6e358d0f70e04053bfce1cce5c60f0f0cb9ce05"
+    },
+    "ex-9d60a0fbb3eb0e9790fa4ea69067e447c2e383cbb825254ec6c996859ab6ce34": {
+      "path": "app.py",
+      "start_line": 173,
+      "end_line": 181,
+      "code": "173 |     except sqlite3.Error as e:\n174 |         return f\"<pre>DB ERROR: {e}\\nQuery: {query}</pre>\", 500\n175 |     html = f\"<h2>Results for: {q}</h2><ul>\"\n176 |     for r in rows:\n177 |         html += f\"<li>#{r['id']} {r['item']} - ${r['total']}</li>\"\n178 |     html += \"</ul>\"\n179 |     return html\n180 | \n181 | ",
+      "content_sha256": "70c5387cc7c5cc3453cb20c8c6e358d0f70e04053bfce1cce5c60f0f0cb9ce05"
+    },
+    "ex-ae6f79de2c5d5426f63b347f5446467d3c8c761ddd16da0f5dee6fb0391c8115": {
+      "path": "app.py",
+      "start_line": 148,
+      "end_line": 156,
+      "code": "148 |     query = f\"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'\"\n149 |     try:\n150 |         row = db.execute(query).fetchone()\n151 |     except sqlite3.Error as e:\n152 |         return f\"<pre>DB ERROR: {e}\\nQuery was: {query}</pre>\", 500\n153 | \n154 |     if row:\n155 |         session[\"user_id\"] = row[\"id\"]\n156 |         session[\"role\"] = row[\"role\"]",
+      "content_sha256": "70c5387cc7c5cc3453cb20c8c6e358d0f70e04053bfce1cce5c60f0f0cb9ce05"
+    },
+    "ex-b532c2e8c0e1ff6ce50c390892a30be433d37ea20b7b150c39ed9ba4870bbdb0": {
+      "path": "app.py",
+      "start_line": 141,
+      "end_line": 149,
+      "code": "141 |           pass: <input name=\"password\" type=\"password\"><br>\n142 |           <button type=\"submit\">Login</button>\n143 |         </form>\n144 |         \"\"\"\n145 |     username = request.form.get(\"username\", \"\")\n146 |     password = request.form.get(\"password\", \"\")\n147 |     db = get_db()\n148 |     query = f\"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'\"\n149 |     try:",
+      "content_sha256": "70c5387cc7c5cc3453cb20c8c6e358d0f70e04053bfce1cce5c60f0f0cb9ce05"
+    },
+    "ex-b82cfab1042e4ae0f3d6fbd54d8e79323a52aa5464a9799325f9706fd23aaad6": {
+      "path": "app.py",
+      "start_line": 144,
+      "end_line": 152,
+      "code": "144 |         \"\"\"\n145 |     username = request.form.get(\"username\", \"\")\n146 |     password = request.form.get(\"password\", \"\")\n147 |     db = get_db()\n148 |     query = f\"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'\"\n149 |     try:\n150 |         row = db.execute(query).fetchone()\n151 |     except sqlite3.Error as e:\n152 |         return f\"<pre>DB ERROR: {e}\\nQuery was: {query}</pre>\", 500",
+      "content_sha256": "70c5387cc7c5cc3453cb20c8c6e358d0f70e04053bfce1cce5c60f0f0cb9ce05"
+    },
+    "ex-bbcd85e11cecc42464aff05c764880ef3286f5fcd69bde768d7ee2d093bb07a3": {
+      "path": "app.py",
+      "start_line": 340,
+      "end_line": 344,
+      "code": "340 | \n341 | if __name__ == \"__main__\":\n342 |     init_db()\n343 |     print(\"Security Lab Web running on http://127.0.0.1:5000/\")\n344 |     app.run(host=\"127.0.0.1\", port=5000, debug=True)",
+      "content_sha256": "70c5387cc7c5cc3453cb20c8c6e358d0f70e04053bfce1cce5c60f0f0cb9ce05"
+    },
+    "ex-c5b713f83a9010c8d488ab80222255509c0d5809d7a844b9b38bc8beb0beb9ae": {
+      "path": "app.py",
+      "start_line": 171,
+      "end_line": 179,
+      "code": "171 |     try:\n172 |         rows = db.execute(query).fetchall()\n173 |     except sqlite3.Error as e:\n174 |         return f\"<pre>DB ERROR: {e}\\nQuery: {query}</pre>\", 500\n175 |     html = f\"<h2>Results for: {q}</h2><ul>\"\n176 |     for r in rows:\n177 |         html += f\"<li>#{r['id']} {r['item']} - ${r['total']}</li>\"\n178 |     html += \"</ul>\"\n179 |     return html",
+      "content_sha256": "70c5387cc7c5cc3453cb20c8c6e358d0f70e04053bfce1cce5c60f0f0cb9ce05"
+    },
+    "ex-d4ba16bad01abffd3dbbdde5d68d3c8bc9b951fc10cf4c28af24935a2317ba19": {
+      "path": "app.py",
+      "start_line": 258,
+      "end_line": 266,
+      "code": "258 |     full_path = os.path.join(FILES_DIR, filename)\n259 |     try:\n260 |         with open(full_path, \"r\", errors=\"replace\") as f:\n261 |             content = f.read()\n262 |         return f\"<pre>{content}</pre>\"\n263 |     except Exception as e:\n264 |         return f\"<pre>Error: {e}</pre>\", 404\n265 | \n266 | ",
+      "content_sha256": "70c5387cc7c5cc3453cb20c8c6e358d0f70e04053bfce1cce5c60f0f0cb9ce05"
+    },
+    "ex-d7638cdf104e9885e1066776d727b21fc1f3da25b20ca04ccb0fbe458cafd13f": {
+      "path": "app.py",
+      "start_line": 271,
+      "end_line": 278,
+      "code": "271 | def ping():\n272 |     host = request.args.get(\"host\", \"127.0.0.1\")\n273 |     cmd = f\"ping -c 1 {host}\"\n274 |     try:\n275 |         out = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, timeout=5)\n276 |         return f\"<pre>{out.decode(errors='replace')}</pre>\"\n277 |     except Exception as e:\n278 |         return f\"<pre>{e}</pre>\"",
+      "content_sha256": "70c5387cc7c5cc3453cb20c8c6e358d0f70e04053bfce1cce5c60f0f0cb9ce05"
+    },
+    "ex-f63f9ae5ca73f5bbbc9d7ed75dbfc80d599d99bac8637628b9db13c0a8e72f6d": {
+      "path": "app.py",
+      "start_line": 164,
+      "end_line": 172,
+      "code": "164 | # Search\n165 | # ---------------------------------------------------------------------------\n166 | @app.route(\"/search\")\n167 | def search():\n168 |     q = request.args.get(\"q\", \"\")\n169 |     db = get_db()\n170 |     query = f\"SELECT id, item, total FROM orders WHERE item LIKE '%{q}%'\"\n171 |     try:\n172 |         rows = db.execute(query).fetchall()",
+      "content_sha256": "70c5387cc7c5cc3453cb20c8c6e358d0f70e04053bfce1cce5c60f0f0cb9ce05"
+    }
+  },
+  "shared_symbols": {
+    "sym-1045bc8caf40ac1b3404fbe1fd06a7f1e67ec53370872c742bfdf9808b416120": {
+      "language": "python",
+      "kind": "function",
+      "name": "upload",
+      "qualified_name": "upload",
+      "start_line": 312,
+      "end_line": 324,
+      "truncated": false,
+      "excerpt_ref": "ex-856f307d735c68b15139b0fb76044aee64ac3cd4cf0db0bdf9d83460e01eb9bf"
+    },
+    "sym-24e1b4e6b8d61b6288fc02a915cc54c55e594497126a2e40d288e9547a99c047": {
+      "language": "python",
+      "kind": "function",
+      "name": "login",
+      "qualified_name": "login",
+      "start_line": 136,
+      "end_line": 160,
+      "truncated": false,
+      "excerpt_ref": "ex-8626222fbd3401370940e49f1ea397061d0c7d28829bd1598f63087afb91640f"
+    },
+    "sym-803863ab7b5662e126b9442c8cb34c1b4fa2f640edbf9fc1a37334b7c93c3770": {
+      "language": "python",
+      "kind": "function",
+      "name": "search",
+      "qualified_name": "search",
+      "start_line": 167,
+      "end_line": 179,
+      "truncated": false,
+      "excerpt_ref": "ex-6cbf78e00c5edc1334fbf81250fcbfc2e35232c21d4213cd2ce85aa6b23daaa7"
+    },
+    "sym-a59e1a417359e4638ab76c0422aa5075c2333833483868ce243d9e1a4f6b86ed": {
+      "language": "python",
+      "kind": "function",
+      "name": "get_file",
+      "qualified_name": "get_file",
+      "start_line": 257,
+      "end_line": 264,
+      "truncated": false,
+      "excerpt_ref": "ex-7ac7880c1b49564ebd05bfc89bc477008aacfd1b78d513914c34a889e45a0ac9"
+    },
+    "sym-e21607873bf794f15f6151202130899f193b94cf728e96f806753a8ad3db914d": {
+      "language": "python",
+      "kind": "function",
+      "name": "ping",
+      "qualified_name": "ping",
+      "start_line": 271,
+      "end_line": 278,
+      "truncated": false,
+      "excerpt_ref": "ex-d7638cdf104e9885e1066776d727b21fc1f3da25b20ca04ccb0fbe458cafd13f"
+    }
+  }
+}

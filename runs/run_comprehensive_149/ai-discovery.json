@@ -1,0 +1,3097 @@
+{
+  "schema_version": "1.2",
+  "status": "partial",
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "scope": [
+    "file:api/seed.py#L1-30",
+    "merged-18f1abe978f9fdaad8e6",
+    "file:api/app.py#L175-186",
+    "merged-f60fee7d82fbca512208",
+    "file:mock_external/server.py#L11-30",
+    "merged-ea527a7d7441e2b11700",
+    "file:api/app.py#L189-196",
+    "merged-f4eaf141df049c63545d",
+    "file:api/app.py#L293-305",
+    "merged-83d97da4516adf20e20f",
+    "file:api/app.py#L166-172",
+    "merged-b527b3ed30e57aac5ec5",
+    "file:api/app.py#L207-217",
+    "merged-24d14609e3893220ea16",
+    "file:api/app.py#L230-238",
+    "merged-794dcb4921076779cef0",
+    "file:api/app.py#L241-255",
+    "merged-b3c734b4cef8dd70fce0",
+    "file:api/app.py#L258-264",
+    "merged-3202e1e1074cfd44b9bf",
+    "file:api/app.py#L308-317",
+    "file:api/app.py#L199-204",
+    "file:api/app.py#L220-227",
+    "file:api/app.py#L267-274",
+    "file:api/app.py#L277-282",
+    "file:api/app.py#L285-290",
+    "file:api/app.py#L154-158",
+    "file:api/app.py#L320-322",
+    "file:api/extra.py#L125-138",
+    "file:api/extra.py#L247-268",
+    "file:api/extra.py#L288-301",
+    "file:api/extra.py#L375-391",
+    "file:api/extra.py#L469-485",
+    "file:api/extra.py#L564-573",
+    "file:api/extra.py#L589-598",
+    "file:api/extra.py#L271-279",
+    "file:api/extra.py#L310-319",
+    "file:api/extra.py#L322-331",
+    "file:api/extra.py#L334-344",
+    "file:api/extra.py#L347-363",
+    "file:api/extra.py#L526-539",
+    "file:api/extra.py#L576-586",
+    "file:api/extra.py#L601-612",
+    "file:api/extra.py#L660-665",
+    "file:api/extra.py#L161-170",
+    "file:api/extra.py#L180-186",
+    "file:api/extra.py#L420-434",
+    "file:api/extra.py#L453-466",
+    "file:api/extra.py#L488-496",
+    "file:api/extra.py#L512-523",
+    "file:api/extra.py#L646-657",
+    "file:api/extra.py#L97-104",
+    "file:api/extra.py#L196-201",
+    "file:api/extra.py#L304-307",
+    "file:api/extra.py#L499-509",
+    "file:api/extra.py#L542-549",
+    "file:api/extra.py#L552-561",
+    "file:api/extra.py#L107-112",
+    "file:api/extra.py#L204-207",
+    "file:api/extra.py#L406-409",
+    "file:api/extra.py#L448-450",
+    "file:api/extra.py#L668-671",
+    "file:api/extra.py#L628-634",
+    "file:api/extra.py#L637-643",
+    "file:api/extra.py#L366-372",
+    "file:api/extra.py#L394-403",
+    "file:api/extra.py#L148-154",
+    "file:api/extra.py#L173-177",
+    "file:api/extra.py#L189-193",
+    "file:api/extra.py#L227-234",
+    "file:api/extra.py#L237-244"
+  ],
+  "candidates": [
+    {
+      "candidate_id": "ai-e9f07f09faabf60f",
+      "title": "Missing admin authorization check (CWE-284)",
+      "category": "Authorization (CWE-284)",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "api/extra.py",
+      "start_line": 204,
+      "end_line": 207,
+      "evidence": [
+        "204: @router.get(\"/admin/audit\")",
+        "205: def admin_audit(authorization: str | None = Header(default=None)) -> dict:",
+        "206:     require_admin(authorization)",
+        "207:     return {\"status\": \"authorized\"}"
+      ],
+      "reasoning": "The endpoint is intended for admin audit but the implementation relies on a helper require_admin whose behavior is unknown. If require_admin does not enforce proper role verification or is missing, any authenticated user could access admin data. The candidate flags the potential missing or insufficient admin check.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 204,
+        "code": "@router.get(\"/admin/audit\")"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 206,
+        "code": "require_admin(authorization)"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 206,
+        "expected_check": "verify user role is admin",
+        "observation": "require_admin function not provided; cannot confirm it enforces admin role"
+      },
+      "remaining_questions": [
+        "What does require_admin do? Does it verify the user's role against a trusted source?",
+        "Is the authorization header validated before calling require_admin?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-fa74e88d2fd254fe",
+      "title": "Potential IDOR in profile endpoint (CWE-639)",
+      "category": "Authorization (CWE-639)",
+      "severity": "medium",
+      "confidence": "medium",
+      "path": "api/extra.py",
+      "start_line": 108,
+      "end_line": 112,
+      "evidence": [
+        "108: def verified_profile(profile_id: int, authorization: str | None = Header(default=None)) -> dict:",
+        "109:     user = verified_identity(authorization)",
+        "110:     if profile_id != user[\"id\"]:",
+        "111:         raise HTTPException(403, \"Not your profile\")",
+        "112:     return {\"id\": user[\"id\"], \"username\": user[\"username\"], \"email\": user[\"email\"]}"
+      ],
+      "reasoning": "The endpoint checks that the requested profile_id matches the authenticated user's id, but the verification relies on verified_identity whose implementation is unknown. If verified_identity can be spoofed or does not properly validate the token, an attacker could access another user's profile.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 108,
+        "code": "def verified_profile(profile_id: int, authorization: str | None = Header(default=None)) -> dict:"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 110,
+        "code": "if profile_id != user[\"id\"]:"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 109,
+        "expected_check": "robust token verification and binding to user id",
+        "observation": "verified_identity function not shown; its correctness is uncertain"
+      },
+      "remaining_questions": [
+        "How does verified_identity validate the authorization header?",
+        "Does it ensure the token is signed and not tampered?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-b7171bc6020b1e2f",
+      "title": "Potential missing authentication on file read endpoint (CWE-284)",
+      "category": "Authorization (CWE-284)",
+      "severity": "medium",
+      "confidence": "low",
+      "path": "api/extra.py",
+      "start_line": 210,
+      "end_line": 215,
+      "evidence": [
+        "210: @router.get(\"/files\")",
+        "211: def file_read(name: str) -> Response:",
+        "212:     file = (FILES / \"public\" / name).resolve()",
+        "213:     if not file.is_relative_to(FILES.resolve()) or not file.is_file():",
+        "214:         raise HTTPException(404, \"File not found\")",
+        "215:     return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")"
+      ],
+      "reasoning": "The endpoint serves arbitrary files from a public directory based solely on a name parameter, without any authentication or authorization checks. An unauthenticated attacker could enumerate or retrieve files.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 210,
+        "code": "@router.get(\"/files\")"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 212,
+        "code": "file = (FILES / \"public\" / name).resolve()"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 210,
+        "expected_check": "authentication/authorization before file access",
+        "observation": "No auth header or check present"
+      },
+      "remaining_questions": [
+        "Is the public directory intended to be publicly accessible?",
+        "Are there any external controls (e.g., network firewall) limiting access?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-0252de9ab903d777",
+      "title": "Potential missing authentication on verified file read endpoint (CWE-284)",
+      "category": "Authorization (CWE-284)",
+      "severity": "low",
+      "confidence": "low",
+      "path": "api/extra.py",
+      "start_line": 218,
+      "end_line": 224,
+      "evidence": [
+        "218: @router.get(\"/files/verified\")",
+        "219: def verified_file_read(name: str) -> Response:",
+        "220:     root = (FILES / \"public\").resolve()",
+        "221:     file = (root / name).resolve()",
+        "222:     if not file.is_relative_to(root) or not file.is_file():",
+        "223:         raise HTTPException(404, \"File not found\")",
+        "224:     return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")"
+      ],
+      "reasoning": "Although named \"verified\", the function lacks any authentication or authorization parameters. If verification is intended, it is missing, allowing unauthenticated access to files.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 218,
+        "code": "@router.get(\"/files/verified\")"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 221,
+        "code": "file = (root / name).resolve()"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 218,
+        "expected_check": "authentication/authorization before file access",
+        "observation": "No auth parameter or check"
+      },
+      "remaining_questions": [
+        "Was a token or user check omitted unintentionally?",
+        "What files are stored under the public directory?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-487cd086edd24ed3",
+      "title": "Potential missing rate limiting on login endpoints (CWE-307)",
+      "category": "Business Logic (CWE-307)",
+      "severity": "medium",
+      "confidence": "low",
+      "path": "api/extra.py",
+      "start_line": 115,
+      "end_line": 134,
+      "evidence": [
+        "115: @router.post(\"/auth/legacy-login\")",
+        "116: def legacy_login(body: Login) -> dict:",
+        "117:     query = f\"SELECT id,username,role FROM users WHERE username='{body.username}' AND [REDACTED]\"",
+        "118:     with connection() as conn:",
+        "119:         row = conn.execute(query).fetchone()",
+        "120:     if not row:",
+        "121:         raise HTTPException(401, \"Invalid credentials\")",
+        "122:     return {\"access_token\": make_token(row), \"username\": row[\"username\"]}"
+      ],
+      "reasoning": "Both login endpoints accept credentials without any apparent throttling or account lockout logic. An attacker could brute-force passwords.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 115,
+        "code": "@router.post(\"/auth/legacy-login\")"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 119,
+        "code": "row = conn.execute(query).fetchone()"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 115,
+        "expected_check": "rate limiting / login attempt tracking",
+        "observation": "No such logic visible"
+      },
+      "remaining_questions": [
+        "Is there a global middleware that applies rate limiting?",
+        "Are login attempts recorded elsewhere?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-9b4f5bb6f2a105a4",
+      "title": "Potential missing CSRF protection on state-changing endpoints (CWE-352)",
+      "category": "CSRF (CWE-352)",
+      "severity": "low",
+      "confidence": "low",
+      "path": "api/extra.py",
+      "start_line": 161,
+      "end_line": 169,
+      "evidence": [
+        "161: @router.post(\"/comments\")",
+        "162: def add_comment(body: Comment, authorization: str | None = Header(default=None)) -> dict:",
+        "163:     user = identity(authorization)",
+        "164:     with connection() as conn:",
+        "165:         row = conn.execute(",
+        "166:             \"INSERT INTO comments(author_id,body) VALUES (%s,%s) RETURNING id\",",
+        "167:             (user[\"id\"], body.body),",
+        "168:         ).fetchone()"
+      ],
+      "reasoning": "The comment creation endpoint uses a POST request but does not show any anti-CSRF token validation. If the API is consumed by browsers with cookies, CSRF could be possible.",
+      "source": "ai_discovery",
+      "verification": "inconclusive",
+      "verification_notes": [
+        "Sensitive operation source anchor could not be grounded in the inspected source.",
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 161,
+        "code": "@router.post(\"/comments\")"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 165,
+        "code": "row = conn.execute(\"INSERT INTO comments(author_id,body) VALUES (%s,%s) RETURNING id\", (user[\"id\"], body.body))"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 161,
+        "expected_check": "CSRF token validation",
+        "observation": "No CSRF handling visible"
+      },
+      "remaining_questions": [
+        "Is the API intended for same-site use with cookies?",
+        "Is there a global CSRF middleware applied?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-ead464655e9a69a7",
+      "title": "Privilege escalation via unchecked run_as parameter (CWE-269)",
+      "category": "Improper Authorization (CWE-269)",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "api/app.py",
+      "start_line": 295,
+      "end_line": 303,
+      "evidence": [
+        "295:     principal(authorization)",
+        "296:     target_url = str(body.get(\"target_url\", MOCK_EXTERNAL_URL + \"/webhook\"))",
+        "298:         raise HTTPException(400, \"only the local mock destination is accepted\")",
+        "301:             \"INSERT INTO jobs (kind,payload,run_as) VALUES ('webhook',%s,%s) RETURNING *\",",
+        "302:             (json.dumps({\"target_url\": target_url, \"body\": body.get(\"body\", {})}), str(body.get(\"run_as\", \"user\"))),"
+      ],
+      "reasoning": "The endpoint accepts a 'run_as' field from the request body and stores it directly in the database without verifying that the caller is authorized to act as that principal. An attacker could supply an arbitrary user identifier to execute jobs with elevated privileges.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/app.py",
+        "line": 294,
+        "code": "def create_webhook(body: dict[str, Any], authorization: str | None = Header(default=None)) -> dict[str, Any]:"
+      },
+      "sensitive_operation": {
+        "path": "api/app.py",
+        "line": 301,
+        "code": "\"INSERT INTO jobs (kind,payload,run_as) VALUES ('webhook',%s,%s) RETURNING *\""
+      },
+      "missing_check": {
+        "path": "api/app.py",
+        "line": 295,
+        "expected_check": "verify that the caller is permitted to specify the 'run_as' value (e.g., match principal or require admin role)",
+        "observation": "Only principal(authorization) is called; no further validation of body['run_as']"
+      },
+      "remaining_questions": [
+        "Is there any downstream enforcement that validates the stored run_as field before job execution?",
+        "Are there role checks elsewhere that restrict who can set run_as?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-fab37354b02d1ba0",
+      "title": "Insecure Direct Object Reference via owner_id override in order creation (CWE-639)",
+      "category": "Improper Authorization (CWE-639)",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "api/app.py",
+      "start_line": 209,
+      "end_line": 214,
+      "evidence": [
+        "209:     user = principal(authorization)",
+        "210:     owner_id = body.owner_id or user[\"sub\"]",
+        "213:             \"INSERT INTO orders (owner_id,item,quantity,unit_price,status) VALUES (%s,%s,%s,%s,%s) RETURNING *\",",
+        "214:             (owner_id, body.item, body.quantity, body.unit_price, body.status),"
+      ],
+      "reasoning": "The endpoint allows the client to supply an 'owner_id' in the request body. If provided, it is used directly as the order owner, bypassing any check that the authenticated user actually owns that ID. This enables a user to create orders on behalf of other users (IDOR).",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/app.py",
+        "line": 207,
+        "code": "@app.post(\"/orders\")"
+      },
+      "sensitive_operation": {
+        "path": "api/app.py",
+        "line": 213,
+        "code": "\"INSERT INTO orders (owner_id,item,quantity,unit_price,status) VALUES (%s,%s,%s,%s,%s) RETURNING *\""
+      },
+      "missing_check": {
+        "path": "api/app.py",
+        "line": 210,
+        "expected_check": "ensure owner_id matches the authenticated principal or that the caller has permission to act on behalf of another user",
+        "observation": "owner_id is taken from body without verification"
+      },
+      "remaining_questions": [
+        "Are there any database triggers or later business logic that enforce ownership?",
+        "Is there an admin role that is intended to allow setting arbitrary owner_id, and is that role checked?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-932b1f16764907f8",
+      "title": "Missing authorization on coupon application (CWE-284)",
+      "category": "Improper Authorization (CWE-284)",
+      "severity": "medium",
+      "confidence": "medium",
+      "path": "api/app.py",
+      "start_line": 231,
+      "end_line": 236,
+      "evidence": [
+        "231: def apply_coupon(order_id: int, body: CouponBody, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+        "232:     principal(authorization)",
+        "234:         coupon = conn.execute(\"SELECT percent FROM coupons WHERE code=%s\", (body.code,)).fetchone()",
+        "236:         row = conn.execute(\"UPDATE orders SET discount=%s WHERE id=%s RETURNING *\", (percent, order_id)).fetchone()"
+      ],
+      "reasoning": "The endpoint authenticates the caller but does not verify that the caller owns the order identified by order_id or that the coupon is applicable to that order. Any authenticated user can apply arbitrary discounts to any order, potentially leading to unauthorized price manipulation.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/app.py",
+        "line": 230,
+        "code": "@app.post(\"/orders/{order_id}/apply-coupon\")"
+      },
+      "sensitive_operation": {
+        "path": "api/app.py",
+        "line": 236,
+        "code": "\"UPDATE orders SET discount=%s WHERE id=%s RETURNING *\""
+      },
+      "missing_check": {
+        "path": "api/app.py",
+        "line": 232,
+        "expected_check": "verify that the authenticated user is the owner of the order (or has appropriate role) before updating discount",
+        "observation": "Only principal(authorization) is called; no ownership or role check before UPDATE"
+      },
+      "remaining_questions": [
+        "Is there a business rule elsewhere that restricts discount application based on order status or user role?",
+        "Are coupons limited to specific users or products, and is that enforced?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-ff620dfaa2a8ee41",
+      "title": "Missing authorization check for order ownership (CWE-284)",
+      "category": "Authorization",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "api/app.py",
+      "start_line": 241,
+      "end_line": 255,
+      "evidence": [
+        "242: def pay_order(order_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+        "243:     principal(authorization)",
+        "245:         order = conn.execute(\"SELECT * FROM orders WHERE id=%s\", (order_id,)).fetchone()",
+        "249:         conn.execute(\"UPDATE orders SET status='paid' WHERE id=%s\", (order_id,))"
+      ],
+      "reasoning": "The endpoint authenticates the request via `principal(authorization)` but does not verify that the authenticated user is the owner of the order identified by `order_id`. An attacker could pay any order by supplying its ID, leading to unauthorized state changes.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/app.py",
+        "line": 242,
+        "code": "def pay_order(order_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:"
+      },
+      "sensitive_operation": {
+        "path": "api/app.py",
+        "line": 249,
+        "code": "conn.execute(\"UPDATE orders SET status='paid' WHERE id=%s\", (order_id,))"
+      },
+      "missing_check": {
+        "path": "api/app.py",
+        "line": 245,
+        "expected_check": "verify that order[\"user_id\"] (or similar) matches the principal's subject ID",
+        "observation": "No ownership verification before updating order status"
+      },
+      "remaining_questions": [
+        "What column links an order to its owner? Is it `user_id` or another field?",
+        "Does `principal` return a dict with a `sub` claim that can be compared to the order owner?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-f0ccc3b9d38ddce1",
+      "title": "Missing authorization check for order cancellation (CWE-284)",
+      "category": "Authorization",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "api/app.py",
+      "start_line": 258,
+      "end_line": 264,
+      "evidence": [
+        "259: def cancel_order(order_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+        "260:     principal(authorization)",
+        "262:         row = conn.execute(\"UPDATE orders SET status='cancelled' WHERE id=%s RETURNING *\", (order_id,)).fetchone()"
+      ],
+      "reasoning": "The endpoint authenticates the caller but does not ensure the caller owns the order being cancelled. This permits any authenticated user to cancel arbitrary orders.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/app.py",
+        "line": 259,
+        "code": "def cancel_order(order_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:"
+      },
+      "sensitive_operation": {
+        "path": "api/app.py",
+        "line": 262,
+        "code": "conn.execute(\"UPDATE orders SET status='cancelled' WHERE id=%s RETURNING *\", (order_id,)).fetchone()"
+      },
+      "missing_check": {
+        "path": "api/app.py",
+        "line": 260,
+        "expected_check": "compare order owner to principal's ID before performing cancellation",
+        "observation": "No ownership verification present"
+      },
+      "remaining_questions": [
+        "Which column identifies the order owner?",
+        "Is there a business rule that only certain roles may cancel orders?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-5d3ce9356b31af8b",
+      "title": "Missing ownership verification on order retrieval (CWE-284)",
+      "category": "Authorization",
+      "severity": "medium",
+      "confidence": "medium",
+      "path": "api/app.py",
+      "start_line": 220,
+      "end_line": 227,
+      "evidence": [
+        "221: def get_order(order_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+        "222:     principal(authorization)",
+        "224:         row = conn.execute(\"SELECT * FROM orders WHERE id=%s\", (order_id,)).fetchone()"
+      ],
+      "reasoning": "The endpoint returns order details after authentication but does not confirm that the authenticated user is permitted to view the specific order, potentially exposing other users' order data.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/app.py",
+        "line": 221,
+        "code": "def get_order(order_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:"
+      },
+      "sensitive_operation": {
+        "path": "api/app.py",
+        "line": 224,
+        "code": "conn.execute(\"SELECT * FROM orders WHERE id=%s\", (order_id,)).fetchone()"
+      },
+      "missing_check": {
+        "path": "api/app.py",
+        "line": 222,
+        "expected_check": "ensure row[\"user_id\"] matches principal[\"sub\"] or that the user has a role allowing access",
+        "observation": "No check after fetching the row"
+      },
+      "remaining_questions": [
+        "What field links orders to users?",
+        "Are there roles that may view any order?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-d5f84eecf5bce40d",
+      "title": "Missing ownership verification on invoice retrieval (CWE-284)",
+      "category": "Authorization",
+      "severity": "medium",
+      "confidence": "medium",
+      "path": "api/app.py",
+      "start_line": 267,
+      "end_line": 274,
+      "evidence": [
+        "268: def invoice(invoice_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+        "269:     principal(authorization)",
+        "271:         row = conn.execute(\"SELECT * FROM invoices WHERE id=%s\", (invoice_id,)).fetchone()"
+      ],
+      "reasoning": "Authenticated users can retrieve any invoice by ID without confirming they are the invoice owner or have appropriate privileges, leading to potential data leakage.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/app.py",
+        "line": 268,
+        "code": "def invoice(invoice_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:"
+      },
+      "sensitive_operation": {
+        "path": "api/app.py",
+        "line": 271,
+        "code": "conn.execute(\"SELECT * FROM invoices WHERE id=%s\", (invoice_id,)).fetchone()"
+      },
+      "missing_check": {
+        "path": "api/app.py",
+        "line": 269,
+        "expected_check": "verify that the invoice belongs to the principal or that the principal has a privileged role",
+        "observation": "No ownership or role check performed"
+      },
+      "remaining_questions": [
+        "Which column links invoices to users?",
+        "Is there a role (e.g., admin) allowed to view any invoice?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-dd1c0f6e6c60b708",
+      "title": "Missing role check on job creation (CWE-284)",
+      "category": "Authorization",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "api/app.py",
+      "start_line": 308,
+      "end_line": 317,
+      "evidence": [
+        "308: @app.post(\"/jobs\")",
+        "309: def create_job(body: JobBody, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+        "310:     principal(authorization)",
+        "313:         \"INSERT INTO jobs (kind,payload,run_as) VALUES (%s,%s,%s) RETURNING *\",",
+        "314:         (body.kind, json.dumps(body.payload), body.run_as),"
+      ],
+      "reasoning": "Any authenticated user can create a job and specify the `run_as` user, potentially allowing privilege escalation if the system executes jobs under the supplied identity.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/app.py",
+        "line": 309,
+        "code": "def create_job(body: JobBody, authorization: str | None = Header(default=None)) -> dict[str, Any]:"
+      },
+      "sensitive_operation": {
+        "path": "api/app.py",
+        "line": 313,
+        "code": "\"INSERT INTO jobs (kind,payload,run_as) VALUES (%s,%s,%s) RETURNING *\""
+      },
+      "missing_check": {
+        "path": "api/app.py",
+        "line": 310,
+        "expected_check": "enforce that only privileged roles may set `run_as` to another user or restrict `run_as` to the caller's identity",
+        "observation": "No role or identity validation before inserting the job"
+      },
+      "remaining_questions": [
+        "What values are allowed for `run_as`?",
+        "Is there a business rule that only admins may create jobs on behalf of others?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-9fd4c76cbe86871f",
+      "title": "Excessive data exposure of sensitive personal information (CWE-200)",
+      "category": "Information Exposure",
+      "severity": "medium",
+      "confidence": "medium",
+      "path": "api/app.py",
+      "start_line": 199,
+      "end_line": 204,
+      "evidence": [
+        "200: def me(authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+        "203: row = conn.execute(\"SELECT id,username,role,email,ssn FROM users WHERE id=%s\", (user[\"sub\"],)).fetchone()",
+        "204:     return dict(row or {})"
+      ],
+      "reasoning": "The `/me` endpoint returns the user's SSN (`ssn` column) in the response. Exposing highly sensitive personal identifiers increases risk if the response is logged or intercepted.",
+      "source": "ai_discovery",
+      "verification": "inconclusive",
+      "verification_notes": [
+        "source_citation_reanchored:evidence:api/app.py:202->203",
+        "Structured entry point, sensitive operation, missing-check location, or remaining questions are incomplete."
+      ],
+      "entry_point": {
+        "path": "api/app.py",
+        "line": 200,
+        "code": "def me(authorization: str | None = Header(default=None)) -> dict[str, Any]:"
+      },
+      "sensitive_operation": {
+        "path": "api/app.py",
+        "line": 202,
+        "code": "conn.execute(\"SELECT id,username,role,email,ssn FROM users WHERE id=%s\", (user[\"sub\"],)).fetchone()"
+      },
+      "missing_check": null,
+      "remaining_questions": [
+        "Is returning the SSN required for any client functionality?",
+        "Should the SSN be omitted or masked in the API response?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-76182088c965a98d",
+      "title": "Missing authorization check for admin endpoint (CWE-285)",
+      "category": "Authorization",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "api/app.py",
+      "start_line": 277,
+      "end_line": 282,
+      "evidence": [
+        "def admin_users(authorization: str | None = Header(default=None)) -> list[dict[str, Any]]:",
+        "principal(authorization)",
+        "rows = conn.execute(\"SELECT id,username,email,role,ssn FROM users ORDER BY id\").fetchall()"
+      ],
+      "reasoning": "The endpoint extracts an Authorization header and calls `principal(authorization)`, but the provided snippet does not show any role verification (e.g., checking that the principal is an admin). Without such a check, any authenticated user could retrieve the full user list, including sensitive fields like SSN, leading to an IDOR/BOLA risk.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved.",
+        "Merged 1 duplicate AI candidate(s) describing the same root cause: ai-76d97e34111f0862."
+      ],
+      "entry_point": {
+        "path": "api/app.py",
+        "line": 278,
+        "code": "def admin_users(authorization: str | None = Header(default=None)) -> list[dict[str, Any]]:"
+      },
+      "sensitive_operation": {
+        "path": "api/app.py",
+        "line": 281,
+        "code": "rows = conn.execute(\"SELECT id,username,email,role,ssn FROM users ORDER BY id\").fetchall()"
+      },
+      "missing_check": {
+        "path": "api/app.py",
+        "line": 279,
+        "expected_check": "verify that principal has admin role",
+        "observation": "Only `principal(authorization)` is called; no role check is evident"
+      },
+      "remaining_questions": [
+        "What does `principal` return and does it raise an error for non\u2011admin users?",
+        "Is there any global middleware that enforces admin role for routes under `/admin/*`?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": [
+        "ai-76d97e34111f0862"
+      ]
+    },
+    {
+      "candidate_id": "ai-1380895ee2c458ad",
+      "title": "Missing authorization check for admin jobs endpoint (CWE-285)",
+      "category": "Authorization",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "api/app.py",
+      "start_line": 285,
+      "end_line": 290,
+      "evidence": [
+        "def admin_jobs(authorization: str | None = Header(default=None)) -> list[dict[str, Any]]:",
+        "principal(authorization)",
+        "rows = conn.execute(\"SELECT * FROM jobs ORDER BY id DESC\").fetchall()"
+      ],
+      "reasoning": "Similar to `admin_users`, this endpoint only calls `principal` without verifying that the caller has administrative privileges before returning all job records. This could allow any authenticated user to enumerate internal job data.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved.",
+        "Merged 1 duplicate AI candidate(s) describing the same root cause: ai-c9e2916f575f1421."
+      ],
+      "entry_point": {
+        "path": "api/app.py",
+        "line": 286,
+        "code": "def admin_jobs(authorization: str | None = Header(default=None)) -> list[dict[str, Any]]:"
+      },
+      "sensitive_operation": {
+        "path": "api/app.py",
+        "line": 289,
+        "code": "rows = conn.execute(\"SELECT * FROM jobs ORDER BY id DESC\").fetchall()"
+      },
+      "missing_check": {
+        "path": "api/app.py",
+        "line": 287,
+        "expected_check": "verify that principal has admin role",
+        "observation": "No explicit role check after `principal`"
+      },
+      "remaining_questions": [
+        "Does `principal` internally enforce admin role for `/admin/*` routes?",
+        "Are there any route decorators or middleware that perform role checks not visible in this snippet?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": [
+        "ai-c9e2916f575f1421"
+      ]
+    },
+    {
+      "candidate_id": "ai-953f2f53bafcf034",
+      "title": "Sensitive configuration exposure via debug endpoint (CWE-200)",
+      "category": "Information Exposure",
+      "severity": "medium",
+      "confidence": "high",
+      "path": "api/app.py",
+      "start_line": 320,
+      "end_line": 322,
+      "evidence": [
+        "def debug_config() -> dict[str, Any]:",
+        "return {\"database_url\": DATABASE_URL, \"mock_external_url\": MOCK_EXTERNAL_URL, \"app_secret\": os.environ.get(\"APP_SECRET\")}"
+      ],
+      "reasoning": "The `/debug/config` endpoint returns database connection string and application secret to any caller, providing attackers with credentials and internal URLs. This is a clear information leak.",
+      "source": "ai_discovery",
+      "verification": "inconclusive",
+      "verification_notes": [
+        "source_citation_reanchored:entry_point:api/app.py:320->321",
+        "Structured entry point, sensitive operation, missing-check location, or remaining questions are incomplete."
+      ],
+      "entry_point": {
+        "path": "api/app.py",
+        "line": 321,
+        "code": "def debug_config() -> dict[str, Any]:"
+      },
+      "sensitive_operation": {
+        "path": "api/app.py",
+        "line": 322,
+        "code": "return {\"database_url\": DATABASE_URL, \"mock_external_url\": MOCK_EXTERNAL_URL, \"app_secret\": os.environ.get(\"APP_SECRET\")}"
+      },
+      "missing_check": null,
+      "remaining_questions": [
+        "Is this endpoint protected by any authentication or IP\u2011allowlist?",
+        "Is it intended to be disabled in production?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-e6b4aa4b31fd8b3a",
+      "title": "Sensitive configuration exposure without access control (CWE-200)",
+      "category": "Information exposure (CWE-200)",
+      "severity": "medium",
+      "confidence": "high",
+      "path": "api/app.py",
+      "start_line": 320,
+      "end_line": 322,
+      "evidence": [
+        "def debug_config() -> dict[str, Any]:",
+        "return {\"database_url\": DATABASE_URL, \"mock_external_url\": MOCK_EXTERNAL_URL, \"app_secret\": os.environ.get(\"APP_SECRET\")}"
+      ],
+      "reasoning": "The `/debug/config` endpoint returns database connection strings and the application secret to any caller, with no authentication or authorization checks, leaking credentials and internal URLs.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "source_citation_reanchored:entry_point:api/app.py:320->321",
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/app.py",
+        "line": 321,
+        "code": "def debug_config() -> dict[str, Any]:"
+      },
+      "sensitive_operation": {
+        "path": "api/app.py",
+        "line": 322,
+        "code": "return {\"database_url\": DATABASE_URL, \"mock_external_url\": MOCK_EXTERNAL_URL, \"app_secret\": os.environ.get(\"APP_SECRET\")}"
+      },
+      "missing_check": {
+        "path": "api/app.py",
+        "line": 320,
+        "expected_check": "authentication/authorization guard",
+        "observation": "Endpoint is publicly accessible and returns secret values"
+      },
+      "remaining_questions": [
+        "Is this endpoint intended for internal debugging only and protected by deployment configuration?",
+        "Are there any network-level restrictions (e.g., firewall) that limit access to this route?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-86f7e15d23cea03d",
+      "title": "Cookie without HttpOnly/Secure flags (CWE-614)",
+      "category": "Missing security attributes on cookies",
+      "severity": "medium",
+      "confidence": "high",
+      "path": "api/extra.py",
+      "start_line": 271,
+      "end_line": 279,
+      "evidence": [
+        "response.set_cookie(\"lab_session\", f\"session-{user['id']}\")"
+      ],
+      "reasoning": "The endpoint /session/start creates a session cookie using set_cookie but does not specify HttpOnly, Secure, or SameSite attributes. This allows client-side scripts to read the cookie and may enable session hijacking, especially over insecure connections.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "source_citation_reanchored:entry_point:api/extra.py:272->271",
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 271,
+        "code": "@router.get(\"/session/start\")"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 278,
+        "code": "response.set_cookie(\"lab_session\", f\"session-{user['id']}\")"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 278,
+        "expected_check": "Cookie should be set with HttpOnly, Secure, and SameSite attributes",
+        "observation": "set_cookie called without these flags"
+      },
+      "remaining_questions": [
+        "Is the application served over HTTPS exclusively?",
+        "Are there downstream services that rely on the cookie being readable by JavaScript?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-9725570d578c01b3",
+      "title": "User enumeration via password reset request (CWE-203)",
+      "category": "Information disclosure / user enumeration",
+      "severity": "low",
+      "confidence": "medium",
+      "path": "api/extra.py",
+      "start_line": 564,
+      "end_line": 573,
+      "evidence": [
+        "if not user:",
+        "    raise HTTPException(404, \"Account not found\")"
+      ],
+      "reasoning": "The reset request endpoint returns a distinct 404 error when the username does not exist, while a successful lookup proceeds to token creation. An attacker can probe valid usernames by observing response codes, enabling user enumeration.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 564,
+        "code": "@router.post(\"/auth/reset/request\")"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 567,
+        "code": "user = conn.execute(\"SELECT id FROM users WHERE username=%s\", (str(body.get(\"username\", \"\")),)).fetchone()"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 568,
+        "expected_check": "Uniform response for existing and non\u2011existing usernames",
+        "observation": "Returns 404 for non\u2011existent usernames"
+      },
+      "remaining_questions": [
+        "Does the verified_reset_request endpoint exhibit the same behavior?",
+        "Is there rate limiting on reset requests to mitigate enumeration attacks?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-b3cac087a919243e",
+      "title": "Insecure session token format leading to IDOR (CWE-639)",
+      "category": "Authorization",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "api/extra.py",
+      "start_line": 310,
+      "end_line": 319,
+      "evidence": [
+        "if not token.startswith(\"session-\") or not token[8:].isdigit():",
+        "row = conn.execute(\"SELECT username FROM users WHERE id=%s\", (int(token[8:]),)).fetchone()"
+      ],
+      "reasoning": "The session token is constructed as a predictable string containing the numeric user ID. The function only validates the format and then directly uses the ID to look up the user without any cryptographic verification, allowing an attacker to guess or enumerate valid session tokens and impersonate other users (IDOR).",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 311,
+        "code": "def session_whoami(request: Request) -> dict:"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 316,
+        "code": "row = conn.execute(\"SELECT username FROM users WHERE id=%s\", (int(token[8:]),)).fetchone()"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 313,
+        "expected_check": "cryptographic verification of token integrity (e.g., HMAC, signature, random UUID)",
+        "observation": "Only format and numeric check are performed"
+      },
+      "remaining_questions": [
+        "How is the token generated elsewhere? Is there any secret component?",
+        "Is there any additional server\u2011side session store that validates the token beyond the ID?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-dbc5515ff9f6fbe9",
+      "title": "Predictable session token generation (CWE-332)",
+      "category": "Weak token generation",
+      "severity": "medium",
+      "confidence": "low",
+      "path": "api/extra.py",
+      "start_line": 322,
+      "end_line": 331,
+      "evidence": [
+        "def secure_session_start(authorization: str | None = Header(default=None)) -> Response:",
+        "conn.execute(\"INSERT INTO sessions(token,user_id) VALUES (%s,%s)\", (token, user[\"id\"]))",
+        "response.set_cookie(\"verified_session\", token, httponly=True, samesite=\"strict\", secure=True)"
+      ],
+      "reasoning": "A variable named `token` is inserted into the sessions table and set as a cookie, but the snippet does not show how `token` is generated. If it follows the same pattern as the insecure token above (e.g., \"session-<id>\"), it would be predictable. The lack of visible randomness or signing suggests a potential weak token generation issue.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "source_citation_reanchored:entry_point:api/extra.py:322->323",
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 323,
+        "code": "def secure_session_start(authorization: str | None = Header(default=None)) -> Response:"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 327,
+        "code": "conn.execute(\"INSERT INTO sessions(token,user_id) VALUES (%s,%s)\", (token, user[\"id\"]))"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 322,
+        "expected_check": "use of a cryptographically secure random generator for token creation",
+        "observation": "Token generation code not present"
+      },
+      "remaining_questions": [
+        "What is the actual implementation of `token` before insertion?",
+        "Is there any HMAC or signature applied to the token?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-b98ec267aac76bb8",
+      "title": "Missing authorization check on verified webhook creation (CWE-285)",
+      "category": "Authorization",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "api/extra.py",
+      "start_line": 526,
+      "end_line": 539,
+      "evidence": [
+        "user = verified_identity(authorization)",
+        "row = conn.execute(\"INSERT INTO jobs(kind,payload,run_as) VALUES ('webhook',%s,%s) RETURNING id,run_as\", (json.dumps({\"target_url\": target, \"body\": body.get(\"body\", {})}), user[\"role\"]))"
+      ],
+      "reasoning": "The endpoint allows any authenticated user to create a webhook job that runs as the user's role. There is no check that the user has permission to schedule webhooks, potentially allowing lower\u2011privileged users to trigger actions that should be restricted to admins.",
+      "source": "ai_discovery",
+      "verification": "inconclusive",
+      "verification_notes": [
+        "source_citation_reanchored:entry_point:api/extra.py:526->527",
+        "Sensitive operation source anchor could not be grounded in the inspected source.",
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 527,
+        "code": "def verified_webhook(body: dict, authorization: str | None = Header(default=None)) -> dict:"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 535,
+        "code": "conn.execute(\"INSERT INTO jobs(kind,payload,run_as) VALUES ('webhook',%s,%s) RETURNING id,run_as\", (json.dumps({\"target_url\": target, \"body\": body.get(\"body\", {})}), user[\"role\"]))"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 528,
+        "expected_check": "role\u2011based access control verifying that the user is authorized to create webhook jobs (e.g., admin role)",
+        "observation": "Only identity verification is performed"
+      },
+      "remaining_questions": [
+        "What roles are considered authorized for webhook jobs?",
+        "Is there any downstream validation of `run_as` that could mitigate misuse?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-eb6ae0259a4426c4",
+      "title": "Password reset without token expiration or usage limit (CWE-640)",
+      "category": "Business logic",
+      "severity": "medium",
+      "confidence": "medium",
+      "path": "api/extra.py",
+      "start_line": 576,
+      "end_line": 586,
+      "evidence": [
+        "row = conn.execute(\"SELECT user_id FROM reset_tokens WHERE [REDACTED], (str(body.get(\"token\", \"\")),))",
+        "if not row: raise HTTPException(400, \"Invalid token\")",
+        "conn.execute(\"UPDATE users SET [REDACTED] WHERE id=%s\", (str(body.get(\"password\", \"\")), row[\"user_id\"]))"
+      ],
+      "reasoning": "The reset flow checks only that a token exists, but the snippet does not show any expiration timestamp or single\u2011use flag being verified. An attacker who obtains a valid token could reuse it indefinitely to reset the password.",
+      "source": "ai_discovery",
+      "verification": "inconclusive",
+      "verification_notes": [
+        "source_citation_reanchored:entry_point:api/extra.py:576->577",
+        "Sensitive operation source anchor could not be grounded in the inspected source.",
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 577,
+        "code": "def confirm_reset(body: dict) -> dict:"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 584,
+        "code": "conn.execute(\"UPDATE users SET [REDACTED] WHERE id=%s\", (str(body.get(\"password\", \"\")), row[\"user_id\"]))"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 580,
+        "expected_check": "validation of token expiration and one\u2011time use flag",
+        "observation": "Only existence check is performed"
+      },
+      "remaining_questions": [
+        "Does the `reset_tokens` table contain `expires_at` or `used` columns that are checked elsewhere?",
+        "Is the password being hashed before storage?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-385f4ef6aefd7bdd",
+      "title": "Potential mass assignment in upload endpoint (CWE-915)",
+      "category": "Input validation",
+      "severity": "low",
+      "confidence": "low",
+      "path": "api/extra.py",
+      "start_line": 347,
+      "end_line": 363,
+      "evidence": [
+        "row = conn.execute(\"INSERT INTO uploads(name,mime,body) VALUES (%s,%s,%s) RETURNING id\", (file.filename or \"file\", file.content_type or \"application/octet-stream\", payload))"
+      ],
+      "reasoning": "The endpoint stores the uploaded file's original filename and MIME type directly into the database without sanitization. If the `uploads` table includes additional columns (e.g., owner_id, visibility) that are not listed here, an attacker could manipulate the request to set those fields via multipart form fields, leading to unintended attribute assignment.",
+      "source": "ai_discovery",
+      "verification": "inconclusive",
+      "verification_notes": [
+        "Entry point source anchor could not be grounded in the inspected source.",
+        "Sensitive operation source anchor could not be grounded in the inspected source.",
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 347,
+        "code": "def upload(request: Request, authorization: str | None = Header(default=None)) -> dict:"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 359,
+        "code": "conn.execute(\"INSERT INTO uploads(name,mime,body) VALUES (%s,%s,%s) RETURNING id\", (file.filename or \"file\", file.content_type or \"application/octet-stream\", payload))"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 350,
+        "expected_check": "whitelisting of allowed fields and validation of filename/mime",
+        "observation": "No explicit validation shown"
+      },
+      "remaining_questions": [
+        "What columns exist in the `uploads` table beyond name, mime, and body?",
+        "Is there any server\u2011side sanitization of the filename?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-6322be0c6e12b177",
+      "title": "Insecure Direct Object Reference (CWE-639)",
+      "category": "Authorization",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "api/extra.py",
+      "start_line": 97,
+      "end_line": 104,
+      "evidence": [
+        "def profile(profile_id: int, authorization: str | None = Header(default=None)) -> dict:",
+        "principal(authorization)",
+        "row = conn.execute(\"SELECT id,username,email,ssn FROM users WHERE id=%s\", (profile_id,)).fetchone()",
+        "return dict(row)"
+      ],
+      "reasoning": "The endpoint authenticates the request via `principal(authorization)` but does not verify that the authenticated user is authorized to view the requested `profile_id`. This allows any authenticated user to retrieve arbitrary users' profiles, including sensitive fields such as `ssn`, constituting an IDOR vulnerability.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "source_citation_reanchored:entry_point:api/extra.py:97->98",
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 98,
+        "code": "def profile(profile_id: int, authorization: str | None = Header(default=None)) -> dict:"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 101,
+        "code": "row = conn.execute(\"SELECT id,username,email,ssn FROM users WHERE id=%s\", (profile_id,)).fetchone()"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 99,
+        "expected_check": "ownership verification (e.g., ensure profile_id matches the authenticated user's id or that the user has a role permitting access)",
+        "observation": "Only `principal(authorization)` is called; no comparison between `profile_id` and the authenticated user's identifier"
+      },
+      "remaining_questions": [
+        "What does `principal` return and does it include the user's id?",
+        "Is there any higher\u2011level middleware that enforces per\u2011user access to profile resources?",
+        "Are there audit logs that might mitigate the impact of this exposure?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-022a4b56299a0fcf",
+      "title": "Missing Authentication Verification (CWE-306)",
+      "category": "Authentication",
+      "severity": "medium",
+      "confidence": "medium",
+      "path": "api/extra.py",
+      "start_line": 161,
+      "end_line": 170,
+      "evidence": [
+        "@router.post(\"/comments\")",
+        "def add_comment(body: Comment, authorization: str | None = Header(default=None)) -> dict:",
+        "user = identity(authorization)",
+        "row = conn.execute(\"INSERT INTO comments(author_id,body) VALUES (%s,%s) RETURNING id\", (user[\"id\"], body.body)).fetchone()"
+      ],
+      "reasoning": "The function extracts a user identity via `identity(authorization)` but does not appear to verify the authenticity or integrity of the provided token. If `identity` merely decodes a token without signature validation, an attacker could forge an `authorization` header and impersonate any user when creating comments.",
+      "source": "ai_discovery",
+      "verification": "inconclusive",
+      "verification_notes": [
+        "Sensitive operation source anchor could not be grounded in the inspected source.",
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 161,
+        "code": "@router.post(\"/comments\")"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 165,
+        "code": "row = conn.execute(\"INSERT INTO comments(author_id,body) VALUES (%s,%s) RETURNING id\", (user[\"id\"], body.body)).fetchone()"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 163,
+        "expected_check": "token signature verification or session validation",
+        "observation": "`identity` is called without any subsequent verification step"
+      },
+      "remaining_questions": [
+        "What is the implementation of `identity`? Does it validate signatures or expiration?",
+        "Is there any global request middleware that enforces authentication before reaching this handler?",
+        "Are there rate\u2011limiting or logging mechanisms for comment creation that could mitigate abuse?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-e2aafc49ce7556a2",
+      "title": "Missing admin authorization check (CWE-284)",
+      "category": "Authorization (CWE-284)",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "api/extra.py",
+      "start_line": 196,
+      "end_line": 201,
+      "evidence": [
+        "196: @router.get(\"/admin/overview\")",
+        "197: def admin_overview(authorization: str | None = Header(default=None)) -> dict:",
+        "198:     principal(authorization)",
+        "199:     with connection() as conn:",
+        "200:         count = conn.execute(\"SELECT count(*) AS n FROM users\").fetchone()[\"n\"]",
+        "201:     return {\"users\": count}"
+      ],
+      "reasoning": "The endpoint is under an /admin path and should be restricted to administrators. It only calls `principal(authorization)`, which likely validates that a user is authenticated but does not enforce an admin role. This could allow any authenticated user to retrieve the total number of users, an information disclosure and privilege escalation risk.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 196,
+        "code": "@router.get(\"/admin/overview\")"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 200,
+        "code": "count = conn.execute(\"SELECT count(*) AS n FROM users\").fetchone()[\"n\"]"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 198,
+        "expected_check": "require_admin or role check",
+        "observation": "`principal` is called but no admin/role verification is performed"
+      },
+      "remaining_questions": [
+        "What does `principal` verify? Does it include role information?",
+        "Is there any global middleware that restricts /admin routes?",
+        "Are there rate\u2011limiting or logging controls for this endpoint?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-e34f01e4e6651bde",
+      "title": "Missing authentication check on account page (CWE-284)",
+      "category": "Authorization (CWE-284)",
+      "severity": "medium",
+      "confidence": "medium",
+      "path": "api/extra.py",
+      "start_line": 304,
+      "end_line": 307,
+      "evidence": [
+        "304: @router.get(\"/account\", response_class=HTMLResponse)",
+        "305: def account_page(request: Request) -> str:",
+        "306:     user = session_whoami(request)",
+        "307:     return f\"<h1>Signed in as {html.escape(user['username'])}</h1>\""
+      ],
+      "reasoning": "The handler retrieves a user object via `session_whoami` but does not verify that the session is authenticated before using the data. If `session_whoami` returns `None` or an unauthenticated placeholder, the code may raise an exception or expose internal details. An explicit authentication check would mitigate unauthorized access.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 304,
+        "code": "@router.get(\"/account\", response_class=HTMLResponse)"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 307,
+        "code": "return f\"<h1>Signed in as {html.escape(user['username'])}</h1>\""
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 306,
+        "expected_check": "authentication verification (e.g., require_login)",
+        "observation": "`session_whoami` is called but its result is not validated"
+      },
+      "remaining_questions": [
+        "What does `session_whoami` return for unauthenticated requests?",
+        "Is there a global dependency that enforces authentication for this route?",
+        "Could an attacker cause a server error that reveals stack traces?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-8b80c3773de74246",
+      "title": "Missing ownership check on note retrieval (CWE-639)",
+      "category": "Authorization (CWE-639)",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "api/extra.py",
+      "start_line": 542,
+      "end_line": 549,
+      "evidence": [
+        "542: @router.get(\"/orders/{order_id}/notes/{note_id}\")",
+        "543: def order_note(order_id: int, note_id: int, authorization: str | None = Header(default=None)) -> dict:",
+        "544:     principal(authorization)",
+        "545:     with connection() as conn:",
+        "546:         row = conn.execute(\"SELECT id,order_id,body FROM notes WHERE id=%s\", (note_id,)).fetchone()",
+        "547:     if not row:",
+        "548:         raise HTTPException(404, \"Note not found\")",
+        "549:     return dict(row)"
+      ],
+      "reasoning": "The endpoint allows fetching a note by its ID after only verifying that the caller is authenticated (`principal`). It does not confirm that the note belongs to the specified `order_id` or that the user owns the order. An attacker could enumerate note IDs across orders (IDOR) and read arbitrary notes.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 542,
+        "code": "@router.get(\"/orders/{order_id}/notes/{note_id}\")"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 546,
+        "code": "row = conn.execute(\"SELECT id,order_id,body FROM notes WHERE id=%s\", (note_id,)).fetchone()"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 544,
+        "expected_check": "ownership verification (order_id match and user ownership)",
+        "observation": "Only `principal` is called; no check that `order_id` matches the note or that the user owns the order"
+      },
+      "remaining_questions": [
+        "Does `principal` embed any role or ownership data that could be used downstream?",
+        "Is there a database foreign\u2011key constraint that would prevent cross\u2011order access?",
+        "Are there rate\u2011limiting or audit logs for note access?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-f743fe703518ba34",
+      "title": "Insecure Direct Object Reference (CWE-639)",
+      "category": "Authorization",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "api/extra.py",
+      "start_line": 448,
+      "end_line": 450,
+      "evidence": [
+        "def verified_get_order(order_id: int, authorization: str | None = Header(default=None)) -> dict:",
+        "return owned_order(order_id, authorization)[0]"
+      ],
+      "reasoning": "The endpoint returns an order based solely on the supplied order_id and passes the raw authorization header to owned_order. If owned_order does not enforce that the caller owns the order, a user could retrieve any order by guessing IDs, constituting an IDOR. The code does not show any explicit ownership check before returning the order data.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 449,
+        "code": "def verified_get_order(order_id: int, authorization: str | None = Header(default=None)) -> dict:"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 450,
+        "code": "return owned_order(order_id, authorization)[0]"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 450,
+        "expected_check": "ownership verification that the authenticated user is allowed to access the requested order",
+        "observation": "No explicit ownership or permission check is visible before returning the order"
+      },
+      "remaining_questions": [
+        "Does owned_order internally verify that the supplied authorization token corresponds to the owner of order_id?",
+        "What error handling occurs if the order does not belong to the caller?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-2c0b423220c16ecb",
+      "title": "Stored Cross-Site Scripting (CWE-79)",
+      "category": "Injection",
+      "severity": "medium",
+      "confidence": "medium",
+      "path": "api/extra.py",
+      "start_line": 628,
+      "end_line": 634,
+      "evidence": [
+        "body = await request.body()",
+        "conn.execute(\"INSERT INTO visits(destination,accepted) VALUES (%s,true)\", (body.decode(\"utf-8\", \"replace\"),))"
+      ],
+      "reasoning": "The raw request body is stored directly in the database column `destination` without sanitisation. If that data is later rendered in an HTML context (e.g., admin dashboard), an attacker could inject malicious script payloads, leading to stored XSS.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 629,
+        "code": "async def receive_hook(request: Request) -> dict:"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 632,
+        "code": "conn.execute(\"INSERT INTO visits(destination,accepted) VALUES (%s,true)\", (body.decode(\"utf-8\", \"replace\"),))"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 632,
+        "expected_check": "validation or sanitisation of the incoming payload before persisting",
+        "observation": "Payload is decoded and stored verbatim"
+      },
+      "remaining_questions": [
+        "Is the `destination` field ever displayed to users without escaping?",
+        "Are there size limits on the stored payload that could lead to denial of service?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-84d790e7ca885d16",
+      "title": "Improper Content-Type Handling (CWE-434)",
+      "category": "File Handling",
+      "severity": "low",
+      "confidence": "medium",
+      "path": "api/extra.py",
+      "start_line": 366,
+      "end_line": 372,
+      "evidence": [
+        "row = conn.execute(\"SELECT mime,body FROM uploads WHERE id=%s\", (upload_id,)).fetchone()",
+        "return Response(bytes(row[\"body\"]), media_type=row[\"mime\"])"
+      ],
+      "reasoning": "The MIME type stored in the database is trusted and used directly as the response `media_type`. An attacker who can upload a file with a crafted MIME type (e.g., `text/html`) could cause the server to serve untrusted HTML, enabling XSS via content sniffing or script execution in the browser.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 366,
+        "code": "@router.get(\"/uploads/{upload_id}\")"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 372,
+        "code": "return Response(bytes(row[\"body\"]), media_type=row[\"mime\"])"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 369,
+        "expected_check": "validation that the stored MIME type is an allowed safe type (e.g., image/*, application/pdf)",
+        "observation": "MIME type is taken from DB without validation"
+      },
+      "remaining_questions": [
+        "Are there controls on what MIME types can be stored during upload?",
+        "Is the response ever cached by browsers in a way that could affect other origins?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-f69e77e901449ba6",
+      "title": "Stored Cross-Site Scripting (CWE-79)",
+      "category": "Injection",
+      "severity": "medium",
+      "confidence": "medium",
+      "path": "api/extra.py",
+      "start_line": 173,
+      "end_line": 177,
+      "evidence": [
+        "rows = conn.execute(\"SELECT body FROM comments ORDER BY id\").fetchall()",
+        "return \"<h1>Comments</h1>\" + \"\".join(f\"<p>{row['body']}</p>\" for row in rows)"
+      ],
+      "reasoning": "Comment bodies are retrieved from the database and interpolated directly into HTML without escaping. If an attacker can submit a comment containing HTML/JS, it will be rendered to other users, resulting in stored XSS.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 173,
+        "code": "@router.get(\"/comments\", response_class=HTMLResponse)"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 177,
+        "code": "return \"<h1>Comments</h1>\" + \"\".join(f\"<p>{row['body']}</p>\" for row in rows)"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 177,
+        "expected_check": "HTML escaping or sanitisation of comment body before inclusion in response",
+        "observation": "Comment body is inserted directly into HTML"
+      },
+      "remaining_questions": [
+        "Is there any input validation when comments are created?",
+        "Are comments ever displayed in a context that disables script execution (e.g., CSP)?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-26620151b8264cfe",
+      "title": "Missing authentication on webhook endpoint (CWE-306)",
+      "category": "Missing Authentication (CWE-306)",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "api/extra.py",
+      "start_line": 628,
+      "end_line": 634,
+      "evidence": [
+        "628: @router.post(\"/integrations/hook\")",
+        "629: async def receive_hook(request: Request) -> dict:",
+        "630:     body = await request.body()",
+        "631:     with connection() as conn:",
+        "632:         conn.execute(\"INSERT INTO visits(destination,accepted) VALUES (%s,true)\", (body.decode(\"utf-8\", \"replace\"),))",
+        "633:         conn.commit()",
+        "634:     return {\"accepted\": True}"
+      ],
+      "reasoning": "The endpoint accepts a POST request and stores the raw request body in the database without any authentication or signature verification. An attacker can invoke this endpoint to inject arbitrary data into the trusted `visits` table, potentially leading to trust\u2011boundary violations or later misuse of stored data.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 628,
+        "code": "@router.post(\"/integrations/hook\")"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 632,
+        "code": "conn.execute(\"INSERT INTO visits(destination,accepted) VALUES (%s,true)\", (body.decode(\"utf-8\", \"replace\"),))"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 628,
+        "expected_check": "authentication or request signature verification",
+        "observation": "No auth header or HMAC verification is performed before inserting data"
+      },
+      "remaining_questions": [
+        "Is the `visits` table used for any privileged logic later in the application?",
+        "Are there any rate\u2011limiting or CSRF protections applied globally that might mitigate abuse?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-b5057777207eb439",
+      "title": "Insecure Direct Object Reference on upload retrieval (CWE-639)",
+      "category": "IDOR (CWE-639)",
+      "severity": "medium",
+      "confidence": "medium",
+      "path": "api/extra.py",
+      "start_line": 366,
+      "end_line": 372,
+      "evidence": [
+        "366: @router.get(\"/uploads/{upload_id}\")",
+        "367: def view_upload(upload_id: int) -> Response:",
+        "368:     with connection() as conn:",
+        "369:         row = conn.execute(\"SELECT mime,body FROM uploads WHERE id=%s\", (upload_id,)).fetchone()",
+        "370:     if not row:",
+        "371:         raise HTTPException(404, \"File not found\")",
+        "372:     return Response(bytes(row[\"body\"]), media_type=row[\"mime\"])"
+      ],
+      "reasoning": "The endpoint returns any uploaded file based solely on the numeric `upload_id` supplied by the caller. No ownership or permission check is performed, allowing a user to retrieve files belonging to other users (IDOR).",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 366,
+        "code": "@router.get(\"/uploads/{upload_id}\")"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 369,
+        "code": "conn.execute(\"SELECT mime,body FROM uploads WHERE id=%s\", (upload_id,)).fetchone()"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 366,
+        "expected_check": "ownership or authorization verification",
+        "observation": "No check against the requesting user's identity before returning the file"
+      },
+      "remaining_questions": [
+        "Do uploaded files contain sensitive data that should be protected?",
+        "Is there any higher\u2011level middleware that might enforce access control for this route?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-7267ef84c8754429",
+      "title": "Insecure Direct Object Reference on document download (CWE-639)",
+      "category": "IDOR (CWE-639)",
+      "severity": "medium",
+      "confidence": "medium",
+      "path": "api/extra.py",
+      "start_line": 394,
+      "end_line": 403,
+      "evidence": [
+        "394: @router.get(\"/documents/{upload_id}\")",
+        "395: def view_document(upload_id: int) -> Response:",
+        "396:     with connection() as conn:",
+        "397:         row = conn.execute(\"SELECT body FROM uploads WHERE id=%s AND mime='text/plain'\", (upload_id,)).fetchone()",
+        "398:     if not row:",
+        "399:         raise HTTPException(404, \"Document not found\")",
+        "400:     return Response(",
+        "401:         bytes(row[\"body\"]), media_type=\"text/plain\","
+      ],
+      "reasoning": "Similar to the upload view, this endpoint serves a document based only on `upload_id` without verifying that the caller is allowed to access that document. This constitutes an IDOR vulnerability.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 394,
+        "code": "@router.get(\"/documents/{upload_id}\")"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 397,
+        "code": "conn.execute(\"SELECT body FROM uploads WHERE id=%s AND mime='text/plain'\", (upload_id,)).fetchone()"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 394,
+        "expected_check": "ownership or permission verification",
+        "observation": "No access control before returning the document"
+      },
+      "remaining_questions": [
+        "Are documents expected to be publicly shareable, or should they be limited to the uploader?",
+        "Is there any global policy that restricts access to these routes?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-94ab06f89bdfae37",
+      "title": "Potential missing admin role verification (CWE-285)",
+      "category": "Improper Authorization (CWE-285)",
+      "severity": "medium",
+      "confidence": "low",
+      "path": "api/extra.py",
+      "start_line": 668,
+      "end_line": 671,
+      "evidence": [
+        "668: @router.get(\"/admin/current-report\")",
+        "669: def current_report(authorization: str | None = Header(default=None)) -> dict:",
+        "670:     require_admin(authorization)",
+        "671:     return {\"status\": \"authorized\"}"
+      ],
+      "reasoning": "The route calls `require_admin`, but without seeing its implementation we cannot confirm that it properly validates the caller's role. If `require_admin` only checks for the presence of a header or token without verifying the user's admin status, this could allow privilege escalation.",
+      "source": "ai_discovery",
+      "verification": "inconclusive",
+      "verification_notes": [
+        "Structured entry point, sensitive operation, missing-check location, or remaining questions are incomplete."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 668,
+        "code": "@router.get(\"/admin/current-report\")"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 670,
+        "code": "require_admin(authorization)"
+      },
+      "missing_check": null,
+      "remaining_questions": [
+        "What does `require_admin` actually check? Does it verify the user's role in the database?",
+        "Is the admin token or header protected against replay or tampering?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-1c2e3095524918b0",
+      "title": "Missing authentication/authorization for forum messages (CWE-862)",
+      "category": "Authorization",
+      "severity": "Medium",
+      "confidence": "Medium",
+      "path": "api/extra.py",
+      "start_line": 189,
+      "end_line": 193,
+      "evidence": [
+        "189: @router.get(\"/forum/messages\", response_class=HTMLResponse)",
+        "190: def show_messages() -> str:",
+        "191:     with connection() as conn:",
+        "192:         rows = conn.execute(\"SELECT body FROM comments ORDER BY id\").fetchall()",
+        "193:     return \"<h1>Messages</h1>\" + \"\".join(f\"<p>{html.escape(row['body'])}</p>\" for row in rows)"
+      ],
+      "reasoning": "The endpoint publicly returns all forum comment bodies without any authentication or role check. An attacker can retrieve potentially private user\u2011generated content without being logged in, indicating a missing authorization control.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 189,
+        "code": "@router.get(\"/forum/messages\", response_class=HTMLResponse)"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 191,
+        "code": "with connection() as conn:"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 189,
+        "expected_check": "Authentication/authorization guard (e.g., dependency that verifies user session or role)",
+        "observation": "No such guard is present before handling the request"
+      },
+      "remaining_questions": [
+        "Is the forum intended to be publicly readable, or should it be restricted to authenticated users?",
+        "If restricted, what role or permission model should be applied?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-492db277b819e281",
+      "title": "Information leakage via detailed error messages (CWE-209)",
+      "category": "Information Exposure",
+      "severity": "Low",
+      "confidence": "Medium",
+      "path": "api/extra.py",
+      "start_line": 227,
+      "end_line": 233,
+      "evidence": [
+        "227: @router.get(\"/errors/query\")",
+        "228: def error_query() -> dict:",
+        "229:     try:",
+        "230:         with connection() as conn:",
+        "231:             conn.execute(\"SELECT unavailable_column FROM products\")",
+        "232:     except Exception as error:",
+        "233:         raise HTTPException(500, f\"Query failed: {error}\") from error"
+      ],
+      "reasoning": "When the database query fails, the exception message is interpolated directly into the HTTP 500 response. This can expose internal details such as column names, SQL syntax, or stack traces to an attacker.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 227,
+        "code": "@router.get(\"/errors/query\")"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 231,
+        "code": "conn.execute(\"SELECT unavailable_column FROM products\")"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 233,
+        "expected_check": "Sanitized or generic error response that does not expose internal exception details",
+        "observation": "Error message includes raw exception string"
+      },
+      "remaining_questions": [
+        "Should the API return a generic error message instead of the exception details?",
+        "Is there a centralized error handling mechanism that could be used to mask internal errors?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    }
+  ],
+  "warnings": [
+    "3 empty source file(s) were skipped; they contain nothing to review.",
+    "The duplicate-avoidance list in the discovery prompt was trimmed; candidates are de-duplicated against scanner findings downstream.",
+    "Some background coverage gaps were not sent to the model; they remain in the report's coverage gaps.",
+    "Discovery batch 2: AI provider request failed with HTTP 413 (rate_limit_exceeded); request too large: 8388 tokens requested, limit 8000; retrying with a smaller request.",
+    "Discovery batch 4: AI provider request failed (connection_closed): connection closed while reading the response (ConnectionResetError); the response was lost after the request was sent; retrying with a smaller request (1 of 2).",
+    "2 duplicate AI candidate(s) were merged into 2 stronger one(s): ai-76182088c965a98d <- ai-76d97e34111f0862; ai-1380895ee2c458ad <- ai-c9e2916f575f1421"
+  ],
+  "coverage_gaps": [
+    "Discovery batch 7: on-demand context could not be added (AI provider request failed (connection_closed): connection closed while reading the response (ConnectionResetError); the response was lost after the request was sent); the first response was kept."
+  ],
+  "usage": {
+    "queue_time": 2.30497295,
+    "prompt_tokens": 43530,
+    "prompt_time": 3.6855800690000002,
+    "completion_tokens": 21236,
+    "completion_time": 44.988613859,
+    "total_tokens": 64766,
+    "total_time": 48.674193928,
+    "retry_count": 2,
+    "rate_limit_wait_seconds": 326.71753052299994,
+    "format_fallback_count": 0,
+    "wall_seconds": 395.0619999999999,
+    "targets": 71,
+    "planned_targets": 71,
+    "batches": 10,
+    "provider_calls": 15,
+    "duplicate_candidates_merged": 2,
+    "analysis": "static_source_review",
+    "estimated_cost_usd": null,
+    "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+  },
+  "target_plan": [
+    {
+      "target_id": "file:api/seed.py#L1-30",
+      "kind": "no_findings",
+      "path": "api/seed.py",
+      "start_line": 1,
+      "end_line": 30,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "merged-18f1abe978f9fdaad8e6",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 119,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 1; score 79; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:api/app.py#L175-186",
+      "kind": "unflagged_hotspot",
+      "path": "api/app.py",
+      "start_line": 175,
+      "end_line": 186,
+      "reasons": [
+        "Security-relevant function/window scored 8 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-f60fee7d82fbca512208",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 144,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 2; score 79; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:mock_external/server.py#L11-30",
+      "kind": "no_findings",
+      "path": "mock_external/server.py",
+      "start_line": 11,
+      "end_line": 30,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "merged-ea527a7d7441e2b11700",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 145,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 3; score 75; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:api/app.py#L189-196",
+      "kind": "unflagged_hotspot",
+      "path": "api/app.py",
+      "start_line": 189,
+      "end_line": 196,
+      "reasons": [
+        "Security-relevant function/window scored 8 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-f4eaf141df049c63545d",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 212,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 4; score 75; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:api/app.py#L293-305",
+      "kind": "unflagged_hotspot",
+      "path": "api/app.py",
+      "start_line": 293,
+      "end_line": 305,
+      "reasons": [
+        "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-83d97da4516adf20e20f",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 213,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 5; score 75; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:api/app.py#L166-172",
+      "kind": "unflagged_hotspot",
+      "path": "api/app.py",
+      "start_line": 166,
+      "end_line": 172,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-b527b3ed30e57aac5ec5",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 215,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 6; score 75; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:api/app.py#L207-217",
+      "kind": "unflagged_hotspot",
+      "path": "api/app.py",
+      "start_line": 207,
+      "end_line": 217,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-24d14609e3893220ea16",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 221,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 7; score 75; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:api/app.py#L230-238",
+      "kind": "unflagged_hotspot",
+      "path": "api/app.py",
+      "start_line": 230,
+      "end_line": 238,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-794dcb4921076779cef0",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 222,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 8; score 75; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:api/app.py#L241-255",
+      "kind": "unflagged_hotspot",
+      "path": "api/app.py",
+      "start_line": 241,
+      "end_line": 255,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-b3c734b4cef8dd70fce0",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 224,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 9; score 75; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:api/app.py#L258-264",
+      "kind": "unflagged_hotspot",
+      "path": "api/app.py",
+      "start_line": 258,
+      "end_line": 264,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-3202e1e1074cfd44b9bf",
+      "kind": "risk_finding",
+      "path": "api/app.py",
+      "start_line": 137,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 11; score 65; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:api/app.py#L308-317",
+      "kind": "unflagged_hotspot",
+      "path": "api/app.py",
+      "start_line": 308,
+      "end_line": 317,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/app.py#L199-204",
+      "kind": "unflagged_hotspot",
+      "path": "api/app.py",
+      "start_line": 199,
+      "end_line": 204,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/app.py#L220-227",
+      "kind": "unflagged_hotspot",
+      "path": "api/app.py",
+      "start_line": 220,
+      "end_line": 227,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/app.py#L267-274",
+      "kind": "unflagged_hotspot",
+      "path": "api/app.py",
+      "start_line": 267,
+      "end_line": 274,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/app.py#L277-282",
+      "kind": "unflagged_hotspot",
+      "path": "api/app.py",
+      "start_line": 277,
+      "end_line": 282,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/app.py#L285-290",
+      "kind": "unflagged_hotspot",
+      "path": "api/app.py",
+      "start_line": 285,
+      "end_line": 290,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/app.py#L154-158",
+      "kind": "unflagged_hotspot",
+      "path": "api/app.py",
+      "start_line": 154,
+      "end_line": 158,
+      "reasons": [
+        "Security-relevant function/window scored 3 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/app.py#L320-322",
+      "kind": "unflagged_hotspot",
+      "path": "api/app.py",
+      "start_line": 320,
+      "end_line": 322,
+      "reasons": [
+        "Security-relevant function/window scored 3 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L125-138",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 125,
+      "end_line": 138,
+      "reasons": [
+        "Security-relevant function/window scored 8 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L247-268",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 247,
+      "end_line": 268,
+      "reasons": [
+        "Security-relevant function/window scored 8 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L288-301",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 288,
+      "end_line": 301,
+      "reasons": [
+        "Security-relevant function/window scored 8 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L375-391",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 375,
+      "end_line": 391,
+      "reasons": [
+        "Security-relevant function/window scored 8 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L469-485",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 469,
+      "end_line": 485,
+      "reasons": [
+        "Security-relevant function/window scored 8 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L564-573",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 564,
+      "end_line": 573,
+      "reasons": [
+        "Security-relevant function/window scored 8 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L589-598",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 589,
+      "end_line": 598,
+      "reasons": [
+        "Security-relevant function/window scored 8 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L271-279",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 271,
+      "end_line": 279,
+      "reasons": [
+        "Security-relevant function/window scored 8 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L310-319",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 310,
+      "end_line": 319,
+      "reasons": [
+        "Security-relevant function/window scored 8 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L322-331",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 322,
+      "end_line": 331,
+      "reasons": [
+        "Security-relevant function/window scored 8 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L334-344",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 334,
+      "end_line": 344,
+      "reasons": [
+        "Security-relevant function/window scored 8 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L347-363",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 347,
+      "end_line": 363,
+      "reasons": [
+        "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L526-539",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 526,
+      "end_line": 539,
+      "reasons": [
+        "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L576-586",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 576,
+      "end_line": 586,
+      "reasons": [
+        "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L601-612",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 601,
+      "end_line": 612,
+      "reasons": [
+        "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L660-665",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 660,
+      "end_line": 665,
+      "reasons": [
+        "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L161-170",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 161,
+      "end_line": 170,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L180-186",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 180,
+      "end_line": 186,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L420-434",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 420,
+      "end_line": 434,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L453-466",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 453,
+      "end_line": 466,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L488-496",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 488,
+      "end_line": 496,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L512-523",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 512,
+      "end_line": 523,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L646-657",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 646,
+      "end_line": 657,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L97-104",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 97,
+      "end_line": 104,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L196-201",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 196,
+      "end_line": 201,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L304-307",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 304,
+      "end_line": 307,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L499-509",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 499,
+      "end_line": 509,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L542-549",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 542,
+      "end_line": 549,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L552-561",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 552,
+      "end_line": 561,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L107-112",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 107,
+      "end_line": 112,
+      "reasons": [
+        "Security-relevant function/window scored 5 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L204-207",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 204,
+      "end_line": 207,
+      "reasons": [
+        "Security-relevant function/window scored 5 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L406-409",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 406,
+      "end_line": 409,
+      "reasons": [
+        "Security-relevant function/window scored 5 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L448-450",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 448,
+      "end_line": 450,
+      "reasons": [
+        "Security-relevant function/window scored 5 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L668-671",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 668,
+      "end_line": 671,
+      "reasons": [
+        "Security-relevant function/window scored 5 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L628-634",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 628,
+      "end_line": 634,
+      "reasons": [
+        "Security-relevant function/window scored 4 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L637-643",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 637,
+      "end_line": 643,
+      "reasons": [
+        "Security-relevant function/window scored 4 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L366-372",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 366,
+      "end_line": 372,
+      "reasons": [
+        "Security-relevant function/window scored 4 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L394-403",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 394,
+      "end_line": 403,
+      "reasons": [
+        "Security-relevant function/window scored 4 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L148-154",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 148,
+      "end_line": 154,
+      "reasons": [
+        "Security-relevant function/window scored 3 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L173-177",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 173,
+      "end_line": 177,
+      "reasons": [
+        "Security-relevant function/window scored 3 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L189-193",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 189,
+      "end_line": 193,
+      "reasons": [
+        "Security-relevant function/window scored 3 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L227-234",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 227,
+      "end_line": 234,
+      "reasons": [
+        "Security-relevant function/window scored 3 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L237-244",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 237,
+      "end_line": 244,
+      "reasons": [
+        "Security-relevant function/window scored 3 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    }
+  ],
+  "batches": [
+    {
+      "batch_index": 1,
+      "target_ids": [
+        "file:api/seed.py#L1-30",
+        "merged-18f1abe978f9fdaad8e6",
+        "file:api/app.py#L175-186",
+        "merged-f60fee7d82fbca512208",
+        "file:mock_external/server.py#L11-30",
+        "merged-ea527a7d7441e2b11700",
+        "file:api/app.py#L189-196",
+        "merged-f4eaf141df049c63545d"
+      ],
+      "status": "completed",
+      "prompt_chars": 15258,
+      "provider_calls": 1,
+      "candidate_count": 6,
+      "context_requests": 0,
+      "usage": {
+        "queue_time": 0.431152149,
+        "prompt_tokens": 5441,
+        "prompt_time": 0.888198632,
+        "completion_tokens": 2755,
+        "completion_time": 5.7597646860000005,
+        "total_tokens": 8196,
+        "total_time": 6.647963318,
+        "retry_count": 0,
+        "rate_limit_wait_seconds": 0.0,
+        "format_fallback_count": 0,
+        "wall_seconds": 7.737,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-e9f07f09faabf60f",
+        "ai-fa74e88d2fd254fe",
+        "ai-b7171bc6020b1e2f",
+        "ai-0252de9ab903d777",
+        "ai-487cd086edd24ed3",
+        "ai-9b4f5bb6f2a105a4"
+      ]
+    },
+    {
+      "batch_index": 2,
+      "target_ids": [
+        "file:api/app.py#L293-305",
+        "merged-83d97da4516adf20e20f",
+        "file:api/app.py#L166-172",
+        "merged-b527b3ed30e57aac5ec5",
+        "file:api/app.py#L207-217",
+        "merged-24d14609e3893220ea16",
+        "file:api/app.py#L230-238",
+        "merged-794dcb4921076779cef0"
+      ],
+      "status": "completed",
+      "prompt_chars": 30057,
+      "provider_calls": 2,
+      "candidate_count": 3,
+      "context_requests": 0,
+      "usage": {
+        "queue_time": 0.213475202,
+        "prompt_tokens": 5125,
+        "prompt_time": 0.253586068,
+        "completion_tokens": 1650,
+        "completion_time": 3.662887037,
+        "total_tokens": 6775,
+        "total_time": 3.916473105,
+        "retry_count": 1,
+        "rate_limit_wait_seconds": 7.0,
+        "format_fallback_count": 0,
+        "wall_seconds": 12.965,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-ead464655e9a69a7",
+        "ai-fab37354b02d1ba0",
+        "ai-932b1f16764907f8"
+      ]
+    },
+    {
+      "batch_index": 3,
+      "target_ids": [
+        "file:api/app.py#L241-255",
+        "merged-b3c734b4cef8dd70fce0",
+        "file:api/app.py#L258-264",
+        "merged-3202e1e1074cfd44b9bf",
+        "file:api/app.py#L308-317",
+        "file:api/app.py#L199-204",
+        "file:api/app.py#L220-227",
+        "file:api/app.py#L267-274"
+      ],
+      "status": "completed",
+      "prompt_chars": 13183,
+      "provider_calls": 1,
+      "candidate_count": 6,
+      "context_requests": 0,
+      "usage": {
+        "queue_time": 0.121803503,
+        "prompt_tokens": 4812,
+        "prompt_time": 0.242196864,
+        "completion_tokens": 2641,
+        "completion_time": 5.603002412,
+        "total_tokens": 7453,
+        "total_time": 5.845199276,
+        "retry_count": 1,
+        "rate_limit_wait_seconds": 43.21147818500003,
+        "format_fallback_count": 0,
+        "wall_seconds": 51.405,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-ff620dfaa2a8ee41",
+        "ai-f0ccc3b9d38ddce1",
+        "ai-5d3ce9356b31af8b",
+        "ai-d5f84eecf5bce40d",
+        "ai-dd1c0f6e6c60b708",
+        "ai-9fd4c76cbe86871f"
+      ]
+    },
+    {
+      "batch_index": 4,
+      "target_ids": [
+        "file:api/app.py#L277-282",
+        "file:api/app.py#L285-290",
+        "file:api/app.py#L154-158",
+        "file:api/app.py#L320-322"
+      ],
+      "status": "completed",
+      "prompt_chars": 19146,
+      "provider_calls": 3,
+      "candidate_count": 6,
+      "context_requests": 1,
+      "usage": {
+        "queue_time": 0.26552866199999997,
+        "prompt_tokens": 4994,
+        "prompt_time": 0.196085438,
+        "completion_tokens": 2528,
+        "completion_time": 5.263885945,
+        "total_tokens": 7522,
+        "total_time": 5.459971383,
+        "retry_count": 0,
+        "rate_limit_wait_seconds": 30.257250633000012,
+        "format_fallback_count": 0,
+        "wall_seconds": 37.2,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-76182088c965a98d",
+        "ai-1380895ee2c458ad",
+        "ai-953f2f53bafcf034",
+        "ai-76d97e34111f0862",
+        "ai-c9e2916f575f1421",
+        "ai-e6b4aa4b31fd8b3a"
+      ]
+    },
+    {
+      "batch_index": 5,
+      "target_ids": [
+        "file:api/extra.py#L125-138",
+        "file:api/extra.py#L247-268",
+        "file:api/extra.py#L288-301",
+        "file:api/extra.py#L375-391",
+        "file:api/extra.py#L469-485",
+        "file:api/extra.py#L564-573",
+        "file:api/extra.py#L589-598",
+        "file:api/extra.py#L271-279"
+      ],
+      "status": "completed",
+      "prompt_chars": 10489,
+      "provider_calls": 1,
+      "candidate_count": 2,
+      "context_requests": 0,
+      "usage": {
+        "queue_time": 0.053842939,
+        "prompt_tokens": 3966,
+        "prompt_time": 0.626700485,
+        "completion_tokens": 1120,
+        "completion_time": 2.469862715,
+        "total_tokens": 5086,
+        "total_time": 3.0965632,
+        "retry_count": 0,
+        "rate_limit_wait_seconds": 31.787972126,
+        "format_fallback_count": 0,
+        "wall_seconds": 35.684,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-86f7e15d23cea03d",
+        "ai-9725570d578c01b3"
+      ]
+    },
+    {
+      "batch_index": 6,
+      "target_ids": [
+        "file:api/extra.py#L310-319",
+        "file:api/extra.py#L322-331",
+        "file:api/extra.py#L334-344",
+        "file:api/extra.py#L347-363",
+        "file:api/extra.py#L526-539",
+        "file:api/extra.py#L576-586",
+        "file:api/extra.py#L601-612",
+        "file:api/extra.py#L660-665"
+      ],
+      "status": "completed",
+      "prompt_chars": 9218,
+      "provider_calls": 1,
+      "candidate_count": 5,
+      "context_requests": 0,
+      "usage": {
+        "queue_time": 0.271756658,
+        "prompt_tokens": 3649,
+        "prompt_time": 0.241252307,
+        "completion_tokens": 2383,
+        "completion_time": 5.010805234,
+        "total_tokens": 6032,
+        "total_time": 5.252057541,
+        "retry_count": 0,
+        "rate_limit_wait_seconds": 50.29404129400007,
+        "format_fallback_count": 0,
+        "wall_seconds": 56.482,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-b3cac087a919243e",
+        "ai-dbc5515ff9f6fbe9",
+        "ai-b98ec267aac76bb8",
+        "ai-eb6ae0259a4426c4",
+        "ai-385f4ef6aefd7bdd"
+      ]
+    },
+    {
+      "batch_index": 7,
+      "target_ids": [
+        "file:api/extra.py#L161-170",
+        "file:api/extra.py#L180-186",
+        "file:api/extra.py#L420-434",
+        "file:api/extra.py#L453-466",
+        "file:api/extra.py#L488-496",
+        "file:api/extra.py#L512-523",
+        "file:api/extra.py#L646-657",
+        "file:api/extra.py#L97-104"
+      ],
+      "status": "completed",
+      "prompt_chars": 19988,
+      "provider_calls": 2,
+      "candidate_count": 2,
+      "context_requests": 2,
+      "usage": {
+        "queue_time": 0.282993677,
+        "prompt_tokens": 3640,
+        "prompt_time": 0.532387989,
+        "completion_tokens": 1342,
+        "completion_time": 2.8340158300000002,
+        "total_tokens": 4982,
+        "total_time": 3.366403819,
+        "retry_count": 0,
+        "rate_limit_wait_seconds": 39.140137969999955,
+        "format_fallback_count": 0,
+        "wall_seconds": 44.707,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-6322be0c6e12b177",
+        "ai-022a4b56299a0fcf"
+      ]
+    },
+    {
+      "batch_index": 8,
+      "target_ids": [
+        "file:api/extra.py#L196-201",
+        "file:api/extra.py#L304-307",
+        "file:api/extra.py#L499-509",
+        "file:api/extra.py#L542-549",
+        "file:api/extra.py#L552-561",
+        "file:api/extra.py#L107-112",
+        "file:api/extra.py#L204-207",
+        "file:api/extra.py#L406-409"
+      ],
+      "status": "completed",
+      "prompt_chars": 7423,
+      "provider_calls": 1,
+      "candidate_count": 3,
+      "context_requests": 0,
+      "usage": {
+        "queue_time": 0.122512455,
+        "prompt_tokens": 3153,
+        "prompt_time": 0.162136977,
+        "completion_tokens": 1638,
+        "completion_time": 3.434949792,
+        "total_tokens": 4791,
+        "total_time": 3.597086769,
+        "retry_count": 0,
+        "rate_limit_wait_seconds": 0.0,
+        "format_fallback_count": 0,
+        "wall_seconds": 5.497,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-e2aafc49ce7556a2",
+        "ai-e34f01e4e6651bde",
+        "ai-8b80c3773de74246"
+      ]
+    },
+    {
+      "batch_index": 9,
+      "target_ids": [
+        "file:api/extra.py#L448-450",
+        "file:api/extra.py#L668-671",
+        "file:api/extra.py#L628-634",
+        "file:api/extra.py#L637-643",
+        "file:api/extra.py#L366-372",
+        "file:api/extra.py#L394-403",
+        "file:api/extra.py#L148-154",
+        "file:api/extra.py#L173-177"
+      ],
+      "status": "completed",
+      "prompt_chars": 15487,
+      "provider_calls": 2,
+      "candidate_count": 8,
+      "context_requests": 1,
+      "usage": {
+        "queue_time": 0.329859582,
+        "prompt_tokens": 6479,
+        "prompt_time": 0.440760372,
+        "completion_tokens": 4164,
+        "completion_time": 8.806947977,
+        "total_tokens": 10643,
+        "total_time": 9.247708349,
+        "retry_count": 0,
+        "rate_limit_wait_seconds": 82.46890874199994,
+        "format_fallback_count": 0,
+        "wall_seconds": 97.146,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-f743fe703518ba34",
+        "ai-2c0b423220c16ecb",
+        "ai-84d790e7ca885d16",
+        "ai-f69e77e901449ba6",
+        "ai-26620151b8264cfe",
+        "ai-b5057777207eb439",
+        "ai-7267ef84c8754429",
+        "ai-94ab06f89bdfae37"
+      ]
+    },
+    {
+      "batch_index": 10,
+      "target_ids": [
+        "file:api/extra.py#L189-193",
+        "file:api/extra.py#L227-234",
+        "file:api/extra.py#L237-244"
+      ],
+      "status": "completed",
+      "prompt_chars": 4357,
+      "provider_calls": 1,
+      "candidate_count": 2,
+      "context_requests": 0,
+      "usage": {
+        "queue_time": 0.212048123,
+        "prompt_tokens": 2271,
+        "prompt_time": 0.102274937,
+        "completion_tokens": 1015,
+        "completion_time": 2.142492231,
+        "total_tokens": 3286,
+        "total_time": 2.244767168,
+        "retry_count": 0,
+        "rate_limit_wait_seconds": 42.55774157299993,
+        "format_fallback_count": 0,
+        "wall_seconds": 46.239,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-1c2e3095524918b0",
+        "ai-492db277b819e281"
+      ]
+    }
+  ],
+  "context_exchanges": [
+    {
+      "batch_index": 4,
+      "round_index": 1,
+      "requested_path": "api/app.py",
+      "symbol": "principal",
+      "requested_start_line": null,
+      "requested_end_line": null,
+      "status": "collected",
+      "resolved_path": "api/app.py",
+      "resolved_start_line": 95,
+      "resolved_end_line": 103,
+      "code": "95: def principal(authorization: str | None) -> dict[str, Any]:\n96:     if not authorization or not authorization.lower().startswith(\"bearer \"):\n97:         raise HTTPException(401, \"Bearer token required\")\n98:     try:\n99:         raw = authorization.split(\" \", 1)[1].split(\".\")[1]\n100:         raw += \"=\" * (-len(raw) % 4)\n101:         return json.loads(base64.urlsafe_b64decode(raw))\n102:     except Exception as error:\n103:         raise HTTPException(401, \"Invalid token\") from error",
+      "note": null
+    },
+    {
+      "batch_index": 7,
+      "round_index": 1,
+      "requested_path": "api/extra.py",
+      "symbol": "identity",
+      "requested_start_line": null,
+      "requested_end_line": null,
+      "status": "collected",
+      "resolved_path": "api/extra.py",
+      "resolved_start_line": 62,
+      "resolved_end_line": 68,
+      "code": "62: def identity(authorization: str | None) -> dict:\n63:     [REDACTED]\n64:     with connection() as conn:\n65:         row = conn.execute(\"SELECT id,username,role,email,ssn FROM users WHERE id=%s\", (token[\"sub\"],)).fetchone()\n66:     if not row:\n67:         raise HTTPException(401, \"Unknown account\")\n68:     return dict(row)",
+      "note": null
+    },
+    {
+      "batch_index": 7,
+      "round_index": 1,
+      "requested_path": "api/extra.py",
+      "symbol": "principal",
+      "requested_start_line": null,
+      "requested_end_line": null,
+      "status": "collected",
+      "resolved_path": "api/app.py",
+      "resolved_start_line": 95,
+      "resolved_end_line": 103,
+      "code": "95: def principal(authorization: str | None) -> dict[str, Any]:\n96:     if not authorization or not authorization.lower().startswith(\"bearer \"):\n97:         raise HTTPException(401, \"Bearer token required\")\n98:     try:\n99:         raw = authorization.split(\" \", 1)[1].split(\".\")[1]\n100:         raw += \"=\" * (-len(raw) % 4)\n101:         return json.loads(base64.urlsafe_b64decode(raw))\n102:     except Exception as error:\n103:         raise HTTPException(401, \"Invalid token\") from error",
+      "note": "Symbol is not defined in api/extra.py; resolved its single definition in api/app.py."
+    },
+    {
+      "batch_index": 9,
+      "round_index": 1,
+      "requested_path": "api/extra.py",
+      "symbol": "owned_order",
+      "requested_start_line": null,
+      "requested_end_line": null,
+      "status": "collected",
+      "resolved_path": "api/extra.py",
+      "resolved_start_line": 437,
+      "resolved_end_line": 445,
+      "code": "437: def owned_order(order_id: int, authorization: str | None) -> tuple[dict, dict]:\n438:     user = verified_identity(authorization)\n439:     with connection() as conn:\n440:         order = conn.execute(\"SELECT * FROM orders WHERE id=%s\", (order_id,)).fetchone()\n441:     if not order:\n442:         raise HTTPException(404, \"Order not found\")\n443:     if order[\"owner_id\"] != user[\"id\"]:\n444:         raise HTTPException(403, \"Not your order\")\n445:     return dict(order), user",
+      "note": null
+    }
+  ]
+}

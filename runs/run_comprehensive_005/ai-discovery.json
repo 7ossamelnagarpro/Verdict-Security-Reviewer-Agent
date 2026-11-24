@@ -1,0 +1,672 @@
+{
+  "schema_version": "1.2",
+  "status": "partial",
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "scope": [
+    "file:api/__init__.py#L1-1",
+    "merged-18f1abe978f9fdaad8e6",
+    "file:api/app.py#L175-186",
+    "merged-f60fee7d82fbca512208",
+    "file:api/seed.py#L1-30",
+    "merged-ea527a7d7441e2b11700",
+    "file:api/app.py#L189-196",
+    "merged-f4eaf141df049c63545d",
+    "file:mock_external/__init__.py#L1-1",
+    "merged-83d97da4516adf20e20f",
+    "file:api/app.py#L199-204",
+    "merged-b527b3ed30e57aac5ec5",
+    "file:mock_external/server.py#L1-30",
+    "merged-24d14609e3893220ea16",
+    "file:api/extra.py#L125-138",
+    "merged-794dcb4921076779cef0",
+    "file:worker/__init__.py#L1-1",
+    "merged-b3c734b4cef8dd70fce0",
+    "file:api/extra.py#L247-268",
+    "file:api/extra.py#L288-301"
+  ],
+  "candidates": [
+    {
+      "candidate_id": "ai-10db57c90eb2c229",
+      "title": "Potential directory traversal via symbolic links in file_read endpoint",
+      "category": "Path Traversal",
+      "severity": "Medium",
+      "confidence": "Low",
+      "path": "api/extra.py",
+      "start_line": 210,
+      "end_line": 215,
+      "evidence": [
+        "file = (FILES / \"public\" / name).resolve()",
+        "if not file.is_relative_to(FILES.resolve()) or not file.is_file():"
+      ],
+      "reasoning": "The endpoint resolves the requested path and then checks that the resolved path is within the public directory using is_relative_to. However, if an attacker can place a symbolic link inside the public directory that points outside of it, the resolve() call will follow the symlink and the is_relative_to check may still succeed because the symlink target is resolved before the check, potentially allowing access to files outside the intended directory.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 210,
+        "code": "@router.get(\"/files\")"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 212,
+        "code": "file = (FILES / \"public\" / name).resolve()"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 213,
+        "expected_check": "Validate that the resolved path does not traverse outside the intended directory even when following symbolic links, e.g., by checking the original user-supplied path components or by disallowing symlinks.",
+        "observation": "Only a relative path check after resolve() is performed, which may be bypassed via symlinks."
+      },
+      "remaining_questions": [
+        "Are symbolic links allowed to be created in the public directory by any user or process?",
+        "Does the underlying filesystem enforce any restrictions on symlink resolution for this application?",
+        "Is there any additional validation of the 'name' parameter (e.g., whitelist of allowed filenames)?"
+      ]
+    },
+    {
+      "candidate_id": "ai-1875ae94f8210b35",
+      "title": "Sensitive personal data exposed without proper authorization",
+      "category": "Information Disclosure",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "api/app.py",
+      "start_line": 199,
+      "end_line": 204,
+      "evidence": [
+        "def me(authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+        "user = principal(authorization)",
+        "row = conn.execute(\"SELECT id,username,role,email,ssn FROM users WHERE id=%s\", (user[\"sub\"],)).fetchone()",
+        "return dict(row or {})"
+      ],
+      "reasoning": "The /me endpoint returns the user's SSN (social security number) directly from the database. The function only extracts the user identity from the Authorization header via `principal` but does not enforce any additional access control or redaction. If an attacker can obtain a valid token for another user (e.g., via token leakage or token replay), they could retrieve that user's SSN. Even legitimate users receive more personal data than typically needed for a profile endpoint, which may violate privacy requirements.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/app.py",
+        "line": 200,
+        "code": "def me(authorization: str | None = Header(default=None)) -> dict[str, Any]:"
+      },
+      "sensitive_operation": {
+        "path": "api/app.py",
+        "line": 203,
+        "code": "row = conn.execute(\"SELECT id,username,role,email,ssn FROM users WHERE id=%s\", (user[\"sub\"],)).fetchone()"
+      },
+      "missing_check": {
+        "path": "api/app.py",
+        "line": 200,
+        "expected_check": "Redact or omit highly sensitive fields (e.g., ssn) and verify that the caller is authorized to view them",
+        "observation": "No explicit redaction or scope check is performed before returning the row"
+      },
+      "remaining_questions": [
+        "What does `principal` return for malformed or missing Authorization headers?",
+        "Are there any downstream filters that remove SSN before the response is sent?",
+        "Is the SSN field required for any client functionality, or can it be omitted?"
+      ]
+    },
+    {
+      "candidate_id": "ai-60fcfda47062ec73",
+      "title": "File download endpoint allows path traversal despite resolution check",
+      "category": "Path Traversal",
+      "severity": "medium",
+      "confidence": "low",
+      "path": "api/extra.py",
+      "start_line": 211,
+      "end_line": 215,
+      "evidence": [
+        "file = (FILES / \"public\" / name).resolve()",
+        "if not file.is_relative_to(FILES.resolve()) or not file.is_file():",
+        "raise HTTPException(404, \"File not found\")",
+        "return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")"
+      ],
+      "reasoning": "The endpoint constructs a file path from user\u2011controlled `name` and then checks `is_relative_to(FILES.resolve())`. However, `Path.is_relative_to` is only available in Python 3.9+ and may raise for certain edge cases; also the check occurs after `resolve()`, which can normalize symlinks that point outside the intended directory. An attacker could exploit symlink tricks or Unicode tricks to bypass the check and read arbitrary files.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 211,
+        "code": "def file_read(name: str) -> Response:"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 215,
+        "code": "return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 212,
+        "expected_check": "Validate that `name` does not contain path traversal components before resolution, and enforce a whitelist of allowed filenames",
+        "observation": "Only a post\u2011resolution relative check is performed, which may be bypassed via symlinks or special characters"
+      },
+      "remaining_questions": [
+        "Are there any symlinks inside the `public` directory that could point outside?",
+        "What Python version is used in production?",
+        "Is the endpoint intended to be public, or should it require authentication?"
+      ]
+    },
+    {
+      "candidate_id": "ai-4f622753be25ab0e",
+      "title": "Verified file download endpoint lacks authentication and may expose internal files",
+      "category": "Access Control",
+      "severity": "medium",
+      "confidence": "medium",
+      "path": "api/extra.py",
+      "start_line": 219,
+      "end_line": 224,
+      "evidence": [
+        "def verified_file_read(name: str) -> Response:",
+        "root = (FILES / \"public\").resolve()",
+        "file = (root / name).resolve()",
+        "if not file.is_relative_to(root) or not file.is_file():",
+        "raise HTTPException(404, \"File not found\")"
+      ],
+      "reasoning": "The `/files/verified` endpoint serves files from a public directory without any authentication or rate\u2011limiting. While it checks that the resolved path stays within the `public` directory, it still allows any authenticated or unauthenticated user to enumerate and download files, potentially exposing configuration or other sensitive resources placed there.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 219,
+        "code": "def verified_file_read(name: str) -> Response:"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 224,
+        "code": "return Response(file.read_text(encoding=\"utf-8\"), media_type=\"text/plain\")"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 219,
+        "expected_check": "Require authentication or implement an allowlist of permissible filenames",
+        "observation": "No authentication or allowlist is present"
+      },
+      "remaining_questions": [
+        "Is the `public` directory intended to contain only static assets?",
+        "Are there any sensitive files inadvertently placed in `public`?",
+        "Should this endpoint be restricted to certain user roles?"
+      ]
+    },
+    {
+      "candidate_id": "ai-8332c61af41c1507",
+      "title": "Missing role verification after successful login",
+      "category": "Authorization",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "api/extra.py",
+      "start_line": 247,
+      "end_line": 268,
+      "evidence": [
+        "def limited_login(body: Login) -> dict:",
+        "row = conn.execute(\"SELECT id,username,role FROM users WHERE username=%s AND [REDACTED], (body.username, body.password),).fetchone()",
+        "return checked_login(body)"
+      ],
+      "reasoning": "The limited_login endpoint authenticates a user and returns a generic dict without performing any authorization checks on the user's role. If the endpoint is intended for limited\u2011privilege access, the absence of a role check could allow a regular user to obtain tokens or session data that grant higher privileges.",
+      "source": "ai_discovery",
+      "verification": "inconclusive",
+      "verification_notes": [
+        "source_citation_reanchored:entry_point:api/extra.py:247->248",
+        "Sensitive operation source anchor could not be grounded in the inspected source.",
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 248,
+        "code": "def limited_login(body: Login) -> dict:"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 256,
+        "code": "SELECT id,username,role FROM users WHERE username=%s AND [REDACTED], (body.username, body.password)"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 257,
+        "expected_check": "verify that row[\"role\"] is allowed for this endpoint (e.g., role == \"user\" not \"admin\")",
+        "observation": "No explicit role validation is performed before returning the login response"
+      },
+      "remaining_questions": [
+        "What does checked_login(body) return? Does it embed role information in a token?",
+        "Is limited_login intended to be used only by non\u2011admin users?",
+        "Are there downstream endpoints that trust the token returned by limited_login for privileged actions?"
+      ]
+    },
+    {
+      "candidate_id": "ai-6f9c877a6adca03e",
+      "title": "Potential missing CSRF protection on state\u2011changing login endpoint",
+      "category": "CSRF",
+      "severity": "medium",
+      "confidence": "low",
+      "path": "api/extra.py",
+      "start_line": 288,
+      "end_line": 301,
+      "evidence": [
+        "@router.post(\"/auth/form-login\")",
+        "form = await request.form()",
+        "response.set_cookie(\"lab_session\", f\"session-{row['id']}\")"
+      ],
+      "reasoning": "The form_login endpoint creates a session cookie after authenticating a user via a POST request. No anti\u2011CSRF token validation is observed, which could allow an attacker to forge a login request from another site if the victim is already authenticated elsewhere.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "api/extra.py",
+        "line": 288,
+        "code": "@router.post(\"/auth/form-login\")"
+      },
+      "sensitive_operation": {
+        "path": "api/extra.py",
+        "line": 300,
+        "code": "response.set_cookie(\"lab_session\", f\"session-{row['id']}\")"
+      },
+      "missing_check": {
+        "path": "api/extra.py",
+        "line": 291,
+        "expected_check": "validate CSRF token from the form payload",
+        "observation": "No CSRF token extraction or verification is present"
+      },
+      "remaining_questions": [
+        "Does the application set SameSite attribute on the session cookie elsewhere?",
+        "Is there a global CSRF middleware that could protect this endpoint?",
+        "Are there any referer/origin checks performed before setting the cookie?"
+      ]
+    }
+  ],
+  "warnings": [
+    "Discovery batch 2: AI provider JSON fallback did not match the discovery response schema; retrying with a smaller request."
+  ],
+  "coverage_gaps": [
+    "2 source windows were shortened by the prompt character budget.",
+    "23 known findings were omitted from the discovery prompt's duplicate-avoidance list.",
+    "33 known findings were omitted from the discovery prompt's duplicate-avoidance list.",
+    "35 known findings were omitted from the discovery prompt's duplicate-avoidance list.",
+    "37 background coverage gaps were omitted from the discovery prompt budget.",
+    "A negative result means only that this probe did not observe the behavior.",
+    "A violation is an observed contract mismatch requiring security review.",
+    "Baseline checks use bounded HTTP GET observations for an authorized target; declared paths must be safe to visit.",
+    "Browser crawl is same-origin and GET-only; forms, clicks, OAuth/MFA and destructive workflows were not submitted.",
+    "Coverage applies only to declared assertions, accounts and workflows.",
+    "Fresh stack resets the run; workflows must create independent test data. No per-step database reset is performed.",
+    "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile.",
+    "The baseline phase alone does not crawl browsers, test account workflows or confirm exploitation; additional phases are recorded separately.",
+    "merged-16678dc11308a0a16a81: primary source context is unavailable.",
+    "merged-17a5197f906426a224ef: primary source context is unavailable.",
+    "merged-19f4a13e0b2d4f7413d0: primary source context is unavailable.",
+    "merged-1ba9f8276fc6dae95df8: primary source context is unavailable.",
+    "merged-2b80ed0c48c0c70a93a4: primary source context is unavailable.",
+    "merged-2d4a81712313b5f2f621: primary source context is unavailable.",
+    "merged-38e7cf77bdf9145d2ae4: primary source context is unavailable.",
+    "merged-41e99a7ce6d803bedda1: primary source context is unavailable.",
+    "merged-50485291173e2448f7c7: primary source context is unavailable.",
+    "merged-553cfc223024a5e03f34: primary source context is unavailable.",
+    "merged-5fe9a08fc103085427f9: primary source context is unavailable.",
+    "merged-65c41e5a25b6337fec07: primary source context is unavailable.",
+    "merged-65f25bcf14fa2ab91271: primary source context is unavailable.",
+    "merged-7457580a7c7bb31a32cd: primary source context is unavailable.",
+    "merged-7c9406875347cad8b1ce: primary source context is unavailable.",
+    "merged-7da23d65adeef42d71a6: primary source context is unavailable.",
+    "merged-87e0399272a390813ea5: primary source context is unavailable.",
+    "merged-8946f8391fc9049cbb58: primary source context is unavailable.",
+    "merged-8e21db3fe42adbf58979: primary source context is unavailable.",
+    "merged-9b32fbabacaa9f45b768: primary source context is unavailable.",
+    "merged-a5ea8ca4c36bd6c25e2a: primary source context is unavailable.",
+    "merged-a9e9047867c909f567ad: primary source context is unavailable.",
+    "merged-ade7b890a037d8c82a1f: primary source context is unavailable.",
+    "merged-b4c1c4d005665a5249a7: primary source context is unavailable.",
+    "merged-bbf1646deeb18d1e95db: primary source context is unavailable.",
+    "merged-bdfe7542047da39c6151: primary source context is unavailable.",
+    "merged-cc8a9ed20905505868f0: primary source context is unavailable.",
+    "merged-d5c3b6b8d8dad90c4d3c: primary source context is unavailable.",
+    "merged-d9421dbfc4162d6dea91: primary source context is unavailable.",
+    "merged-da0f922505b4c0c7fed1: primary source context is unavailable.",
+    "merged-dd64ece99563dbbb173a: primary source context is unavailable.",
+    "merged-dfd8d33b4f84ccf0c23f: primary source context is unavailable.",
+    "merged-e683a977084f2bbcee2e: primary source context is unavailable.",
+    "merged-e7caea540245938b275b: primary source context is unavailable.",
+    "merged-ec17a70b00fa38747671: primary source context is unavailable.",
+    "merged-fbfa546bfd43886d2b10: primary source context is unavailable.",
+    "merged-fe76cc1a4803fb50214c: primary source context is unavailable."
+  ],
+  "usage": {
+    "queue_time": 0.7289971289999999,
+    "prompt_tokens": 13432,
+    "prompt_time": 0.8221240949999999,
+    "completion_tokens": 3190,
+    "completion_time": 6.688077838,
+    "total_tokens": 16622,
+    "total_time": 7.510201933,
+    "retry_count": 0,
+    "rate_limit_wait_seconds": 88.13782957700005,
+    "format_fallback_count": 0,
+    "targets": 20,
+    "planned_targets": 20,
+    "batches": 3,
+    "provider_calls": 4,
+    "estimated_cost_usd": null,
+    "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+  },
+  "target_plan": [
+    {
+      "target_id": "file:api/__init__.py#L1-1",
+      "kind": "no_findings",
+      "path": "api/__init__.py",
+      "start_line": 1,
+      "end_line": 1,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "merged-18f1abe978f9fdaad8e6",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 119,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 1; score 74; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:api/app.py#L175-186",
+      "kind": "unflagged_hotspot",
+      "path": "api/app.py",
+      "start_line": 175,
+      "end_line": 186,
+      "reasons": [
+        "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-f60fee7d82fbca512208",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 144,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 2; score 74; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:api/seed.py#L1-30",
+      "kind": "no_findings",
+      "path": "api/seed.py",
+      "start_line": 1,
+      "end_line": 30,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "merged-ea527a7d7441e2b11700",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 145,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 3; score 70; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:api/app.py#L189-196",
+      "kind": "unflagged_hotspot",
+      "path": "api/app.py",
+      "start_line": 189,
+      "end_line": 196,
+      "reasons": [
+        "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-f4eaf141df049c63545d",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 212,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 4; score 70; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:mock_external/__init__.py#L1-1",
+      "kind": "no_findings",
+      "path": "mock_external/__init__.py",
+      "start_line": 1,
+      "end_line": 1,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "merged-83d97da4516adf20e20f",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 213,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 5; score 70; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:api/app.py#L199-204",
+      "kind": "unflagged_hotspot",
+      "path": "api/app.py",
+      "start_line": 199,
+      "end_line": 204,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-b527b3ed30e57aac5ec5",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 215,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 6; score 70; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:mock_external/server.py#L1-30",
+      "kind": "no_findings",
+      "path": "mock_external/server.py",
+      "start_line": 1,
+      "end_line": 30,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "merged-24d14609e3893220ea16",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 221,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 7; score 70; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L125-138",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 125,
+      "end_line": 138,
+      "reasons": [
+        "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-794dcb4921076779cef0",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 222,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 8; score 70; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:worker/__init__.py#L1-1",
+      "kind": "no_findings",
+      "path": "worker/__init__.py",
+      "start_line": 1,
+      "end_line": 1,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "merged-b3c734b4cef8dd70fce0",
+      "kind": "risk_finding",
+      "path": "api/extra.py",
+      "start_line": 224,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 9; score 70; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L247-268",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 247,
+      "end_line": 268,
+      "reasons": [
+        "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:api/extra.py#L288-301",
+      "kind": "unflagged_hotspot",
+      "path": "api/extra.py",
+      "start_line": 288,
+      "end_line": 301,
+      "reasons": [
+        "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    }
+  ],
+  "batches": [
+    {
+      "batch_index": 1,
+      "target_ids": [
+        "file:api/__init__.py#L1-1",
+        "merged-18f1abe978f9fdaad8e6",
+        "file:api/app.py#L175-186",
+        "merged-f60fee7d82fbca512208",
+        "file:api/seed.py#L1-30",
+        "merged-ea527a7d7441e2b11700",
+        "file:api/app.py#L189-196",
+        "merged-f4eaf141df049c63545d",
+        "file:mock_external/__init__.py#L1-1",
+        "merged-83d97da4516adf20e20f"
+      ],
+      "status": "completed",
+      "prompt_chars": 15886,
+      "provider_calls": 1,
+      "candidate_count": 1,
+      "context_requests": 0,
+      "usage": {
+        "queue_time": 0.218442851,
+        "prompt_tokens": 5195,
+        "prompt_time": 0.269843627,
+        "completion_tokens": 827,
+        "completion_time": 1.727239323,
+        "total_tokens": 6022,
+        "total_time": 1.99708295,
+        "retry_count": 0,
+        "rate_limit_wait_seconds": 0.0,
+        "format_fallback_count": 0,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-10db57c90eb2c229"
+      ]
+    },
+    {
+      "batch_index": 2,
+      "target_ids": [
+        "file:api/app.py#L199-204",
+        "merged-b527b3ed30e57aac5ec5",
+        "file:mock_external/server.py#L1-30",
+        "merged-24d14609e3893220ea16",
+        "file:api/extra.py#L125-138"
+      ],
+      "status": "completed",
+      "prompt_chars": 27778,
+      "provider_calls": 2,
+      "candidate_count": 3,
+      "context_requests": 0,
+      "usage": {
+        "queue_time": 0.294940944,
+        "prompt_tokens": 4182,
+        "prompt_time": 0.259863601,
+        "completion_tokens": 1510,
+        "completion_time": 3.178459951,
+        "total_tokens": 5692,
+        "total_time": 3.438323552,
+        "retry_count": 0,
+        "rate_limit_wait_seconds": 54.76437174500006,
+        "format_fallback_count": 0,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-1875ae94f8210b35",
+        "ai-60fcfda47062ec73",
+        "ai-4f622753be25ab0e"
+      ]
+    },
+    {
+      "batch_index": 3,
+      "target_ids": [
+        "merged-794dcb4921076779cef0",
+        "file:worker/__init__.py#L1-1",
+        "merged-b3c734b4cef8dd70fce0",
+        "file:api/extra.py#L247-268",
+        "file:api/extra.py#L288-301"
+      ],
+      "status": "completed",
+      "prompt_chars": 11966,
+      "provider_calls": 1,
+      "candidate_count": 2,
+      "context_requests": 0,
+      "usage": {
+        "queue_time": 0.215613334,
+        "prompt_tokens": 4055,
+        "prompt_time": 0.292416867,
+        "completion_tokens": 853,
+        "completion_time": 1.782378564,
+        "total_tokens": 4908,
+        "total_time": 2.074795431,
+        "retry_count": 0,
+        "rate_limit_wait_seconds": 33.373457831999986,
+        "format_fallback_count": 0,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-8332c61af41c1507",
+        "ai-6f9c877a6adca03e"
+      ]
+    }
+  ],
+  "context_exchanges": []
+}

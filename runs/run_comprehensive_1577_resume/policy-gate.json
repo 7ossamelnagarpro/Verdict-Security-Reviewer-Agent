@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.1",
+  "status": "failed",
+  "blocking": true,
+  "decisions": [
+    {
+      "candidate_id": "merged-4c6d36222f8ebf7f1f68",
+      "action": "warn",
+      "severity": "low",
+      "verdict": "confirmed_vulnerability",
+      "reason": "RG-006: low confirmed vulnerability is not sufficiently confirmed for an automatic block.",
+      "rule_id": "RG-006",
+      "evidence_basis": "ai_assertion_only",
+      "evidence": [
+        "scanner web-runtime low at /:? rules=10021"
+      ],
+      "blocking_reason": ""
+    },
+    {
+      "candidate_id": "merged-15dd977d52312c30635a",
+      "action": "warn",
+      "severity": "high",
+      "verdict": "likely_vulnerability",
+      "reason": "RG-003: high likely vulnerability requires manual review; not auto-confirmed.",
+      "rule_id": "RG-003",
+      "evidence_basis": "scanner_corroborated",
+      "evidence": [
+        "scanner web-runtime high at /admin/jobs:? rules=2"
+      ],
+      "blocking_reason": ""
+    },
+    {
+      "candidate_id": "merged-d58491aad5be35b48233",
+      "action": "block",
+      "severity": "high",
+      "verdict": "confirmed_vulnerability",
+      "reason": "RG-001: high confirmed vulnerability is corroborated by a high scanner finding; blocking severities are critical, high.",
+      "rule_id": "RG-001",
+      "evidence_basis": "scanner_corroborated",
+      "evidence": [
+        "scanner web-runtime high at /admin/token-report:? rules=3"
+      ],
+      "blocking_reason": "RG-001: high confirmed vulnerability is corroborated by a high scanner finding; blocking severities are critical, high."
+    }
+  ],
+  "warnings": [
+    "RG-006: low confirmed vulnerability is not sufficiently confirmed for an automatic block.",
+    "RG-003: high likely vulnerability requires manual review; not auto-confirmed.",
+    "22 AI candidates remain unresolved; they are not confirmed vulnerabilities.",
+    "Security review is incomplete; unreviewed issue groups must not be treated as safe."
+  ],
+  "rule_set": "release-gate-rules/2"
+}

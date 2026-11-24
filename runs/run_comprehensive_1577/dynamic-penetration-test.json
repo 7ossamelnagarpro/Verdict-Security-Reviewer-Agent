@@ -1,0 +1,3071 @@
+{
+  "schema_version": "1.0",
+  "status": "completed",
+  "results": [
+    {
+      "candidate_id": "ai-af9496dfdf758e33",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-af9496dfdf758e33",
+          "hypothesis": "Potential IDOR on profile verification endpoint (CWE-639): Authorization (CWE-639)",
+          "entry_point": "@router.get(\"/profiles/{profile_id}/verified\")",
+          "target_endpoint": "/profiles/{profile_id}/verified",
+          "attack_plan": "Does an authenticated account (admin) that is not the resource owner still get in?",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "authorization_matrix",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "admin",
+              "method": "GET",
+              "path": "/profiles/{profile_id}/verified"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "authorization_matrix: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The blocked outcome indicates the request never reached a measurable response, so the result may be due to a transient issue or insufficient budget rather than a definitive denial; retesting when resources allow is advisable.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-af9496dfdf758e33",
+          "hypothesis": "Potential IDOR on profile verification endpoint (CWE-639): Authorization (CWE-639)",
+          "entry_point": "@router.get(\"/profiles/{profile_id}/verified\")",
+          "target_endpoint": "/profiles/{profile_id}/verified",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: No unauthenticated test has been performed yet; trying an unauthenticated request will reveal whether the endpoint improperly allows access without valid credentials.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 2,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/profiles/{profile_id}/verified"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 422,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: request to /profiles/{profile_id}/verified as anonymous returned HTTP 422, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The 422 response instead of the expected denial codes indicates the endpoint may be exposing information to unauthenticated users, so the IDOR hypothesis appears valid and warrants further targeted testing.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "unauthenticated_access: request to /profiles/{profile_id}/verified as anonymous returned HTTP 422, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": [
+        {
+          "strategy": "idor",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        },
+        {
+          "strategy": "idor_parameter_pollution",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        }
+      ]
+    },
+    {
+      "candidate_id": "ai-9c0c88f222fc97e1",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-9c0c88f222fc97e1",
+          "hypothesis": "Missing authentication on file download endpoint: Improper Authorization (CWE-284)",
+          "entry_point": "@router.get(\"/files\")",
+          "target_endpoint": "/files",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: The hypothesis describes a file download endpoint lacking any authentication checks, so testing unauthenticated access directly validates the core issue.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/files"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 422,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: request to /files as anonymous returned HTTP 422, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The 422 response, which is not among the expected denial codes, confirms that the endpoint does not enforce authentication as hypothesized, indicating a genuine access control flaw.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "unauthenticated_access: request to /files as anonymous returned HTTP 422, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": []
+    },
+    {
+      "candidate_id": "ai-c099db85c207bd5e",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-c099db85c207bd5e",
+          "hypothesis": "Missing authorization check on order creation (CWE-862): Authorization (CWE-862)",
+          "entry_point": "def create_order(body: OrderBody, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+          "target_endpoint": "/orders",
+          "attack_plan": "Does an authenticated account (admin) that is not the resource owner still get in? AI planner: The hypothesis concerns missing authorization checks on order creation, so testing various authorization contexts with the authorization_matrix template will directly probe the IDOR/BOLA issue.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "authorization_matrix",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "admin",
+              "method": "GET",
+              "path": "/orders"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "authorization_matrix: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The attempt was blocked, meaning the request could not be completed and no response data was returned. This suggests the endpoint is likely protected against this vector, though you may still consider confirming if the block is consistent across retries.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-c099db85c207bd5e",
+          "hypothesis": "Missing authorization check on order creation (CWE-862): Authorization (CWE-862)",
+          "entry_point": "def create_order(body: OrderBody, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+          "target_endpoint": "/orders",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: No test has yet tried creating an order without authentication, which directly probes the suspected missing authorization check on owner_id.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 2,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/orders"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 405,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: request to /orders as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The test confirms a missing authorization check, as the anonymous request succeeded with a 405 status instead of the expected denial codes, indicating the endpoint is vulnerable and should be probed further for exploitation.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "unauthenticated_access: request to /orders as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": [
+        {
+          "strategy": "idor",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        },
+        {
+          "strategy": "idor_parameter_pollution",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        }
+      ]
+    },
+    {
+      "candidate_id": "ai-cd57b8a32df8fcc3",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-cd57b8a32df8fcc3",
+          "hypothesis": "Potential path traversal in file_read endpoint (CWE-22): Path Traversal (CWE-22)",
+          "entry_point": "def file_read(name: str) -> Response:",
+          "target_endpoint": "/files",
+          "attack_plan": "Does a dot-segment detour (/x/../files, proven to normalize to /files) reach a route whose access check compares the raw, un-normalized path? AI planner: The hypothesis concerns a path traversal check that may be bypassed via path normalization tricks, so the path_normalization_bypass template directly targets this weakness.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "path_normalization_bypass",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/x/../files"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                true
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 404,
+              "status": "passed",
+              "step_status": "passed",
+              "reason": null
+            }
+          ],
+          "observation": "path_normalization_bypass: the request was correctly denied (HTTP 404).",
+          "agent_reasoning_summary": "Access was denied as expected; this attempt did not reproduce the hypothesis, which is not by itself conclusive proof that no exploitable path exists at all. AI interpretation: The request was correctly denied with a 404, confirming that this traversal technique does not succeed and further probing with the same approach is unlikely to be fruitful.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-cd57b8a32df8fcc3",
+          "hypothesis": "Potential path traversal in file_read endpoint (CWE-22): Path Traversal (CWE-22)",
+          "entry_point": "def file_read(name: str) -> Response:",
+          "target_endpoint": "/files",
+          "attack_plan": "Does re-casing the path (/FILES) reach a route a case-sensitive check missed? AI planner: The prior path\u2011normalization test was denied, so we should try a different bypass technique such as case\u2011sensitivity manipulation, which may evade the is_relative_to check.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 2,
+          "test_strategy": "case_sensitivity_bypass",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/FILES"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                true
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 404,
+              "status": "passed",
+              "step_status": "passed",
+              "reason": null
+            }
+          ],
+          "observation": "case_sensitivity_bypass: the request was correctly denied (HTTP 404).",
+          "agent_reasoning_summary": "Access was denied as expected; this attempt did not reproduce the hypothesis, which is not by itself conclusive proof that no exploitable path exists at all. AI interpretation: The request was correctly denied with a 404, confirming that this case\u2011sensitivity bypass did not expose the file_read endpoint; further testing of this specific bypass is unlikely to yield a path\u2011traversal exploit.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-cd57b8a32df8fcc3",
+          "hypothesis": "Potential path traversal in file_read endpoint (CWE-22): Path Traversal (CWE-22)",
+          "entry_point": "def file_read(name: str) -> Response:",
+          "target_endpoint": "/files",
+          "attack_plan": "Does toggling the trailing slash (/files/) reach a route a naive string check missed? AI planner: Previous attempts only covered normalization and case\u2011sensitivity; a trailing\u2011slash bypass is a distinct path\u2011traversal technique not yet tested and may reveal if the relative\u2011path check can be evaded.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 3,
+          "test_strategy": "trailing_slash_bypass",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/files/"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 307,
+              "status": "inconclusive",
+              "step_status": "inconclusive",
+              "reason": null
+            }
+          ],
+          "observation": "trailing_slash_bypass: the response (HTTP 307) was a server error or an ambiguous status.",
+          "agent_reasoning_summary": "A 5xx or ambiguous status cannot by itself prove or disprove the hypothesis. AI interpretation: The 307 response does not match any of the expected denial codes, so the result remains inconclusive and the path should be probed further using alternative techniques or payloads.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-cd57b8a32df8fcc3",
+          "hypothesis": "Potential path traversal in file_read endpoint (CWE-22): Path Traversal (CWE-22)",
+          "entry_point": "def file_read(name: str) -> Response:",
+          "target_endpoint": "/files",
+          "attack_plan": "Does appending a known format suffix (/files.json) bypass an extension-unaware access check? AI planner: Previous traversal attempts were denied or inconclusive; trying an extension suffix bypass may evade the path check without inventing new payloads.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 4,
+          "test_strategy": "extension_suffix_bypass",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "admin",
+              "method": "GET",
+              "path": "/files.json"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "extension_suffix_bypass: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The blocked outcome was due to the request not completing, so it may be a transient limitation rather than a definitive denial, and retrying the test later could be worthwhile.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-cd57b8a32df8fcc3",
+          "hypothesis": "Potential path traversal in file_read endpoint (CWE-22): Path Traversal (CWE-22)",
+          "entry_point": "def file_read(name: str) -> Response:",
+          "target_endpoint": "/files",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: No authentication checks have been evaluated yet; confirming whether file_read is accessible without credentials could reveal a trivial path\u2011traversal vector.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 5,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/files"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 422,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: request to /files as anonymous returned HTTP 422, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The unexpected 422 response indicates the endpoint did not reject the request as expected, suggesting a potential path\u2011traversal issue that merits further probing.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "unauthenticated_access: request to /files as anonymous returned HTTP 422, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": []
+    },
+    {
+      "candidate_id": "ai-3d7eccaf5f69a0dd",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-3d7eccaf5f69a0dd",
+          "hypothesis": "Missing admin authorization on admin_audit endpoint (CWE-862): Authorization (CWE-862)",
+          "entry_point": "def admin_audit(authorization: str | None = Header(default=None)) -> dict:",
+          "target_endpoint": "/admin/audit",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: No prior evidence exists; testing unauthenticated access directly checks whether the admin_audit endpoint enforces admin checks.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/admin/audit"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                true
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 401,
+              "status": "passed",
+              "step_status": "passed",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: the request was correctly denied (HTTP 401).",
+          "agent_reasoning_summary": "Access was denied as expected; this attempt did not reproduce the hypothesis, which is not by itself conclusive proof that no exploitable path exists at all. AI interpretation: The endpoint correctly returned HTTP\u202f401, confirming that unauthenticated access is denied, so retesting this same unauthenticated vector is unlikely to yield a bypass.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-3d7eccaf5f69a0dd",
+          "hypothesis": "Missing admin authorization on admin_audit endpoint (CWE-862): Authorization (CWE-862)",
+          "entry_point": "def admin_audit(authorization: str | None = Header(default=None)) -> dict:",
+          "target_endpoint": "/admin/audit",
+          "attack_plan": "Does a HEAD request reach the route when a hand-wired auth check only covers GET? AI planner: Unauthenticated requests are denied, so the next step is to try a method\u2011based bypass (HEAD) which could skip the require_admin check while still reaching the endpoint.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 2,
+          "test_strategy": "head_method_bypass",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "HEAD",
+              "path": "/admin/audit"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 405,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "head_method_bypass: request to /admin/audit as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The 405 response, which is not among the expected denial codes, confirms that the admin_audit endpoint lacks proper authorization checks, so further testing can safely proceed to verify exploitation.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "head_method_bypass: request to /admin/audit as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": []
+    },
+    {
+      "candidate_id": "ai-da6d1b39fd300919",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-da6d1b39fd300919",
+          "hypothesis": "Potential insecure webhook target URL validation (CWE-20): Improper Input Validation (CWE-20)",
+          "entry_point": "def create_webhook(body: dict[str, Any], authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+          "target_endpoint": "/webhooks",
+          "attack_plan": "Does re-casing the path (/WEBHOOKS) reach a route a case-sensitive check missed? AI planner: The validation only looks for the literal substring \"mock-external\"; testing case variations can reveal if the check is case\u2011sensitive, which directly probes the insecure URL validation.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "case_sensitivity_bypass",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/WEBHOOKS"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                true
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 404,
+              "status": "passed",
+              "step_status": "passed",
+              "reason": null
+            }
+          ],
+          "observation": "case_sensitivity_bypass: the request was correctly denied (HTTP 404).",
+          "agent_reasoning_summary": "Access was denied as expected; this attempt did not reproduce the hypothesis, which is not by itself conclusive proof that no exploitable path exists at all. AI interpretation: The webhook correctly rejected the case\u2011sensitivity bypass attempt with a 404, indicating the URL validation is effective for this vector and does not require further retesting of the same approach.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-da6d1b39fd300919",
+          "hypothesis": "Potential insecure webhook target URL validation (CWE-20): Improper Input Validation (CWE-20)",
+          "entry_point": "def create_webhook(body: dict[str, Any], authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+          "target_endpoint": "/webhooks",
+          "attack_plan": "Does a dot-segment detour (/x/../webhooks, proven to normalize to /webhooks) reach a route whose access check compares the raw, un-normalized path? AI planner: The hypothesis concerns URL validation that only looks for a substring; path normalization bypasses can alter the effective host while preserving the substring, so this template is the most relevant next test.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 2,
+          "test_strategy": "path_normalization_bypass",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/x/../webhooks"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                true
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 404,
+              "status": "passed",
+              "step_status": "passed",
+              "reason": null
+            }
+          ],
+          "observation": "path_normalization_bypass: the request was correctly denied (HTTP 404).",
+          "agent_reasoning_summary": "Access was denied as expected; this attempt did not reproduce the hypothesis, which is not by itself conclusive proof that no exploitable path exists at all. AI interpretation: The test was correctly denied with a 404, confirming the webhook URL validation blocks this path\u2011normalization bypass; further probing should focus on different techniques rather than repeating this vector.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-da6d1b39fd300919",
+          "hypothesis": "Potential insecure webhook target URL validation (CWE-20): Improper Input Validation (CWE-20)",
+          "entry_point": "def create_webhook(body: dict[str, Any], authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+          "target_endpoint": "/webhooks",
+          "attack_plan": "Does toggling the trailing slash (/webhooks/) reach a route a naive string check missed? AI planner: The validation only looks for the substring \"mock-external\"; a trailing slash bypass could allow a URL that passes the check but points to an external host, so this next test is most relevant.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 3,
+          "test_strategy": "trailing_slash_bypass",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/webhooks/"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 307,
+              "status": "inconclusive",
+              "step_status": "inconclusive",
+              "reason": null
+            }
+          ],
+          "observation": "trailing_slash_bypass: the response (HTTP 307) was a server error or an ambiguous status.",
+          "agent_reasoning_summary": "A 5xx or ambiguous status cannot by itself prove or disprove the hypothesis. AI interpretation: The 307 response does not match any of the expected denial codes, so the test is inconclusive and further probing with a different payload or technique may be worthwhile.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-da6d1b39fd300919",
+          "hypothesis": "Potential insecure webhook target URL validation (CWE-20): Improper Input Validation (CWE-20)",
+          "entry_point": "def create_webhook(body: dict[str, Any], authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+          "target_endpoint": "/webhooks",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: The prior bypass attempts were denied or inconclusive; testing unauthenticated access will reveal whether authentication is required before URL validation, a prerequisite for exploiting the SSRF validation flaw.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 4,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/webhooks"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 405,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: request to /webhooks as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The 405 response, which is not among the expected denial codes, indicates the webhook endpoint does not properly reject unauthenticated requests and should be investigated further.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "unauthenticated_access: request to /webhooks as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": []
+    },
+    {
+      "candidate_id": "ai-2db1f6bcf27d1506",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-2db1f6bcf27d1506",
+          "hypothesis": "Potential missing password hashing on login (CWE-521): Weak Authentication (CWE-521)",
+          "entry_point": "async def login(request: Request) -> dict[str, Any]:",
+          "target_endpoint": "/auth/login",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: Since no tests have been run, trying unauthenticated_access can reveal if the login endpoint accepts any credentials without proper password handling, directly probing the suspected weak authentication.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/auth/login"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 405,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: request to /auth/login as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The 405 response instead of the expected denial codes indicates the login endpoint did not reject the unauthenticated request as anticipated, suggesting a possible missing password\u2011hashing check and worth further probing.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "unauthenticated_access: request to /auth/login as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": []
+    },
+    {
+      "candidate_id": "ai-ce024da9a2a9a617",
+      "outcome": "blocked",
+      "attempts": [
+        {
+          "candidate_id": "ai-ce024da9a2a9a617",
+          "hypothesis": "Missing ownership check on coupon application (CWE-639): Authorization",
+          "entry_point": "def apply_coupon(order_id: int, body: CouponBody, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+          "target_endpoint": "/orders/{order_id}/apply-coupon",
+          "attack_plan": "Does the non-admin account (user_a) reach an endpoint that should require admin privileges? AI planner: The hypothesis describes missing ownership checks and arbitrary discount values, which are classic privilege escalation scenarios, so the privilege_escalation template is the most relevant next test.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "privilege_escalation",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "user_a",
+              "method": "GET",
+              "path": "/orders/{order_id}/apply-coupon"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "privilege_escalation: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The blocked outcome indicates the test could not be executed or observed, so it\u2019s unclear whether the missing ownership check is exploitable. Further probing with a reliable request path or different tooling may be needed to determine if this is a transient limitation or a true barrier.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-ce024da9a2a9a617",
+          "hypothesis": "Missing ownership check on coupon application (CWE-639): Authorization",
+          "entry_point": "def apply_coupon(order_id: int, body: CouponBody, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+          "target_endpoint": "/orders/{order_id}/apply-coupon",
+          "attack_plan": "Does an authenticated account (admin) that is not the resource owner still get in? AI planner: No prior authorization_matrix test has been run, and it directly probes whether the authenticated user can modify another user's order, addressing the missing ownership check.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 2,
+          "test_strategy": "authorization_matrix",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "admin",
+              "method": "GET",
+              "path": "/orders/{order_id}/apply-coupon"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "authorization_matrix: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The attempt was blocked at the request stage, indicating this specific path is not currently exploitable and further testing should focus on alternative vectors rather than retrying the same method.",
+          "next_action": "stop",
+          "stop_reason": "no_further_strategy",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "authorization_matrix: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+      "considered_but_not_executed": [
+        {
+          "strategy": "idor",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        },
+        {
+          "strategy": "idor_parameter_pollution",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        }
+      ]
+    },
+    {
+      "candidate_id": "ai-5d4c30816d85620a",
+      "outcome": "blocked",
+      "attempts": [
+        {
+          "candidate_id": "ai-5d4c30816d85620a",
+          "hypothesis": "Missing ownership check on order payment (CWE-639): Authorization",
+          "entry_point": "def pay_order(order_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+          "target_endpoint": "/orders/{order_id}/pay",
+          "attack_plan": "Does an authenticated account (admin) that is not the resource owner still get in? AI planner: The hypothesis concerns missing ownership verification, so testing varied user roles against the pay_order endpoint with the authorization_matrix template will reveal if unauthorized users can pay for others' orders.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "authorization_matrix",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "admin",
+              "method": "GET",
+              "path": "/orders/{order_id}/pay"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "authorization_matrix: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The blocked outcome indicates that the request was stopped before any observable response, suggesting the current path is effectively blocked and unlikely to yield a successful exploit without a different approach.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-5d4c30816d85620a",
+          "hypothesis": "Missing ownership check on order payment (CWE-639): Authorization",
+          "entry_point": "def pay_order(order_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+          "target_endpoint": "/orders/{order_id}/pay",
+          "attack_plan": "Does the non-admin account (user_a) reach an endpoint that should require admin privileges? AI planner: No prior privilege_escalation attempt has been made; testing with another user's order_id directly probes the missing ownership check described in the hypothesis.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 2,
+          "test_strategy": "privilege_escalation",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "user_a",
+              "method": "GET",
+              "path": "/orders/{order_id}/pay"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "privilege_escalation: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The blocked outcome indicates that the request was stopped before any response data was returned, suggesting the system is actively preventing this privilege\u2011escalation attempt and it may be a dead end for this vector.",
+          "next_action": "stop",
+          "stop_reason": "no_further_strategy",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "privilege_escalation: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+      "considered_but_not_executed": [
+        {
+          "strategy": "idor",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        },
+        {
+          "strategy": "idor_parameter_pollution",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        }
+      ]
+    },
+    {
+      "candidate_id": "ai-3dda8185781919ad",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-3dda8185781919ad",
+          "hypothesis": "Path Traversal Protection - Incomplete Validation (CWE-22): Injection",
+          "entry_point": "@router.get(\"/files/verified\")",
+          "target_endpoint": "/files/verified",
+          "attack_plan": "Does a dot-segment detour (/files/x/../verified, proven to normalize to /files/verified) reach a route whose access check compares the raw, un-normalized path? AI planner: The hypothesis concerns incomplete validation of directory traversal after path resolution, so a path normalization bypass test directly probes whether crafted inputs can evade the is_relative_to check.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "path_normalization_bypass",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/files/x/../verified"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                true
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 404,
+              "status": "passed",
+              "step_status": "passed",
+              "reason": null
+            }
+          ],
+          "observation": "path_normalization_bypass: the request was correctly denied (HTTP 404).",
+          "agent_reasoning_summary": "Access was denied as expected; this attempt did not reproduce the hypothesis, which is not by itself conclusive proof that no exploitable path exists at all. AI interpretation: The request was correctly denied with a 404, confirming that this path\u2011normalization bypass attempt is blocked; further testing of the same vector is unlikely to yield a different outcome.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-3dda8185781919ad",
+          "hypothesis": "Path Traversal Protection - Incomplete Validation (CWE-22): Injection",
+          "entry_point": "@router.get(\"/files/verified\")",
+          "target_endpoint": "/files/verified",
+          "attack_plan": "Does appending a known format suffix (/files/verified.json) bypass an extension-unaware access check? AI planner: Since a basic path\u2011normalization bypass was already denied, trying an extension\u2011suffix bypass may reveal if the validation can be evaded by appending harmless extensions to a traversal payload.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 2,
+          "test_strategy": "extension_suffix_bypass",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "admin",
+              "method": "GET",
+              "path": "/files/verified.json"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "extension_suffix_bypass: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The block was caused by an incomplete request or capture, not by a definitive server response, so the result may be a transient issue and worth retrying the test under stable conditions.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-3dda8185781919ad",
+          "hypothesis": "Path Traversal Protection - Incomplete Validation (CWE-22): Injection",
+          "entry_point": "@router.get(\"/files/verified\")",
+          "target_endpoint": "/files/verified",
+          "attack_plan": "Does re-casing the path (/FILES/VERIFIED) reach a route a case-sensitive check missed? AI planner: The prior attempts tested generic path normalization and extension suffix bypass; a case\u2011sensitivity bypass could affect the is_relative_to check after resolve(), so it is the next logical vector to try.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 3,
+          "test_strategy": "case_sensitivity_bypass",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/FILES/VERIFIED"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                true
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 404,
+              "status": "passed",
+              "step_status": "passed",
+              "reason": null
+            }
+          ],
+          "observation": "case_sensitivity_bypass: the request was correctly denied (HTTP 404).",
+          "agent_reasoning_summary": "Access was denied as expected; this attempt did not reproduce the hypothesis, which is not by itself conclusive proof that no exploitable path exists at all. AI interpretation: The test was correctly denied with a 404, confirming the path traversal check blocks this case\u2011sensitivity bypass, so further probing with the same technique is unlikely to succeed.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-3dda8185781919ad",
+          "hypothesis": "Path Traversal Protection - Incomplete Validation (CWE-22): Injection",
+          "entry_point": "@router.get(\"/files/verified\")",
+          "target_endpoint": "/files/verified",
+          "attack_plan": "Does toggling the trailing slash (/files/verified/) reach a route a naive string check missed? AI planner: Previous attempts covered normalization, case and extension tricks; a trailing slash can affect resolve() and symlink handling, so testing that vector may reveal a bypass.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 4,
+          "test_strategy": "trailing_slash_bypass",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/files/verified/"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 307,
+              "status": "inconclusive",
+              "step_status": "inconclusive",
+              "reason": null
+            }
+          ],
+          "observation": "trailing_slash_bypass: the response (HTTP 307) was a server error or an ambiguous status.",
+          "agent_reasoning_summary": "A 5xx or ambiguous status cannot by itself prove or disprove the hypothesis. AI interpretation: The 307 response does not match any of the expected denial codes, so the test was inconclusive and further probing with alternative traversal vectors is advisable.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-3dda8185781919ad",
+          "hypothesis": "Path Traversal Protection - Incomplete Validation (CWE-22): Injection",
+          "entry_point": "@router.get(\"/files/verified\")",
+          "target_endpoint": "/files/verified",
+          "attack_plan": "Does a HEAD request reach the route when a hand-wired auth check only covers GET? AI planner: Previous traversal attempts were mostly denied; a HEAD request may bypass the path validation logic and reveal whether the check is applied to all methods.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 5,
+          "test_strategy": "head_method_bypass",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "HEAD",
+              "path": "/files/verified"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 405,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "head_method_bypass: request to /files/verified as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The HEAD request returned 405 rather than an expected denial code, confirming the path\u2011traversal check is incomplete and the vulnerability can be reproduced.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "head_method_bypass: request to /files/verified as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": []
+    },
+    {
+      "candidate_id": "ai-f0dce5b04fc274c8",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-f0dce5b04fc274c8",
+          "hypothesis": "Missing ownership check on order cancellation (CWE-639): Authorization",
+          "entry_point": "def cancel_order(order_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+          "target_endpoint": "/orders/{order_id}/cancel",
+          "attack_plan": "Does an authenticated account (admin) that is not the resource owner still get in? AI planner: The hypothesis concerns missing ownership verification, so testing varied user roles against the cancel_order endpoint with different order IDs will reveal if unauthorized cancellations are possible.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "authorization_matrix",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "admin",
+              "method": "GET",
+              "path": "/orders/{order_id}/cancel"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "authorization_matrix: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The attempt was blocked at the request stage, indicating this specific path is not currently exploitable and further testing should focus on alternative vectors rather than retrying the same request.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-f0dce5b04fc274c8",
+          "hypothesis": "Missing ownership check on order cancellation (CWE-639): Authorization",
+          "entry_point": "def cancel_order(order_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+          "target_endpoint": "/orders/{order_id}/cancel",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: No prior attempt has tested whether the cancel_order endpoint can be invoked without any authentication, which directly probes the missing ownership check.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 2,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/orders/{order_id}/cancel"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 405,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: request to /orders/{order_id}/cancel as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The 405 response instead of the expected denial codes indicates the missing ownership check is likely exploitable, so the issue should be pursued with further targeted tests.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "unauthenticated_access: request to /orders/{order_id}/cancel as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": [
+        {
+          "strategy": "idor",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        },
+        {
+          "strategy": "idor_parameter_pollution",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        }
+      ]
+    },
+    {
+      "candidate_id": "ai-76ee5ddf6f5e1661",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-76ee5ddf6f5e1661",
+          "hypothesis": "Missing ownership check on order retrieval (CWE-639): Authorization",
+          "entry_point": "def get_order(order_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+          "target_endpoint": "/orders/{order_id}",
+          "attack_plan": "Does an authenticated account (admin) that is not the resource owner still get in? AI planner: Since no tests exist, we need to verify that authenticated users can access others' orders, and the authorization_matrix template is designed to probe ownership checks.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "authorization_matrix",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "admin",
+              "method": "GET",
+              "path": "/orders/{order_id}"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "authorization_matrix: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The block indicates the request could not be completed, so the test was stopped before any response could be observed; this may be due to a transient limitation rather than a definitive denial, and retesting later or via a different method could be worthwhile.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-76ee5ddf6f5e1661",
+          "hypothesis": "Missing ownership check on order retrieval (CWE-639): Authorization",
+          "entry_point": "def get_order(order_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+          "target_endpoint": "/orders/{order_id}",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: Since the hypothesis concerns missing ownership checks for authenticated users, confirming whether the endpoint also fails when no authentication is provided will clarify if authentication alone is enforced.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 2,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/orders/{order_id}"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 422,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: request to /orders/{order_id} as anonymous returned HTTP 422, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The test confirmed a missing ownership check, as the anonymous request received a 422 instead of the expected denial codes. This indicates the endpoint is vulnerable and should be further examined for exploitation.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "unauthenticated_access: request to /orders/{order_id} as anonymous returned HTTP 422, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": [
+        {
+          "strategy": "idor",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        },
+        {
+          "strategy": "idor_parameter_pollution",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        }
+      ]
+    },
+    {
+      "candidate_id": "ai-ae177f098ffafcec",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-ae177f098ffafcec",
+          "hypothesis": "Missing ownership check on invoice retrieval (CWE-639): Authorization",
+          "entry_point": "def invoice(invoice_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+          "target_endpoint": "/invoices/{invoice_id}",
+          "attack_plan": "Does an authenticated account (admin) that is not the resource owner still get in? AI planner: The hypothesis concerns missing ownership checks, so testing with different authenticated users to see if they can access others' invoices (authorization matrix) directly addresses the IDOR issue.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "authorization_matrix",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "admin",
+              "method": "GET",
+              "path": "/invoices/{invoice_id}"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "authorization_matrix: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The attempt was blocked at the request stage, indicating that this specific path is currently inaccessible and likely a dead end for this vector.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-ae177f098ffafcec",
+          "hypothesis": "Missing ownership check on invoice retrieval (CWE-639): Authorization",
+          "entry_point": "def invoice(invoice_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+          "target_endpoint": "/invoices/{invoice_id}",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: No prior attempt has tested unauthenticated access to the invoice endpoint, and confirming whether authentication is required is the next logical step for the IDOR hypothesis.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 2,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/invoices/{invoice_id}"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 422,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: request to /invoices/{invoice_id} as anonymous returned HTTP 422, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The test returned a 422 instead of the expected denial codes, confirming a missing ownership check on invoice retrieval. This indicates a real vulnerability that should be further explored for exploitation.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "unauthenticated_access: request to /invoices/{invoice_id} as anonymous returned HTTP 422, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": [
+        {
+          "strategy": "idor",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        },
+        {
+          "strategy": "idor_parameter_pollution",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        }
+      ]
+    },
+    {
+      "candidate_id": "ai-dd1c0f6e6c60b708",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-dd1c0f6e6c60b708",
+          "hypothesis": "Missing role check on job creation (CWE-284): Authorization",
+          "entry_point": "def create_job(body: JobBody, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+          "target_endpoint": "/jobs",
+          "attack_plan": "Does the non-admin account (user_a) reach an endpoint that should require admin privileges? AI planner: The hypothesis concerns a missing role check that could allow an authenticated user to create jobs with a run_as parameter for privilege escalation, so the privilege_escalation template directly tests this scenario.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "privilege_escalation",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "user_a",
+              "method": "GET",
+              "path": "/jobs"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "privilege_escalation: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The block indicates the request never reached the server or was aborted, so the failure is likely due to a network, tooling, or rate\u2011limit issue rather than a definitive permission check; retrying with a stable connection or different request parameters may be worthwhile.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-dd1c0f6e6c60b708",
+          "hypothesis": "Missing role check on job creation (CWE-284): Authorization",
+          "entry_point": "def create_job(body: JobBody, authorization: str | None = Header(default=None)) -> dict[str, Any]:",
+          "target_endpoint": "/jobs",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: We need to know if the create_job endpoint enforces any authentication at all; trying an unauthenticated request will reveal whether the missing role check also allows anonymous job creation.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 2,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/jobs"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 405,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: request to /jobs as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The 405 response, which differs from the expected denial codes, confirms a missing role check on job creation, indicating a real access control flaw that should be further exploited and validated.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "unauthenticated_access: request to /jobs as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": []
+    },
+    {
+      "candidate_id": "ai-1cdff758b0033fb5",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-1cdff758b0033fb5",
+          "hypothesis": "Potential over\u2011exposure of user SSN in `/me` endpoint (CWE-200): Information Exposure",
+          "entry_point": "@app.get(\"/me\")",
+          "target_endpoint": "/me",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: Since no tests have been run, the first useful check is whether the /me endpoint leaks SSN without authentication, which would broaden the exposure risk.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/me"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                true
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 401,
+              "status": "passed",
+              "step_status": "passed",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: the request was correctly denied (HTTP 401).",
+          "agent_reasoning_summary": "Access was denied as expected; this attempt did not reproduce the hypothesis, which is not by itself conclusive proof that no exploitable path exists at all. AI interpretation: The request was correctly denied with HTTP\u202f401, confirming that unauthenticated users cannot retrieve the SSN via this endpoint, so retesting this same vector is unnecessary.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-1cdff758b0033fb5",
+          "hypothesis": "Potential over\u2011exposure of user SSN in `/me` endpoint (CWE-200): Information Exposure",
+          "entry_point": "@app.get(\"/me\")",
+          "target_endpoint": "/me",
+          "attack_plan": "Does a HEAD request reach the route when a hand-wired auth check only covers GET? AI planner: Only unauthenticated access has been tested; a HEAD request could reveal the SSN in response headers or body without authentication, providing additional evidence about exposure.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 2,
+          "test_strategy": "head_method_bypass",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "HEAD",
+              "path": "/me"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 405,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "head_method_bypass: request to /me as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The 405 response, which is not among the expected denial codes, confirms the hypothesis of over\u2011exposure and indicates the endpoint is accessible and should be investigated further.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "head_method_bypass: request to /me as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": []
+    },
+    {
+      "candidate_id": "ai-de60897a1cdb57fc",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-de60897a1cdb57fc",
+          "hypothesis": "Missing authorization check for admin endpoint (CWE-284): Authorization (CWE-284)",
+          "entry_point": "@app.get(\"/admin/users\")",
+          "target_endpoint": "/admin/users",
+          "attack_plan": "Does an authenticated account (admin) that is not the resource owner still get in? AI planner: The hypothesis concerns a missing role check on an admin endpoint, so testing the authorization matrix will directly verify whether non\u2011admin users can access the data.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "authorization_matrix",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "admin",
+              "method": "GET",
+              "path": "/admin/users"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "authorization_matrix: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The block was caused by an inability to complete the request or capture the response, not by a definitive server decision, so it may be a transient limitation and could be worth retrying under different conditions.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-de60897a1cdb57fc",
+          "hypothesis": "Missing authorization check for admin endpoint (CWE-284): Authorization (CWE-284)",
+          "entry_point": "@app.get(\"/admin/users\")",
+          "target_endpoint": "/admin/users",
+          "attack_plan": "Does the non-admin account (user_a) reach an endpoint that should require admin privileges? AI planner: Since the hypothesis concerns missing admin role checks, a privilege escalation test directly probes whether a regular user can access the /admin/users endpoint and retrieve all records.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 2,
+          "test_strategy": "privilege_escalation",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "user_a",
+              "method": "GET",
+              "path": "/admin/users"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "privilege_escalation: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The block indicates the request never reached the server (or response was not captured), so the result is inconclusive and worth retrying under more stable conditions.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-de60897a1cdb57fc",
+          "hypothesis": "Missing authorization check for admin endpoint (CWE-284): Authorization (CWE-284)",
+          "entry_point": "@app.get(\"/admin/users\")",
+          "target_endpoint": "/admin/users",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: Since prior attempts to test authorization failed to execute, the next logical test is to see if the admin endpoint can be accessed without any authentication, directly confirming the missing role check.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 3,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/admin/users"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                true
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 401,
+              "status": "passed",
+              "step_status": "passed",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: the request was correctly denied (HTTP 401).",
+          "agent_reasoning_summary": "Access was denied as expected; this attempt did not reproduce the hypothesis, which is not by itself conclusive proof that no exploitable path exists at all. AI interpretation: The endpoint correctly returned a 401, confirming the authorization check is in place; retesting this unauthenticated path is unlikely to yield a different result.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-de60897a1cdb57fc",
+          "hypothesis": "Missing authorization check for admin endpoint (CWE-284): Authorization (CWE-284)",
+          "entry_point": "@app.get(\"/admin/users\")",
+          "target_endpoint": "/admin/users",
+          "attack_plan": "Does re-casing the path (/ADMIN/USERS) reach a route a case-sensitive check missed? AI planner: Since unauthenticated requests are denied, we need to test role\u2011based bypasses; a case\u2011sensitivity bypass is a plausible way to evade missing admin role checks without inventing new endpoints.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 4,
+          "test_strategy": "case_sensitivity_bypass",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/ADMIN/USERS"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                true
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 404,
+              "status": "passed",
+              "step_status": "passed",
+              "reason": null
+            }
+          ],
+          "observation": "case_sensitivity_bypass: the request was correctly denied (HTTP 404).",
+          "agent_reasoning_summary": "Access was denied as expected; this attempt did not reproduce the hypothesis, which is not by itself conclusive proof that no exploitable path exists at all. AI interpretation: The request was correctly denied with a 404, confirming the authorization check is in place; retesting this endpoint with the same case\u2011sensitivity bypass is unlikely to yield a different result.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-de60897a1cdb57fc",
+          "hypothesis": "Missing authorization check for admin endpoint (CWE-284): Authorization (CWE-284)",
+          "entry_point": "@app.get(\"/admin/users\")",
+          "target_endpoint": "/admin/users",
+          "attack_plan": "Does toggling the trailing slash (/admin/users/) reach a route a naive string check missed? AI planner: Previous attempts only covered unauthenticated and case\u2011sensitivity checks; a trailing\u2011slash bypass may reach the endpoint without triggering the missing role verification.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 5,
+          "test_strategy": "trailing_slash_bypass",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/admin/users/"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 307,
+              "status": "inconclusive",
+              "step_status": "inconclusive",
+              "reason": null
+            }
+          ],
+          "observation": "trailing_slash_bypass: the response (HTTP 307) was a server error or an ambiguous status.",
+          "agent_reasoning_summary": "A 5xx or ambiguous status cannot by itself prove or disprove the hypothesis. AI interpretation: The 307 response does not match any of the expected unauthorized codes, so the result is inconclusive and the endpoint may still be vulnerable; further testing with different techniques or payloads is advisable.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-de60897a1cdb57fc",
+          "hypothesis": "Missing authorization check for admin endpoint (CWE-284): Authorization (CWE-284)",
+          "entry_point": "@app.get(\"/admin/users\")",
+          "target_endpoint": "/admin/users",
+          "attack_plan": "Does a HEAD request reach the route when a hand-wired auth check only covers GET? AI planner: Previous attempts have only tested authentication and simple URL variations; a HEAD request may bypass role checks and reveal the user list without triggering typical GET defenses, so it is the next logical technique.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 6,
+          "test_strategy": "head_method_bypass",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "HEAD",
+              "path": "/admin/users"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 405,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "head_method_bypass: request to /admin/users as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The 405 response, which is not among the expected denial codes, confirms a missing authorization check on the admin endpoint, indicating it is a viable target for further exploitation.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "head_method_bypass: request to /admin/users as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": []
+    },
+    {
+      "candidate_id": "ai-1c96865ffd2139a6",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-1c96865ffd2139a6",
+          "hypothesis": "Missing authorization check for admin jobs endpoint (CWE-284): Authorization (CWE-284)",
+          "entry_point": "@app.get(\"/admin/jobs\")",
+          "target_endpoint": "/admin/jobs",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: The hypothesis suggests the endpoint lacks role verification, so testing access without authentication will directly confirm if any user can retrieve job data.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/admin/jobs"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                true
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 401,
+              "status": "passed",
+              "step_status": "passed",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: the request was correctly denied (HTTP 401).",
+          "agent_reasoning_summary": "Access was denied as expected; this attempt did not reproduce the hypothesis, which is not by itself conclusive proof that no exploitable path exists at all. AI interpretation: The endpoint correctly returned a 401, confirming the authorization check is in place; retesting this unauthenticated access vector is unlikely to yield a different result.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-1c96865ffd2139a6",
+          "hypothesis": "Missing authorization check for admin jobs endpoint (CWE-284): Authorization (CWE-284)",
+          "entry_point": "@app.get(\"/admin/jobs\")",
+          "target_endpoint": "/admin/jobs",
+          "attack_plan": "Does an authenticated account (admin) that is not the resource owner still get in? AI planner: Unauthenticated requests are denied, so the next step is to test authenticated role variations; the authorization_matrix template can probe whether different user roles can access the admin/jobs endpoint.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 2,
+          "test_strategy": "authorization_matrix",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "admin",
+              "method": "GET",
+              "path": "/admin/jobs"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "authorization_matrix: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The blocked outcome indicates the request could not be completed, so the result may be due to a transient issue rather than a definitive lack of the vulnerability; consider retrying the test later under stable conditions.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-1c96865ffd2139a6",
+          "hypothesis": "Missing authorization check for admin jobs endpoint (CWE-284): Authorization (CWE-284)",
+          "entry_point": "@app.get(\"/admin/jobs\")",
+          "target_endpoint": "/admin/jobs",
+          "attack_plan": "Does the non-admin account (user_a) reach an endpoint that should require admin privileges? AI planner: Unauthenticated access is denied, so the next step is to test if an authenticated non\u2011admin can bypass the missing role check; the privilege_escalation template targets exactly that scenario.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 3,
+          "test_strategy": "privilege_escalation",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "user_a",
+              "method": "GET",
+              "path": "/admin/jobs"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "privilege_escalation: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The block indicates the request never reached a usable response, so the failure may be due to a transient or environmental limitation rather than a definitive lack of the vulnerability; retrying the test under stable conditions could be worthwhile.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-1c96865ffd2139a6",
+          "hypothesis": "Missing authorization check for admin jobs endpoint (CWE-284): Authorization (CWE-284)",
+          "entry_point": "@app.get(\"/admin/jobs\")",
+          "target_endpoint": "/admin/jobs",
+          "attack_plan": "Does a HEAD request reach the route when a hand-wired auth check only covers GET? AI planner: Since unauthenticated requests are denied but the hypothesis suggests missing role verification for authenticated users, using a HEAD request may reveal data exposure without full authentication checks.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 4,
+          "test_strategy": "head_method_bypass",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "HEAD",
+              "path": "/admin/jobs"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 405,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "head_method_bypass: request to /admin/jobs as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The 405 response instead of the expected denial codes confirms a missing authorization check on the admin/jobs endpoint, so it should be pursued further in testing.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "head_method_bypass: request to /admin/jobs as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": []
+    },
+    {
+      "candidate_id": "ai-3dfb81137310f24a",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-3dfb81137310f24a",
+          "hypothesis": "Potential exposure of internal configuration via debug endpoint (CWE-200): Information Exposure (CWE-200)",
+          "entry_point": "@app.get(\"/debug/config\")",
+          "target_endpoint": "/debug/config",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: The hypothesis concerns an endpoint that leaks data to any caller without authentication, so testing unauthenticated access directly validates the exposure.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/debug/config"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 200,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: request to /debug/config as anonymous returned HTTP 200, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The endpoint returned HTTP\u202f200 instead of the expected denial codes, confirming that the internal configuration is exposed and the vulnerability is verified.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "unauthenticated_access: request to /debug/config as anonymous returned HTTP 200, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": []
+    },
+    {
+      "candidate_id": "ai-cfcbd5b30f0a3cb5",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-cfcbd5b30f0a3cb5",
+          "hypothesis": "Insecure session identifier generation (CWE-330): Weak Randomness (CWE-330)",
+          "entry_point": "@router.post(\"/auth/form-login\")",
+          "target_endpoint": "/auth/form-login",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: Since no attempts exist, the most direct test is to try unauthenticated access using guessed session IDs, which aligns with the hypothesis of predictable session identifiers.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/auth/form-login"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 405,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: request to /auth/form-login as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The 405 response, which differs from the expected denial codes, signals a potential issue and merits further probing of the login flow.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "unauthenticated_access: request to /auth/form-login as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": [
+        {
+          "strategy": "idor",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        },
+        {
+          "strategy": "idor_parameter_pollution",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        }
+      ]
+    },
+    {
+      "candidate_id": "ai-2e77e317be484a07",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-2e77e317be484a07",
+          "hypothesis": "Predictable reset token generation (CWE-331): Weak Randomness (CWE-331)",
+          "entry_point": "@router.post(\"/auth/reset/request\")",
+          "target_endpoint": "/auth/reset/request",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: Since no tests exist yet and the hypothesis concerns guessing reset tokens, the unauthenticated_access template can probe whether a reset can be completed without a valid token.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/auth/reset/request"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 405,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: request to /auth/reset/request as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The 405 response instead of the expected denial codes indicates the reset request endpoint is accessible without authentication, suggesting a real vulnerability worth further exploitation testing.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "unauthenticated_access: request to /auth/reset/request as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": []
+    },
+    {
+      "candidate_id": "ai-878b466bbc9fb435",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-878b466bbc9fb435",
+          "hypothesis": "Missing verification of reset token usage (CWE-287): Authentication (CWE-287)",
+          "entry_point": "@router.post(\"/auth/reset/verified-request\")",
+          "target_endpoint": "/auth/reset/verified-request",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: The hypothesis concerns an unauthenticated reset token issuance, so the next step is to test unauthenticated access to the reset endpoint.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/auth/reset/verified-request"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 405,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: request to /auth/reset/verified-request as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The 405 response, which is not among the expected denial codes, confirms the reset endpoint lacks proper token verification and should be further probed for exploitation.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "unauthenticated_access: request to /auth/reset/verified-request as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": []
+    },
+    {
+      "candidate_id": "ai-516bd66ee80cb01b",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-516bd66ee80cb01b",
+          "hypothesis": "Unauthenticated session start (CWE-306): Authentication (CWE-306)",
+          "entry_point": "@router.get(\"/session/start\")",
+          "target_endpoint": "/session/start",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: The hypothesis concerns starting a session without authentication, so the unauthenticated_access template directly tests this behavior.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/session/start"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 422,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: request to /session/start as anonymous returned HTTP 422, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The 422 response, which is not among the expected denial codes, indicates the endpoint allowed unauthenticated interaction, so the finding appears exploitable and should be pursued further.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "unauthenticated_access: request to /session/start as anonymous returned HTTP 422, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": []
+    },
+    {
+      "candidate_id": "ai-7231133d2c31b081",
+      "outcome": "not_reproduced",
+      "attempts": [
+        {
+          "candidate_id": "ai-7231133d2c31b081",
+          "hypothesis": "Insecure session token design (CWE-287): Authentication / Authorization",
+          "entry_point": "@router.get(\"/session/whoami\")",
+          "target_endpoint": "/session/whoami",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: The hypothesis concerns token forgery without authentication, so the unauthenticated_access template is the most direct way to test if arbitrary tokens can retrieve a username.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/session/whoami"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                true
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 401,
+              "status": "passed",
+              "step_status": "passed",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: the request was correctly denied (HTTP 401).",
+          "agent_reasoning_summary": "Access was denied as expected; this attempt did not reproduce the hypothesis, which is not by itself conclusive proof that no exploitable path exists at all. AI interpretation: The request was correctly denied with HTTP\u202f401, confirming the session token design resists unauthenticated access; further probing of this vector is unlikely to yield a vulnerability.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-7231133d2c31b081",
+          "hypothesis": "Insecure session token design (CWE-287): Authentication / Authorization",
+          "entry_point": "@router.get(\"/session/whoami\")",
+          "target_endpoint": "/session/whoami",
+          "attack_plan": "Does the non-admin account (user_a) reach an endpoint that should require admin privileges? AI planner: Since unauthenticated access is denied, the next step is to test whether forging a predictable session token can grant another user's identity, which aligns with a privilege escalation scenario.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 2,
+          "test_strategy": "privilege_escalation",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "user_a",
+              "method": "GET",
+              "path": "/session/whoami"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "privilege_escalation: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The block appears to stem from an inability to complete the request or capture data, indicating a possible transient limitation (e.g., budget or network) rather than a definitive security barrier, so retesting when resources are available may be worthwhile.",
+          "next_action": "stop",
+          "stop_reason": "no_further_strategy",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "privilege_escalation: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+      "considered_but_not_executed": [
+        {
+          "strategy": "idor",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        },
+        {
+          "strategy": "idor_parameter_pollution",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        }
+      ]
+    },
+    {
+      "candidate_id": "ai-d1bb57e4b7aa0e99",
+      "outcome": "not_reproduced",
+      "attempts": [
+        {
+          "candidate_id": "ai-d1bb57e4b7aa0e99",
+          "hypothesis": "Potential IDOR in secure session start (CWE-639): Authorization",
+          "entry_point": "@router.get(\"/session/secure-start\")",
+          "target_endpoint": "/session/secure-start",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: Since no prior evidence exists, the first step is to verify whether the secure-start endpoint can be invoked without authentication, establishing a baseline for any IDOR exploitation.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/session/secure-start"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                true
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 401,
+              "status": "passed",
+              "step_status": "passed",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: the request was correctly denied (HTTP 401).",
+          "agent_reasoning_summary": "Access was denied as expected; this attempt did not reproduce the hypothesis, which is not by itself conclusive proof that no exploitable path exists at all. AI interpretation: The request was correctly denied with HTTP\u202f401, confirming that unauthenticated access is blocked and there is no apparent IDOR vulnerability to pursue with this approach.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-d1bb57e4b7aa0e99",
+          "hypothesis": "Potential IDOR in secure session start (CWE-639): Authorization",
+          "entry_point": "@router.get(\"/session/secure-start\")",
+          "target_endpoint": "/session/secure-start",
+          "attack_plan": "Does an authenticated account (admin) that is not the resource owner still get in? AI planner: Since unauthenticated requests are denied, the next step is to test variations in authorized contexts; the authorization_matrix template can probe token handling across user roles to reveal IDOR potential.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 2,
+          "test_strategy": "authorization_matrix",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "admin",
+              "method": "GET",
+              "path": "/session/secure-start"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "authorization_matrix: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The block indicates the request never reached the server (or was not captured), so the test couldn\u2019t confirm an IDOR; you\u2019ll need to resolve the capture/budget issue before retesting, as it may be a tooling or network limitation rather than a definitive denial.",
+          "next_action": "stop",
+          "stop_reason": "no_further_strategy",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "authorization_matrix: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+      "considered_but_not_executed": [
+        {
+          "strategy": "idor",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        },
+        {
+          "strategy": "idor_parameter_pollution",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        }
+      ]
+    },
+    {
+      "candidate_id": "ai-b24379993c8ab204",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-b24379993c8ab204",
+          "hypothesis": "Missing coupon expiration/usage validation (CWE-20): Improper Input Validation (CWE-20)",
+          "entry_point": "@router.post(\"/orders/{order_id}/verified-coupon\")",
+          "target_endpoint": "/orders/{order_id}/verified-coupon",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: Since no tests exist yet, trying unauthenticated access can reveal whether the coupon endpoint can be used without proper authentication, which may expose the missing expiration/usage checks.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/orders/{order_id}/verified-coupon"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 405,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: request to /orders/{order_id}/verified-coupon as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The 405 response instead of the expected denial codes indicates a potential lack of proper access control, so the issue appears exploitable and merits further targeted testing.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "unauthenticated_access: request to /orders/{order_id}/verified-coupon as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": []
+    },
+    {
+      "candidate_id": "ai-e9f22ac328f1128a",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-e9f22ac328f1128a",
+          "hypothesis": "Insecure Direct Object Reference - Profile Data Exposure (CWE-639): Authorization",
+          "entry_point": "@router.get(\"/profiles/{profile_id}\")",
+          "target_endpoint": "/profiles/{profile_id}",
+          "attack_plan": "Does an authenticated account (admin) that is not the resource owner still get in? AI planner: Since no tests exist yet and the issue is about missing owner checks, an authorization matrix test will probe different user roles to see if any can access other users' profiles, directly addressing the IDOR risk.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "authorization_matrix",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "admin",
+              "method": "GET",
+              "path": "/profiles/{profile_id}"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "authorization_matrix: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The block indicates the request never reached the server, so the result is inconclusive about the IDOR risk and further testing should retry or adjust the request to ensure it can be captured.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-e9f22ac328f1128a",
+          "hypothesis": "Insecure Direct Object Reference - Profile Data Exposure (CWE-639): Authorization",
+          "entry_point": "@router.get(\"/profiles/{profile_id}\")",
+          "target_endpoint": "/profiles/{profile_id}",
+          "attack_plan": "Does a dot-segment detour (/profiles/x/../{profile_id}, proven to normalize to /profiles/{profile_id}) reach a route whose access check compares the raw, un-normalized path? AI planner: No prior attempts have tested path normalization variants, and such bypasses could reveal whether the generic principal() check can be evaded to access other users' profiles.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 2,
+          "test_strategy": "path_normalization_bypass",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/profiles/x/../{profile_id}"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                true
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 404,
+              "status": "passed",
+              "step_status": "passed",
+              "reason": null
+            }
+          ],
+          "observation": "path_normalization_bypass: the request was correctly denied (HTTP 404).",
+          "agent_reasoning_summary": "Access was denied as expected; this attempt did not reproduce the hypothesis, which is not by itself conclusive proof that no exploitable path exists at all. AI interpretation: The request was correctly denied with a 404, confirming that this path\u2011normalization bypass does not expose the profile data, so further testing of this specific vector is unlikely to be fruitful.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-e9f22ac328f1128a",
+          "hypothesis": "Insecure Direct Object Reference - Profile Data Exposure (CWE-639): Authorization",
+          "entry_point": "@router.get(\"/profiles/{profile_id}\")",
+          "target_endpoint": "/profiles/{profile_id}",
+          "attack_plan": "Does the non-admin account (user_a) reach an endpoint that should require admin privileges? AI planner: Since prior path normalization attempts were denied and no unauthenticated test has been performed, escalating privileges may reveal whether a higher role can bypass the generic check and access arbitrary profiles.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 3,
+          "test_strategy": "privilege_escalation",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "user_a",
+              "method": "GET",
+              "path": "/profiles/{profile_id}"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "privilege_escalation: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The block indicates the request never reached the server (or response was not captured), so the result is inconclusive about the IDOR vulnerability and may merit a retry when the request can be fully executed.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-e9f22ac328f1128a",
+          "hypothesis": "Insecure Direct Object Reference - Profile Data Exposure (CWE-639): Authorization",
+          "entry_point": "@router.get(\"/profiles/{profile_id}\")",
+          "target_endpoint": "/profiles/{profile_id}",
+          "attack_plan": "Does a HEAD request reach the route when a hand-wired auth check only covers GET? AI planner: Previous attempts did not test HTTP method variations; using HEAD may reveal whether the endpoint leaks the full profile record without a body, providing new evidence on the IDOR risk.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 4,
+          "test_strategy": "head_method_bypass",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "HEAD",
+              "path": "/profiles/{profile_id}"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 405,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "head_method_bypass: request to /profiles/{profile_id} as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The 405 response, which is not among the expected denial codes, indicates a potential IDOR vulnerability and merits further probing with other HTTP methods or payloads to confirm data exposure.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "head_method_bypass: request to /profiles/{profile_id} as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": [
+        {
+          "strategy": "idor",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        },
+        {
+          "strategy": "idor_parameter_pollution",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        }
+      ]
+    },
+    {
+      "candidate_id": "ai-c552d94c2b1ed94a",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-c552d94c2b1ed94a",
+          "hypothesis": "Missing Authorization on Admin Overview (CWE-862): Authorization",
+          "entry_point": "@router.get(\"/admin/overview\")",
+          "target_endpoint": "/admin/overview",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: Since no tests have been run, the simplest check is to see if an unauthenticated request can retrieve the admin overview, confirming the missing authorization.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/admin/overview"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                true
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 401,
+              "status": "passed",
+              "step_status": "passed",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: the request was correctly denied (HTTP 401).",
+          "agent_reasoning_summary": "Access was denied as expected; this attempt did not reproduce the hypothesis, which is not by itself conclusive proof that no exploitable path exists at all. AI interpretation: The request was correctly denied with HTTP\u202f401, confirming that unauthenticated access is blocked; further testing of this specific missing\u2011authorization hypothesis is unlikely to yield a bypass.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-c552d94c2b1ed94a",
+          "hypothesis": "Missing Authorization on Admin Overview (CWE-862): Authorization",
+          "entry_point": "@router.get(\"/admin/overview\")",
+          "target_endpoint": "/admin/overview",
+          "attack_plan": "Does an authenticated account (admin) that is not the resource owner still get in? AI planner: Unauthenticated requests are blocked, so the next step is to test authenticated non\u2011admin access using the authorization_matrix template to see if a regular user can retrieve the admin overview data.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 2,
+          "test_strategy": "authorization_matrix",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "admin",
+              "method": "GET",
+              "path": "/admin/overview"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "authorization_matrix: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The blocked outcome stems from an inability to complete the request or capture the response, suggesting a possible transient or environmental limitation rather than a definitive authorization flaw; retesting when the request can be fully executed may be worthwhile.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-c552d94c2b1ed94a",
+          "hypothesis": "Missing Authorization on Admin Overview (CWE-862): Authorization",
+          "entry_point": "@router.get(\"/admin/overview\")",
+          "target_endpoint": "/admin/overview",
+          "attack_plan": "Does the non-admin account (user_a) reach an endpoint that should require admin privileges? AI planner: Since unauthenticated requests are denied, the next step is to see if an authenticated non\u2011admin user can obtain admin overview data; the privilege_escalation template targets such role\u2011based checks.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 3,
+          "test_strategy": "privilege_escalation",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "user_a",
+              "method": "GET",
+              "path": "/admin/overview"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "privilege_escalation: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The block indicates the test could not be executed or observed, so it\u2019s unclear whether the admin overview lacks authorization. Retesting when the request can be fully sent and captured is needed to determine if the issue is a true denial or a temporary limitation.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-c552d94c2b1ed94a",
+          "hypothesis": "Missing Authorization on Admin Overview (CWE-862): Authorization",
+          "entry_point": "@router.get(\"/admin/overview\")",
+          "target_endpoint": "/admin/overview",
+          "attack_plan": "Does a dot-segment detour (/admin/x/../overview, proven to normalize to /admin/overview) reach a route whose access check compares the raw, un-normalized path? AI planner: Previous attempts failed to confirm the missing\u2011authorization issue; a path\u2011normalization bypass can test whether alternative URL forms evade the admin\u2011only check while still being authenticated.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 4,
+          "test_strategy": "path_normalization_bypass",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/admin/x/../overview"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                true
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 404,
+              "status": "passed",
+              "step_status": "passed",
+              "reason": null
+            }
+          ],
+          "observation": "path_normalization_bypass: the request was correctly denied (HTTP 404).",
+          "agent_reasoning_summary": "Access was denied as expected; this attempt did not reproduce the hypothesis, which is not by itself conclusive proof that no exploitable path exists at all. AI interpretation: The request was correctly denied with a 404, confirming that the admin overview is not exposed via this path\u2011normalization bypass and further testing of this same vector is unlikely to succeed.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-c552d94c2b1ed94a",
+          "hypothesis": "Missing Authorization on Admin Overview (CWE-862): Authorization",
+          "entry_point": "@router.get(\"/admin/overview\")",
+          "target_endpoint": "/admin/overview",
+          "attack_plan": "Does a HEAD request reach the route when a hand-wired auth check only covers GET? AI planner: Unauthenticated GET is blocked, so testing a HEAD request may bypass the authorization check while still retrieving the overview data.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 5,
+          "test_strategy": "head_method_bypass",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "HEAD",
+              "path": "/admin/overview"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 405,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "head_method_bypass: request to /admin/overview as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The 405 response instead of the expected denial codes indicates the admin overview endpoint is accessible without proper authorization, confirming the vulnerability and warranting further exploitation testing.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "head_method_bypass: request to /admin/overview as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": []
+    },
+    {
+      "candidate_id": "ai-e128c4cc400d9f64",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-e128c4cc400d9f64",
+          "hypothesis": "Potential Insecure Direct Object Reference on Order Cancellation (CWE-639): Authorization",
+          "entry_point": "@router.post(\"/orders/{order_id}/verified-cancel\")",
+          "target_endpoint": "/orders/{order_id}/verified-cancel",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: Since no prior tests exist, the simplest way to confirm an IDOR is to see if the cancellation endpoint can be invoked without authentication, revealing a lack of ownership checks.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/orders/{order_id}/verified-cancel"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 405,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: request to /orders/{order_id}/verified-cancel as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The 405 response shows the request was not denied with any of the expected statuses, indicating the endpoint may be vulnerable and should be investigated further.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "unauthenticated_access: request to /orders/{order_id}/verified-cancel as anonymous returned HTTP 405, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": [
+        {
+          "strategy": "idor",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        },
+        {
+          "strategy": "idor_parameter_pollution",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        }
+      ]
+    },
+    {
+      "candidate_id": "ai-6b3e366703f88480",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-6b3e366703f88480",
+          "hypothesis": "Insecure Direct Object Reference (IDOR) on note retrieval: Authorization bypass (CWE-284)",
+          "entry_point": "def order_note(order_id: int, note_id: int, authorization: str | None = Header(default=None)) -> dict:",
+          "target_endpoint": "/orders/{order_id}/notes/{note_id}",
+          "attack_plan": "Does an authenticated account (admin) that is not the resource owner still get in? AI planner: Since no attempts exist, the authorization_matrix template is the most appropriate to test whether the endpoint improperly authorizes note_id access across orders.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "authorization_matrix",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "admin",
+              "method": "GET",
+              "path": "/orders/{order_id}/notes/{note_id}"
+            }
+          ],
+          "response_evidence": [
+            {
+              "status": "blocked",
+              "step_status": "blocked",
+              "reason": "Request, capture or budget could not be completed; response values withheld"
+            }
+          ],
+          "observation": "authorization_matrix: the attempt could not complete (Request, capture or budget could not be completed; response values withheld).",
+          "agent_reasoning_summary": "A prerequisite (login, capture or the request/time budget) failed before the security-relevant request could run; this is not evidence either way. AI interpretation: The blocked outcome indicates the request never reached a measurable response, so it may be a transient or infrastructure limitation rather than a definitive denial of IDOR, suggesting further testing after ensuring request capture succeeds.",
+          "next_action": "next_test",
+          "stop_reason": "none",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        },
+        {
+          "candidate_id": "ai-6b3e366703f88480",
+          "hypothesis": "Insecure Direct Object Reference (IDOR) on note retrieval: Authorization bypass (CWE-284)",
+          "entry_point": "def order_note(order_id: int, note_id: int, authorization: str | None = Header(default=None)) -> dict:",
+          "target_endpoint": "/orders/{order_id}/notes/{note_id}",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: No prior test has checked whether the endpoint can be accessed without valid authentication, and confirming the need for auth is a prerequisite before probing IDOR.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 2,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/orders/{order_id}/notes/{note_id}"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 422,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: request to /orders/{order_id}/notes/{note_id} as anonymous returned HTTP 422, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The 422 response, which is not among the expected denial codes, indicates the endpoint is likely vulnerable to IDOR and should be investigated further.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "unauthenticated_access: request to /orders/{order_id}/notes/{note_id} as anonymous returned HTTP 422, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": [
+        {
+          "strategy": "idor",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        },
+        {
+          "strategy": "idor_parameter_pollution",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        }
+      ]
+    },
+    {
+      "candidate_id": "ai-e66003b315ea2c41",
+      "outcome": "exploitation_confirmed",
+      "attempts": [
+        {
+          "candidate_id": "ai-e66003b315ea2c41",
+          "hypothesis": "Insecure Direct Object Reference (CWE-639): Authorization",
+          "entry_point": "def order_note(order_id: int, note_id: int, authorization: str | None = Header(default=None)) -> dict:",
+          "target_endpoint": "/orders/{order_id}/notes/{note_id}",
+          "attack_plan": "Cheapest, safest first probe: does the route respond without any session at all? AI planner: No prior tests exist; the simplest check is whether the endpoint allows access without proper authentication, which directly probes the IDOR risk.",
+          "selected_tools": [
+            "runtime_workflows"
+          ],
+          "attempt_number": 1,
+          "test_strategy": "unauthenticated_access",
+          "request_evidence": [
+            {
+              "step": 1,
+              "actor": "anonymous",
+              "method": "GET",
+              "path": "/orders/{order_id}/notes/{note_id}"
+            }
+          ],
+          "response_evidence": [
+            {
+              "assertion_results": [
+                false
+              ],
+              "expected_status": [
+                401,
+                403,
+                404
+              ],
+              "http_status": 422,
+              "status": "violation",
+              "step_status": "violation",
+              "reason": null
+            }
+          ],
+          "observation": "unauthenticated_access: request to /orders/{order_id}/notes/{note_id} as anonymous returned HTTP 422, not one of the expected denial statuses [401, 403, 404].",
+          "agent_reasoning_summary": "The response failed the template's designed denial assertion; this is treated as evidence of exploitability for this specific probe, not as a bare, unexamined HTTP 200. AI interpretation: The 422 response, which is not among the expected denial codes, confirms a violation and indicates that the resource may be accessible without authentication, so further probing of IDOR vectors is warranted.",
+          "next_action": "stop",
+          "stop_reason": "exploitation_confirmed",
+          "provenance": "ai_penetration_test",
+          "schema_version": "1.0"
+        }
+      ],
+      "summary": "unauthenticated_access: request to /orders/{order_id}/notes/{note_id} as anonymous returned HTTP 422, not one of the expected denial statuses [401, 403, 404].",
+      "considered_but_not_executed": [
+        {
+          "strategy": "idor",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        },
+        {
+          "strategy": "idor_parameter_pollution",
+          "reason": "No cited evidence names a concrete resource id belonging to a different account; the agent does not invent one."
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "hypotheses_considered": 30,
+    "hypotheses_tested": 30,
+    "total_attempts": 69,
+    "total_requests": 46,
+    "exploitation_confirmed": 26
+  },
+  "warnings": []
+}

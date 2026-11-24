@@ -1,0 +1,642 @@
+{
+  "profile": {
+    "schema_version": "1.0",
+    "root_name": "security-lab-web",
+    "completeness": "complete",
+    "inventory": [
+      {
+        "path": ".dockerignore",
+        "extension": "",
+        "size_bytes": 81,
+        "category": "unknown"
+      },
+      {
+        "path": "app.py",
+        "extension": ".py",
+        "size_bytes": 11473,
+        "category": "source"
+      },
+      {
+        "path": "compose.yaml",
+        "extension": ".yaml",
+        "size_bytes": 500,
+        "category": "configuration"
+      },
+      {
+        "path": "Dockerfile",
+        "extension": "",
+        "size_bytes": 459,
+        "category": "configuration"
+      },
+      {
+        "path": "files/report.txt",
+        "extension": ".txt",
+        "size_bytes": 43,
+        "category": "unknown"
+      },
+      {
+        "path": "README.md",
+        "extension": ".md",
+        "size_bytes": 868,
+        "category": "unknown"
+      },
+      {
+        "path": "requirements.txt",
+        "extension": ".txt",
+        "size_bytes": 14,
+        "category": "dependency_manifest"
+      },
+      {
+        "path": "secret_do_not_serve.txt",
+        "extension": ".txt",
+        "size_bytes": 64,
+        "category": "unknown"
+      }
+    ],
+    "inventory_summary": {
+      "total_files": 8,
+      "total_bytes": 13502,
+      "content_bytes_read": 11487,
+      "skipped_count": 0,
+      "by_category": {
+        "configuration": 2,
+        "dependency_manifest": 1,
+        "source": 1,
+        "unknown": 4
+      }
+    },
+    "components": [
+      {
+        "component_id": "component-cdb4ee2aea",
+        "root": ".",
+        "kind": "application",
+        "confidence": "high",
+        "evidence": [
+          {
+            "path": "requirements.txt",
+            "evidence_type": "component_manifest",
+            "detail": "requirements.txt defines a project boundary"
+          }
+        ],
+        "languages": [
+          {
+            "name": "python",
+            "component_id": "component-cdb4ee2aea",
+            "confidence": "medium",
+            "evidence": [
+              {
+                "path": "app.py",
+                "evidence_type": "source_extension",
+                "detail": ".py maps to python"
+              }
+            ]
+          }
+        ],
+        "frameworks": [
+          {
+            "name": "flask",
+            "component_id": "component-cdb4ee2aea",
+            "confidence": "high",
+            "evidence": [
+              {
+                "path": "requirements.txt",
+                "evidence_type": "dependency_declaration",
+                "detail": "Declares dependency flask"
+              },
+              {
+                "path": "app.py",
+                "evidence_type": "source_import",
+                "detail": "Source contains an import indicator for flask"
+              }
+            ]
+          }
+        ],
+        "dependency_files": [
+          {
+            "path": "requirements.txt",
+            "component_id": "component-cdb4ee2aea",
+            "ecosystem": "python",
+            "package_manager": "pip",
+            "kind": "manifest",
+            "parse_status": "parsed_constraints",
+            "linked_file": null,
+            "dependencies": [
+              {
+                "name": "Flask",
+                "version": "==3.1.3",
+                "version_kind": "constraint",
+                "scope": "runtime"
+              }
+            ],
+            "warnings": []
+          }
+        ],
+        "file_count": 8,
+        "total_bytes": 13502
+      }
+    ],
+    "git": {
+      "present": false,
+      "marker_kind": "none",
+      "marker_path": null,
+      "history_status": "unavailable"
+    },
+    "targets": {
+      "dockerfiles": [
+        "Dockerfile"
+      ],
+      "compose_files": [
+        "compose.yaml"
+      ],
+      "iac_files": [],
+      "ci_files": [],
+      "secret_candidate_files": [
+        ".dockerignore",
+        "Dockerfile",
+        "README.md",
+        "app.py",
+        "compose.yaml",
+        "files/report.txt",
+        "requirements.txt",
+        "secret_do_not_serve.txt"
+      ],
+      "runtime_manifests": []
+    },
+    "exclusions": [
+      {
+        "scope": "configuration",
+        "pattern": ".git/**",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from configuration tasks only"
+      },
+      {
+        "scope": "configuration",
+        "pattern": ".venv/**",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from configuration tasks only"
+      },
+      {
+        "scope": "configuration",
+        "pattern": "node_modules/**",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from configuration tasks only"
+      },
+      {
+        "scope": "configuration",
+        "pattern": "vendor/**",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from configuration tasks only"
+      },
+      {
+        "scope": "dependencies",
+        "pattern": ".git/**",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from dependencies tasks only"
+      },
+      {
+        "scope": "dependencies",
+        "pattern": ".venv/**",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from dependencies tasks only"
+      },
+      {
+        "scope": "dependencies",
+        "pattern": "node_modules/**",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from dependencies tasks only"
+      },
+      {
+        "scope": "dependencies",
+        "pattern": "vendor/**",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from dependencies tasks only"
+      },
+      {
+        "scope": "sast",
+        "pattern": "*.pyc",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from sast tasks only"
+      },
+      {
+        "scope": "sast",
+        "pattern": ".git/**",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from sast tasks only"
+      },
+      {
+        "scope": "sast",
+        "pattern": ".venv/**",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from sast tasks only"
+      },
+      {
+        "scope": "sast",
+        "pattern": "__pycache__",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from sast tasks only"
+      },
+      {
+        "scope": "sast",
+        "pattern": "build/**",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from sast tasks only"
+      },
+      {
+        "scope": "sast",
+        "pattern": "dist/**",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from sast tasks only"
+      },
+      {
+        "scope": "sast",
+        "pattern": "node_modules/**",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from sast tasks only"
+      },
+      {
+        "scope": "sast",
+        "pattern": "vendor/**",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from sast tasks only"
+      },
+      {
+        "scope": "secrets",
+        "pattern": "*.gif",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from secrets tasks only"
+      },
+      {
+        "scope": "secrets",
+        "pattern": "*.jpg",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from secrets tasks only"
+      },
+      {
+        "scope": "secrets",
+        "pattern": "*.pdf",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from secrets tasks only"
+      },
+      {
+        "scope": "secrets",
+        "pattern": "*.png",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from secrets tasks only"
+      },
+      {
+        "scope": "secrets",
+        "pattern": ".git/**",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from secrets tasks only"
+      },
+      {
+        "scope": "secrets",
+        "pattern": ".venv/**",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from secrets tasks only"
+      },
+      {
+        "scope": "secrets",
+        "pattern": "node_modules/**",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from secrets tasks only"
+      },
+      {
+        "scope": "secrets",
+        "pattern": "vendor/**",
+        "reason": "Default or explicit scan-scope policy",
+        "effect": "Excluded from secrets tasks only"
+      }
+    ],
+    "skipped": [],
+    "warnings": [],
+    "coverage_gaps": [
+      "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile."
+    ],
+    "policy_version": "1.0",
+    "registry_version": "2026.10.18-1"
+  },
+  "scan_plan": {
+    "schema_version": "1.0",
+    "policy_version": "1.0",
+    "registry_version": "2026.10.18-1",
+    "tasks": [
+      {
+        "task_id": "task-45e5f84af47a",
+        "scanner_id": "trivy",
+        "scan_type": "sca",
+        "component_id": "component-cdb4ee2aea",
+        "target_paths": [
+          "requirements.txt"
+        ],
+        "language_or_ecosystem": "python",
+        "mode": "filesystem",
+        "rule_references": [
+          "trivy_vulnerability_database",
+          "trivy_builtin_checks"
+        ],
+        "exclusions": [
+          ".git/**",
+          ".venv/**",
+          "node_modules/**",
+          "vendor/**"
+        ],
+        "evidence": [
+          {
+            "path": "requirements.txt",
+            "evidence_type": "dependency_target",
+            "detail": "manifest for python; parse status parsed_constraints"
+          }
+        ],
+        "reasons": [
+          "Detected a supported python dependency file.",
+          "SCA covers known dependency vulnerabilities; SAST does not replace it.",
+          "Only declared constraints may be available; resolved transitive coverage can be incomplete."
+        ],
+        "prerequisites": [
+          "trivy_executable",
+          "trivy_databases"
+        ],
+        "prerequisite_status": "unverified",
+        "status": "needs_verification",
+        "resource_class": "standard",
+        "phase": "scan",
+        "expected_outputs": []
+      },
+      {
+        "task_id": "task-510db4138e2f",
+        "scanner_id": "gitleaks",
+        "scan_type": "secrets",
+        "component_id": null,
+        "target_paths": [
+          "."
+        ],
+        "language_or_ecosystem": null,
+        "mode": "directory",
+        "rule_references": [
+          "gitleaks_builtin_rules"
+        ],
+        "exclusions": [
+          "*.gif",
+          "*.jpg",
+          "*.pdf",
+          "*.png",
+          ".git/**",
+          ".venv/**",
+          "node_modules/**",
+          "vendor/**"
+        ],
+        "evidence": [
+          {
+            "path": ".",
+            "evidence_type": "text_file_scope",
+            "detail": "8 current files are eligible; file contents were not included in the profile"
+          }
+        ],
+        "reasons": [
+          "Current-file secret scanning is useful even when Git metadata is absent.",
+          "Secret scanning is separate from SAST and dependency analysis."
+        ],
+        "prerequisites": [
+          "gitleaks_executable"
+        ],
+        "prerequisite_status": "unverified",
+        "status": "needs_verification",
+        "resource_class": "standard",
+        "phase": "scan",
+        "expected_outputs": []
+      },
+      {
+        "task_id": "task-9f00818366ac",
+        "scanner_id": "trivy",
+        "scan_type": "container_image",
+        "component_id": null,
+        "target_paths": [],
+        "language_or_ecosystem": null,
+        "mode": "image",
+        "rule_references": [
+          "trivy_vulnerability_database",
+          "trivy_builtin_checks"
+        ],
+        "exclusions": [],
+        "evidence": [
+          {
+            "path": "Dockerfile",
+            "evidence_type": "dockerfile",
+            "detail": "A Dockerfile exists, but it is not a built image"
+          }
+        ],
+        "reasons": [
+          "A Dockerfile alone does not provide a container image target."
+        ],
+        "prerequisites": [
+          "trivy_executable",
+          "trivy_databases"
+        ],
+        "prerequisite_status": "unverified",
+        "status": "not_applicable",
+        "resource_class": "standard",
+        "phase": "scan",
+        "expected_outputs": []
+      },
+      {
+        "task_id": "task-dcae5d188e58",
+        "scanner_id": "semgrep-ce",
+        "scan_type": "sast",
+        "component_id": "component-cdb4ee2aea",
+        "target_paths": [
+          "."
+        ],
+        "language_or_ecosystem": "python",
+        "mode": "community_registry_rules",
+        "rule_references": [
+          "p/security-audit",
+          "p/owasp-top-ten",
+          "p/python"
+        ],
+        "exclusions": [
+          "*.pyc",
+          ".git/**",
+          ".venv/**",
+          "__pycache__",
+          "build/**",
+          "dist/**",
+          "node_modules/**",
+          "vendor/**"
+        ],
+        "evidence": [
+          {
+            "path": "app.py",
+            "evidence_type": "source_extension",
+            "detail": ".py maps to python"
+          }
+        ],
+        "reasons": [
+          "Component contains supported python source code.",
+          "Semgrep provides fast rule-based pattern coverage."
+        ],
+        "prerequisites": [
+          "semgrep_executable",
+          "semgrep_rules"
+        ],
+        "prerequisite_status": "unverified",
+        "status": "needs_verification",
+        "resource_class": "standard",
+        "phase": "scan",
+        "expected_outputs": []
+      },
+      {
+        "task_id": "task-e01e4c2db2dc",
+        "scanner_id": "codeql-cli",
+        "scan_type": "sast",
+        "component_id": "component-cdb4ee2aea",
+        "target_paths": [
+          "."
+        ],
+        "language_or_ecosystem": "python",
+        "mode": "standard_query_suite",
+        "rule_references": [
+          "language_code_scanning_suite"
+        ],
+        "exclusions": [
+          "*.pyc",
+          ".git/**",
+          ".venv/**",
+          "__pycache__",
+          "build/**",
+          "dist/**",
+          "node_modules/**",
+          "vendor/**"
+        ],
+        "evidence": [
+          {
+            "path": "app.py",
+            "evidence_type": "source_extension",
+            "detail": ".py maps to python"
+          }
+        ],
+        "reasons": [
+          "Component contains supported python source code.",
+          "CodeQL adds query-based data-flow coverage complementary to Semgrep."
+        ],
+        "prerequisites": [
+          "codeql_executable",
+          "language_query_pack"
+        ],
+        "prerequisite_status": "unverified",
+        "status": "needs_verification",
+        "resource_class": "standard",
+        "phase": "scan",
+        "expected_outputs": []
+      },
+      {
+        "task_id": "task-f535ab2d488a",
+        "scanner_id": "trivy",
+        "scan_type": "misconfiguration",
+        "component_id": null,
+        "target_paths": [
+          "Dockerfile",
+          "compose.yaml"
+        ],
+        "language_or_ecosystem": null,
+        "mode": "filesystem",
+        "rule_references": [
+          "trivy_vulnerability_database",
+          "trivy_builtin_checks"
+        ],
+        "exclusions": [
+          ".git/**",
+          ".venv/**",
+          "node_modules/**",
+          "vendor/**"
+        ],
+        "evidence": [
+          {
+            "path": "Dockerfile",
+            "evidence_type": "configuration_target",
+            "detail": "Supported configuration target"
+          },
+          {
+            "path": "compose.yaml",
+            "evidence_type": "configuration_target",
+            "detail": "Supported configuration target"
+          }
+        ],
+        "reasons": [
+          "Configuration or Infrastructure-as-Code targets were discovered.",
+          "Misconfiguration analysis is distinct from source and dependency scanning."
+        ],
+        "prerequisites": [
+          "trivy_executable",
+          "trivy_databases"
+        ],
+        "prerequisite_status": "unverified",
+        "status": "needs_verification",
+        "resource_class": "standard",
+        "phase": "scan",
+        "expected_outputs": []
+      }
+    ],
+    "coverage_gaps": [
+      "Resolved transitive dependency versions are unverified for component component-cdb4ee2aea: a manifest was found, but no supported lockfile."
+    ],
+    "warnings": []
+  },
+  "code_graph": null,
+  "project_snapshot": {
+    "version": "1.1",
+    "root_path": "/mnt/c/Users/ASUS/Downloads/2update/verdict-integrated/targets/security-lab-web",
+    "discovery_options": {
+      "limits": {
+        "max_files": 10000,
+        "max_file_size_bytes": 10485760,
+        "max_content_read_bytes": 65536,
+        "max_total_content_bytes": 2097152,
+        "max_manifest_read_bytes": 8388608,
+        "max_total_manifest_bytes": 33554432,
+        "max_depth": 30,
+        "timeout_seconds": 30.0
+      },
+      "allow_symlinks": false,
+      "exclusions": []
+    },
+    "inventory_sha256": "4312a59edc4886e7f22da58f26ca46ac88f06357eefd5dc41768e87d44ce06f5",
+    "scan_plan_sha256": "31f567e380b80d1aaa4be71e66f5254164af584bdb360e9a9accee758de2bbd2",
+    "code_graph_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+    "files": [
+      {
+        "path": ".dockerignore",
+        "sha256": "ccf85345d106ef85ab1b3da9ce24c42d58c5ae6363ad6e67c3c38c885a85a699"
+      },
+      {
+        "path": "app.py",
+        "sha256": "70c5387cc7c5cc3453cb20c8c6e358d0f70e04053bfce1cce5c60f0f0cb9ce05"
+      },
+      {
+        "path": "compose.yaml",
+        "sha256": "fa6f6b38f148ddd12739dcbed6ed1f4c6fb1fb6ec5240af815e59d4f704c38df"
+      },
+      {
+        "path": "Dockerfile",
+        "sha256": "c1276e5e3a7031a6f20d9d37919cacde26d1774447b1833a8175d6405b1b1933"
+      },
+      {
+        "path": "files/report.txt",
+        "sha256": "32925aa95329631d8f463a534b2769d21cc6927ce3a4fff16fa2a79a151b857e"
+      },
+      {
+        "path": "README.md",
+        "sha256": "9596db4215d48f0ff5224e7136f09fd18db8e423ded856c49eceaac9396c0188"
+      },
+      {
+        "path": "requirements.txt",
+        "sha256": "5325cd2309255d509584f9cbd949f04bd20c0522470030d8aea1719a9f680f8f"
+      },
+      {
+        "path": "secret_do_not_serve.txt",
+        "sha256": "ceb613be059c3f5cc98c88ff0b25e5c8d5bc5de66f583b2e63c0994840e586bc"
+      }
+    ],
+    "fingerprint": "9dad69562dcc54757d390cc83d8b96c61521e9a9ce4958d5ed1b398b7ebf7912"
+  }
+}

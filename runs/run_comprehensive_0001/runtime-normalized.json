@@ -1,0 +1,1958 @@
+{
+  "schema_version": "1.1",
+  "source_format": "web-runtime-json",
+  "status": "complete",
+  "findings": [
+    {
+      "finding_id": "runtime-4d5cb0113b221c088986a91b",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 0,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "web.missing-content-security-policy",
+      "title": "Missing Content-Security-Policy header",
+      "description": "Missing Content-Security-Policy header",
+      "message": "Missing Content-Security-Policy header",
+      "severity": "low",
+      "security_severity_score": null,
+      "confidence": "high",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/healthz",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "4d5cb0113b221c088986a91b"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "status": 200
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-864566c9e6503bd3822edbf6",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 1,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "web.missing-clickjacking-protection",
+      "title": "Missing clickjacking protection header",
+      "description": "Missing clickjacking protection header",
+      "message": "Missing clickjacking protection header",
+      "severity": "low",
+      "security_severity_score": null,
+      "confidence": "high",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/healthz",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "864566c9e6503bd3822edbf6"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "status": 200
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-a9347cabd53ecd99e38108cc",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 2,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "web.missing-content-type-protection",
+      "title": "Missing X-Content-Type-Options header",
+      "description": "Missing X-Content-Type-Options header",
+      "message": "Missing X-Content-Type-Options header",
+      "severity": "low",
+      "security_severity_score": null,
+      "confidence": "high",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/healthz",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "a9347cabd53ecd99e38108cc"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "status": 200
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-5f52b3ddf5cb11e03bcb0999",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 17,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "workflow.order_owner.3",
+      "title": "Only the owner can read an order",
+      "description": "Only the owner can read an order",
+      "message": "Only the owner can read an order",
+      "severity": "high",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/orders/{{order_id}}",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "5f52b3ddf5cb11e03bcb0999"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "assertion_results": [
+          false
+        ],
+        "expected_statuses": [
+          403,
+          404
+        ],
+        "method": "GET",
+        "status": 200,
+        "step": 3,
+        "values_redacted": true,
+        "workflow_id": "order_owner"
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-b2db6b94c587ff6fb7d08426",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 18,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "workflow.invoice_owner.3",
+      "title": "Only the owner can read an invoice",
+      "description": "Only the owner can read an invoice",
+      "message": "Only the owner can read an invoice",
+      "severity": "high",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/invoices/{{invoice_id}}",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "b2db6b94c587ff6fb7d08426"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "assertion_results": [
+          false
+        ],
+        "expected_statuses": [
+          403,
+          404
+        ],
+        "method": "GET",
+        "status": 200,
+        "step": 3,
+        "values_redacted": true,
+        "workflow_id": "invoice_owner"
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-c0e1afff107bb0eb4f9995fc",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 19,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "workflow.admin_users.2",
+      "title": "User listing requires admin role",
+      "description": "User listing requires admin role",
+      "message": "User listing requires admin role",
+      "severity": "high",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/admin/users",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "c0e1afff107bb0eb4f9995fc"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "assertion_results": [
+          false
+        ],
+        "expected_statuses": [
+          403,
+          404
+        ],
+        "method": "GET",
+        "status": 200,
+        "step": 2,
+        "values_redacted": true,
+        "workflow_id": "admin_users"
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-210f1029720d2c4e6e3e993a",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 20,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "workflow.admin_jobs.2",
+      "title": "Job listing requires admin role",
+      "description": "Job listing requires admin role",
+      "message": "Job listing requires admin role",
+      "severity": "high",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/admin/jobs",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "210f1029720d2c4e6e3e993a"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "assertion_results": [
+          false
+        ],
+        "expected_statuses": [
+          403,
+          404
+        ],
+        "method": "GET",
+        "status": 200,
+        "step": 2,
+        "values_redacted": true,
+        "workflow_id": "admin_jobs"
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-4ed77a8cbe072385df677726",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 21,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "workflow.payment_replay.3",
+      "title": "An already paid order rejects a second payment",
+      "description": "An already paid order rejects a second payment",
+      "message": "An already paid order rejects a second payment",
+      "severity": "high",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/orders/{{order_id}}/pay",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "4ed77a8cbe072385df677726"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "assertion_results": [
+          false
+        ],
+        "expected_statuses": [
+          400,
+          409,
+          422
+        ],
+        "method": "POST",
+        "status": 200,
+        "step": 3,
+        "values_redacted": true,
+        "workflow_id": "payment_replay"
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-b2a4f197f469e50923cacdff",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 22,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "workflow.paid_cancel.3",
+      "title": "Paid orders require a refund before cancellation",
+      "description": "Paid orders require a refund before cancellation",
+      "message": "Paid orders require a refund before cancellation",
+      "severity": "high",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/orders/{{order_id}}/cancel",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "b2a4f197f469e50923cacdff"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "assertion_results": [
+          false
+        ],
+        "expected_statuses": [
+          400,
+          409,
+          422
+        ],
+        "method": "POST",
+        "status": 200,
+        "step": 3,
+        "values_redacted": true,
+        "workflow_id": "paid_cancel"
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-80c8d131ef8da2487a54950d",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 23,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "workflow.coupon_bounds.2",
+      "title": "Excessive coupon discounts are rejected",
+      "description": "Excessive coupon discounts are rejected",
+      "message": "Excessive coupon discounts are rejected",
+      "severity": "high",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/orders/{{order_id}}/apply-coupon",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "80c8d131ef8da2487a54950d"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "assertion_results": [
+          false
+        ],
+        "expected_statuses": [
+          400,
+          422
+        ],
+        "method": "POST",
+        "status": 200,
+        "step": 2,
+        "values_redacted": true,
+        "workflow_id": "coupon_bounds"
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-78580a62c3793f37f5e1f001",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 24,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "workflow.negative_price.1",
+      "title": "Negative order prices are rejected",
+      "description": "Negative order prices are rejected",
+      "message": "Negative order prices are rejected",
+      "severity": "high",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/orders",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "78580a62c3793f37f5e1f001"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "assertion_results": [
+          false
+        ],
+        "expected_statuses": [
+          400,
+          422
+        ],
+        "method": "POST",
+        "status": 200,
+        "step": 1,
+        "values_redacted": true,
+        "workflow_id": "negative_price"
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-b9165f8e58d7def0d12de985",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 25,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "workflow.order_initial_state.1",
+      "title": "New orders cannot start as paid",
+      "description": "New orders cannot start as paid",
+      "message": "New orders cannot start as paid",
+      "severity": "high",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/orders",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "b9165f8e58d7def0d12de985"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "assertion_results": [
+          false
+        ],
+        "expected_statuses": [
+          400,
+          422
+        ],
+        "method": "POST",
+        "status": 200,
+        "step": 1,
+        "values_redacted": true,
+        "workflow_id": "order_initial_state"
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-05d2f624905d2e8204ceb2b2",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 26,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "workflow.owner_assignment.2",
+      "title": "Users cannot create orders for another owner",
+      "description": "Users cannot create orders for another owner",
+      "message": "Users cannot create orders for another owner",
+      "severity": "high",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/orders",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "05d2f624905d2e8204ceb2b2"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "assertion_results": [
+          false
+        ],
+        "expected_statuses": [
+          400,
+          403,
+          422
+        ],
+        "method": "POST",
+        "status": 200,
+        "step": 2,
+        "values_redacted": true,
+        "workflow_id": "owner_assignment"
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-5ea37fc15cb39757603b7cd7",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 27,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "workflow.worker_role.1",
+      "title": "Users cannot submit an admin job",
+      "description": "Users cannot submit an admin job",
+      "message": "Users cannot submit an admin job",
+      "severity": "high",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/jobs",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "5ea37fc15cb39757603b7cd7"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "assertion_results": [
+          false
+        ],
+        "expected_statuses": [
+          400,
+          403,
+          422
+        ],
+        "method": "POST",
+        "status": 200,
+        "step": 1,
+        "values_redacted": true,
+        "workflow_id": "worker_role"
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-0dc83bd580f54eb0cd2941b9",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 28,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "workflow.debug_access.1",
+      "title": "Debug configuration is unavailable anonymously",
+      "description": "Debug configuration is unavailable anonymously",
+      "message": "Debug configuration is unavailable anonymously",
+      "severity": "high",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/debug/config",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "0dc83bd580f54eb0cd2941b9"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "assertion_results": [
+          false
+        ],
+        "expected_statuses": [
+          401,
+          403,
+          404
+        ],
+        "method": "GET",
+        "status": 200,
+        "step": 1,
+        "values_redacted": true,
+        "workflow_id": "debug_access"
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-075b1c7547b453cbe6b18b34",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 29,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "workflow.profile_owner.2",
+      "title": "A user cannot read another account profile",
+      "description": "A user cannot read another account profile",
+      "message": "A user cannot read another account profile",
+      "severity": "high",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/profiles/{{other_id}}",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "075b1c7547b453cbe6b18b34"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "assertion_results": [
+          false
+        ],
+        "expected_statuses": [
+          403,
+          404
+        ],
+        "method": "GET",
+        "status": 200,
+        "step": 2,
+        "values_redacted": true,
+        "workflow_id": "profile_owner"
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-30173b60257e41bdd229851f",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 30,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "workflow.excessive_data.1",
+      "title": "Identity response must not expose a social security number",
+      "description": "Identity response must not expose a social security number",
+      "message": "Identity response must not expose a social security number",
+      "severity": "medium",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/me",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "30173b60257e41bdd229851f"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "assertion_results": [
+          true,
+          false
+        ],
+        "expected_statuses": [
+          200
+        ],
+        "method": "GET",
+        "status": 200,
+        "step": 1,
+        "values_redacted": true,
+        "workflow_id": "excessive_data"
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-b082e5735b56669c3ad0c27e",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 31,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "workflow.price_catalog.1",
+      "title": "Catalog price must be set by the server",
+      "description": "Catalog price must be set by the server",
+      "message": "Catalog price must be set by the server",
+      "severity": "high",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/orders",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "b082e5735b56669c3ad0c27e"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "assertion_results": [
+          true,
+          false
+        ],
+        "expected_statuses": [
+          200,
+          201
+        ],
+        "method": "POST",
+        "status": 200,
+        "step": 1,
+        "values_redacted": true,
+        "workflow_id": "price_catalog"
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-3165b0fcf5e0b47c5b31d6bd",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 32,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "workflow.webhook_destination.1",
+      "title": "Webhook destination must match the approved internal host exactly",
+      "description": "Webhook destination must match the approved internal host exactly",
+      "message": "Webhook destination must match the approved internal host exactly",
+      "severity": "high",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/webhooks",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "3165b0fcf5e0b47c5b31d6bd"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "assertion_results": [
+          false
+        ],
+        "expected_statuses": [
+          400,
+          422
+        ],
+        "method": "POST",
+        "status": 200,
+        "step": 1,
+        "values_redacted": true,
+        "workflow_id": "webhook_destination"
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-95408e1a46c05125661f435c",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 33,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "workflow.nested_note.1",
+      "title": "A note must belong to the order named in the URL",
+      "description": "A note must belong to the order named in the URL",
+      "message": "A note must belong to the order named in the URL",
+      "severity": "high",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/orders/1/notes/2",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "95408e1a46c05125661f435c"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "assertion_results": [
+          false
+        ],
+        "expected_statuses": [
+          403,
+          404
+        ],
+        "method": "GET",
+        "status": 200,
+        "step": 1,
+        "values_redacted": true,
+        "workflow_id": "nested_note"
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-3f8d9dc38e0f642bbc4291d3",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 34,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "workflow.unsigned_hook.1",
+      "title": "Incoming webhook events require a valid signature",
+      "description": "Incoming webhook events require a valid signature",
+      "message": "Incoming webhook events require a valid signature",
+      "severity": "high",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/integrations/hook",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "3f8d9dc38e0f642bbc4291d3"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "assertion_results": [
+          false
+        ],
+        "expected_statuses": [
+          400,
+          401,
+          403
+        ],
+        "method": "POST",
+        "status": 200,
+        "step": 1,
+        "values_redacted": true,
+        "workflow_id": "unsigned_hook"
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-6e6caeab05225e629344552e",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 35,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "workflow.reset_replay.3",
+      "title": "Password reset tokens must be single use",
+      "description": "Password reset tokens must be single use",
+      "message": "Password reset tokens must be single use",
+      "severity": "high",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/auth/reset/confirm",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "6e6caeab05225e629344552e"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "assertion_results": [
+          false
+        ],
+        "expected_statuses": [
+          400,
+          409,
+          422
+        ],
+        "method": "POST",
+        "status": 200,
+        "step": 3,
+        "values_redacted": true,
+        "workflow_id": "reset_replay"
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-afddc086f33f2e8a8fa222be",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 36,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "workflow.stale_role.3",
+      "title": "A demoted administrator must lose administrative access",
+      "description": "A demoted administrator must lose administrative access",
+      "message": "A demoted administrator must lose administrative access",
+      "severity": "high",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/admin/token-report",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "afddc086f33f2e8a8fa222be"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "assertion_results": [
+          false
+        ],
+        "expected_statuses": [
+          403,
+          404
+        ],
+        "method": "GET",
+        "status": 200,
+        "step": 3,
+        "values_redacted": true,
+        "workflow_id": "stale_role"
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-22ca4c07bddeba21e02773f1",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 37,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "zap.10038",
+      "title": "Content Security Policy (CSP) Header Not Set",
+      "description": "Content Security Policy (CSP) Header Not Set",
+      "message": "Content Security Policy (CSP) Header Not Set",
+      "severity": "medium",
+      "security_severity_score": null,
+      "confidence": "high",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/catalog/query",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "22ca4c07bddeba21e02773f1"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "method": "GET",
+        "values_redacted": true
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-5503aaa4e28201d1d3085645",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 38,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "zap.10038",
+      "title": "Content Security Policy (CSP) Header Not Set",
+      "description": "Content Security Policy (CSP) Header Not Set",
+      "message": "Content Security Policy (CSP) Header Not Set",
+      "severity": "medium",
+      "security_severity_score": null,
+      "confidence": "high",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/comments",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "5503aaa4e28201d1d3085645"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "method": "GET",
+        "values_redacted": true
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-cc2918cb425bae3d180daa14",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 39,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "zap.10038",
+      "title": "Content Security Policy (CSP) Header Not Set",
+      "description": "Content Security Policy (CSP) Header Not Set",
+      "message": "Content Security Policy (CSP) Header Not Set",
+      "severity": "medium",
+      "security_severity_score": null,
+      "confidence": "high",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/view",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "cc2918cb425bae3d180daa14"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "method": "GET",
+        "values_redacted": true
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-3ae18a34f0a5708c74b36a77",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 40,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "zap.10038",
+      "title": "Content Security Policy (CSP) Header Not Set",
+      "description": "Content Security Policy (CSP) Header Not Set",
+      "message": "Content Security Policy (CSP) Header Not Set",
+      "severity": "medium",
+      "security_severity_score": null,
+      "confidence": "high",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/auth/form-login",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "3ae18a34f0a5708c74b36a77"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "method": "POST",
+        "values_redacted": true
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-1d3f2eae9b270c563eb2842c",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 41,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "zap.10020",
+      "title": "Missing Anti-clickjacking Header",
+      "description": "Missing Anti-clickjacking Header",
+      "message": "Missing Anti-clickjacking Header",
+      "severity": "medium",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/catalog/query",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "1d3f2eae9b270c563eb2842c"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "method": "GET",
+        "values_redacted": true
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-fe06d42de0122c9df52f951f",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 42,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "zap.10020",
+      "title": "Missing Anti-clickjacking Header",
+      "description": "Missing Anti-clickjacking Header",
+      "message": "Missing Anti-clickjacking Header",
+      "severity": "medium",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/comments",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "fe06d42de0122c9df52f951f"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "method": "GET",
+        "values_redacted": true
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-905604ee346a77ad8a33b929",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 43,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "zap.10020",
+      "title": "Missing Anti-clickjacking Header",
+      "description": "Missing Anti-clickjacking Header",
+      "message": "Missing Anti-clickjacking Header",
+      "severity": "medium",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/view",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "905604ee346a77ad8a33b929"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "method": "GET",
+        "values_redacted": true
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-197bc06e62c71419a6984565",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 44,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "zap.10020",
+      "title": "Missing Anti-clickjacking Header",
+      "description": "Missing Anti-clickjacking Header",
+      "message": "Missing Anti-clickjacking Header",
+      "severity": "medium",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/auth/form-login",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "197bc06e62c71419a6984565"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "method": "POST",
+        "values_redacted": true
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-666123a1a4379f9b0ecad8e6",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 45,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "zap.10010",
+      "title": "Cookie No HttpOnly Flag",
+      "description": "Cookie No HttpOnly Flag",
+      "message": "Cookie No HttpOnly Flag",
+      "severity": "low",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/auth/form-login",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "666123a1a4379f9b0ecad8e6"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "method": "POST",
+        "values_redacted": true
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-d6fe23474b5bf05b50a68dd9",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 46,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "zap.10021",
+      "title": "X-Content-Type-Options Header Missing",
+      "description": "X-Content-Type-Options Header Missing",
+      "message": "X-Content-Type-Options Header Missing",
+      "severity": "low",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "d6fe23474b5bf05b50a68dd9"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "method": "GET",
+        "values_redacted": true
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-f9b4bb2665a94ef114ba70a0",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 47,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "zap.10021",
+      "title": "X-Content-Type-Options Header Missing",
+      "description": "X-Content-Type-Options Header Missing",
+      "message": "X-Content-Type-Options Header Missing",
+      "severity": "low",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/catalog/query",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "f9b4bb2665a94ef114ba70a0"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "method": "GET",
+        "values_redacted": true
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-8e20c6e4b7bf9daa87ca68c5",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 48,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "zap.10021",
+      "title": "X-Content-Type-Options Header Missing",
+      "description": "X-Content-Type-Options Header Missing",
+      "message": "X-Content-Type-Options Header Missing",
+      "severity": "low",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/comments",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "8e20c6e4b7bf9daa87ca68c5"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "method": "GET",
+        "values_redacted": true
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-7308dae08a226093934e5a0d",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 49,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "zap.10021",
+      "title": "X-Content-Type-Options Header Missing",
+      "description": "X-Content-Type-Options Header Missing",
+      "message": "X-Content-Type-Options Header Missing",
+      "severity": "low",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/healthz",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "7308dae08a226093934e5a0d"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "method": "GET",
+        "values_redacted": true
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    },
+    {
+      "finding_id": "runtime-8aa093668e36a5e692db4f28",
+      "schema_version": "1.1",
+      "scanner": {
+        "scanner_id": "web-runtime",
+        "scanner_name": "Bounded Web Runtime Checks",
+        "scanner_version": "1.0",
+        "run_index": 0,
+        "result_index": 50,
+        "automation_id": null,
+        "task_id": null
+      },
+      "rule_id": "zap.10021",
+      "title": "X-Content-Type-Options Header Missing",
+      "description": "X-Content-Type-Options Header Missing",
+      "message": "X-Content-Type-Options Header Missing",
+      "severity": "low",
+      "security_severity_score": null,
+      "confidence": "medium",
+      "cwes": [],
+      "categories": [
+        "dast",
+        "runtime"
+      ],
+      "primary_location": {
+        "path": "/view",
+        "start_line": null,
+        "start_column": null,
+        "end_line": null,
+        "end_column": null,
+        "snippet": null
+      },
+      "code_flow": [],
+      "related_locations": [],
+      "fingerprints": {
+        "primary": "8aa093668e36a5e692db4f28"
+      },
+      "rule_kind": "runtime_behavior",
+      "rule_help_uri": null,
+      "runtime_evidence": {
+        "method": "GET",
+        "values_redacted": true
+      },
+      "finding_kind": "dast",
+      "package": null,
+      "component_id": null
+    }
+  ],
+  "warnings": [],
+  "summary": {
+    "input_runs": 1,
+    "input_results": 51,
+    "normalized_findings": 37,
+    "skipped_results": 14
+  }
+}

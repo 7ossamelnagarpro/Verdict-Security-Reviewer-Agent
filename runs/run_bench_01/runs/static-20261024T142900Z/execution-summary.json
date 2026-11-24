@@ -1,0 +1,158 @@
+{
+  "coverage_gaps": [
+    "Dependency/SCA coverage is unknown for component component-cdb4ee2aea: no supported manifest or lockfile was found.",
+    "gitleaks task task-510db4138e2f did not complete: failed (Command gitleaks-detect ended with failed)."
+  ],
+  "finished_at": "2026-10-24T14:32:18.151276+00:00",
+  "project_root_name": "owasp-benchmark-python",
+  "run_id": "static-20261024T142900Z",
+  "schema_version": "1.0",
+  "started_at": "2026-10-24T14:29:00.995883+00:00",
+  "status": "partial",
+  "tasks": [
+    {
+      "commands": [
+        {
+          "duration_seconds": 0.009632,
+          "exit_code": 126,
+          "name": "gitleaks-detect",
+          "status": "failed",
+          "stderr_log": "gitleaks/task-510db4138e2f/logs/gitleaks-detect.stderr.log",
+          "stderr_truncated": false,
+          "stdout_log": "gitleaks/task-510db4138e2f/logs/gitleaks-detect.stdout.log",
+          "stdout_truncated": false
+        }
+      ],
+      "finished_at": "2026-10-24T14:29:01.091722+00:00",
+      "prerequisite_checks": [
+        {
+          "detail": "Gitleaks executable exists; runtime version could not be read (version check skipped)",
+          "name": "gitleaks_executable",
+          "status": "available",
+          "version": null
+        },
+        {
+          "detail": "All Gitleaks targets are inside the project root",
+          "name": "target_paths",
+          "status": "available",
+          "version": null
+        },
+        {
+          "detail": "Git-history mode is not requested",
+          "name": "git_metadata",
+          "status": "available",
+          "version": null
+        }
+      ],
+      "raw_outputs": [],
+      "reason": "Command gitleaks-detect ended with failed",
+      "scanner_id": "gitleaks",
+      "started_at": "2026-10-24T14:29:01.035699+00:00",
+      "status": "failed",
+      "task_id": "task-510db4138e2f"
+    },
+    {
+      "commands": [
+        {
+          "duration_seconds": 53.673115,
+          "exit_code": 0,
+          "name": "semgrep-scan",
+          "status": "completed",
+          "stderr_log": "semgrep-ce/task-dcae5d188e58/logs/semgrep-scan.stderr.log",
+          "stderr_truncated": false,
+          "stdout_log": "semgrep-ce/task-dcae5d188e58/logs/semgrep-scan.stdout.log",
+          "stdout_truncated": false
+        }
+      ],
+      "finished_at": "2026-10-24T14:30:10.147722+00:00",
+      "prerequisite_checks": [
+        {
+          "detail": "Semgrep executable and runtime version were verified",
+          "name": "semgrep_executable",
+          "status": "available",
+          "version": "1.178.0"
+        },
+        {
+          "detail": "Trusted Semgrep configs are configured; registry availability is verified during execution",
+          "name": "semgrep_rules",
+          "status": "available",
+          "version": null
+        },
+        {
+          "detail": "All Semgrep targets are inside the project root",
+          "name": "target_paths",
+          "status": "available",
+          "version": null
+        }
+      ],
+      "raw_outputs": [
+        "semgrep-ce/task-dcae5d188e58/result.json"
+      ],
+      "reason": "Semgrep produced valid JSON output",
+      "scanner_id": "semgrep-ce",
+      "started_at": "2026-10-24T14:29:16.083097+00:00",
+      "status": "completed",
+      "task_id": "task-dcae5d188e58"
+    },
+    {
+      "commands": [
+        {
+          "duration_seconds": 29.976972,
+          "exit_code": 0,
+          "name": "database-create",
+          "status": "completed",
+          "stderr_log": "codeql-cli/task-e01e4c2db2dc/logs/database-create.stderr.log",
+          "stderr_truncated": false,
+          "stdout_log": "codeql-cli/task-e01e4c2db2dc/logs/database-create.stdout.log",
+          "stdout_truncated": false
+        },
+        {
+          "duration_seconds": 95.531559,
+          "exit_code": 0,
+          "name": "database-analyze",
+          "status": "completed",
+          "stderr_log": "codeql-cli/task-e01e4c2db2dc/logs/database-analyze.stderr.log",
+          "stderr_truncated": false,
+          "stdout_log": "codeql-cli/task-e01e4c2db2dc/logs/database-analyze.stdout.log",
+          "stdout_truncated": false
+        }
+      ],
+      "finished_at": "2026-10-24T14:32:18.142332+00:00",
+      "prerequisite_checks": [
+        {
+          "detail": "CodeQL runtime version 2.27.2 differs from 2.27.1 (version check skipped)",
+          "name": "codeql_executable",
+          "status": "available",
+          "version": "2.27.2"
+        },
+        {
+          "detail": "Configured python standard query suite exists",
+          "name": "language_query_pack",
+          "status": "available",
+          "version": null
+        },
+        {
+          "detail": "All CodeQL targets are inside the project root",
+          "name": "target_paths",
+          "status": "available",
+          "version": null
+        },
+        {
+          "detail": "Configured CodeQL search path exists",
+          "name": "codeql_search_path",
+          "status": "available",
+          "version": null
+        }
+      ],
+      "raw_outputs": [
+        "codeql-cli/task-e01e4c2db2dc/result.sarif"
+      ],
+      "reason": "CodeQL produced valid SARIF output",
+      "scanner_id": "codeql-cli",
+      "started_at": "2026-10-24T14:30:12.521474+00:00",
+      "status": "completed",
+      "task_id": "task-e01e4c2db2dc"
+    }
+  ],
+  "warnings": []
+}

@@ -1,0 +1,1405 @@
+{
+  "schema_version": "1.2",
+  "status": "completed",
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "scope": [
+    "file:helpers/db_sqlite.py#L2-49",
+    "merged-0510d751893cfc1e4cb3",
+    "file:testcode/BenchmarkTest00114.py#L27-60",
+    "merged-0d73bedcc0b15d79935d",
+    "file:helpers/ldap.py#L1-21",
+    "merged-c6476ab34c8569ad07d1",
+    "file:testcode/BenchmarkTest00152.py#L27-53",
+    "file:helpers/separate_request.py#L15-16",
+    "file:helpers/ThingFactory.py#L1-21",
+    "file:testcode/BenchmarkTest00247.py#L27-69",
+    "file:testcode/BenchmarkTest00283.py#L27-55",
+    "file:helpers/utils.py#L10-69",
+    "file:testcode/BenchmarkTest00517.py#L27-73",
+    "file:testcode/BenchmarkTest00114.py#L21-60",
+    "file:testcode/BenchmarkTest00576.py#L27-61",
+    "file:testcode/BenchmarkTest00152.py#L21-53",
+    "file:testcode/BenchmarkTest00832.py#L27-71",
+    "file:testcode/BenchmarkTest00247.py#L21-69",
+    "file:testcode/BenchmarkTest00984.py#L27-56",
+    "file:testcode/BenchmarkTest00266.py#L10-69",
+    "file:testcode/BenchmarkTest00012.py#L34-57",
+    "file:testcode/BenchmarkTest00283.py#L21-55",
+    "file:testcode/BenchmarkTest00151.py#L23-25",
+    "file:testcode/BenchmarkTest00517.py#L21-73",
+    "file:testcode/BenchmarkTest00721.py#L23-25",
+    "file:testcode/BenchmarkTest00576.py#L21-61",
+    "file:testcode/BenchmarkTest00808.py#L23-25",
+    "file:testcode/BenchmarkTest00669.py#L10-47",
+    "file:testcode/BenchmarkTest00832.py#L21-71",
+    "file:testcode/BenchmarkTest00984.py#L21-56",
+    "file:testcode/BenchmarkTest01003.py#L10-46",
+    "file:testcode/BenchmarkTest01168.py#L10-65"
+  ],
+  "candidates": [
+    {
+      "candidate_id": "ai-9cc375bf64cce3e5",
+      "title": "Missing authentication check before accessing user-specific data",
+      "category": "authorization",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "testcode/BenchmarkTest00152.py",
+      "start_line": 27,
+      "end_line": 53,
+      "evidence": [
+        "31: \t\tparam = request.form.get(\"BenchmarkTest00152\")",
+        "46: \t\tflask.session['userid'] = bar",
+        "48: \t\tRESPONSE += (",
+        "49: \t\t\tf'Item: \\'userid\\' with value \\'{escape_for_html(bar)}'"
+      ],
+      "reasoning": "The endpoint stores a value in the session under the key 'userid' based solely on a request parameter without any prior authentication or authorization check. An attacker could set an arbitrary 'userid' value, potentially hijacking or impersonating other users if later code relies on this session key for access control.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "testcode/BenchmarkTest00152.py",
+        "line": 31,
+        "code": "param = request.form.get(\"BenchmarkTest00152\")"
+      },
+      "sensitive_operation": {
+        "path": "testcode/BenchmarkTest00152.py",
+        "line": 46,
+        "code": "flask.session['userid'] = bar"
+      },
+      "missing_check": {
+        "path": "testcode/BenchmarkTest00152.py",
+        "line": 31,
+        "expected_check": "authentication/authorization verification (e.g., ensure user is logged in and has rights)",
+        "observation": "No check of login state or user identity before writing to session"
+      },
+      "remaining_questions": [
+        "Is the 'userid' session key later used for access control elsewhere in the application?",
+        "Does the application have a global login requirement that would have already validated the request before this endpoint is reached?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-c987ab43b7896c86",
+      "title": "Potential insecure direct object reference (IDOR) via cookie-based remember-me mechanism",
+      "category": "authorization",
+      "severity": "medium",
+      "confidence": "medium",
+      "path": "testcode/BenchmarkTest00114.py",
+      "start_line": 27,
+      "end_line": 60,
+      "evidence": [
+        "49: \t\tif cookie in mysession and request.cookies.get(cookie) == mysession[cookie]:",
+        "50: \t\t\tRESPONSE += (",
+        "51: \t\t\t\tf'Welcome back: {user}<br/>'",
+        "54: \t\t\tmysession[cookie] = value"
+      ],
+      "reasoning": "The endpoint uses a client-provided cookie name (derived from a predictable pattern) and a server\u2011side dictionary 'mysession' to remember a user. An attacker could guess or enumerate cookie names (e.g., 'rememberMe0', 'rememberMe1', ...) and set arbitrary values to gain unauthorized access as the corresponding user.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "testcode/BenchmarkTest00114.py",
+        "line": 31,
+        "code": "param = request.form.get(\"BenchmarkTest00114\")"
+      },
+      "sensitive_operation": {
+        "path": "testcode/BenchmarkTest00114.py",
+        "line": 49,
+        "code": "if cookie in mysession and request.cookies.get(cookie) == mysession[cookie]:"
+      },
+      "missing_check": {
+        "path": "testcode/BenchmarkTest00114.py",
+        "line": 49,
+        "expected_check": "validation that the cookie value corresponds to an authenticated session and is not predictable",
+        "observation": "Cookie name and value are derived from predictable strings without additional entropy or server\u2011side binding to a user identity"
+      },
+      "remaining_questions": [
+        "Is the 'mysession' dictionary cleared or rotated periodically?",
+        "Does the application tie the remembered cookie to additional factors (e.g., IP, User-Agent) elsewhere?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-9f41a973203eace6",
+      "title": "Potential insecure deserialization via dynamic class loading",
+      "category": "unsafe deserialization",
+      "severity": "medium",
+      "confidence": "low",
+      "path": "helpers/ThingFactory.py",
+      "start_line": 4,
+      "end_line": 10,
+      "evidence": [
+        "5: \tconfig = configparser.ConfigParser()",
+        "6: \tconfig.read(f'{helpers.utils.RES_DIR}/ThingFactory.ini')",
+        "7: \tcname = config.get('DEFAULT', 'thing', fallback='Thing1')",
+        "8: \tcobj = getattr(helpers.ThingFactory, cname)",
+        "9: \tobj = cobj()"
+      ],
+      "reasoning": "The factory reads a class name from a configuration file and uses getattr to instantiate it. If an attacker can influence the configuration file (e.g., via path traversal or write access), they could cause arbitrary classes to be loaded, leading to unsafe deserialization or code execution.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "helpers/ThingFactory.py",
+        "line": 6,
+        "code": "config.read(f'{helpers.utils.RES_DIR}/ThingFactory.ini')"
+      },
+      "sensitive_operation": {
+        "path": "helpers/ThingFactory.py",
+        "line": 8,
+        "code": "cobj = getattr(helpers.ThingFactory, cname)"
+      },
+      "missing_check": {
+        "path": "helpers/ThingFactory.py",
+        "line": 8,
+        "expected_check": "validation that 'cname' is within an allowed whitelist of class names",
+        "observation": "No whitelist or validation is performed before getattr"
+      },
+      "remaining_questions": [
+        "Who controls the contents of ThingFactory.ini and can it be modified by an attacker?",
+        "Are there any classes in helpers.ThingFactory that perform privileged actions when instantiated?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-3b9f62e85a6285fb",
+      "title": "Potential path traversal in XML file loading",
+      "category": "path traversal",
+      "severity": "low",
+      "confidence": "low",
+      "path": "testcode/BenchmarkTest00212.py",
+      "start_line": 44,
+      "end_line": 48,
+      "evidence": [
+        "44: \t\tfd = open(f'{helpers.utils.RES_DIR}/employees.xml', 'rb')",
+        "45: \t\troot = lxml.etree.parse(fd)"
+      ],
+      "reasoning": "The file path is constructed from a constant RES_DIR, but if RES_DIR can be influenced (e.g., via environment variable or configuration), an attacker might cause the code to open arbitrary files. No explicit validation of the resolved path is shown.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "testcode/BenchmarkTest00212.py",
+        "line": 44,
+        "code": "fd = open(f'{helpers.utils.RES_DIR}/employees.xml', 'rb')"
+      },
+      "sensitive_operation": {
+        "path": "testcode/BenchmarkTest00212.py",
+        "line": 45,
+        "code": "root = lxml.etree.parse(fd)"
+      },
+      "missing_check": {
+        "path": "testcode/BenchmarkTest00212.py",
+        "line": 44,
+        "expected_check": "validation that the resolved file path is within an allowed directory",
+        "observation": "No validation of the constructed path"
+      },
+      "remaining_questions": [
+        "Can helpers.utils.RES_DIR be overridden by user input or environment?",
+        "Is the XML file ever replaced with attacker\u2011controlled content?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-c5a8654f53cfa78b",
+      "title": "Potential SQL Injection in BenchmarkTest00283",
+      "category": "Injection",
+      "severity": "High",
+      "confidence": "Medium",
+      "path": "testcode/BenchmarkTest00283.py",
+      "start_line": 44,
+      "end_line": 50,
+      "evidence": [
+        "sql = f'SELECT username from USERS where [REDACTED]",
+        "cur.execute(sql)"
+      ],
+      "reasoning": "The SQL statement is constructed using an f-string with user-controlled data (param) inserted into the query (line 46). No parameterized query or sanitization is observed, indicating a possible SQL injection vector.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "testcode/BenchmarkTest00283.py",
+        "line": 34,
+        "code": "param = wrapped.get_form_parameter(\"BenchmarkTest00283\")"
+      },
+      "sensitive_operation": {
+        "path": "testcode/BenchmarkTest00283.py",
+        "line": 49,
+        "code": "cur.execute(sql)"
+      },
+      "missing_check": {
+        "path": "testcode/BenchmarkTest00283.py",
+        "line": 46,
+        "expected_check": "Use of parameterized queries or input sanitization",
+        "observation": "SQL built via f-string without sanitization"
+      },
+      "remaining_questions": [
+        "What is the exact content of the redacted WHERE clause?",
+        "Is any input validation performed upstream before reaching this point?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-0c97195dcb77fcf8",
+      "title": "Path Traversal / Arbitrary File Access in BenchmarkTest00517",
+      "category": "Path Traversal",
+      "severity": "High",
+      "confidence": "Medium",
+      "path": "testcode/BenchmarkTest00517.py",
+      "start_line": 55,
+      "end_line": 58,
+      "evidence": [
+        "fileURI = urlparse(\"file:\" + startURIslashes + helpers.utils.TESTFILES_DIR.replace('\\\\', '/').replace(' ', '_') + bar)",
+        "fileTarget = codecs.open(f'{helpers.utils.TESTFILES_DIR}/{bar}','r','utf-8')"
+      ],
+      "reasoning": "The value `bar` originates from client-controlled header `BenchmarkTest00517` (line 35) and is concatenated directly into a file path without validation, enabling directory traversal or arbitrary file read.",
+      "source": "ai_discovery",
+      "verification": "inconclusive",
+      "verification_notes": [
+        "Entry point source anchor could not be grounded in the inspected source.",
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "testcode/BenchmarkTest00517.py",
+        "line": 35,
+        "code": "headers = request.headers.getlist(\"BenchmarkTest00517\")"
+      },
+      "sensitive_operation": {
+        "path": "testcode/BenchmarkTest00517.py",
+        "line": 57,
+        "code": "fileTarget = codecs.open(f'{helpers.utils.TESTFILES_DIR}/{bar}','r','utf-8')"
+      },
+      "missing_check": {
+        "path": "testcode/BenchmarkTest00517.py",
+        "line": 55,
+        "expected_check": "Validate or sanitize `bar` to prevent path traversal",
+        "observation": "No validation of `bar` before file open"
+      },
+      "remaining_questions": [
+        "Is `helpers.utils.TESTFILES_DIR` a fixed directory or can it be influenced?",
+        "Are there any OS-level restrictions that mitigate traversal?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-6959d9e97be9f8f9",
+      "title": "Arbitrary File Write via Unvalidated Filename in BenchmarkTest00832",
+      "category": "Path Traversal / File Write",
+      "severity": "High",
+      "confidence": "Medium",
+      "path": "testcode/BenchmarkTest00832.py",
+      "start_line": 53,
+      "end_line": 57,
+      "evidence": [
+        "fileName = f'{helpers.utils.TESTFILES_DIR}/{bar}'",
+        "fd = open(fileName, 'wb')"
+      ],
+      "reasoning": "The variable `bar` is derived from a query parameter (`BenchmarkTest00832`) and is used directly as a filename for writing binary data. No whitelist or sanitization is performed, allowing an attacker to write arbitrary files within `TESTFILES_DIR`.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "testcode/BenchmarkTest00832.py",
+        "line": 34,
+        "code": "param = wrapped.get_query_parameter(\"BenchmarkTest00832\")"
+      },
+      "sensitive_operation": {
+        "path": "testcode/BenchmarkTest00832.py",
+        "line": 55,
+        "code": "fd = open(fileName, 'wb')"
+      },
+      "missing_check": {
+        "path": "testcode/BenchmarkTest00832.py",
+        "line": 53,
+        "expected_check": "Filename validation / whitelist",
+        "observation": "Filename constructed from unchecked user input"
+      },
+      "remaining_questions": [
+        "Is `helpers.utils.TESTFILES_DIR` writable by the web process?",
+        "Are there any subsequent uses of the written file that could lead to code execution?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-1cf71febb8e327bc",
+      "title": "Missing Authorization for Hash Generation and Storage in BenchmarkTest00247",
+      "category": "Authorization",
+      "severity": "Medium",
+      "confidence": "Low",
+      "path": "testcode/BenchmarkTest00247.py",
+      "start_line": 58,
+      "end_line": 64,
+      "evidence": [
+        "hash = hashlib.new('sha512')",
+        "hash.update(input)",
+        "f = open(f'{helpers.utils.TESTFILES_DIR}/passwordFile.txt', 'a')",
+        "f.write(f'hash_value={base64.b64encode(result)}\\n')"
+      ],
+      "reasoning": "The endpoint writes a hash value to a server-side file without any authentication or authorization checks. Any client can trigger this operation, potentially leading to denial of service or log poisoning.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "testcode/BenchmarkTest00247.py",
+        "line": 27,
+        "code": "@app.route('/benchmark/hash-00/BenchmarkTest00247', methods=['POST'])"
+      },
+      "sensitive_operation": {
+        "path": "testcode/BenchmarkTest00247.py",
+        "line": 62,
+        "code": "f = open(f'{helpers.utils.TESTFILES_DIR}/passwordFile.txt', 'a')"
+      },
+      "missing_check": {
+        "path": "testcode/BenchmarkTest00247.py",
+        "line": 27,
+        "expected_check": "Authentication / role check before processing",
+        "observation": "No auth check present"
+      },
+      "remaining_questions": [
+        "Is the written file used for authentication elsewhere?",
+        "Could an attacker cause resource exhaustion by repeatedly invoking this endpoint?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-474a371ee7ea7938",
+      "title": "Weak Session Token Generation in BenchmarkTest00114",
+      "category": "Weak Randomness",
+      "severity": "Medium",
+      "confidence": "Medium",
+      "path": "testcode/BenchmarkTest00114.py",
+      "start_line": 46,
+      "end_line": 48,
+      "evidence": [
+        "value = str(random.getrandbits(32))",
+        "mysession[cookie] = value"
+      ],
+      "reasoning": "The session token (`value`) is generated using `random.getrandbits`, which is not cryptographically secure. This may allow prediction of session identifiers.",
+      "source": "ai_discovery",
+      "verification": "inconclusive",
+      "verification_notes": [
+        "Sensitive operation source anchor could not be grounded in the inspected source.",
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "testcode/BenchmarkTest00114.py",
+        "line": 31,
+        "code": "param = request.form.get(\"BenchmarkTest00114\")"
+      },
+      "sensitive_operation": {
+        "path": "testcode/BenchmarkTest00114.py",
+        "line": 47,
+        "code": "mysession[cookie] = value"
+      },
+      "missing_check": {
+        "path": "testcode/BenchmarkTest00114.py",
+        "line": 41,
+        "expected_check": "Use of cryptographically secure RNG for token generation",
+        "observation": "Uses `random.getrandbits` instead of `secrets` or `SystemRandom`"
+      },
+      "remaining_questions": [
+        "Is the `mysession` data persisted across requests?",
+        "Are there any rate limits that mitigate token brute\u2011forcing?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-496bcc148ba061e3",
+      "title": "Trusting Client\u2011Supplied Query Parameter for Session Data in BenchmarkTest00984",
+      "category": "Trust Boundary",
+      "severity": "Low",
+      "confidence": "Medium",
+      "path": "testcode/BenchmarkTest00984.py",
+      "start_line": 42,
+      "end_line": 50,
+      "evidence": [
+        "param = urllib.parse.unquote_plus(param)",
+        "bar = helpers.utils.escape_for_html(param)",
+        "flask.session['userid'] = bar"
+      ],
+      "reasoning": "A value extracted directly from the raw query string is stored in the server-side session after only HTML escaping. No integrity verification is performed, allowing a client to set arbitrary session data.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "testcode/BenchmarkTest00984.py",
+        "line": 33,
+        "code": "query_string = request.query_string.decode('utf-8')"
+      },
+      "sensitive_operation": {
+        "path": "testcode/BenchmarkTest00984.py",
+        "line": 49,
+        "code": "flask.session['userid'] = bar"
+      },
+      "missing_check": {
+        "path": "testcode/BenchmarkTest00984.py",
+        "line": 42,
+        "expected_check": "Signature or server\u2011side validation of the parameter",
+        "observation": "Parameter accepted without verification"
+      },
+      "remaining_questions": [
+        "Is the `userid` session value later used for authorization decisions?",
+        "Could an attacker exploit this to impersonate other users?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-e8737430452815fc",
+      "title": "Potential LDAP Injection via unsanitized input",
+      "category": "Injection",
+      "severity": "High",
+      "confidence": "Medium",
+      "path": "testcode/BenchmarkTest00266.py",
+      "start_line": 31,
+      "end_line": 55,
+      "evidence": [
+        "param = values[0]",
+        "filter = f'(&(objectclass=person)(|(uid={bar})(street=The streetz 4 Ms bar)))'",
+        "conn.search(base, filter, attributes=ldap3.ALL_ATTRIBUTES)"
+      ],
+      "reasoning": "The LDAP filter string is constructed using the user-controlled variable `bar`, which can be derived from request parameters without any validation or escaping. This enables an attacker to inject arbitrary LDAP filter components, potentially retrieving unauthorized directory entries.",
+      "source": "ai_discovery",
+      "verification": "inconclusive",
+      "verification_notes": [
+        "Sensitive operation source anchor could not be grounded in the inspected source.",
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "testcode/BenchmarkTest00266.py",
+        "line": 31,
+        "code": "values = request.form.getlist(\"BenchmarkTest00266\")"
+      },
+      "sensitive_operation": {
+        "path": "testcode/BenchmarkTest00266.py",
+        "line": 53,
+        "code": "conn.search(base, filter, attributes=ldap3.ALL_ATTRIBUTES)"
+      },
+      "missing_check": {
+        "path": "testcode/BenchmarkTest00266.py",
+        "line": 53,
+        "expected_check": "Input sanitization or LDAP escaping for `bar` before embedding in filter",
+        "observation": "No escaping or validation is performed before constructing the filter"
+      },
+      "remaining_questions": [
+        "Is there any server\u2011side LDAP access control that limits what attributes can be returned?",
+        "Does the `helpers.ldap.get_connection()` enforce any bind credentials that could mitigate impact?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-27e2f67bbcf8a943",
+      "title": "Path Traversal via unchecked header value",
+      "category": "File Access",
+      "severity": "High",
+      "confidence": "Medium",
+      "path": "testcode/BenchmarkTest00517.py",
+      "start_line": 31,
+      "end_line": 60,
+      "evidence": [
+        "param = \"\"",
+        "headers = request.headers.getlist(\"BenchmarkTest00517\")",
+        "if headers:",
+        "    param = headers[0]",
+        "bar = thing.doSomething(param)",
+        "fileTarget = codecs.open(f'{helpers.utils.TESTFILES_DIR}/{bar}','r','utf-8')"
+      ],
+      "reasoning": "A value from an HTTP header is passed through `thing.doSomething` (presumed identity) and then concatenated directly into a filesystem path without validation. An attacker can supply `../` sequences to traverse directories and read arbitrary files.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "testcode/BenchmarkTest00517.py",
+        "line": 32,
+        "code": "headers = request.headers.getlist(\"BenchmarkTest00517\")"
+      },
+      "sensitive_operation": {
+        "path": "testcode/BenchmarkTest00517.py",
+        "line": 57,
+        "code": "fileTarget = codecs.open(f'{helpers.utils.TESTFILES_DIR}/{bar}','r','utf-8')"
+      },
+      "missing_check": {
+        "path": "testcode/BenchmarkTest00517.py",
+        "line": 57,
+        "expected_check": "Normalization and validation to ensure `bar` does not contain path traversal sequences",
+        "observation": "No such validation is present before opening the file"
+      },
+      "remaining_questions": [
+        "What does `thing.doSomething` actually do \u2013 does it perform any sanitization?",
+        "Is `helpers.utils.TESTFILES_DIR` a fixed directory with only safe files?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-3ce0e5dc3ab01f39",
+      "title": "SQL Injection via cookie-derived string concatenation",
+      "category": "Injection",
+      "severity": "High",
+      "confidence": "Medium",
+      "path": "testcode/BenchmarkTest00012.py",
+      "start_line": 38,
+      "end_line": 52,
+      "evidence": [
+        "param = urllib.parse.unquote_plus(request.cookies.get(\"BenchmarkTest00012\", \"noCookieValueSupplied\"))",
+        "string93844 = 'help'",
+        "string93844 += param",
+        "string93844 += 'snapes on a plane'",
+        "bar = string93844[4:-17]",
+        "sql = f'SELECT username from USERS where [REDACTED]",
+        "cur.execute(sql, (bar,))"
+      ],
+      "reasoning": "A cookie value is incorporated into a string that later becomes part of an SQL query. Although the query uses a parameter placeholder, the placeholder appears after the f\u2011string, and the actual `bar` value may be interpolated into the query text before the placeholder, allowing injection.",
+      "source": "ai_discovery",
+      "verification": "inconclusive",
+      "verification_notes": [
+        "Sensitive operation source anchor could not be grounded in the inspected source.",
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "testcode/BenchmarkTest00012.py",
+        "line": 39,
+        "code": "param = urllib.parse.unquote_plus(request.cookies.get(\"BenchmarkTest00012\", \"noCookieValueSupplied\"))"
+      },
+      "sensitive_operation": {
+        "path": "testcode/BenchmarkTest00012.py",
+        "line": 48,
+        "code": "cur.execute(sql, (bar,))"
+      },
+      "missing_check": {
+        "path": "testcode/BenchmarkTest00012.py",
+        "line": 48,
+        "expected_check": "Strict use of parameterized queries without string interpolation of user data",
+        "observation": "User\u2011controlled data is concatenated into the query string before execution"
+      },
+      "remaining_questions": [
+        "What is the exact content of the `[REDACTED]` portion of the SQL statement?",
+        "Does the database driver treat the second argument as parameters only when placeholders are present?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-4aeea3ddefc0a28c",
+      "title": "SQL Injection via request\u2011wrapped form parameter",
+      "category": "Injection",
+      "severity": "High",
+      "confidence": "Medium",
+      "path": "testcode/BenchmarkTest00283.py",
+      "start_line": 33,
+      "end_line": 50,
+      "evidence": [
+        "wrapped = helpers.separate_request.request_wrapper(request)",
+        "param = wrapped.get_form_parameter(\"BenchmarkTest00283\")",
+        "map8812['keyB-8812'] = param",
+        "bar = map8812['keyB-8812']",
+        "sql = f'SELECT username from USERS where [REDACTED]",
+        "cur.execute(sql)"
+      ],
+      "reasoning": "A form parameter is taken from the request, placed into a dictionary, and later used to build an SQL query string via f\u2011string. No parameterization is used, so an attacker can inject SQL payloads.",
+      "source": "ai_discovery",
+      "verification": "inconclusive",
+      "verification_notes": [
+        "Sensitive operation source anchor could not be grounded in the inspected source.",
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "testcode/BenchmarkTest00283.py",
+        "line": 34,
+        "code": "param = wrapped.get_form_parameter(\"BenchmarkTest00283\")"
+      },
+      "sensitive_operation": {
+        "path": "testcode/BenchmarkTest00283.py",
+        "line": 46,
+        "code": "cur.execute(sql)"
+      },
+      "missing_check": {
+        "path": "testcode/BenchmarkTest00283.py",
+        "line": 46,
+        "expected_check": "Use of parameterized query with placeholders instead of string interpolation",
+        "observation": "SQL string is constructed with user data before execution"
+      },
+      "remaining_questions": [
+        "What does `helpers.separate_request.request_wrapper` do \u2013 does it perform any sanitization?",
+        "Is the `[REDACTED]` part a static condition or does it embed `bar` directly?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-829c106e4026601a",
+      "title": "Reflected XSS via unsanitized parameter in BenchmarkTest00669",
+      "category": "Cross-Site Scripting (XSS)",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "testcode/BenchmarkTest00669.py",
+      "start_line": 31,
+      "end_line": 44,
+      "evidence": [
+        "param = request.args.get(\"BenchmarkTest00669\")",
+        "string40799 = 'help'",
+        "string40799 += param",
+        "bar = string40799[4:-17]",
+        "RESPONSE += ( 'bar is \\'{0}\\' and otherarg is \\'{1}\\''.format(bar, otherarg) )"
+      ],
+      "reasoning": "The request parameter is concatenated into a string that is later interpolated into the HTTP response without any HTML escaping. An attacker can supply a value containing HTML/JS payload that will be reflected back to the client, leading to XSS. No sanitisation function (e.g., escape_for_html) is applied to `bar` before it is formatted into the response.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "source_citation_reanchored:sensitive_operation:testcode/BenchmarkTest00669.py:43->42",
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "testcode/BenchmarkTest00669.py",
+        "line": 31,
+        "code": "param = request.args.get(\"BenchmarkTest00669\")"
+      },
+      "sensitive_operation": {
+        "path": "testcode/BenchmarkTest00669.py",
+        "line": 42,
+        "code": "RESPONSE += ( 'bar is \\'{0}\\' and otherarg is \\'{1}\\''.format(bar, otherarg) )"
+      },
+      "missing_check": {
+        "path": "testcode/BenchmarkTest00669.py",
+        "line": 43,
+        "expected_check": "HTML escaping / output encoding",
+        "observation": "Response string is built with raw user\u2011controlled `bar` without calling escape_for_html"
+      },
+      "remaining_questions": [
+        "Is the response ever rendered in a context where HTML is interpreted (e.g., as part of a template or raw response body)?",
+        "Are there any downstream filters that might automatically escape output?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-e69dc0588de37bd3",
+      "title": "Path Traversal / Arbitrary File Write in BenchmarkTest00832",
+      "category": "Path Traversal / File Write",
+      "severity": "critical",
+      "confidence": "medium",
+      "path": "testcode/BenchmarkTest00832.py",
+      "start_line": 38,
+      "end_line": 57,
+      "evidence": [
+        "possible = \"ABC\"",
+        "guess = possible[1]",
+        "match guess:",
+        "case 'A':",
+        "    bar = param",
+        "case 'B':",
+        "    bar = 'bob'",
+        "case 'C' | 'D':"
+      ],
+      "reasoning": "The value of `param` (derived from a query parameter) can flow into `bar` and then directly into a file path used for opening a file for writing. No validation or sanitisation of the path is performed, allowing an attacker to craft a filename such as `../../evil.txt` to write outside the intended directory.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "testcode/BenchmarkTest00832.py",
+        "line": 34,
+        "code": "param = wrapped.get_query_parameter(\"BenchmarkTest00832\")"
+      },
+      "sensitive_operation": {
+        "path": "testcode/BenchmarkTest00832.py",
+        "line": 55,
+        "code": "fd = open(fileName, 'wb')"
+      },
+      "missing_check": {
+        "path": "testcode/BenchmarkTest00832.py",
+        "line": 55,
+        "expected_check": "Path validation / sanitisation (e.g., whitelist, canonicalisation)",
+        "observation": "File is opened with a path constructed from user\u2011controlled `bar` without any checks"
+      },
+      "remaining_questions": [
+        "What is the value of `helpers.utils.TESTFILES_DIR` and does it enforce any filesystem restrictions?",
+        "Is the endpoint protected by authentication/authorization that limits who can invoke it?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-66e2cd5b81b83d9e",
+      "title": "Potential LDAP Injection in BenchmarkTest01168",
+      "category": "LDAP Injection",
+      "severity": "high",
+      "confidence": "medium",
+      "path": "testcode/BenchmarkTest01168.py",
+      "start_line": 40,
+      "end_line": 45,
+      "evidence": [
+        "param = scr.get_safe_value(\"BenchmarkTest01168\")",
+        "bar = param",
+        "filter = f'(&(objectclass=person)(|(uid={bar})(street=The streetz 4 Ms bar)))'",
+        "conn.search(base, filter, attributes=ldap3.ALL_ATTRIBUTES)"
+      ],
+      "reasoning": "The user\u2011controlled `param` is interpolated directly into an LDAP filter string without any escaping or validation. An attacker could inject LDAP filter syntax (e.g., `*)(uid=*)`) to broaden the search or retrieve unauthorized entries.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "source_citation_reanchored:sensitive_operation:testcode/BenchmarkTest01168.py:42->44",
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "testcode/BenchmarkTest01168.py",
+        "line": 33,
+        "code": "param = scr.get_safe_value(\"BenchmarkTest01168\")"
+      },
+      "sensitive_operation": {
+        "path": "testcode/BenchmarkTest01168.py",
+        "line": 44,
+        "code": "conn.search(base, filter, attributes=ldap3.ALL_ATTRIBUTES)"
+      },
+      "missing_check": {
+        "path": "testcode/BenchmarkTest01168.py",
+        "line": 42,
+        "expected_check": "LDAP filter escaping / input validation",
+        "observation": "Filter string is built with raw `bar` value"
+      },
+      "remaining_questions": [
+        "Does `scr.get_safe_value` perform any LDAP\u2011specific sanitisation?",
+        "Are there access controls on the LDAP directory that limit what data can be returned?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-5eac40ff0d289936",
+      "title": "Reflected XSS via request.path in BenchmarkTest01003",
+      "category": "Cross-Site Scripting (XSS)",
+      "severity": "medium",
+      "confidence": "medium",
+      "path": "testcode/BenchmarkTest01003.py",
+      "start_line": 31,
+      "end_line": 43,
+      "evidence": [
+        "parts = request.path.split(\"/\")",
+        "param = parts[1]",
+        "if param:",
+        "    bar = param.split(' ')[0]",
+        "RESPONSE += ( f'Parameter value: {bar}' )"
+      ],
+      "reasoning": "The URL path segment is taken from `request.path`, split, and the first part is echoed back in the response without HTML escaping. An attacker can craft a URL containing malicious markup in the path segment, leading to reflected XSS.",
+      "source": "ai_discovery",
+      "verification": "inconclusive",
+      "verification_notes": [
+        "Sensitive operation source anchor could not be grounded in the inspected source.",
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "testcode/BenchmarkTest01003.py",
+        "line": 31,
+        "code": "parts = request.path.split(\"/\")"
+      },
+      "sensitive_operation": {
+        "path": "testcode/BenchmarkTest01003.py",
+        "line": 42,
+        "code": "RESPONSE += ( f'Parameter value: {bar}' )"
+      },
+      "missing_check": {
+        "path": "testcode/BenchmarkTest01003.py",
+        "line": 42,
+        "expected_check": "HTML escaping / output encoding",
+        "observation": "`bar` is inserted into response without escaping"
+      },
+      "remaining_questions": [
+        "Is the response rendered as HTML or plain text by the client?",
+        "Are there any global response filters that might encode output?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    },
+    {
+      "candidate_id": "ai-a8a7d261aca1049a",
+      "title": "Potential insecure session handling in BenchmarkTest00984",
+      "category": "Session Management",
+      "severity": "medium",
+      "confidence": "low",
+      "path": "testcode/BenchmarkTest00984.py",
+      "start_line": 31,
+      "end_line": 51,
+      "evidence": [
+        "query_string = request.query_string.decode('utf-8')",
+        "param = query_string[paramLoc + len(\"BenchmarkTest00984\") + 1:]",
+        "param = urllib.parse.unquote_plus(param)",
+        "bar = helpers.utils.escape_for_html(param)",
+        "flask.session['userid'] = bar",
+        "RESPONSE += ( f'Item: \\'userid\\' with value \\'{escape_for_html(bar)}' '\\'saved in session.' )"
+      ],
+      "reasoning": "A value supplied by the client is stored directly into the session under the key `userid`. Although the value is HTML\u2011escaped before being displayed, the session value itself may be used elsewhere for authorization decisions without further validation, potentially allowing session fixation or privilege escalation if the application trusts this field.",
+      "source": "ai_discovery",
+      "verification": "supported",
+      "verification_notes": [
+        "Missing-check location is valid; absence of a check and exploitability remain unproved."
+      ],
+      "entry_point": {
+        "path": "testcode/BenchmarkTest00984.py",
+        "line": 33,
+        "code": "query_string = request.query_string.decode('utf-8')"
+      },
+      "sensitive_operation": {
+        "path": "testcode/BenchmarkTest00984.py",
+        "line": 49,
+        "code": "flask.session['userid'] = bar"
+      },
+      "missing_check": {
+        "path": "testcode/BenchmarkTest00984.py",
+        "line": 49,
+        "expected_check": "Validation of session data / authentication check",
+        "observation": "User\u2011controlled value is stored in session without verifying authenticity"
+      },
+      "remaining_questions": [
+        "Does any later request rely on `session['userid']` for access control?",
+        "Is the session cookie configured with HttpOnly, Secure, SameSite attributes?"
+      ],
+      "analysis": "static_source_review",
+      "duplicate_ids": []
+    }
+  ],
+  "warnings": [
+    "The duplicate-avoidance list in the discovery prompt was trimmed; candidates are de-duplicated against scanner findings downstream.",
+    "Some background coverage gaps were not sent to the model; they remain in the report's coverage gaps.",
+    "Discovery batch 3: AI provider request failed with HTTP 413 (rate_limit_exceeded); request too large: 8217 tokens requested, limit 8000; retrying with a smaller request."
+  ],
+  "coverage_gaps": [],
+  "usage": {
+    "queue_time": 0.75933348,
+    "prompt_tokens": 21068,
+    "prompt_time": 0.968796894,
+    "completion_tokens": 8631,
+    "completion_time": 18.058072766,
+    "total_tokens": 29699,
+    "total_time": 19.02686966,
+    "retry_count": 0,
+    "rate_limit_wait_seconds": 87.58129459500105,
+    "format_fallback_count": 0,
+    "wall_seconds": 109.739,
+    "targets": 32,
+    "planned_targets": 32,
+    "batches": 4,
+    "provider_calls": 5,
+    "duplicate_candidates_merged": 0,
+    "analysis": "static_source_review",
+    "estimated_cost_usd": null,
+    "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+  },
+  "target_plan": [
+    {
+      "target_id": "file:helpers/db_sqlite.py#L2-49",
+      "kind": "no_findings",
+      "path": "helpers/db_sqlite.py",
+      "start_line": 2,
+      "end_line": 49,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "merged-0510d751893cfc1e4cb3",
+      "kind": "risk_finding",
+      "path": "testcode/BenchmarkTest00159.py",
+      "start_line": 45,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 1; score 100; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00114.py#L27-60",
+      "kind": "unflagged_hotspot",
+      "path": "testcode/BenchmarkTest00114.py",
+      "start_line": 27,
+      "end_line": 60,
+      "reasons": [
+        "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "merged-0d73bedcc0b15d79935d",
+      "kind": "risk_finding",
+      "path": "testcode/BenchmarkTest00167.py",
+      "start_line": 53,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 2; score 100; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:helpers/ldap.py#L1-21",
+      "kind": "no_findings",
+      "path": "helpers/ldap.py",
+      "start_line": 1,
+      "end_line": 21,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "merged-c6476ab34c8569ad07d1",
+      "kind": "risk_finding",
+      "path": "testcode/BenchmarkTest00212.py",
+      "start_line": 48,
+      "end_line": null,
+      "reasons": [
+        "Risk rank 3; score 84; selected for deep review."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00152.py#L27-53",
+      "kind": "unflagged_hotspot",
+      "path": "testcode/BenchmarkTest00152.py",
+      "start_line": 27,
+      "end_line": 53,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:helpers/separate_request.py#L15-16",
+      "kind": "no_findings",
+      "path": "helpers/separate_request.py",
+      "start_line": 15,
+      "end_line": 16,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "file:helpers/ThingFactory.py#L1-21",
+      "kind": "no_findings",
+      "path": "helpers/ThingFactory.py",
+      "start_line": 1,
+      "end_line": 21,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00247.py#L27-69",
+      "kind": "unflagged_hotspot",
+      "path": "testcode/BenchmarkTest00247.py",
+      "start_line": 27,
+      "end_line": 69,
+      "reasons": [
+        "Security-relevant function/window scored 3 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00283.py#L27-55",
+      "kind": "unflagged_hotspot",
+      "path": "testcode/BenchmarkTest00283.py",
+      "start_line": 27,
+      "end_line": 55,
+      "reasons": [
+        "Security-relevant function/window scored 3 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:helpers/utils.py#L10-69",
+      "kind": "no_findings",
+      "path": "helpers/utils.py",
+      "start_line": 10,
+      "end_line": 69,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00517.py#L27-73",
+      "kind": "unflagged_hotspot",
+      "path": "testcode/BenchmarkTest00517.py",
+      "start_line": 27,
+      "end_line": 73,
+      "reasons": [
+        "Security-relevant function/window scored 3 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00114.py#L21-60",
+      "kind": "no_findings",
+      "path": "testcode/BenchmarkTest00114.py",
+      "start_line": 21,
+      "end_line": 60,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00576.py#L27-61",
+      "kind": "unflagged_hotspot",
+      "path": "testcode/BenchmarkTest00576.py",
+      "start_line": 27,
+      "end_line": 61,
+      "reasons": [
+        "Security-relevant function/window scored 7 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00152.py#L21-53",
+      "kind": "no_findings",
+      "path": "testcode/BenchmarkTest00152.py",
+      "start_line": 21,
+      "end_line": 53,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00832.py#L27-71",
+      "kind": "unflagged_hotspot",
+      "path": "testcode/BenchmarkTest00832.py",
+      "start_line": 27,
+      "end_line": 71,
+      "reasons": [
+        "Security-relevant function/window scored 3 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00247.py#L21-69",
+      "kind": "no_findings",
+      "path": "testcode/BenchmarkTest00247.py",
+      "start_line": 21,
+      "end_line": 69,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00984.py#L27-56",
+      "kind": "unflagged_hotspot",
+      "path": "testcode/BenchmarkTest00984.py",
+      "start_line": 27,
+      "end_line": 56,
+      "reasons": [
+        "Security-relevant function/window scored 6 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00266.py#L10-69",
+      "kind": "no_findings",
+      "path": "testcode/BenchmarkTest00266.py",
+      "start_line": 10,
+      "end_line": 69,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00012.py#L34-57",
+      "kind": "unflagged_hotspot",
+      "path": "testcode/BenchmarkTest00012.py",
+      "start_line": 34,
+      "end_line": 57,
+      "reasons": [
+        "Security-relevant function/window scored 5 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00283.py#L21-55",
+      "kind": "no_findings",
+      "path": "testcode/BenchmarkTest00283.py",
+      "start_line": 21,
+      "end_line": 55,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00151.py#L23-25",
+      "kind": "unflagged_hotspot",
+      "path": "testcode/BenchmarkTest00151.py",
+      "start_line": 23,
+      "end_line": 25,
+      "reasons": [
+        "Security-relevant function/window scored 4 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00517.py#L21-73",
+      "kind": "no_findings",
+      "path": "testcode/BenchmarkTest00517.py",
+      "start_line": 21,
+      "end_line": 73,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00721.py#L23-25",
+      "kind": "unflagged_hotspot",
+      "path": "testcode/BenchmarkTest00721.py",
+      "start_line": 23,
+      "end_line": 25,
+      "reasons": [
+        "Security-relevant function/window scored 4 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00576.py#L21-61",
+      "kind": "no_findings",
+      "path": "testcode/BenchmarkTest00576.py",
+      "start_line": 21,
+      "end_line": 61,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00808.py#L23-25",
+      "kind": "unflagged_hotspot",
+      "path": "testcode/BenchmarkTest00808.py",
+      "start_line": 23,
+      "end_line": 25,
+      "reasons": [
+        "Security-relevant function/window scored 4 by deterministic input, authorization, and sink signals; no scanner primary finding is inside it."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00669.py#L10-47",
+      "kind": "no_findings",
+      "path": "testcode/BenchmarkTest00669.py",
+      "start_line": 10,
+      "end_line": 47,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00832.py#L21-71",
+      "kind": "no_findings",
+      "path": "testcode/BenchmarkTest00832.py",
+      "start_line": 21,
+      "end_line": 71,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest00984.py#L21-56",
+      "kind": "no_findings",
+      "path": "testcode/BenchmarkTest00984.py",
+      "start_line": 21,
+      "end_line": 56,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest01003.py#L10-46",
+      "kind": "no_findings",
+      "path": "testcode/BenchmarkTest01003.py",
+      "start_line": 10,
+      "end_line": 46,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    },
+    {
+      "target_id": "file:testcode/BenchmarkTest01168.py#L10-65",
+      "kind": "no_findings",
+      "path": "testcode/BenchmarkTest01168.py",
+      "start_line": 10,
+      "end_line": 65,
+      "reasons": [
+        "No scanner finding has a primary location in this source file; this is not proof it was unscanned."
+      ]
+    }
+  ],
+  "batches": [
+    {
+      "batch_index": 1,
+      "target_ids": [
+        "file:helpers/db_sqlite.py#L2-49",
+        "merged-0510d751893cfc1e4cb3",
+        "file:testcode/BenchmarkTest00114.py#L27-60",
+        "merged-0d73bedcc0b15d79935d",
+        "file:helpers/ldap.py#L1-21",
+        "merged-c6476ab34c8569ad07d1",
+        "file:testcode/BenchmarkTest00152.py#L27-53",
+        "file:helpers/separate_request.py#L15-16",
+        "file:helpers/ThingFactory.py#L1-21"
+      ],
+      "status": "completed",
+      "prompt_chars": 15521,
+      "provider_calls": 1,
+      "candidate_count": 4,
+      "context_requests": 0,
+      "usage": {
+        "queue_time": 0.273651287,
+        "prompt_tokens": 6312,
+        "prompt_time": 0.283138458,
+        "completion_tokens": 1746,
+        "completion_time": 3.664223316,
+        "total_tokens": 8058,
+        "total_time": 3.947361774,
+        "retry_count": 0,
+        "rate_limit_wait_seconds": 0.0,
+        "format_fallback_count": 0,
+        "wall_seconds": 5.037,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-9cc375bf64cce3e5",
+        "ai-c987ab43b7896c86",
+        "ai-9f41a973203eace6",
+        "ai-3b9f62e85a6285fb"
+      ]
+    },
+    {
+      "batch_index": 2,
+      "target_ids": [
+        "file:testcode/BenchmarkTest00247.py#L27-69",
+        "file:testcode/BenchmarkTest00283.py#L27-55",
+        "file:helpers/utils.py#L10-69",
+        "file:testcode/BenchmarkTest00517.py#L27-73",
+        "file:testcode/BenchmarkTest00114.py#L21-60",
+        "file:testcode/BenchmarkTest00576.py#L27-61",
+        "file:testcode/BenchmarkTest00152.py#L21-53",
+        "file:testcode/BenchmarkTest00832.py#L27-71",
+        "file:testcode/BenchmarkTest00247.py#L21-69",
+        "file:testcode/BenchmarkTest00984.py#L27-56"
+      ],
+      "status": "completed",
+      "prompt_chars": 14632,
+      "provider_calls": 1,
+      "candidate_count": 6,
+      "context_requests": 0,
+      "usage": {
+        "queue_time": 0.050864977,
+        "prompt_tokens": 6228,
+        "prompt_time": 0.284754344,
+        "completion_tokens": 2470,
+        "completion_time": 5.161697659,
+        "total_tokens": 8698,
+        "total_time": 5.446452003,
+        "retry_count": 0,
+        "rate_limit_wait_seconds": 49.899336901000424,
+        "format_fallback_count": 0,
+        "wall_seconds": 55.855,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-c5a8654f53cfa78b",
+        "ai-0c97195dcb77fcf8",
+        "ai-6959d9e97be9f8f9",
+        "ai-1cf71febb8e327bc",
+        "ai-474a371ee7ea7938",
+        "ai-496bcc148ba061e3"
+      ]
+    },
+    {
+      "batch_index": 3,
+      "target_ids": [
+        "file:testcode/BenchmarkTest00266.py#L10-69",
+        "file:testcode/BenchmarkTest00012.py#L34-57",
+        "file:testcode/BenchmarkTest00283.py#L21-55",
+        "file:testcode/BenchmarkTest00151.py#L23-25",
+        "file:testcode/BenchmarkTest00517.py#L21-73",
+        "file:testcode/BenchmarkTest00721.py#L23-25",
+        "file:testcode/BenchmarkTest00576.py#L21-61",
+        "file:testcode/BenchmarkTest00808.py#L23-25"
+      ],
+      "status": "completed",
+      "prompt_chars": 24701,
+      "provider_calls": 2,
+      "candidate_count": 4,
+      "context_requests": 0,
+      "usage": {
+        "queue_time": 0.215219784,
+        "prompt_tokens": 4597,
+        "prompt_time": 0.225095246,
+        "completion_tokens": 2024,
+        "completion_time": 4.200396663,
+        "total_tokens": 6621,
+        "total_time": 4.425491909,
+        "retry_count": 0,
+        "rate_limit_wait_seconds": 0.0,
+        "format_fallback_count": 0,
+        "wall_seconds": 5.123,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-e8737430452815fc",
+        "ai-27e2f67bbcf8a943",
+        "ai-3ce0e5dc3ab01f39",
+        "ai-4aeea3ddefc0a28c"
+      ]
+    },
+    {
+      "batch_index": 4,
+      "target_ids": [
+        "file:testcode/BenchmarkTest00669.py#L10-47",
+        "file:testcode/BenchmarkTest00832.py#L21-71",
+        "file:testcode/BenchmarkTest00984.py#L21-56",
+        "file:testcode/BenchmarkTest01003.py#L10-46",
+        "file:testcode/BenchmarkTest01168.py#L10-65"
+      ],
+      "status": "completed",
+      "prompt_chars": 8893,
+      "provider_calls": 1,
+      "candidate_count": 5,
+      "context_requests": 0,
+      "usage": {
+        "queue_time": 0.219597432,
+        "prompt_tokens": 3931,
+        "prompt_time": 0.175808846,
+        "completion_tokens": 2391,
+        "completion_time": 5.031755128,
+        "total_tokens": 6322,
+        "total_time": 5.207563974,
+        "retry_count": 0,
+        "rate_limit_wait_seconds": 37.68195769400063,
+        "format_fallback_count": 0,
+        "wall_seconds": 43.724,
+        "estimated_cost_usd": null,
+        "cost_note": "Token usage/duration recorded; USD estimate unavailable without explicit rates and token counts."
+      },
+      "error": null,
+      "candidate_ids": [
+        "ai-829c106e4026601a",
+        "ai-e69dc0588de37bd3",
+        "ai-66e2cd5b81b83d9e",
+        "ai-5eac40ff0d289936",
+        "ai-a8a7d261aca1049a"
+      ]
+    }
+  ],
+  "context_exchanges": []
+}

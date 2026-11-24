@@ -1,0 +1,1660 @@
+{
+  "schema_version": "1.0",
+  "status": "partial",
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "reviews": [
+    {
+      "candidate_id": "merged-3202e1e1074cfd44b9bf",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "high",
+      "title": "Clear-text logging of sensitive information",
+      "explanation": "The source excerpt shows that after successful authentication the application logs the username and the value of the environment variable APP_SECRET using a standard info\u2011level logger. The scanner (semgrep) flags this as a credential disclosure (CWE\u2011532). No guard or redaction logic is present in the supplied snippet, so the secret is emitted to logs in clear text. However, there is no independent runtime probe confirming that the secret actually appears in log output, nor is there evidence that the logging configuration suppresses or masks the value. Consequently the finding is plausible but not definitively proven.",
+      "impact": "If the application logs the secret value, an attacker who can access log files (e.g., via compromised host, backup leakage, or log aggregation service) could obtain the APP_SECRET, potentially allowing token forgery, API abuse, or other privileged actions.",
+      "remediation": "Remove the secret from log statements. Either omit the APP_SECRET from logs entirely or replace it with a masked value (e.g., only log the first/last few characters). Use structured logging with redaction for sensitive fields, and ensure log storage is protected with proper access controls.",
+      "evidence": [
+        "log.info(\"login user=%s app_secret=%s\", username, os.environ.get(\"APP_SECRET\", \"lab-only\")) \u2013 line 137 in api/app.py (scanner semgrep rule python.lang.security.audit.logging.logger-credential-leak)"
+      ],
+      "limitations": [
+        "No runtime probe confirming that the secret value is written to logs",
+        "No evidence that logging configuration filters or masks the APP_SECRET",
+        "No demonstration that an attacker can access the log output"
+      ],
+      "source_ids": [
+        "merged-3202e1e1074cfd44b9bf"
+      ]
+    },
+    {
+      "candidate_id": "merged-18f1abe978f9fdaad8e6",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "high",
+      "title": "SQL query built from user-controlled sources",
+      "explanation": "The legacy_login endpoint constructs an SQL query by directly interpolating the user\u2011provided username and password into the query string without using parameterised queries or escaping. This creates a clear injection vector where an attacker can supply crafted input to manipulate the SQL statement.",
+      "impact": "An attacker could execute arbitrary SQL commands, potentially reading, modifying, or deleting data, bypassing authentication, or escalating privileges.",
+      "remediation": "Refactor the query to use parameterised statements (e.g., prepared statements) provided by the database library, and avoid string interpolation for user inputs. Example: `query = \"SELECT id, username, role FROM users WHERE username = ? AND password = ?\"; row = conn.execute(query, (body.username, body.password)).fetchone()`. Also consider hashing passwords instead of storing them in plain text.",
+      "evidence": [
+        "Source excerpt shows f\u2011string interpolation of `body.username` and `body.password` into the SQL query (lines 117\u2011119).",
+        "Scanner finding flagged this as a high\u2011severity issue."
+      ],
+      "limitations": [
+        "No runtime probe evidence confirming that injection is exploitable in the running application.",
+        "No evidence of existing input validation or sanitisation guards in the supplied context."
+      ],
+      "source_ids": [
+        "merged-18f1abe978f9fdaad8e6"
+      ]
+    },
+    {
+      "candidate_id": "merged-24d14609e3893220ea16",
+      "verdict": "false_positive",
+      "severity": "high",
+      "confidence": "high",
+      "title": "Uncontrolled data used in path expression",
+      "explanation": "The endpoint constructs a file path from a user\u2011provided `name` but immediately resolves it and checks `file.is_relative_to(root)`. This guard ensures the resulting path cannot escape the designated `public` directory, preventing path traversal. The subsequent `file.is_file()` check further validates the target. Thus the code safely handles the user input.",
+      "impact": "No path traversal vulnerability; an attacker cannot access files outside the intended directory.",
+      "remediation": "No remediation needed for path traversal; maintain the existing relative path check.",
+      "evidence": [
+        "source_excerpt lines 219\u2011223 show the use of `Path.resolve()` and `is_relative_to(root)` guard"
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-24d14609e3893220ea16"
+      ]
+    },
+    {
+      "candidate_id": "merged-794dcb4921076779cef0",
+      "verdict": "false_positive",
+      "severity": "high",
+      "confidence": "high",
+      "title": "Uncontrolled data used in path expression",
+      "explanation": "The endpoint verifies that the resolved file path is a sub\u2011path of the designated public directory using `is_relative_to(root)` and also checks that the target is a regular file before reading it. This prevents directory\u2011traversal attacks despite the user\u2011controlled `name` parameter.",
+      "impact": "If the check were missing, an attacker could read arbitrary files on the server. The existing guard mitigates that risk.",
+      "remediation": "No remediation needed for path traversal; ensure the guard remains unchanged and consider adding logging for denied attempts.",
+      "evidence": [
+        "source_excerpt lines 220\u2011223 show the `is_relative_to` and `is_file` checks that enforce the directory constraint."
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-794dcb4921076779cef0"
+      ]
+    },
+    {
+      "candidate_id": "merged-83d97da4516adf20e20f",
+      "verdict": "false_positive",
+      "severity": "high",
+      "confidence": "high",
+      "title": "Uncontrolled data used in path expression",
+      "explanation": "The code resolves the user\u2011provided filename against the known base directory and then verifies that the resulting path is still within that base using `is_relative_to`. It also checks that the path points to an existing file before reading it. These checks prevent directory traversal attacks, so the reported uncontrolled data usage does not constitute a vulnerability.",
+      "impact": "No impact; the endpoint safely restricts file access to the intended public directory.",
+      "remediation": "No remediation needed; the existing path validation is sufficient.",
+      "evidence": [
+        "The function builds the path with `(FILES / \"public\" / name).resolve()` and then checks `if not file.is_relative_to(FILES.resolve()) or not file.is_file(): raise HTTPException(404)` which blocks traversal and non\u2011file accesses."
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-83d97da4516adf20e20f"
+      ]
+    },
+    {
+      "candidate_id": "merged-b3c734b4cef8dd70fce0",
+      "verdict": "false_positive",
+      "severity": "high",
+      "confidence": "high",
+      "title": "Uncontrolled data used in path expression",
+      "explanation": "The function resolves the user\u2011provided filename against a known root directory and then verifies that the resulting path is still within that root using `is_relative_to`. It also checks that the path points to an existing file before reading it. These checks prevent directory traversal attacks, so the path expression is properly controlled.",
+      "impact": "No path traversal vulnerability; the file read is confined to the intended public directory.",
+      "remediation": "No remediation needed for this finding; the existing checks are sufficient.",
+      "evidence": [
+        "The code uses `root = (FILES / \"public\").resolve()` and `file = (root / name).resolve()` followed by `if not file.is_relative_to(root) or not file.is_file(): raise HTTPException(404, \"File not found\")`, which ensures the resolved path stays within the public directory and refers to a file."
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-b3c734b4cef8dd70fce0"
+      ]
+    },
+    {
+      "candidate_id": "merged-b527b3ed30e57aac5ec5",
+      "verdict": "false_positive",
+      "severity": "high",
+      "confidence": "high",
+      "title": "Uncontrolled data used in path expression",
+      "explanation": "The function resolves the user\u2011provided filename against the trusted base directory (FILES / \"public\") and then verifies that the resolved path is still within that base using `is_relative_to`. This check prevents directory traversal attacks, and the subsequent `is_file` guard ensures the target exists before reading. Consequently, the path expression is safely constrained and does not constitute a vulnerability.",
+      "impact": "None \u2013 the code correctly restricts file access to the intended directory, mitigating path traversal risks.",
+      "remediation": "No remediation needed; the existing checks are appropriate. Maintain the `is_relative_to` and `is_file` validations if the code is modified.",
+      "evidence": [
+        "Source excerpt shows `file = (FILES / \"public\" / name).resolve()` followed by `if not file.is_relative_to(FILES.resolve()) or not file.is_file(): raise HTTPException(404, \"File not found\")` which enforces the directory constraint."
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-b527b3ed30e57aac5ec5"
+      ]
+    },
+    {
+      "candidate_id": "merged-ea527a7d7441e2b11700",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "high",
+      "title": "Reflected server-side cross-site scripting in catalog_search endpoint",
+      "explanation": "The `catalog_search` endpoint directly interpolates the user\u2011controlled query parameter `q` into an HTML response (`<h1>Results for {q}</h1>...`). No escaping or sanitisation is performed before the value is embedded in the page, allowing an attacker to inject arbitrary HTML/JavaScript that will be reflected back to the client. The same unsanitised value is also used in a raw SQL string, indicating a potential additional injection vector, but the XSS issue alone is sufficient for this finding.",
+      "impact": "An attacker can craft a URL such as `/catalog/search?q=<script>alert(1)</script>` that, when visited, executes arbitrary JavaScript in the victim's browser. This can lead to session hijacking, credential theft, defacement, or further malicious actions against users of the application.",
+      "remediation": "- Validate and sanitise the `q` parameter before using it in any output. Use a templating engine that automatically escapes HTML, or explicitly escape special characters (e.g., `html.escape`).\n- Use parameterised queries or an ORM to avoid SQL injection risks when incorporating `q` into database queries.\n- Consider applying a Content Security Policy (CSP) to mitigate the impact of any reflected XSS that might slip through.\n- Add unit/integration tests that verify proper escaping of user input in responses.",
+      "evidence": [
+        "Source excerpt shows `q` directly embedded in HTML response without escaping (lines 142\u2011145).",
+        "Scanner flagged this as a reflected XSS finding."
+      ],
+      "limitations": [
+        "No runtime probe evidence confirming that injected payloads are actually executed in a browser context.",
+        "No independent scanner of medium or higher severity beyond the original finding.",
+        "No explicit guard or sanitisation logic is present in the supplied code snippet, but the surrounding code context is not fully visible; additional checks could exist elsewhere."
+      ],
+      "source_ids": [
+        "merged-ea527a7d7441e2b11700"
+      ]
+    },
+    {
+      "candidate_id": "merged-f4eaf141df049c63545d",
+      "verdict": "false_positive",
+      "severity": "high",
+      "confidence": "high",
+      "title": "Uncontrolled data used in path expression",
+      "explanation": "The endpoint constructs a file path from a user\u2011provided \"name\" parameter but immediately resolves it and checks both that the resulting path is within the allowed directory (is_relative_to(FILES.resolve())) and that it points to an existing file (is_file()). These checks mitigate path traversal attacks, ensuring that only files under the designated public directory can be accessed.",
+      "impact": "If the checks were absent, an attacker could read arbitrary files on the server. However, the present checks prevent such unauthorized access, so no vulnerability is present.",
+      "remediation": "No remediation needed; the existing relative\u2011path check and file existence verification adequately protect against path traversal.",
+      "evidence": [
+        "Source excerpt shows the use of Path.resolve() followed by is_relative_to(FILES.resolve()) and is_file() checks, which together enforce that the accessed file resides within the intended directory and exists."
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-f4eaf141df049c63545d"
+      ]
+    },
+    {
+      "candidate_id": "merged-f60fee7d82fbca512208",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "high",
+      "title": "SQL query built from user-controlled sources",
+      "explanation": "The endpoint `catalog_search` concatenates the query parameter `q` directly into an SQL statement using an f\u2011string. This creates a path where attacker\u2011controlled input reaches the database without any apparent sanitization, parameterization, or escaping, which is a classic SQL injection vector. No guard (e.g., input validation, ORM parameter binding, or allowlist) is visible in the supplied snippet.",
+      "impact": "An attacker could inject arbitrary SQL fragments (e.g., `' OR '1'='1`) to retrieve, modify, or delete data from the `products` table, potentially leading to data leakage, data corruption, or privilege escalation.",
+      "remediation": "Replace the string\u2011interpolated query with a parameterized query using the database driver\u2019s placeholders (e.g., `conn.execute(\"SELECT name FROM products WHERE name ILIKE %s\", (f\"%{q}%\",))`). Additionally, validate or whitelist the `q` parameter to ensure it conforms to expected patterns.",
+      "evidence": [
+        "Source excerpt shows `conn.execute(f\"SELECT name FROM products WHERE name ILIKE '%{q}%'\")` where `q` is a request query parameter.",
+        "Scanner finding flagged the line as user\u2011controlled SQL construction."
+      ],
+      "limitations": [
+        "No runtime probe evidence confirming that malicious input is actually executed.",
+        "No evidence of existing input sanitization or ORM usage elsewhere in the codebase.",
+        "No guard checks are visible in the provided context, but they could exist outside the excerpt."
+      ],
+      "source_ids": [
+        "merged-f60fee7d82fbca512208"
+      ]
+    },
+    {
+      "candidate_id": "merged-4c6d36222f8ebf7f1f68",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "medium",
+      "title": "X-Content-Type-Options Header Missing",
+      "explanation": "The scanner reports that the HTTP response for the root path (/) does not include the X-Content-Type-Options header. The provided source excerpt shows the FastAPI endpoint implementation but does not set any response headers, and no middleware or configuration is shown that would add this security header. Without explicit code adding the header, the finding is plausible, but the evidence is limited to the scanner observation; no independent code proof is present.",
+      "impact": "Absence of the X-Content-Type-Options: nosniff header allows browsers to perform MIME type sniffing, potentially enabling content injection attacks such as cross-site scripting (XSS) when content is misinterpreted.",
+      "remediation": "Configure the FastAPI application to include the X-Content-Type-Options header on all responses, e.g., by adding a middleware that sets `response.headers['X-Content-Type-Options'] = 'nosniff'` or by using a security library such as `starlette.middleware` or `secure` to add the header globally.",
+      "evidence": [
+        "Scanner runtime probe (zap.10021) observed a GET request to '/' with no X-Content-Type-Options header in the response."
+      ],
+      "limitations": [
+        "No source code fragment showing header injection or middleware configuration is provided, so the absence of the header cannot be confirmed from the code alone. Additional evidence such as the full FastAPI app configuration or middleware setup is needed to verify whether the header is truly missing."
+      ],
+      "source_ids": [
+        "merged-4c6d36222f8ebf7f1f68"
+      ]
+    },
+    {
+      "candidate_id": "merged-15dd977d52312c30635a",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Job listing requires admin role",
+      "explanation": "The /admin/jobs endpoint calls a function principal(authorization) but the provided source excerpt does not show any verification that the caller has an admin role before accessing the job listings. The runtime probe indicates that an unauthenticated GET request receives a 200 OK response, whereas the scanner expected a 403/404, suggesting the endpoint is accessible without proper authorization.",
+      "impact": "An attacker could retrieve the full list of jobs, potentially exposing sensitive internal data or enabling further privilege escalation.",
+      "remediation": "Ensure that the principal function validates that the authenticated user possesses the required admin role before executing the database query. Add explicit role checks and return 403 Forbidden for unauthorized users.",
+      "evidence": [
+        "Source excerpt shows admin_jobs endpoint calling principal without visible role verification (lines 285\u2011290).",
+        "Runtime probe fact: GET /admin/jobs returned status 200 instead of expected 403/404 (web-runtime rule workflow.admin_jobs.2)."
+      ],
+      "limitations": [
+        "The implementation of principal(authorization) is not provided, so it is unclear whether it performs an admin role check internally. Confirmation requires reviewing that function or additional evidence that role enforcement is absent."
+      ],
+      "source_ids": [
+        "merged-15dd977d52312c30635a"
+      ]
+    },
+    {
+      "candidate_id": "merged-d58491aad5be35b48233",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "A demoted administrator must lose administrative access",
+      "explanation": "The endpoint /admin/token-report checks the role in the provided token and returns 403 if the role is not \"admin\". However, a runtime probe observed a successful 200 response for a GET request, indicating that a token belonging to a demoted administrator was still accepted as having admin privileges. The source code does not show how the token is created or validated, so it is unclear whether the role check is effective. The observed behavior suggests a privilege escalation issue, but the evidence is incomplete.",
+      "impact": "A user whose administrative privileges have been revoked may still be able to access admin\u2011only functionality, leading to unauthorized actions and potential data compromise.",
+      "remediation": "Ensure that token issuance and validation correctly reflect the current role of the user. Invalidate or re\u2011issue tokens when a user's role changes, and verify the role claim against the authoritative user store on each request.",
+      "evidence": [
+        "Source excerpt shows role check at line 663\u2011664 and raises HTTPException(403) for non\u2011admin tokens.",
+        "Runtime probe fact from web-runtime scanner reports a GET to /admin/token-report returned status 200 instead of the expected 403."
+      ],
+      "limitations": [
+        "Missing evidence of how the token is generated and whether the role claim is updated when an administrator is demoted.",
+        "No view of the authentication/authorization middleware that populates the token used by principal().",
+        "Unable to confirm that the token presented in the probe truly belonged to a demoted administrator."
+      ],
+      "source_ids": [
+        "merged-d58491aad5be35b48233"
+      ]
+    },
+    {
+      "candidate_id": "merged-c5b44871f1955b338344",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "User listing endpoint may lack proper admin authorization check",
+      "explanation": "The /admin/users endpoint calls a function principal(authorization) but the provided excerpt does not show any verification that the caller has an admin role before returning the full user list, which includes sensitive fields such as SSN. Runtime probing observed a successful GET request returning HTTP 200, contrary to the expected 403/404, indicating the endpoint is reachable without proper restriction. However, the implementation of principal is not included, so it is unclear whether it performs the necessary role check.",
+      "impact": "If an unauthenticated or non\u2011admin user can access this endpoint, they could retrieve all user records, including personally identifiable information (PII) such as SSNs, leading to privacy breaches and potential regulatory violations.",
+      "remediation": "Ensure that the endpoint enforces an admin\u2011only check before querying and returning user data. For example, verify the caller\u2019s role inside principal or add an explicit role check in admin_users and return 403 for non\u2011admin users. Also consider limiting the fields returned to only those necessary.",
+      "evidence": [
+        "Source excerpt shows admin_users calls principal but no visible admin role verification",
+        "Runtime probe fact: GET /admin/users returned status 200 instead of expected 403/404"
+      ],
+      "limitations": [
+        "Implementation of principal(authorization) is not provided, so we cannot confirm whether it enforces admin role checks",
+        "No additional scanner evidence confirming the absence of authorization logic beyond the observed 200 response"
+      ],
+      "source_ids": [
+        "merged-c5b44871f1955b338344"
+      ]
+    },
+    {
+      "candidate_id": "merged-0bcbb317cfb96e7d5505",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "medium",
+      "title": "Cookie No HttpOnly Flag",
+      "explanation": "The code sets a session cookie (lab_session) without specifying the HttpOnly attribute, which can allow client\u2011side scripts to access the cookie. The source excerpt shows the set_cookie call without HttpOnly, and the runtime probe confirms the POST endpoint is reachable, but there is no evidence that the missing flag is exploitable in the current context.",
+      "impact": "An attacker who can inject JavaScript (e.g., via XSS) could read the session cookie and hijack the user\u2019s session.",
+      "remediation": "Set the HttpOnly flag when creating the cookie, e.g., `response.set_cookie(\"lab_session\", f\"session-{row['id']}\", httponly=True)`. Consider also adding Secure and SameSite attributes.",
+      "evidence": [
+        "source_excerpt line 300 shows `response.set_cookie(\"lab_session\", f\"session-{row['id']}\")` without HttpOnly",
+        "runtime_probe_facts indicates a POST request to /auth/form-login was observed"
+      ],
+      "limitations": [
+        "No evidence that client\u2011side script execution is possible in the application (no XSS proof)",
+        "No observation that the cookie is transmitted over insecure channels (e.g., HTTP)",
+        "No scanner finding of medium or higher severity confirming exploitation"
+      ],
+      "source_ids": [
+        "merged-0bcbb317cfb96e7d5505"
+      ]
+    },
+    {
+      "candidate_id": "merged-56ecc860a2c48330a29a",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "medium",
+      "title": "Missing Anti-clickjacking Header",
+      "explanation": "The scanner reports that the response from the /auth/form-login endpoint does not include an anti-clickjacking header (e.g., X-Frame-Options or Content\u2011Security\u2011Policy frame\u2011ancestors). The provided source excerpt shows the endpoint implementation but does not set any such header on the returned HTMLResponse. No guard or header\u2011setting logic is visible in the supplied code.",
+      "impact": "An attacker could embed the login page in a hidden iframe on a malicious site and perform clickjacking attacks, potentially tricking users into submitting credentials to the attacker\u2019s site.",
+      "remediation": "Add an appropriate anti\u2011clickjacking header to the response, for example:\n```python\nresponse = HTMLResponse(f\"Signed in as {html.escape(row['username'])}\")\nresponse.headers['X-Frame-Options'] = 'DENY'  # or SAMEORIGIN\n# or use a CSP header: response.headers['Content-Security-Policy'] = \"frame-ancestors 'none'\"\nreturn response\n```",
+      "evidence": [
+        "Scanner runtime fact (zap.10020) indicates a POST request to /auth/form-login without the anti\u2011clickjacking header."
+      ],
+      "limitations": [
+        "No direct observation of the actual HTTP response headers from the running application; the finding relies solely on the scanner\u2019s detection. Confirming the header is truly missing requires runtime capture of the response or code that explicitly sets the header."
+      ],
+      "source_ids": [
+        "merged-56ecc860a2c48330a29a"
+      ]
+    },
+    {
+      "candidate_id": "merged-69b75a0aa3f8fc9fb800",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "high",
+      "title": "Content Security Policy (CSP) Header Not Set",
+      "explanation": "The supplied source excerpt shows the login endpoint implementation but does not include any logic that sets a Content\u2011Security\u2011Policy header on the response. The runtime probe fact from the ZAP scanner reports that a POST request to /auth/form\u2011login was made and the CSP header was not observed. No code is present that adds such a header, and no other evidence (e.g., middleware, framework defaults) is provided.",
+      "impact": "Without a CSP header, the application is vulnerable to certain cross\u2011site scripting (XSS) and data\u2011injection attacks because browsers are not instructed to restrict the sources from which scripts, styles, or other resources may be loaded.",
+      "remediation": "Add a CSP header to the HTTP response for all relevant endpoints, preferably via a security\u2011focused middleware or response\u2011header configuration. For example, set a header like `Content\u2011Security\u2011Policy: default-src 'self'; script-src 'self' https://trusted.cdn.com; object-src 'none';` and ensure it is applied consistently across the application.",
+      "evidence": [
+        "Runtime probe fact from ZAP (scanner_id: web-runtime, rule_id: zap.10038) indicates the CSP header was missing on a POST request to /auth/form-login.",
+        "Source excerpt shows no call to `response.headers` or middleware that would set a CSP header."
+      ],
+      "limitations": [
+        "The review is based on the provided code snippet and a single scanner observation; full header configuration (e.g., global middleware) was not visible. Confirmation would require observing the actual HTTP response headers from the running application or reviewing the complete application configuration to ensure no CSP header is set elsewhere."
+      ],
+      "source_ids": [
+        "merged-69b75a0aa3f8fc9fb800"
+      ]
+    },
+    {
+      "candidate_id": "merged-efce9419c25ced2d8892",
+      "verdict": "confirmed_vulnerability",
+      "severity": "high",
+      "confidence": "high",
+      "title": "Password reset tokens must be single use",
+      "explanation": "The confirm_reset endpoint retrieves a reset token from the database and, if valid, updates the user's password without any check that the token has not been used before or without invalidating the token after use. The runtime probe shows that a POST to /auth/reset/confirm returns HTTP 200 on a reused token, confirming that the token can be replayed. This demonstrates a missing guard (single\u2011use enforcement) and an exploitable path to reset a password multiple times with the same token.",
+      "impact": "An attacker who obtains a valid password\u2011reset token can reuse it to reset the victim's password repeatedly, leading to account takeover and loss of confidentiality and integrity of the user\u2019s account.",
+      "remediation": "Invalidate or delete the reset token after a successful password change, and enforce a one\u2011time\u2011use check before processing the reset. Example: after updating the password, execute a DELETE on the reset_tokens table for the used token, and ensure the token is marked as used before any password change operation.",
+      "evidence": [
+        "Source excerpt shows token lookup and password update without token invalidation (lines 577\u2011585).",
+        "Runtime probe fact indicates POST /auth/reset/confirm returned 200 instead of expected error codes, confirming token replay is possible (workflow.reset_replay.3)."
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-efce9419c25ced2d8892"
+      ]
+    },
+    {
+      "candidate_id": "merged-4a2311054cdc2bfe890d",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "high",
+      "title": "Content Security Policy (CSP) Header Not Set",
+      "explanation": "The endpoint /catalog/query returns HTML content but the supplied source excerpt and runtime probe do not show any HTTP response headers being set. No code is present that adds a CSP header, and the runtime probe only records the request method without header details. This suggests the CSP header may be missing, which is a security concern, but there is no direct evidence (e.g., captured response headers) confirming its absence.",
+      "impact": "Without a CSP header, the application is vulnerable to cross\u2011site scripting (XSS) and other content injection attacks, allowing an attacker to execute malicious scripts in the context of the user\u2019s browser.",
+      "remediation": "Add a CSP header to the response, for example by using FastAPI's middleware or setting the header in the route handler: `response.headers['Content\u2011Security\u2011Policy'] = \"default-src 'self'\"`. Ensure the policy covers script, style, and other resource sources as appropriate.",
+      "evidence": [
+        "Source excerpt shows the route returns HTML without setting any security headers.",
+        "Runtime probe fact records a GET request to /catalog/query but does not include response header data."
+      ],
+      "limitations": [
+        "Missing captured HTTP response showing that the CSP header is absent.",
+        "No evidence from a scanner or runtime probe that explicitly confirms the header is not present."
+      ],
+      "source_ids": [
+        "merged-4a2311054cdc2bfe890d"
+      ]
+    },
+    {
+      "candidate_id": "merged-a6e788cfc5d9d1297feb",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "medium",
+      "title": "X-Content-Type-Options Header Missing",
+      "explanation": "The runtime scanner observed that the HTTP response for GET /catalog/query does not include the X-Content-Type-Options header. The source code does not set this header anywhere, and no configuration evidence was provided that it is added by middleware or a reverse proxy. The missing header can allow browsers to perform MIME type sniffing, potentially leading to content injection attacks.",
+      "impact": "An attacker could craft a response that causes the browser to interpret content as a different MIME type (e.g., executing HTML/JavaScript from a JSON endpoint), increasing the risk of cross\u2011site scripting or drive\u2011by attacks.",
+      "remediation": "Add the X-Content-Type-Options: nosniff header to all HTTP responses. This can be done by: \u2022 Adding a FastAPI middleware that sets the header on every response, or \u2022 Configuring the web server/reverse proxy (e.g., Nginx, Apache) to include the header globally.",
+      "evidence": [
+        "Runtime scanner (zap.10021) reported missing X-Content-Type-Options header on GET /catalog/query"
+      ],
+      "limitations": [
+        "No deployment configuration was supplied to confirm whether a reverse\u2011proxy or external middleware might already add the header. The finding relies solely on the scanner observation; additional runtime checks or server config review would confirm the header is truly absent."
+      ],
+      "source_ids": [
+        "merged-a6e788cfc5d9d1297feb"
+      ]
+    },
+    {
+      "candidate_id": "merged-a9a9a0b97f19f8bf52ae",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "medium",
+      "title": "Missing Anti-clickjacking Header",
+      "explanation": "The endpoint /catalog/query returns HTML content without setting any X-Frame-Options or Content-Security-Policy frame-ancestors directives. The source excerpt shows the response is constructed and returned directly, and the runtime probe confirms a GET request to this path. No code is present that adds anti-clickjacking headers, and no guard or configuration is shown in the supplied context.",
+      "impact": "An attacker could embed the page in a malicious iframe, enabling clickjacking attacks that trick users into performing unintended actions on the site.",
+      "remediation": "Add appropriate anti-clickjacking headers to the response, e.g., set X-Frame-Options: SAMEORIGIN or Content-Security-Policy: frame-ancestors 'self'. This can be done globally via middleware or per\u2011endpoint using FastAPI's Response headers.",
+      "evidence": [
+        "Source excerpt shows HTMLResponse returned without header manipulation",
+        "Runtime probe fact indicates a GET request to /catalog/query with no header evidence"
+      ],
+      "limitations": [
+        "No evidence was provided that the application sets anti-clickjacking headers elsewhere (e.g., middleware, server configuration). The review cannot confirm whether a header might be added outside the shown code."
+      ],
+      "source_ids": [
+        "merged-a9a9a0b97f19f8bf52ae"
+      ]
+    },
+    {
+      "candidate_id": "merged-6e468e09eab3ca889e3d",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "medium",
+      "title": "Missing Anti-clickjacking Header",
+      "explanation": "The endpoint `/comments` returns an HTML response without an `X-Frame-Options` or `Content-Security-Policy: frame-ancestors` header. The scanner flagged this as a missing anti\u2011clickjacking header. No code in the provided excerpt sets response headers, and the runtime probe only confirms the GET request succeeded, not that the header is present or absent.",
+      "impact": "An attacker could embed the page in a malicious iframe and perform clickjacking attacks, potentially tricking users into unintended actions.",
+      "remediation": "Add an appropriate anti\u2011clickjacking header to the response, e.g., `response.headers['X-Frame-Options'] = 'DENY'` or configure a CSP `frame-ancestors 'none'` in the FastAPI response middleware.",
+      "evidence": [
+        "Scanner finding: Missing Anti-clickjacking Header (zap.10020) for path /comments",
+        "Source excerpt shows HTMLResponse returned without header manipulation"
+      ],
+      "limitations": [
+        "No runtime observation of the actual HTTP response headers confirming the header is absent",
+        "No evidence that the application sets security headers elsewhere (e.g., global middleware)"
+      ],
+      "source_ids": [
+        "merged-6e468e09eab3ca889e3d"
+      ]
+    },
+    {
+      "candidate_id": "merged-81ff94e895c53dbc2029",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "high",
+      "title": "Content Security Policy (CSP) Header Not Set",
+      "explanation": "The endpoint `/comments` returns HTML content without any indication that a Content\u2011Security\u2011Policy header is added to the response. The source excerpt shows the function builds an HTML string and returns it directly, and the runtime probe confirms a GET request to this path but does not report CSP headers. No code is present that sets security headers, and no guard or middleware is shown in the supplied context.",
+      "impact": "Without a CSP header, browsers are free to execute inline scripts or load resources from any origin, increasing the risk of cross\u2011site scripting (XSS) and data\u2011exfiltration attacks.",
+      "remediation": "Add a CSP header to the response, either by configuring the FastAPI application to include security headers globally (e.g., using `Starlette` middleware) or by setting the header explicitly in the `show_comments` endpoint before returning the HTML.",
+      "evidence": [
+        "Source excerpt shows HTML is returned without header handling (lines 173\u2011177).",
+        "Runtime probe fact confirms a GET request to `/comments` but does not include CSP header information."
+      ],
+      "limitations": [
+        "No evidence is provided that the application sets CSP headers elsewhere (e.g., global middleware, reverse\u2011proxy configuration).",
+        "The runtime probe does not capture response headers, so the absence of CSP cannot be definitively confirmed."
+      ],
+      "source_ids": [
+        "merged-81ff94e895c53dbc2029"
+      ]
+    },
+    {
+      "candidate_id": "merged-d716d5afb61da294d286",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "medium",
+      "title": "X-Content-Type-Options Header Missing",
+      "explanation": "The endpoint `/comments` returns HTML content without setting the `X-Content-Type-Options: nosniff` header. The source excerpt shows the response is built and returned directly, and no header-setting code is present. A runtime probe from ZAP flags the missing header, providing scanner evidence of the issue. However, the evidence does not include an actual captured response showing the header absence, and the scanner finding is low severity, so the confirmation criteria are not fully met.",
+      "impact": "Without the `X-Content-Type-Options` header, browsers may perform MIME type sniffing, potentially allowing content injection attacks such as cross\u2011site scripting if an attacker can influence the response body.",
+      "remediation": "Add the `X-Content-Type-Options: nosniff` header to the response. In FastAPI this can be done with a middleware or by setting the header in the route, e.g., `return Response(content=html, media_type=\"text/html\", headers={\"X-Content-Type-Options\": \"nosniff\"})`.",
+      "evidence": [
+        "Source excerpt shows `/comments` endpoint returns HTML without header logic (lines 173\u2011177).",
+        "Runtime probe fact from ZAP (zap.10021) flags missing X-Content-Type-Options on GET /comments."
+      ],
+      "limitations": [
+        "No captured HTTP response headers confirming the header is absent.",
+        "Scanner severity is low; higher\u2011confidence evidence (e.g., a medium/high severity scanner or independent runtime test) is missing."
+      ],
+      "source_ids": [
+        "merged-d716d5afb61da294d286"
+      ]
+    },
+    {
+      "candidate_id": "merged-f5fff899f9294177dc70",
+      "verdict": "confirmed_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Debug configuration is exposed without authentication",
+      "explanation": "The endpoint /debug/config returns sensitive configuration values (database URL, mock external URL, app secret) without any access control checks. The source excerpt shows the function returns these values directly. A runtime probe confirms that an unauthenticated GET request receives a 200 response, whereas the expected statuses were 401/403/404, indicating the endpoint is publicly accessible.",
+      "impact": "An attacker can retrieve internal configuration data, including database connection strings and secret keys, enabling further attacks such as database compromise, credential reuse, or service manipulation.",
+      "remediation": "Add proper authentication and authorization checks to the /debug/config endpoint. Ensure it returns a 401/403 response for unauthenticated or unauthorized requests, and consider removing or restricting exposure of sensitive values in production environments.",
+      "evidence": [
+        "Source code defines debug_config() at /debug/config that returns DATABASE_URL, MOCK_EXTERNAL_URL, and APP_SECRET without checks",
+        "Runtime probe fact: GET /debug/config returned status 200 (expected 401/403/404)"
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-f5fff899f9294177dc70"
+      ]
+    },
+    {
+      "candidate_id": "merged-19f4a13e0b2d4f7413d0",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "high",
+      "title": "Missing Content-Security-Policy header",
+      "explanation": "The runtime probe for the /healthz endpoint returned a 200 response without a Content\u2011Security\u2011Policy header. The source code for the endpoint does not show any logic that adds security headers, and no other evidence of a header\u2011setting middleware is provided. This suggests the application may be serving responses without CSP protection, which can allow injection of malicious scripts in browsers that consume the API responses.",
+      "impact": "Absence of a CSP header reduces defense\u2011in\u2011depth against cross\u2011site scripting (XSS) and data\u2011injection attacks when the endpoint is rendered in a browser context or when its responses are embedded in other pages.",
+      "remediation": "Add a Content\u2011Security\u2011Policy header to all HTTP responses, either by configuring the FastAPI app with a middleware (e.g., Starlette's SecurityHeadersMiddleware) or by setting the header explicitly in each route. Ensure the policy is appropriate for the content served.",
+      "evidence": [
+        "Runtime probe fact: path \"/healthz\" returned status 200 with no Content\u2011Security\u2011Policy header (web.missing-content-security-policy)"
+      ],
+      "limitations": [
+        "The review lacks a full view of the application's middleware stack; a global security\u2011header middleware could be adding CSP elsewhere. The actual response headers were not captured in the provided data, so the missing header is inferred from the probe rather than directly observed. Confirmation requires inspecting the complete HTTP response headers or the code that configures response headers."
+      ],
+      "source_ids": [
+        "merged-19f4a13e0b2d4f7413d0"
+      ]
+    },
+    {
+      "candidate_id": "merged-87e0399272a390813ea5",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "high",
+      "title": "Missing clickjacking protection header",
+      "explanation": "The /healthz endpoint returns a 200 response but no evidence of X-Frame-Options or Content-Security-Policy headers that would prevent clickjacking. The scanner rule flags the missing header, and the source code does not set any such header. However, the runtime probe only reports the status code and does not capture response headers, so the absence of the protection header is not directly observed.",
+      "impact": "An attacker could embed the /healthz page in a malicious site using an iframe, potentially tricking users into interacting with the endpoint in a clickjacking scenario.",
+      "remediation": "Add appropriate clickjacking protection headers (e.g., X-Frame-Options: SAMEORIGIN or Content-Security-Policy: frame-ancestors 'self') to the response for the /healthz endpoint, either globally via middleware or within the endpoint handler.",
+      "evidence": [
+        "Scanner rule web.missing-clickjacking-protection flagged /healthz",
+        "Source code shows /healthz endpoint without header logic"
+      ],
+      "limitations": [
+        "Runtime probe did not capture response headers, so the missing header is not directly verified; need header inspection evidence."
+      ],
+      "source_ids": [
+        "merged-87e0399272a390813ea5"
+      ]
+    },
+    {
+      "candidate_id": "merged-916563c278b3e6b62930",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "medium",
+      "title": "X-Content-Type-Options Header Missing",
+      "explanation": "The /healthz endpoint returns a JSON payload but the supplied source code and runtime probe do not show any HTTP response header configuration. No evidence is provided that the X-Content-Type-Options header is set, which is required to mitigate MIME\u2011type sniffing attacks. The scanner flagged the missing header, but without seeing the actual response headers or code that adds them, the finding cannot be fully confirmed.",
+      "impact": "An attacker could exploit MIME\u2011type sniffing to execute malicious content in the context of the application, potentially leading to cross\u2011site scripting or other client\u2011side attacks.",
+      "remediation": "Configure the FastAPI application (or the underlying ASGI server) to include the header, e.g., using a middleware that adds `X-Content-Type-Options: nosniff` to all responses, or set it explicitly in the route response.",
+      "evidence": [
+        "Source excerpt shows the /healthz route implementation without any header manipulation.",
+        "Runtime probe fact (zap.10021) indicates a GET request to /healthz but does not include response header data."
+      ],
+      "limitations": [
+        "Missing concrete evidence of the actual HTTP response headers for /healthz.",
+        "No code or configuration snippet that sets or omits the X-Content-Type-Options header.",
+        "No independent scanner result of medium or higher severity confirming the header is absent."
+      ],
+      "source_ids": [
+        "merged-916563c278b3e6b62930"
+      ]
+    },
+    {
+      "candidate_id": "merged-bbf1646deeb18d1e95db",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "high",
+      "title": "Missing X-Content-Type-Options header",
+      "explanation": "The scanner reports that the /healthz endpoint does not include the X-Content-Type-Options header. The source code shows the endpoint returns a JSON payload but does not set any response headers. No runtime probe data confirming the absence of the header is provided, only a 200 status code. Without direct evidence of the missing header, the finding remains a likely vulnerability.",
+      "impact": "Absence of the X-Content-Type-Options header can allow browsers to perform MIME type sniffing, potentially leading to content injection attacks.",
+      "remediation": "Add the header to the response, e.g., `Response(headers={\"X-Content-Type-Options\": \"nosniff\"})` or configure the framework to include it globally.",
+      "evidence": [
+        "Scanner report: Missing X-Content-Type-Options header on /healthz",
+        "Source excerpt shows endpoint implementation without header manipulation"
+      ],
+      "limitations": [
+        "No runtime probe or network capture confirming the header is absent",
+        "No evidence that the application framework automatically adds the header"
+      ],
+      "source_ids": [
+        "merged-bbf1646deeb18d1e95db"
+      ]
+    },
+    {
+      "candidate_id": "merged-b98074828fe298997980",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Incoming webhook events require a valid signature",
+      "explanation": "The endpoint `/integrations/hook` accepts a POST request, reads the raw body, and stores it directly in the database without any verification of a cryptographic signature or authentication token. The supplied source excerpt shows no signature validation logic before the data is persisted. A runtime probe sent a POST request to this endpoint and received a 200 OK response, whereas the probe contract expected a 4xx response for unsigned requests, indicating the endpoint processes unauthenticated payloads.",
+      "impact": "An attacker can craft arbitrary webhook payloads and submit them to the endpoint, causing unauthorized data insertion, potential injection attacks, or abuse of downstream processing that trusts the stored data. This may lead to data corruption, privilege escalation, or further exploitation of the system.",
+      "remediation": "Implement verification of a request signature (e.g., HMAC with a shared secret) or require authentication (e.g., API key, JWT) before processing the payload. Return a 4xx error for requests that fail verification. Additionally, validate and sanitize the payload before inserting it into the database.",
+      "evidence": [
+        "Source excerpt shows direct insertion of `body` into `visits` table without signature check (lines 629\u2011633).",
+        "Runtime probe fact: POST to `/integrations/hook` returned status 200, while expected statuses for unsigned requests were 400, 401, 403."
+      ],
+      "limitations": [
+        "No evidence is provided that signature verification is performed elsewhere (e.g., middleware, upstream proxy). The runtime probe only demonstrates a single successful unauthenticated request; additional probes confirming consistent behavior would strengthen the case."
+      ],
+      "source_ids": [
+        "merged-b98074828fe298997980"
+      ]
+    },
+    {
+      "candidate_id": "merged-54b1ddb055358b3579a2",
+      "verdict": "confirmed_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Only the owner can read an invoice",
+      "explanation": "The endpoint `/invoices/{invoice_id}` calls `principal(authorization)` but does not verify that the authenticated user is the owner of the requested invoice before returning the data. The code fetches the invoice row solely by ID and returns it if found, without any ownership check. Runtime probe evidence shows that a GET request to this endpoint returns HTTP 200 (success) instead of the expected 403 (forbidden) when the requester is not the owner, confirming the missing access control.",
+      "impact": "An attacker who can authenticate (or possibly without authentication if `principal` does not enforce it) can retrieve any invoice by ID, leading to exposure of sensitive financial information and violation of confidentiality.",
+      "remediation": "Add an ownership check after retrieving the invoice row, e.g., compare the invoice's `owner_id` with the authenticated user's ID and raise `HTTPException(403)` if they do not match. Ensure `principal` returns the user identity and that the check is enforced for all access paths.",
+      "evidence": [
+        "Source excerpt shows no ownership verification before returning the invoice (lines 268\u2011274).",
+        "Runtime probe fact indicates the request returned status 200 instead of 403, demonstrating the lack of access control."
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-54b1ddb055358b3579a2"
+      ]
+    },
+    {
+      "candidate_id": "merged-b7e0b624f8cddd0a9e8c",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Insufficient authorization check on job creation endpoint",
+      "explanation": "The POST /jobs endpoint calls `principal(authorization)` but does not verify that the authenticated principal has permission to create admin jobs. The runtime probe shows the endpoint returns HTTP 200 for a request that should be rejected (expected 400/403/422), indicating the missing authorization guard. No additional scanner or code evidence demonstrates a role check before the INSERT operation.",
+      "impact": "An attacker who can obtain or forge an authorization header could create arbitrary jobs, potentially with elevated privileges, leading to unauthorized actions or data manipulation within the system.",
+      "remediation": "Add explicit role/permission validation after extracting the principal, ensuring only authorized users can create admin jobs. Return appropriate error codes (e.g., 403) when the check fails, and log unauthorized attempts.",
+      "evidence": [
+        "Source excerpt shows `principal(authorization)` called without subsequent role verification before inserting into the jobs table.",
+        "Runtime probe fact: POST /jobs returned status 200, while expected statuses were 400, 403, or 422, indicating the request was accepted without proper validation."
+      ],
+      "limitations": [
+        "Missing explicit code evidence of a role check or guard in the supplied snippet; need to see the implementation of `principal` and any downstream authorization logic.",
+        "No independent scanner finding of medium or higher severity confirming the flaw; only the runtime probe and source snippet are available."
+      ],
+      "source_ids": [
+        "merged-b7e0b624f8cddd0a9e8c"
+      ]
+    },
+    {
+      "candidate_id": "merged-c0dcf73e8d7a6a1fbf02",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "medium",
+      "title": "Identity endpoint may expose SSN",
+      "explanation": "The source excerpt shows that the /me endpoint queries the users table for the ssn column and returns the entire row as a dictionary, which would include the social security number. No access control or redaction logic is present in the supplied code. A runtime probe indicates the request succeeded (status 200) but only notes that values were redacted, without showing the actual payload, so the presence of the SSN in the response is not independently confirmed.",
+      "impact": "If the SSN is returned to the client, an attacker who can call /me could obtain sensitive personal information, leading to identity theft and regulatory compliance violations.",
+      "remediation": "Modify the endpoint to exclude the ssn field from the returned data or explicitly redact it before returning the response. Implement proper access controls to ensure only authorized users can view sensitive fields.",
+      "evidence": [
+        "Source code selects ssn column and returns dict(row) (lines 200-204)",
+        "Runtime probe shows GET /me returns 200 with values_redacted flag but does not reveal actual content"
+      ],
+      "limitations": [
+        "Missing concrete response data showing whether the SSN is present or redacted",
+        "No evidence of additional guard checks (e.g., role\u2011based filtering or field\u2011level masking) outside the provided snippet"
+      ],
+      "source_ids": [
+        "merged-c0dcf73e8d7a6a1fbf02"
+      ]
+    },
+    {
+      "candidate_id": "merged-218d6fc43fe64432894a",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Catalog price must be set by the server",
+      "explanation": "The create_order endpoint inserts the unit_price value directly from the request body into the database without any server\u2011side validation or lookup against a trusted price catalog. No guard or check is visible in the supplied code snippet. A runtime probe indicates mixed assertion results for the price\u2011catalog workflow, but it does not conclusively demonstrate that a client\u2011supplied price is accepted and persisted.",
+      "impact": "An attacker could submit an order with a manipulated unit_price, potentially purchasing items at a reduced cost or inflating prices for fraudulent billing, leading to financial loss and integrity violations.",
+      "remediation": "Implement server\u2011side price determination: retrieve the official price for the requested item from a trusted catalog or database and ignore any client\u2011provided unit_price. Validate and sanitize all order fields before insertion. Add appropriate logging and authorization checks.",
+      "evidence": [
+        "Source excerpt shows unit_price taken directly from body and inserted into DB (lines 213\u2011215).",
+        "Runtime probe facts report mixed assertion results for the price_catalog workflow, indicating the check may be missing or ineffective."
+      ],
+      "limitations": [
+        "Missing concrete proof that a client can submit an arbitrary price and have it stored (e.g., a successful exploit test or detailed scanner finding confirming the vulnerability).",
+        "No evidence of existing guard logic elsewhere in the codebase that might enforce price integrity."
+      ],
+      "source_ids": [
+        "merged-218d6fc43fe64432894a"
+      ]
+    },
+    {
+      "candidate_id": "merged-5a7c783c30e11426af42",
+      "verdict": "confirmed_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "New orders can be created with arbitrary status",
+      "explanation": "The create_order endpoint inserts a new order using the status value supplied in the request body without any validation. The runtime probe shows that a POST to /orders returned HTTP 200 instead of the expected 400/422, confirming that the endpoint accepts the request and creates the order with the provided status, including potentially a paid status. This demonstrates an unchecked path to a sensitive operation (order creation with status control).",
+      "impact": "An attacker can create orders marked as paid without completing the payment workflow, leading to financial fraud, inventory inconsistencies, and potential revenue loss.",
+      "remediation": "Validate the order status on creation. Reject or ignore any status other than the allowed initial state (e.g., \"pending\"). Implement server\u2011side checks to enforce that only the payment service can set a paid status, and return 400/422 for invalid status values.",
+      "evidence": [
+        "Source excerpt shows create_order inserts the status field directly from the request body (lines 208\u2011215).",
+        "Runtime probe fact: POST /orders returned status 200 when a 400/422 was expected, indicating the endpoint accepted the request without validation."
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-5a7c783c30e11426af42"
+      ]
+    },
+    {
+      "candidate_id": "merged-767d54ff7a729b156819",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Negative order prices are not rejected",
+      "explanation": "The create_order endpoint inserts the supplied unit_price directly into the database without any validation. A runtime probe attempted to submit a negative price and received a 200 OK response, while the scanner expected a 400/422 error. No input\u2011validation guard is visible in the supplied code snippet, indicating that negative prices may be accepted and stored.",
+      "impact": "An attacker could create orders with negative prices, potentially leading to unauthorized refunds, inventory manipulation, or financial loss.",
+      "remediation": "Add validation for the unit_price (and any other numeric fields) to ensure it is non\u2011negative before executing the INSERT. Return a 4xx error if validation fails.",
+      "evidence": [
+        "Runtime probe fact: POST /orders with negative price returned status 200 (expected 400/422)",
+        "Source excerpt shows no validation before database insert"
+      ],
+      "limitations": [
+        "The provided excerpt does not include any surrounding middleware or decorator that might perform validation, so the presence of a guard elsewhere cannot be ruled out. Additional code (e.g., request models, validators, or global request hooks) needs to be reviewed to confirm the absence of checks."
+      ],
+      "source_ids": [
+        "merged-767d54ff7a729b156819"
+      ]
+    },
+    {
+      "candidate_id": "merged-d0789be823f0fd7fa381",
+      "verdict": "confirmed_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Users can create orders for another owner",
+      "explanation": "The create_order endpoint accepts an optional owner_id in the request body and defaults to the authenticated user's sub when not provided. No authorization check is performed to ensure the supplied owner_id belongs to the caller. The runtime probe confirms that a POST to /orders with a different owner_id returns HTTP\u202f200 instead of the expected 4xx, demonstrating the missing guard in practice.",
+      "impact": "An attacker can create orders on behalf of any user, leading to unauthorized transactions, potential financial loss, and abuse of the ordering system.",
+      "remediation": "Validate that the owner_id in the request matches the authenticated user's identifier (user[\"sub\"]). Reject the request with 403/401 if they differ, or remove the owner_id field entirely and always use the caller's identity.",
+      "evidence": [
+        "Source excerpt shows create_order uses owner_id = body.owner_id or user[\"sub\"] without further checks",
+        "Runtime probe fact: POST /orders returned status 200 when owner_id was set to a different user, contrary to expected 4xx"
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-d0789be823f0fd7fa381"
+      ]
+    },
+    {
+      "candidate_id": "merged-0f6fe31b81367808748c",
+      "verdict": "confirmed_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "A note must belong to the order named in the URL",
+      "explanation": "The endpoint `/orders/{order_id}/notes/{note_id}` retrieves a note by its ID without verifying that the note's `order_id` matches the `order_id` supplied in the URL. The source excerpt shows the query selects the note solely by `note_id` and returns it if found, with no additional ownership check. A runtime probe confirms the flaw: a GET request to `/orders/1/notes/2` returns HTTP\u202f200 instead of the expected 403 or 404, indicating the missing validation is exploitable.",
+      "impact": "An attacker can enumerate or retrieve notes belonging to other orders by guessing note IDs, leading to unauthorized disclosure of potentially sensitive information.",
+      "remediation": "Add a check that the `order_id` of the retrieved note matches the `order_id` path parameter. If they differ, return a 403 Forbidden (or 404 to avoid information leakage). Example:\n```python\nrow = conn.execute(\"SELECT id,order_id,body FROM notes WHERE id=%s\", (note_id,)).fetchone()\nif not row or row[\"order_id\"] != order_id:\n    raise HTTPException(403, \"Forbidden\")\nreturn dict(row)\n```",
+      "evidence": [
+        "Source code shows note fetched only by `note_id` without order validation (lines 543\u2011549).",
+        "Runtime probe fact: GET `/orders/1/notes/2` returned status 200, while expected statuses were 403 or 404 (rule `workflow.nested_note.1`)."
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-0f6fe31b81367808748c"
+      ]
+    },
+    {
+      "candidate_id": "merged-fe4ca713f11faf9b96d6",
+      "verdict": "confirmed_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Only the owner can read an order",
+      "explanation": "The endpoint `/orders/{order_id}` calls `principal(authorization)` but does not verify that the authenticated user is the owner of the requested order before returning the record. The source excerpt shows no ownership check after the database query. A runtime probe for the same path returned HTTP 200 for a request that should have been denied (expected 403), confirming that the missing check is exploitable.",
+      "impact": "An attacker who can obtain a valid authorization header can retrieve any order by ID, leading to unauthorized disclosure of potentially sensitive order data.",
+      "remediation": "Add an ownership verification step after fetching the order, e.g., compare the order's `owner_id` with the authenticated principal and raise HTTP 403 if they differ. Ensure the check is performed before returning the order data.",
+      "evidence": [
+        "Source excerpt shows `principal(authorization)` is called but no ownership validation before returning the order (lines 221\u2011227).",
+        "Runtime probe fact `workflow.order_owner.3` reports a GET request to `/orders/{{order_id}}` returned status 200 instead of the expected 403, indicating the owner check is missing."
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-fe4ca713f11faf9b96d6"
+      ]
+    },
+    {
+      "candidate_id": "merged-7ed325c02dd6cf8227d2",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Insufficient validation of coupon discount values",
+      "explanation": "The endpoint `/orders/{order_id}/apply-coupon` accepts a user\u2011supplied `discount` value and falls back to the coupon's stored percent. No validation is performed to ensure the resulting discount is within acceptable bounds (e.g., not exceeding 100% or a business\u2011defined maximum). The runtime probe shows the request returning HTTP\u202f200 instead of the expected 400/422 when an excessive discount is supplied, indicating the check is missing.",
+      "impact": "An attacker could apply arbitrarily large discounts to orders, potentially resulting in revenue loss or unauthorized free purchases.",
+      "remediation": "Add explicit validation of the `percent`/`discount` value before updating the order. Reject values that exceed the allowed maximum (e.g., >\u202f100\u202f% or a configured limit) and return a 4xx error. Consider centralising discount validation in a helper function and logging rejected attempts.",
+      "evidence": [
+        "Source excerpt shows no bounds check on `percent` before the UPDATE statement (lines 231\u2011237).",
+        "Runtime probe fact reports a 200 response for an excessive discount where a 400/422 was expected (rule workflow.coupon_bounds.2)."
+      ],
+      "limitations": [
+        "Missing explicit test cases confirming the maximum allowed discount value.",
+        "No evidence of server\u2011side configuration that might enforce discount limits elsewhere in the codebase."
+      ],
+      "source_ids": [
+        "merged-7ed325c02dd6cf8227d2"
+      ]
+    },
+    {
+      "candidate_id": "merged-ccc894903304aa8847bd",
+      "verdict": "confirmed_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Paid orders can be cancelled without refund",
+      "explanation": "The cancel_order endpoint updates the order status to 'cancelled' without verifying whether the order has been paid or whether a refund has been issued. The source excerpt shows no check of payment status before the UPDATE statement. Runtime probe evidence reports a successful 200 response for a paid\u2011cancel workflow step that should have been rejected (expected 400/409/422). This independent runtime observation corroborates the scanner finding, satisfying the criteria for a confirmed vulnerability.",
+      "impact": "An attacker can cancel paid orders and potentially avoid refund processing, leading to financial loss and unauthorized order state changes.",
+      "remediation": "Add logic to verify that the order is unpaid or that a refund has been processed before allowing cancellation. Return an appropriate error (e.g., 400 Bad Request) if the order is already paid without a refund. Ensure the check is performed before the UPDATE statement.",
+      "evidence": [
+        "Source excerpt shows cancel_order endpoint directly updates order status without payment check (lines 259\u2011263).",
+        "Runtime probe fact: method POST to /orders/{{order_id}}/cancel returned status 200 when a 400/409/422 was expected for a paid\u2011cancel workflow step."
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-ccc894903304aa8847bd"
+      ]
+    },
+    {
+      "candidate_id": "merged-1bcb1da144dffdcf3fd8",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Potential payment replay vulnerability in order payment endpoint",
+      "explanation": "The POST /orders/{order_id}/pay endpoint updates the order status to 'paid' without checking whether the order has already been paid. The source excerpt shows the status is set unconditionally after retrieving the order. A runtime probe observed a successful 200 response for a repeated payment attempt, whereas the scanner expected error statuses (400, 409, 422). This indicates the endpoint may allow a second payment on an already paid order, but no evidence of a guard elsewhere in the supplied code was found.",
+      "impact": "An attacker could replay a payment request to cause double charging, generate duplicate invoices, or otherwise manipulate order state, leading to financial loss and data integrity issues.",
+      "remediation": "Add a check before updating the order status to verify that the order is not already marked as 'paid'. Return an appropriate error (e.g., 409 Conflict) if a payment is attempted on a paid order. Ensure the check is performed within the same transaction to avoid race conditions.",
+      "evidence": [
+        "Source excerpt shows unconditional status update at line 249",
+        "Runtime probe fact reports POST returned 200 instead of expected error status"
+      ],
+      "limitations": [
+        "No evidence was provided that a guard check exists elsewhere in the codebase (e.g., middleware or database constraint). The runtime probe is the only independent confirmation of the flaw."
+      ],
+      "source_ids": [
+        "merged-1bcb1da144dffdcf3fd8"
+      ]
+    },
+    {
+      "candidate_id": "merged-18063ba27bc289f53c8a",
+      "verdict": "confirmed_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Insecure profile access allows reading other users' data",
+      "explanation": "The /profiles/{profile_id} endpoint retrieves user data based solely on the supplied profile_id after calling principal(authorization) but does not verify that the authenticated user owns the requested profile. The runtime probe confirms that a request for another user's profile returns HTTP 200 instead of the expected 403/404, demonstrating the missing ownership check in practice.",
+      "impact": "An attacker who can obtain a valid authorization token can enumerate and read sensitive information (username, email, SSN) of any user by iterating profile IDs, leading to privacy breaches and potential identity theft.",
+      "remediation": "Add an ownership check after fetching the row to ensure the authenticated user's ID matches the profile_id before returning data. Return 403 Forbidden or 404 Not Found when the user is not authorized to view the profile. Example:\n```python\nuser_id = get_user_id_from_token(authorization)\nif row['id'] != user_id:\n    raise HTTPException(403, \"Forbidden\")\n```",
+      "evidence": [
+        "Source code shows endpoint without ownership verification (lines 98-104)",
+        "Runtime probe fact indicates GET /profiles/{{other_id}} returned status 200 instead of 403/404"
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-18063ba27bc289f53c8a"
+      ]
+    },
+    {
+      "candidate_id": "merged-4ae7658c2abfbf689e2b",
+      "verdict": "confirmed_vulnerability",
+      "severity": "medium",
+      "confidence": "medium",
+      "title": "Missing Anti-clickjacking Header",
+      "explanation": "The /view endpoint returns an HTMLResponse without any X-Frame-Options or Content-Security-Policy frame-ancestors directives, indicating the anti-clickjacking header is missing. No evidence of a header being set elsewhere in the supplied code or runtime probe is present.",
+      "impact": "An attacker could embed the page in a malicious iframe, enabling clickjacking attacks that trick users into performing unintended actions.",
+      "remediation": "Add an appropriate X-Frame-Options header (e.g., \"DENY\" or \"SAMEORIGIN\") or a Content-Security-Policy with a frame-ancestors directive to the response in the view_home handler.",
+      "evidence": [
+        "Source excerpt shows HTMLResponse returned without security headers (lines 686-690).",
+        "Runtime probe fact confirms a GET request to /view was made (web-runtime zap.10020).",
+        "Scanner evidence flagged missing anti-clickjacking header."
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-4ae7658c2abfbf689e2b"
+      ]
+    },
+    {
+      "candidate_id": "merged-a4473061f97f0a366678",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "high",
+      "title": "Content Security Policy (CSP) Header Not Set",
+      "explanation": "The endpoint /view returns an HTMLResponse without setting a Content\u2011Security\u2011Policy header. The source excerpt shows the response is constructed directly and no header is added. A scanner flagged the missing CSP header, providing an independent indication of the issue, but there is no runtime probe confirming that the header is absent in actual responses.",
+      "impact": "Without a CSP header, browsers are not instructed to restrict the sources from which scripts, styles, and other resources can be loaded, increasing the risk of cross\u2011site scripting (XSS) and data\u2011injection attacks.",
+      "remediation": "Add a CSP header to the response, e.g., using FastAPI's Response headers or a middleware that injects a strict\u2011CSP policy. Example:\n```python\nfrom fastapi import Response\n\n@router.get(\"/view\")\ndef view_home() -> Response:\n    html = \"...\"\n    return Response(content=html, media_type=\"text/html\", headers={\"Content\u2011Security\u2011Policy\": \"default-src 'self'; script-src 'self'; style-src 'self'\"})\n```",
+      "evidence": [
+        "Source excerpt shows HTMLResponse returned without CSP header",
+        "Scanner finding \"Content Security Policy (CSP) Header Not Set\""
+      ],
+      "limitations": [
+        "No runtime observation confirming that the CSP header is missing in actual HTTP responses; a probe that captures response headers would be needed to confirm the vulnerability."
+      ],
+      "source_ids": [
+        "merged-a4473061f97f0a366678"
+      ]
+    },
+    {
+      "candidate_id": "merged-cad468186f9fd0b4e99b",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "medium",
+      "title": "X-Content-Type-Options Header Missing",
+      "explanation": "The endpoint /view returns an HTMLResponse without explicitly setting the X-Content-Type-Options header. The source excerpt shows the response construction, and no code is present that adds security headers. A runtime probe observed a GET request to /view, but did not capture response headers to confirm the header is absent.",
+      "impact": "Without the X-Content-Type-Options: nosniff header, browsers may incorrectly sniff content types, potentially allowing content injection attacks such as cross-site scripting.",
+      "remediation": "Add the X-Content-Type-Options header with the value \"nosniff\" to the response, e.g., by using a middleware or setting the header directly in the view function.",
+      "evidence": [
+        "Source excerpt shows HTMLResponse returned without header configuration (lines 686-690).",
+        "Runtime probe fact indicates a GET request to /view was made (web-runtime zap.10021)."
+      ],
+      "limitations": [
+        "Missing captured response headers to definitively prove the header is absent.",
+        "No evidence that a global middleware might be adding the header elsewhere in the application."
+      ],
+      "source_ids": [
+        "merged-cad468186f9fd0b4e99b"
+      ]
+    },
+    {
+      "candidate_id": "merged-8cdc677a9810b317840f",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Insufficient validation of webhook destination URL",
+      "explanation": "The /webhooks endpoint only checks that the submitted target_url contains the substring \"mock-external\" and otherwise raises a 400 error. This allows any URL that includes that substring, including potentially attacker\u2011controlled internal addresses, to be accepted and stored in the database. The runtime probe shows a POST request receiving a 200 response, indicating the check did not block the request in practice. However, the supplied evidence does not demonstrate that an attacker can reach a sensitive internal host or cause harmful behavior (e.g., SSRF).",
+      "impact": "An attacker could supply a crafted target_url that passes the weak substring check and cause the service to issue requests to internal resources, leading to SSRF, data exfiltration, or other downstream attacks.",
+      "remediation": "Validate the target_url against an explicit whitelist of approved internal hosts or use a strict URL parsing/validation library. Reject any URL that does not exactly match the approved host, and avoid substring checks. Consider normalizing the URL and comparing the hostname component.",
+      "evidence": [
+        "Source excerpt lines 293\u2011298 showing the substring check on target_url",
+        "Runtime probe fact: POST to /webhooks returned status 200 despite expected 400/422"
+      ],
+      "limitations": [
+        "Missing proof that an attacker can supply a malicious URL that both contains \"mock-external\" and points to an internal resource",
+        "No evidence that the stored URL is later used to make outbound requests, which would confirm an SSRF risk"
+      ],
+      "source_ids": [
+        "merged-8cdc677a9810b317840f"
+      ]
+    },
+    {
+      "candidate_id": "merged-70f8087c412d06924742",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "medium",
+      "title": "Wildcard CORS configuration allows any origin",
+      "explanation": "The FastAPI application adds a CORS middleware with `allow_origins=[\"*\"]`, which permits any website to make cross\u2011origin requests to the API. The supplied source excerpt shows this configuration and no additional runtime checks or origin validation are present in the provided context.",
+      "impact": "An attacker can host a malicious site that interacts with the API from a user's browser, potentially exfiltrating data or performing actions on behalf of authenticated users if credentials are sent with requests.",
+      "remediation": "Restrict `allow_origins` to a whitelist of trusted domains, or implement dynamic origin validation. If credentials are required, ensure `allow_credentials` is only true for trusted origins. Consider using more granular `allow_methods` and `allow_headers` settings.",
+      "evidence": [
+        "api/app.py lines 24\u201130 show CORS middleware with allow_origins=[\"*\"]"
+      ],
+      "limitations": [
+        "No runtime evidence confirming that the API is exposed to untrusted origins or that credentials are accepted from any origin. Lack of information about authentication mechanisms and whether additional origin checks are performed elsewhere."
+      ],
+      "source_ids": [
+        "merged-70f8087c412d06924742"
+      ]
+    },
+    {
+      "candidate_id": "merged-9c6fcf61fc01168b15e2",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "medium",
+      "title": "Log Injection / Sensitive Data Exposure",
+      "explanation": "The code logs a user\u2011provided value (username) together with the application secret (APP_SECRET). The log statement is directly constructed from user input without sanitisation, which can lead to log injection and unintended disclosure of sensitive data. No guard or sanitisation is visible in the supplied context.",
+      "impact": "An attacker who can trigger a login attempt can cause the secret to be written to application logs, potentially exposing it to anyone with log access and facilitating further attacks such as token forgery or credential compromise.",
+      "remediation": "Do not log sensitive values such as secrets. Remove the APP_SECRET from the log message and sanitise or avoid logging user\u2011controlled data. Use structured logging with proper redaction for any user\u2011provided fields.",
+      "evidence": [
+        "log.info(\"login user=%s app_secret=%s\", username, os.environ.get(\"APP_SECRET\", \"lab-only\"))"
+      ],
+      "limitations": [
+        "No independent scanner or runtime probe evidence confirming exploitation; no observed log\u2011tampering or secret leakage in practice. Additional evidence such as logs showing the secret being written or a guard that sanitises user input would be needed to confirm the vulnerability."
+      ],
+      "source_ids": [
+        "merged-9c6fcf61fc01168b15e2"
+      ]
+    },
+    {
+      "candidate_id": "merged-51bf51abe866bf8d3d67",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "high",
+      "title": "URL redirection from remote source",
+      "explanation": "The endpoint `/auth/continue` accepts a `next` query parameter supplied by the user and directly passes it to `RedirectResponse` without any validation or allow\u2011list check. This creates an open redirect vector that can be abused for phishing or malicious link forwarding. The supplied source excerpt shows no sanitization or safe\u2011redirect logic.",
+      "impact": "An attacker can craft a URL such as `https://example.com/auth/continue?next=https://malicious.com` and cause victims to be redirected to a malicious site, facilitating phishing attacks, credential harvesting, or drive\u2011by downloads.",
+      "remediation": "Validate the `next` parameter against an allow\u2011list of trusted URLs or paths, or restrict redirects to internal routes only. If external redirects are required, ensure the target URL is whitelisted and use a safe\u2011redirect helper that enforces this check.",
+      "evidence": [
+        "Source excerpt shows `def continue_to(next: str = \"/\") -> RedirectResponse: return RedirectResponse(next, status_code=302)` with no validation."
+      ],
+      "limitations": [
+        "No runtime probe evidence demonstrating an actual open\u2011redirect exploit. No additional scanner or manual analysis confirming that the redirect can be abused in the deployed environment. Absence of code showing any guard or allow\u2011list check prevents confirming the vulnerability."
+      ],
+      "source_ids": [
+        "merged-51bf51abe866bf8d3d67"
+      ]
+    },
+    {
+      "candidate_id": "merged-f41fd10802e7c4dd22bb",
+      "verdict": "false_positive",
+      "severity": "medium",
+      "confidence": "high",
+      "title": "URL redirection from remote source",
+      "explanation": "The function verified_continue validates the supplied URL by ensuring it starts with a single '/' and rejects any scheme, network location, or double-slash prefix, raising HTTP 400 for invalid inputs. This prevents redirection to external or untrusted URLs, mitigating an open\u2011redirect vulnerability.",
+      "impact": "If the validation were missing, an attacker could craft a URL that redirects users to a malicious external site, facilitating phishing or drive\u2011by attacks. The existing checks block such behavior.",
+      "remediation": "No remediation needed; the code already enforces a local\u2011path\u2011only redirect. Ensure any future modifications preserve these validation checks.",
+      "evidence": [
+        "Source excerpt shows explicit checks for leading '/' and rejects scheme or netloc before returning RedirectResponse"
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-f41fd10802e7c4dd22bb"
+      ]
+    },
+    {
+      "candidate_id": "merged-58377a692410b6446bbd",
+      "verdict": "needs_more_evidence",
+      "severity": "low",
+      "confidence": "medium",
+      "title": "No HEALTHCHECK defined",
+      "explanation": "The Dockerfile lacks a HEALTHCHECK instruction, which could allow the container to remain unhealthy without detection. However, the supplied evidence only notes the absence and does not demonstrate any actual impact or exploitation scenario.",
+      "impact": "Potentially undetected container failures, leading to reduced reliability and availability of the service.",
+      "remediation": "Add a HEALTHCHECK instruction to the Dockerfile that periodically checks the health of the application, e.g., using curl or a custom script, and configure appropriate start\u2011period, interval, timeout, and retries.",
+      "evidence": [
+        "Dockerfile excerpt shows no HEALTHCHECK line"
+      ],
+      "limitations": [
+        "No runtime probe or scanner evidence confirming that the missing HEALTHCHECK leads to a real failure scenario; no demonstration of impact on service availability."
+      ],
+      "source_ids": [
+        "merged-58377a692410b6446bbd"
+      ]
+    },
+    {
+      "candidate_id": "merged-0de42012099941c48e01",
+      "verdict": "false_positive",
+      "severity": "low",
+      "confidence": "medium",
+      "title": "No HEALTHCHECK defined",
+      "explanation": "The Dockerfile excerpt does not contain a HEALTHCHECK instruction, confirming the scanner's finding of a missing health check. While adding a HEALTHCHECK is a best practice, its absence does not constitute a security vulnerability, only a potential operational oversight.",
+      "impact": "Without a HEALTHCHECK, container orchestration systems cannot automatically detect unhealthy containers, which may lead to reduced availability but does not directly expose the application to a security breach.",
+      "remediation": "Add an appropriate HEALTHCHECK instruction to the Dockerfile, e.g.,\n\nHEALTHCHECK --interval=30s --timeout=5s --start-period=5s CMD curl -f http://localhost:9000/health || exit 1",
+      "evidence": [
+        "Dockerfile lines 1-6 show no HEALTHCHECK instruction"
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-0de42012099941c48e01"
+      ]
+    },
+    {
+      "candidate_id": "merged-df83daf10f817c7aa965",
+      "verdict": "false_positive",
+      "severity": "low",
+      "confidence": "medium",
+      "title": "No HEALTHCHECK defined",
+      "explanation": "The Dockerfile excerpt shows no HEALTHCHECK instruction, which is a best\u2011practice recommendation rather than a security vulnerability. The finding does not demonstrate an exploitable condition, only a missing optional hardening step.",
+      "impact": "Without a HEALTHCHECK, container orchestration may not detect a hung or unhealthy process, potentially leading to reduced availability, but no direct security breach is implied.",
+      "remediation": "Add a HEALTHCHECK instruction to the Dockerfile that periodically verifies the worker process is responsive, e.g., `HEALTHCHECK --interval=30s CMD curl -f http://localhost/health || exit 1`.",
+      "evidence": [
+        "Dockerfile lines 1\u20117 contain no HEALTHCHECK directive."
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-df83daf10f817c7aa965"
+      ]
+    },
+    {
+      "candidate_id": "merged-051697f9b8567d596874",
+      "verdict": "confirmed_vulnerability",
+      "severity": "high",
+      "confidence": "high",
+      "title": "python-multipart: Denial of Service via crafted form-urlencoded bodies",
+      "explanation": "The requirements file includes python-multipart==0.0.20, which is known to be vulnerable to CVE-2026-53539 (Denial of Service via crafted form\u2011urlencoded bodies). The scanner provides a medium\u2011or\u2011higher severity finding that directly references this CVE and notes that the issue is fixed in version 0.0.30. No mitigating guard or version pinning is present in the supplied context, and the vulnerable version is actively used, satisfying both required conditions for a confirmed vulnerability.",
+      "impact": "An attacker can send specially crafted form\u2011urlencoded payloads that trigger excessive resource consumption, potentially leading to service disruption or crash of the application.",
+      "remediation": "Upgrade python-multipart to version 0.0.30 or later. Update the requirements.txt entry accordingly and redeploy the application.",
+      "evidence": [
+        "Dependency vulnerability CVE-2026-53539 in python-multipart 0.0.20; fixed in 0.0.30.",
+        "requirements.txt lists python-multipart==0.0.20"
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-051697f9b8567d596874"
+      ]
+    },
+    {
+      "candidate_id": "merged-3503f2dec888990b31f2",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "high",
+      "title": "python-multipart: Denial of Service via excessive multipart part headers",
+      "explanation": "The requirements file pins python-multipart at version 0.0.20, which is known to contain CVE-2026-42561. The scanner flags this as a high\u2011severity dependency vulnerability. However, the supplied artifacts do not show any code that imports or uses python-multipart, nor do they demonstrate that multipart parsing is exercised at runtime. Without evidence that the application actually invokes the vulnerable library, the finding remains a likely vulnerability rather than confirmed.",
+      "impact": "An attacker could craft a multipart request with a large number of part headers, causing the vulnerable python-multipart version to consume excessive resources and potentially lead to a denial\u2011of\u2011service condition.",
+      "remediation": "Upgrade python-multipart to version 0.0.27 or later, which contains the fix for CVE\u20112026\u201142561. Verify that the updated version is included in the deployment artifacts and run dependency checks again.",
+      "evidence": [
+        "Dependency list shows python-multipart==0.0.20 (source_excerpt).",
+        "Scanner evidence cites CVE\u20112026\u201142561 affecting python-multipart 0.0.20 and fixed in 0.0.27."
+      ],
+      "limitations": [
+        "No code evidence that python-multipart is imported or used in the application.",
+        "No runtime probe showing multipart parsing behavior or exploitation of the CVE."
+      ],
+      "source_ids": [
+        "merged-3503f2dec888990b31f2"
+      ]
+    },
+    {
+      "candidate_id": "merged-74bb99c1ff3b5ed1fea8",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "high",
+      "title": "python-multipart: Information disclosure due to parser differential in form data handling",
+      "explanation": "The requirements file lists python-multipart==0.0.20, which is known to be vulnerable to CVE-2026-53538. The scanner evidence cites this CVE and notes it is fixed in 0.0.30. No guard or mitigation is visible in the supplied context.",
+      "impact": "An attacker could exploit the parser differential to extract or manipulate form data, potentially leading to information disclosure.",
+      "remediation": "Upgrade python-multipart to version 0.0.30 or later and verify that the application\u2019s form handling works as expected after the upgrade.",
+      "evidence": [
+        "Dependency line in requirements.txt shows python-multipart==0.0.20",
+        "Scanner evidence: \"Dependency vulnerability CVE-2026-53538 in python-multipart 0.0.20; fixed in 0.0.30.\""
+      ],
+      "limitations": [
+        "No runtime probe confirming the vulnerability is exploitable in the deployed application",
+        "No code showing how form data is parsed or any mitigations applied"
+      ],
+      "source_ids": [
+        "merged-74bb99c1ff3b5ed1fea8"
+      ]
+    },
+    {
+      "candidate_id": "merged-8a5f28db4eebc517239e",
+      "verdict": "confirmed_vulnerability",
+      "severity": "medium",
+      "confidence": "high",
+      "title": "python-multipart: Denial of Service via crafted multipart/form-data requests",
+      "explanation": "The project directly depends on python-multipart version 0.0.20, which is known to contain CVE-2026-40347, a denial\u2011of\u2011service vulnerability triggered by specially crafted multipart/form-data payloads. The scanner identified this vulnerable version and reported the CVE. No mitigating guard or version pinning is present in the supplied dependency list, confirming the vulnerable code path is included in the build.",
+      "impact": "An attacker can send a malicious multipart request that exhausts CPU or memory resources, potentially causing the FastAPI service to become unresponsive, leading to denial of service for legitimate users.",
+      "remediation": "Upgrade python-multipart to version 0.0.26 or later, which contains the fix for CVE-2026-40347. Update the requirements.txt accordingly and rebuild/redeploy the application.",
+      "evidence": [
+        "Dependency vulnerability CVE-2026-40347 in python-multipart 0.0.20; fixed in 0.0.26."
+      ],
+      "limitations": [],
+      "source_ids": [
+        "merged-8a5f28db4eebc517239e"
+      ]
+    },
+    {
+      "candidate_id": "merged-8ce42d9c8b52a95b109d",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "python-multipart: Arbitrary file write via path traversal vulnerability",
+      "explanation": "The project declares a dependency on python-multipart version 0.0.20, which is known to be vulnerable to CVE-2026-24486 (arbitrary file write via path traversal). The scanner flagged this as a high\u2011severity issue. However, the supplied repository data does not show any import or usage of python-multipart, nor does it demonstrate a code path that would trigger the vulnerable functionality. Without evidence that the vulnerable library is actually invoked, the finding remains a potential risk rather than a confirmed exploit path.",
+      "impact": "If the vulnerable version of python-multipart is used to process uploaded files, an attacker could craft a malicious filename containing path\u2011traversal sequences (e.g., \"../../etc/passwd\") to write arbitrary files on the server, potentially leading to code execution or data compromise.",
+      "remediation": "Upgrade python-multipart to version 0.0.22 or later, which contains the fix for CVE-2026-24486. Verify that the updated version is compatible with the application and run the test suite after upgrading.",
+      "evidence": [
+        "Dependency vulnerability CVE-2026-24486 in python-multipart 0.0.20; fixed in 0.0.22."
+      ],
+      "limitations": [
+        "No evidence that python-multipart is imported or used in the application code.",
+        "No runtime probe or code path demonstrating that the vulnerable function can be reached."
+      ],
+      "source_ids": [
+        "merged-8ce42d9c8b52a95b109d"
+      ]
+    },
+    {
+      "candidate_id": "merged-e76230cbef200116e4ae",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "high",
+      "title": "multipart: Python-Multipart: Information disclosure via header parsing discrepancy",
+      "explanation": "The project depends on python-multipart version 0.0.20, which is known to be vulnerable to CVE-2026-53537. The scanner identified this dependency mismatch, but no runtime probe or code path demonstrating the header parsing issue is provided.",
+      "impact": "An attacker could exploit the header parsing discrepancy to obtain unintended information from HTTP requests, potentially leading to information disclosure.",
+      "remediation": "Upgrade python-multipart to version 0.0.30 or later, which contains the fix for CVE-2026-53537.",
+      "evidence": [
+        "Dependency version 0.0.20 of python-multipart is listed in requirements.txt",
+        "Scanner report cites CVE-2026-53537 affecting python-multipart 0.0.20"
+      ],
+      "limitations": [
+        "No runtime evidence showing the header parsing discrepancy in action",
+        "No code snippet demonstrating the vulnerable code path within the application"
+      ],
+      "source_ids": [
+        "merged-e76230cbef200116e4ae"
+      ]
+    },
+    {
+      "candidate_id": "merged-f15e42abb7b2acd921f1",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "high",
+      "title": "python-multipart: Negative Content-Length in parse_form buffers the entire body in memory",
+      "explanation": "The requirements file pins python-multipart at version 0.0.20, which is known to contain CVE-2026-53540. The scanner flagged this dependency as vulnerable and notes that the issue is fixed in version 0.0.31. No runtime probe or higher\u2011severity independent scanner evidence is provided, so the vulnerability cannot be confirmed solely from the supplied data.",
+      "impact": "An attacker could exploit the negative Content\u2011Length handling to cause the server to buffer the entire request body in memory, potentially leading to denial\u2011of\u2011service or memory exhaustion.",
+      "remediation": "Upgrade python-multipart to version 0.0.31 or later in the requirements.txt and redeploy the application.",
+      "evidence": [
+        "Dependency vulnerability CVE-2026-53540 in python-multipart 0.0.20; fixed in 0.0.31 (scanner evidence)."
+      ],
+      "limitations": [
+        "No runtime probe demonstrating the vulnerable behavior.",
+        "No independent scanner finding of medium or higher severity confirming exploitability."
+      ],
+      "source_ids": [
+        "merged-f15e42abb7b2acd921f1"
+      ]
+    },
+    {
+      "candidate_id": "merged-7711056ee3332442a201",
+      "verdict": "needs_more_evidence",
+      "severity": "low",
+      "confidence": "low",
+      "title": "Dynamic Urllib Use Detected",
+      "explanation": "The code constructs a URL by concatenating a base constant with a path argument and then uses urllib.request.urlopen to perform the request. While urllib supports file:// schemes, the supplied source does not demonstrate that the `path` parameter can be controlled by an attacker, nor does it show that a malicious value could reach a file scheme. No guard or validation of the `path` argument is visible in the provided excerpt, but the absence of such a check cannot be confirmed without broader context.",
+      "impact": "If an attacker could control `path` and supply a file:// URL, they might cause the application to read arbitrary files from the server's filesystem, leading to information disclosure.",
+      "remediation": "Validate and sanitize the `path` argument before constructing the URL. Restrict allowed schemes to http/https, or switch to a higher\u2011level HTTP client such as the `requests` library that does not support file URLs by default. Consider adding explicit checks that reject or escape any file:// prefixes.",
+      "evidence": [
+        "Source excerpt shows dynamic construction of the request URL using `BASE + path` and a call to `urllib.request.urlopen` (lines 20\u201122)."
+      ],
+      "limitations": [
+        "No evidence that `path` is attacker\u2011controlled or that a file:// scheme can be injected. The surrounding code that calls `request` is not provided, so we cannot determine whether input validation or other safeguards exist elsewhere."
+      ],
+      "source_ids": [
+        "merged-7711056ee3332442a201"
+      ]
+    },
+    {
+      "candidate_id": "merged-c150b78349615dd9bc2d",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "low",
+      "title": "Dynamic Urllib Use Detected",
+      "explanation": "The code constructs a urllib request using a URL taken directly from the job payload (payload[\"target_url\"]). If an attacker can influence this value, they could cause the worker to make arbitrary HTTP requests or potentially access file URLs (e.g., \"file://\"). The finding is based on static analysis of the source excerpt; no runtime probe or independent scanner of medium/higher severity confirms exploitable behavior. No guard or validation of the URL is visible in the supplied context.",
+      "impact": "An attacker who can control the \"target_url\" field may trigger server\u2011side request forgery (SSRF) or read arbitrary files via a \"file://\" scheme, leading to information disclosure or further network\u2011based attacks.",
+      "remediation": "Validate and sanitize the \"target_url\" value before using it with urllib. Restrict allowed schemes to http/https, reject or safely handle file URLs, and consider using a higher\u2011level HTTP library (e.g., requests) that enforces safer defaults. Implement explicit allow\u2011list checks and log any rejected inputs.",
+      "evidence": [
+        "Source excerpt shows urllib.request.urlopen called with payload[\"target_url\"] without prior validation (lines 17\u201123)."
+      ],
+      "limitations": [
+        "Missing evidence that the \"target_url\" can be supplied by an untrusted user, and no runtime probe demonstrating an actual SSRF or file read. No independent scanner of medium or higher severity confirms exploitability."
+      ],
+      "source_ids": [
+        "merged-c150b78349615dd9bc2d"
+      ]
+    },
+    {
+      "candidate_id": "ai-bed84194d5313af2",
+      "verdict": "likely_vulnerability",
+      "severity": "low",
+      "confidence": "medium",
+      "title": "Potential IDOR on verified profile endpoint (CWE-639)",
+      "explanation": "The endpoint compares the requested profile_id with the id returned by verified_identity(). The implementation of verified_identity() is not provided, so it is unclear whether the Authorization header is strongly validated (e.g., signature, expiration, revocation). Without evidence that the token is properly verified, an attacker who can forge or manipulate the Authorization header might obtain another user's verification status.",
+      "impact": "If an attacker can bypass or spoof the authentication performed by verified_identity(), they could retrieve verification information for arbitrary user profiles, leading to unauthorized disclosure of user data.",
+      "remediation": "Ensure that verified_identity() performs full token validation, including signature verification, expiration checks, and revocation handling. Consider using a well\u2011tested authentication library or framework. Add explicit checks for token validity before using the returned user object, and log authentication failures.",
+      "evidence": [
+        "api/extra.py:107-111 defines the endpoint and performs a simple id equality check",
+        "dynamic_penetration_agent reported unauthenticated request to /profiles/{profile_id}/verified returned HTTP 422 instead of expected denial codes"
+      ],
+      "limitations": [
+        "The code of verified_identity() is not available, so its strength cannot be confirmed",
+        "No runtime probe shows a successful unauthorized access; the only probe shows a 422 response for an anonymous request, which does not prove the endpoint is vulnerable",
+        "No additional guard (e.g., role checks, rate limiting) is visible in the supplied snippet"
+      ],
+      "source_ids": [
+        "ai-bed84194d5313af2"
+      ]
+    },
+    {
+      "candidate_id": "ai-4a14d82a7cc9c5d6",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Missing admin role verification on audit endpoint (CWE-862)",
+      "explanation": "The /admin/audit endpoint calls require_admin() before returning an authorized response, but the implementation of require_admin() is not provided. Without evidence that it performs robust token signature validation and role checks, the endpoint may allow unauthorized access.",
+      "impact": "If require_admin() does not properly verify that the caller possesses an admin role, an attacker could invoke the endpoint and obtain privileged information or perform admin actions, leading to confidentiality and integrity breaches.",
+      "remediation": "Implement require_admin() to validate the Authorization header using a trusted authentication mechanism (e.g., JWT verification with signature checking) and enforce that the token contains an admin role claim. Add explicit logging and rate\u2011limiting for admin endpoint access.",
+      "evidence": [
+        "api/extra.py:204 \u2013 @router.get(\"/admin/audit\") defines the admin audit endpoint",
+        "api/extra.py:206 \u2013 require_admin(authorization) is called but its implementation is not shown",
+        "api/extra.py:207 \u2013 returns {\"status\": \"authorized\"} after the call"
+      ],
+      "limitations": [
+        "Missing source code for require_admin() to confirm it enforces admin role checks",
+        "No scanner or runtime probe evidence demonstrating unauthorized access is possible",
+        "No observed guard checks (e.g., role validation, token signature verification) in the supplied context"
+      ],
+      "source_ids": [
+        "ai-4a14d82a7cc9c5d6"
+      ]
+    },
+    {
+      "candidate_id": "ai-d3c8ae68a75d8b90",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "low",
+      "title": "Potential path traversal via unverified file name (CWE-22)",
+      "explanation": "The endpoint @router.get(\"/files\") builds a file path by joining the user\u2011supplied name with a public directory and then calling .resolve() before checking that the resulting path is relative to the base directory. This check can be bypassed if an attacker can place a symlink inside the public directory that points outside the base, because resolve() follows symlinks before the relative check. Additionally, on Python versions prior to 3.9 the is_relative_to method is unavailable, which could cause a runtime error or different behavior. The provided runtime probe shows that an unauthenticated request to /files returned HTTP 422 instead of the expected 404/403/401, indicating the check did not behave as intended for the tested input.",
+      "impact": "An attacker who can influence the 'name' parameter or create symlinks in the public directory may read arbitrary files on the server, potentially exposing source code, configuration files, or other sensitive data.",
+      "remediation": "Validate and sanitize the filename before joining it with the base path. Prefer using a whitelist of allowed filenames or extensions. Perform the relative path check on the un\u2011resolved path, or explicitly reject any path components like \"..\". Additionally, disable or restrict symlink creation in the public directory and ensure the code runs on Python 3.9+ where is_relative_to is reliable.",
+      "evidence": [
+        "api/extra.py:210-214 defines the endpoint and the path check",
+        "dynamic_penetration_agent reported unauthenticated request to /files returned HTTP 422, not a denial status"
+      ],
+      "limitations": [
+        "Missing information about the runtime Python version (affects availability of is_relative_to)",
+        "No evidence whether symlinks are allowed or present in the public directory",
+        "Unclear definition and initialization of FILES variable (whether it points to the intended safe directory)"
+      ],
+      "source_ids": [
+        "ai-d3c8ae68a75d8b90"
+      ]
+    },
+    {
+      "candidate_id": "ai-e8ec08f388c6f0b9",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "low",
+      "title": "Potential insecure token handling in refresh endpoint (CWE-613)",
+      "explanation": "The refresh endpoint creates a new access token based solely on the Authorization header without verifying that the presented token is a valid refresh token or checking revocation status. The code calls `principal(authorization)` and then issues a new token via `make_token(row)`, but no explicit check of token type, expiration, or revocation list is visible in the supplied snippet. This could allow token replay or misuse of an access token as a refresh token.",
+      "impact": "An attacker who obtains a valid access token could repeatedly call the refresh endpoint to obtain new tokens, extending the session indefinitely and bypassing token expiration controls.",
+      "remediation": "Implement proper validation in the refresh endpoint: ensure the incoming token is a refresh token, verify its expiration and revocation status, and enforce token rotation policies. Consider adding a token revocation list check and separate handling for access vs. refresh tokens.",
+      "evidence": [
+        "api/app.py:189-196 shows the refresh endpoint issuing a new token without additional checks",
+        "principal() is called but its implementation and token type validation are not shown",
+        "no revocation or expiration checks are present in the provided code"
+      ],
+      "limitations": [
+        "Missing implementation details of `principal()` \u2013 cannot confirm whether it validates token type or revocation",
+        "No evidence of a revocation list or token expiration check elsewhere in the codebase",
+        "Runtime probe did not confirm successful token refresh; only an unauthenticated request returned 405, which does not prove the endpoint is vulnerable"
+      ],
+      "source_ids": [
+        "ai-e8ec08f388c6f0b9"
+      ]
+    },
+    {
+      "candidate_id": "ai-1826d2fcbfeb295d",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "medium",
+      "title": "Missing ownership verification in coupon application",
+      "explanation": "The apply_coupon endpoint authenticates the request via `principal(authorization)` but does not verify that the authenticated user owns the order identified by `order_id` before updating the order's discount. This creates a potential IDOR where an attacker could apply a coupon to any order they know the ID of.",
+      "impact": "An attacker who can guess or enumerate order IDs could apply arbitrary discounts to other users' orders, leading to unauthorized financial benefits and potential revenue loss.",
+      "remediation": "Add a check that retrieves the order's owner (e.g., `SELECT owner_id FROM orders WHERE id=%s`) and verifies it matches the authenticated principal before performing the UPDATE. Return an error if the check fails. Consider also validating coupon applicability and discount limits.",
+      "evidence": [
+        "source_excerpt lines 230\u2011238 show the endpoint definition, authentication call, coupon lookup, and order update without an ownership check"
+      ],
+      "limitations": [
+        "No runtime probe or scanner evidence confirming that the endpoint can be abused in practice.",
+        "No evidence that the application performs an ownership check elsewhere (e.g., in middleware) or that other safeguards exist."
+      ],
+      "source_ids": [
+        "ai-1826d2fcbfeb295d"
+      ]
+    },
+    {
+      "candidate_id": "ai-f0dce5b04fc274c8",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Missing ownership check on order cancellation (CWE-639)",
+      "explanation": "The `cancel_order` endpoint updates the order status without verifying that the authenticated user owns the order or has a role that permits cancellation. The code calls `principal(authorization)` but does not use the returned principal to check ownership before executing the UPDATE statement. This constitutes a potential IDOR vulnerability.",
+      "impact": "An attacker who can obtain a valid authentication token could cancel any order by supplying an arbitrary `order_id`, potentially causing financial loss, denial of service, or audit inconsistencies.",
+      "remediation": "Add an ownership or role check after retrieving the principal and before performing the UPDATE. For example, fetch the order's `user_id` and compare it to `principal['sub']`, or verify that the principal has an admin role. Return 403/401 if the check fails.",
+      "evidence": [
+        "api/app.py:259 \u2013 endpoint definition `def cancel_order(order_id: int, authorization: str | None = Header(default=None))`",
+        "api/app.py:260 \u2013 call to `principal(authorization)` without using its result",
+        "api/app.py:262 \u2013 UPDATE statement executed without ownership verification"
+      ],
+      "limitations": [
+        "No independent scanner or runtime probe confirming that an unauthorized user can successfully cancel another user's order.",
+        "Dynamic penetration test reported a 405 response for an unauthenticated request, but no evidence for an authenticated unauthorized request is provided."
+      ],
+      "source_ids": [
+        "ai-f0dce5b04fc274c8"
+      ]
+    },
+    {
+      "candidate_id": "ai-2610f6087fbda613",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Missing role enforcement on admin user listing (CWE-284)",
+      "explanation": "The endpoint @app.get(\"/admin/users\") calls principal(authorization) but does not verify that the authenticated principal has an admin role before executing a query that returns all user records, including sensitive fields such as SSN. The supplied source shows the missing role check, indicating a potential authorization flaw.",
+      "impact": "An attacker with any valid authentication token could retrieve the full list of users and their SSNs, violating confidentiality and potentially enabling further attacks such as identity theft or targeted phishing.",
+      "remediation": "Add an explicit role check after principal() to ensure the caller has the required admin role before performing the database query. For example, retrieve the role from the principal object and raise HTTPException(403) if the role is not 'admin'.",
+      "evidence": [
+        "@app.get(\"/admin/users\") definition at api/app.py line 277",
+        "principal(authorization) call at line 279 without role verification",
+        "Database query returning sensitive fields at line 281"
+      ],
+      "limitations": [
+        "No runtime evidence (e.g., scanner or probe) confirming that the endpoint is reachable by non\u2011admin users",
+        "Unclear whether principal() returns role information; the code snippet does not show the principal object's structure",
+        "No additional sources (scanner, test, or runtime probe) corroborating the vulnerability"
+      ],
+      "source_ids": [
+        "ai-2610f6087fbda613"
+      ]
+    },
+    {
+      "candidate_id": "ai-1dd6334868544586",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Missing role enforcement on admin job listing (CWE-284)",
+      "explanation": "The endpoint @app.get(\"/admin/jobs\") calls principal(authorization) to verify a token but does not perform any role check before executing a query that returns all job records. The supplied source shows the missing admin role verification, indicating a potential authorization flaw. However, there is no independent scanner or runtime probe evidence confirming that non\u2011admin users can access this data, so the vulnerability cannot be confirmed.",
+      "impact": "An attacker with a valid authentication token but without admin privileges could retrieve the full list of jobs, potentially exposing sensitive internal information.",
+      "remediation": "Add a role check after principal(authorization) to ensure the caller has an admin role before executing the query, e.g., verify that the decoded token includes a role claim of \"admin\" and return 403 otherwise.",
+      "evidence": [
+        "@app.get(\"/admin/jobs\") definition at api/app.py line 285",
+        "principal(authorization) called without subsequent role verification at line 287",
+        "SQL query fetching all jobs at line 289"
+      ],
+      "limitations": [
+        "No scanner or runtime probe evidence demonstrating unauthorized access",
+        "No view of the principal function implementation to confirm it does not perform role checks",
+        "No tests showing that a non\u2011admin token can reach this endpoint and receive data"
+      ],
+      "source_ids": [
+        "ai-1dd6334868544586"
+      ]
+    },
+    {
+      "candidate_id": "ai-ae177f098ffafcec",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "medium",
+      "title": "Missing ownership check on invoice retrieval (CWE-639)",
+      "explanation": "The endpoint `/invoices/{invoice_id}` authenticates the request via `principal(authorization)` but does not verify that the retrieved invoice belongs to the authenticated user before returning it. This could allow an authenticated attacker to enumerate or view other users' invoices by guessing IDs (IDOR). The supplied code shows the query and return path, but no ownership validation is present in the excerpt.",
+      "impact": "An attacker who can obtain a valid authentication token could retrieve any invoice by ID, exposing confidential financial data of other users and violating privacy and data protection requirements.",
+      "remediation": "Add an ownership check after fetching the invoice, e.g., compare `row['user_id']` (or the appropriate column) with the authenticated principal's identifier and return a 403 error if they do not match. If the invoices table lacks a user identifier, redesign the schema to associate invoices with owners.",
+      "evidence": [
+        "@app.get(\"/invoices/{invoice_id}\") definition at api/app.py:267",
+        "principal(authorization) call at api/app.py:269",
+        "SQL query fetching invoice by ID at api/app.py:271",
+        "No ownership verification code present in the provided excerpt"
+      ],
+      "limitations": [
+        "The code excerpt does not show the schema of the `invoices` table, so it is unclear whether a user identifier column exists to perform the check.",
+        "No runtime or scanner evidence confirming that the endpoint is reachable without ownership validation.",
+        "No evidence that other parts of the application perform a global ownership guard for this route."
+      ],
+      "source_ids": [
+        "ai-ae177f098ffafcec"
+      ]
+    },
+    {
+      "candidate_id": "ai-8f2e97ab78cee25c",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "medium",
+      "title": "Missing ownership check on generic order retrieval (CWE-639)",
+      "explanation": "The endpoint @app.get(\"/orders/{order_id}\") authenticates the request via principal(authorization) but does not verify that the authenticated user owns the requested order before returning the row from the database. The code fetches the order solely by its primary key and returns it if found, without any ownership comparison.",
+      "impact": "An authenticated user (or potentially an unauthenticated request, as the dynamic probe observed a 422 response rather than a proper denial) can enumerate or retrieve orders belonging to other users, leading to unauthorized disclosure of order details.",
+      "remediation": "Add an ownership check after retrieving the order, e.g., compare the order's user_id column with the principal's subject identifier and return 403/404 if they do not match. If the orders table lacks a user_id column, introduce one and enforce the relationship.",
+      "evidence": [
+        "Source excerpt shows the endpoint definition and database query without an ownership check (lines 220\u2011224).",
+        "Dynamic penetration agent report indicates that a request to /orders/{order_id} as anonymous did not receive an expected denial status (401/403/404), suggesting the check is missing."
+      ],
+      "limitations": [
+        "Missing evidence that the orders table contains a user_id column to compare against the principal.",
+        "No runtime probe confirming that an authenticated user can successfully retrieve another user's order; the observed 422 response may be due to input validation rather than authorization logic."
+      ],
+      "source_ids": [
+        "ai-8f2e97ab78cee25c"
+      ]
+    },
+    {
+      "candidate_id": "ai-d30ea28564e18126",
+      "verdict": "confirmed_vulnerability",
+      "severity": "high",
+      "confidence": "high",
+      "title": "Debug configuration endpoint exposes secret (CWE-200)",
+      "explanation": "The endpoint defined at @app.get(\"/debug/config\") returns DATABASE_URL, MOCK_EXTERNAL_URL, and APP_SECRET without any authentication or authorization guard. The source code shows no check before returning these values, and a runtime penetration probe confirmed that an unauthenticated request to /debug/config receives HTTP 200 with the secret data, demonstrating the vulnerable path in practice.",
+      "impact": "An attacker can retrieve database credentials and application secrets, enabling further compromise such as database access, credential reuse, or full system takeover.",
+      "remediation": "Restrict the /debug/config endpoint to authorized users only. Add authentication/authorization checks (e.g., OAuth, API keys) before returning sensitive configuration, or remove the endpoint from production deployments. Consider moving secret handling to a secure vault and never expose them via HTTP responses.",
+      "evidence": [
+        "Source excerpt shows the endpoint definition and return of secrets (lines 320\u2011322).",
+        "Dynamic penetration agent report: unauthenticated request to /debug/config returned HTTP 200 with secret data, confirming exposure."
+      ],
+      "limitations": [],
+      "source_ids": [
+        "ai-d30ea28564e18126"
+      ]
+    },
+    {
+      "candidate_id": "ai-f6a68f3e73ee86ba",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Insecure Session Creation (CWE-284)",
+      "explanation": "The `session_start` endpoint creates a session cookie based solely on a supplied username without any password or other credential verification. The code fetches the user record, checks only that the user exists, and then sets a `lab_session` cookie containing the user ID. No authentication check is performed before the sensitive operation of issuing a session token.",
+      "impact": "An attacker can obtain a valid session cookie for any existing user by supplying that user's username, potentially leading to account takeover and unauthorized access to protected resources.",
+      "remediation": "Add proper authentication (e.g., verify a password or other credential) before creating a session. Generate session tokens using a securely random secret rather than embedding the user ID directly, and validate the token on subsequent requests. Consider moving session creation behind a login endpoint that enforces credential checks.",
+      "evidence": [
+        "api/extra.py:271 \u2013 @router.get(\"/session/start\")",
+        "api/extra.py:272 \u2013 def session_start(username: str) -> Response:",
+        "api/extra.py:274 \u2013 user = conn.execute(\"SELECT id FROM users WHERE username=%s\", (username,)).fetchone()",
+        "api/extra.py:277 \u2013 response = Response(\"session started\")",
+        "api/extra.py:278 \u2013 response.set_cookie(\"lab_session\", f\"session-{user['id']}\")"
+      ],
+      "limitations": [
+        "No independent scanner or runtime probe confirming that the endpoint can be accessed without authentication (the dynamic probe returned HTTP 422, not a definitive success).",
+        "No evidence of upstream middleware that might enforce authentication before this handler."
+      ],
+      "source_ids": [
+        "ai-f6a68f3e73ee86ba"
+      ]
+    },
+    {
+      "candidate_id": "ai-f10815aecca0a812",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "medium",
+      "title": "Password Reset Token Lacks Expiration and Rate Limiting (CWE-640)",
+      "explanation": "The supplied source shows that the /auth/reset/request endpoint creates a reset token and stores it in the reset_tokens table without any visible expiration timestamp or any throttling logic for repeated requests. The code snippet does not include a check for token age or a counter limiting how often a user may request a reset, which are required mitigations for CWE\u2011640. However, no independent scanner or runtime probe evidence confirming exploitable behavior is present, and the AI source is the only indicator of the issue, so the finding is classified as a likely vulnerability.",
+      "impact": "An attacker could repeatedly request password\u2011reset tokens for a target account, obtain multiple valid tokens, and reuse them indefinitely to reset the account password, leading to account takeover. Absence of expiration also enables token replay attacks over an unlimited time window.",
+      "remediation": "Add an expiration column to the reset_tokens table and populate it with a short\u2011lived timestamp when inserting a new token. Enforce a check that rejects tokens older than the configured lifetime. Implement rate\u2011limiting per user (e.g., allow only N requests per hour) and return an appropriate error when the limit is exceeded. Consider logging reset requests and notifying users of recent activity.",
+      "evidence": [
+        "564: @router.post(\"/auth/reset/request\")",
+        "565: def request_reset(body: dict) -> dict:",
+        "567: user = conn.execute(\"SELECT id FROM users WHERE username=%s\", (str(body.get(\"username\", \"\")),)).fetchone()",
+        "571: conn.execute(\"INSERT INTO reset_tokens(token,user_id) VALUES (%s,%s)\", (token, user[\"id\"]))",
+        "572: conn.commit()",
+        "573: return {\"reset_token\": token}"
+      ],
+      "limitations": [
+        "No evidence that the reset_tokens table includes an expiration column or that such a column is ever populated.",
+        "No runtime or scanner evidence demonstrating that tokens can be reused indefinitely or that rate\u2011limiting is absent.",
+        "The token generation method is not shown, so its cryptographic strength cannot be confirmed."
+      ],
+      "source_ids": [
+        "ai-f10815aecca0a812"
+      ]
+    },
+    {
+      "candidate_id": "ai-93787ef734989eda",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Missing admin authorization (CWE-284)",
+      "explanation": "The endpoint `admin_overview` is exposed under the `/admin` path and calls `principal(authorization)`, which appears to only verify authentication. No explicit role or admin check is present in the supplied code before the sensitive database query that returns the total user count. Without evidence that `principal` enforces admin privileges or that downstream middleware restricts this route, an authenticated non\u2011admin user could potentially access the user count, indicating a possible authorization bypass.",
+      "impact": "An attacker with a valid authentication token could retrieve aggregate user statistics, which may aid further enumeration or privacy violations. If the user count is considered sensitive, this constitutes a confidentiality breach and could be leveraged for targeted attacks.",
+      "remediation": "Add an explicit admin\u2011role verification before performing the sensitive operation, e.g., `require_admin(authorization)` or check the user's role after `principal`. Ensure that the route is protected by middleware that enforces admin\u2011only access. Document the required permissions for the endpoint.",
+      "evidence": [
+        "api/extra.py:197 \u2013 endpoint definition `@router.get(\"/admin/overview\")`",
+        "api/extra.py:198 \u2013 call to `principal(authorization)` without further checks",
+        "api/extra.py:200 \u2013 execution of `SELECT count(*) FROM users` query",
+        "verification notes \u2013 dynamic penetration agent attempt was denied with HTTP\u202f401, indicating authentication is required but not confirming admin restriction"
+      ],
+      "limitations": [
+        "The behavior of `principal` is unknown; it may perform role checks that are not visible in the excerpt.",
+        "No runtime probe or scanner evidence confirms that non\u2011admin users can reach this endpoint and obtain the count.",
+        "No middleware or additional code is provided that could enforce admin\u2011only access for `/admin` routes."
+      ],
+      "source_ids": [
+        "ai-93787ef734989eda"
+      ]
+    },
+    {
+      "candidate_id": "ai-fbb70c87492b9215",
+      "verdict": "likely_vulnerability",
+      "severity": "critical",
+      "confidence": "medium",
+      "title": "Insecure direct object reference exposing SSN (CWE-639)",
+      "explanation": "The endpoint `/profiles/{profile_id}` returns the `ssn` field from the database after only a generic authentication call (`principal`). No ownership or role\u2011based check is visible in the supplied code, so a caller can request any `profile_id`. A runtime probe attempted an unauthenticated request and received HTTP\u202f422 instead of an expected denial status (401/403/404), indicating the request was processed rather than blocked. However, the probe did not confirm that the SSN value was actually returned, and it is unclear whether `principal` performs additional per\u2011profile authorization.",
+      "impact": "An attacker who can guess or enumerate user IDs could retrieve Social Security Numbers of arbitrary users, leading to severe privacy violations, identity theft, and regulatory non\u2011compliance.",
+      "remediation": "Add explicit authorization checks after `principal` to verify that the authenticated user is allowed to view the requested profile (e.g., compare `profile_id` with the user's own ID or check a role/permission). Return only non\u2011sensitive fields (omit `ssn`) unless absolutely required, and enforce least\u2011privilege data exposure.",
+      "evidence": [
+        "api/extra.py:97 \u2013 route definition exposing profile_id",
+        "api/extra.py:99 \u2013 call to principal without further checks",
+        "api/extra.py:101 \u2013 SQL query selects ssn column",
+        "runtime_probe: unauthenticated request to /profiles/{profile_id} returned HTTP 422, not a denial status"
+      ],
+      "limitations": [
+        "Missing concrete proof that the SSN value is returned in the response; the probe only shows the request is not blocked. Unclear whether `principal` implements per\u2011profile authorization internally. No guard checks are visible in the provided snippet beyond the generic authentication call."
+      ],
+      "source_ids": [
+        "ai-fbb70c87492b9215"
+      ]
+    },
+    {
+      "candidate_id": "ai-8b80c3773de74246",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Missing ownership check on note retrieval (CWE-639)",
+      "explanation": "The endpoint retrieves a note by `note_id` after a generic authentication call (`principal`). It does not verify that the note belongs to the supplied `order_id` nor that the authenticated user owns the order, creating a potential IDOR. The code snippet shows no comparison between `order_id` and the `order_id` column of the fetched note, nor any ownership check against the principal.",
+      "impact": "An attacker who can authenticate (or possibly bypass authentication) could enumerate or read notes belonging to other users by guessing note IDs, leading to disclosure of potentially sensitive information.",
+      "remediation": "Add a check that the `order_id` in the URL matches the `order_id` field of the retrieved note and that the authenticated principal has permission to access that order. Example: after fetching the row, verify `row['order_id'] == order_id` and that the principal\u2019s user ID matches the order\u2019s owner before returning the note. Return 403/404 on mismatch.",
+      "evidence": [
+        "api/extra.py:542 \u2013 route definition includes both order_id and note_id",
+        "api/extra.py:544 \u2013 calls principal(authorization) for generic auth",
+        "api/extra.py:546 \u2013 fetches note solely by note_id without using order_id",
+        "api/extra.py:549 \u2013 returns the note without ownership validation"
+      ],
+      "limitations": [
+        "No independent scanner or high\u2011severity source confirming exploitation",
+        "Runtime probe shows an unauthenticated request returned HTTP 422, not a successful data leak, so exploitability is not demonstrated",
+        "Unclear what `principal` enforces; it may already perform order ownership checks, but this is not visible in the provided excerpt"
+      ],
+      "source_ids": [
+        "ai-8b80c3773de74246"
+      ]
+    },
+    {
+      "candidate_id": "ai-7da0208dca8f390c",
+      "verdict": "likely_vulnerability",
+      "severity": "high",
+      "confidence": "medium",
+      "title": "Insecure Direct Object Reference (IDOR) on file upload view (CWE-639)",
+      "explanation": "The `view_upload` endpoint returns the raw file contents for a given `upload_id` without any ownership or permission verification. The supplied source shows the endpoint and the database query, and no guard is present in the examined code. A dynamic probe attempted to access the endpoint anonymously and received HTTP 422 instead of an expected denial status, indicating that the request was processed rather than blocked.",
+      "impact": "An attacker could enumerate or guess upload IDs and retrieve files belonging to other users, potentially exposing private or sensitive data.",
+      "remediation": "Add an authorization check that verifies the requesting user owns the upload or has the required role before returning the file. For example, retrieve the uploader's user ID with the upload record and compare it to the authenticated user's ID, returning 403/404 on mismatch. Ensure the router is protected by an authentication dependency.",
+      "evidence": [
+        "Source excerpt shows endpoint definition and query without any permission check",
+        "Dynamic probe result: anonymous request to /uploads/{upload_id} returned HTTP 422, not a denial status"
+      ],
+      "limitations": [
+        "No evidence whether a global authentication dependency is applied to the router",
+        "No information about database\u2011level row\u2011level security or triggers that might enforce ownership",
+        "No runtime evidence confirming that an authenticated user can retrieve another user's file"
+      ],
+      "source_ids": [
+        "ai-7da0208dca8f390c"
+      ]
+    },
+    {
+      "candidate_id": "ai-2b29d4ee02a18f9b",
+      "verdict": "likely_vulnerability",
+      "severity": "medium",
+      "confidence": "low",
+      "title": "Potential unsafe content type handling leading to XSS (CWE-79)",
+      "explanation": "The endpoint `/uploads/{upload_id}` returns the raw file bytes with the MIME type stored in the database. No allow\u2011list validation or sanitisation of the `mime` field is performed before it is used as the response `media_type`. If an attacker can upload a payload with a MIME type such as `text/html` or `application/javascript`, the browser may interpret the content as executable code, resulting in stored or reflected XSS. The supplied source excerpt shows the response construction but does not include any upload\u2011time checks or database constraints that would prevent malicious MIME types.",
+      "impact": "An attacker who can control the uploaded file and its MIME type could cause a victim\u2019s browser to execute arbitrary JavaScript when the victim accesses the URL, leading to session hijacking, credential theft, or other malicious actions in the context of the vulnerable application.",
+      "remediation": "Validate the MIME type of uploaded files against a strict allow\u2011list before storing it, and enforce the same allow\u2011list when serving files. Alternatively, serve all uploaded content with a safe generic MIME type (e.g., `application/octet\u2011stream`) and force download, or sanitise HTML content before storage. Ensure the database schema enforces MIME type constraints if applicable.",
+      "evidence": [
+        "return Response(bytes(row[\"body\"]), media_type=row[\"mime\"]) (api/extra.py:372)",
+        "@router.get(\"/uploads/{upload_id}\") endpoint defined at api/extra.py:366",
+        "dynamic_penetration_agent: exploitation_confirmed \u2014 unauthenticated request to /uploads/{upload_id} returned HTTP 422 (not a denial status)"
+      ],
+      "limitations": [
+        "No evidence that the upload endpoint restricts MIME types or validates file content before storage.",
+        "No runtime probe showing that a malicious HTML/JS payload can be uploaded and later served with an executable MIME type.",
+        "No independent scanner or higher\u2011severity finding confirming the exploit path."
+      ],
+      "source_ids": [
+        "ai-2b29d4ee02a18f9b"
+      ]
+    }
+  ],
+  "warnings": [
+    "Review provider stopped: AI provider request failed with HTTP 429 (rate_limit_exceeded); provider asked to wait 780 s"
+  ],
+  "usage": {
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "calls": 81,
+    "expected_groups": 84,
+    "reused_groups": 0,
+    "prompt_tokens": 105884,
+    "completion_tokens": 33139,
+    "total_tokens": 139023,
+    "reviewed_groups": 81,
+    "pending_groups": 3
+  },
+  "pending_ids": [
+    "ai-b94262d4b5d7ef8e",
+    "ai-981d194322a5245a",
+    "ai-118e8dd460abde2d"
+  ]
+}

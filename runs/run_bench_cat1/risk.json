@@ -1,0 +1,1141 @@
+{
+  "schema_version": "1.0",
+  "policy_version": "heuristic-v1",
+  "status": "complete",
+  "policy": {
+    "deep_review_threshold": 65,
+    "max_deep_reviews": 20
+  },
+  "findings": [
+    {
+      "rank": 1,
+      "merged_finding_id": "merged-5bba528e8bd25247a105",
+      "title": "Code injection",
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00159.py",
+        "start_line": 45,
+        "start_column": 9,
+        "end_line": null,
+        "end_column": 12,
+        "snippet": null
+      },
+      "scanner_severity": "critical",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-94",
+        "CWE-95",
+        "CWE-116"
+      ],
+      "scanners": [
+        "codeql-cli",
+        "semgrep-ce"
+      ],
+      "risk_score": 100,
+      "priority_band": "critical",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 50,
+          "evidence": [
+            "critical"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 18,
+          "evidence": [
+            "CWE-94"
+          ]
+        },
+        {
+          "factor_id": "scanner_corroboration",
+          "label": "Independent scanner support",
+          "points": 8,
+          "evidence": [
+            "codeql-cli",
+            "semgrep-ce"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "12 steps",
+            "1 files"
+          ]
+        },
+        {
+          "factor_id": "external_input",
+          "label": "External input signal in collected flow",
+          "points": 12,
+          "evidence": [
+            "flask_request_form"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 2,
+      "merged_finding_id": "merged-99b07b4e03a54e2874c3",
+      "title": "Uncontrolled command line",
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00167.py",
+        "start_line": 53,
+        "start_column": 26,
+        "end_line": null,
+        "end_column": 32,
+        "snippet": null
+      },
+      "scanner_severity": "critical",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-78",
+        "CWE-88"
+      ],
+      "scanners": [
+        "codeql-cli",
+        "semgrep-ce"
+      ],
+      "risk_score": 100,
+      "priority_band": "critical",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 50,
+          "evidence": [
+            "critical"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 16,
+          "evidence": [
+            "CWE-78"
+          ]
+        },
+        {
+          "factor_id": "scanner_corroboration",
+          "label": "Independent scanner support",
+          "points": 8,
+          "evidence": [
+            "codeql-cli",
+            "semgrep-ce"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "9 steps",
+            "1 files"
+          ]
+        },
+        {
+          "factor_id": "external_input",
+          "label": "External input signal in collected flow",
+          "points": 12,
+          "evidence": [
+            "flask_request_form"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 3,
+      "merged_finding_id": "merged-c6476ab34c8569ad07d1",
+      "title": "XPath query built from user-controlled sources",
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00212.py",
+        "start_line": 48,
+        "start_column": 23,
+        "end_line": null,
+        "end_column": 28,
+        "snippet": null
+      },
+      "scanner_severity": "critical",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-643"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 84,
+      "priority_band": "high",
+      "review_disposition": "deep_review",
+      "selected_for_deep_review": true,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 50,
+          "evidence": [
+            "critical"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "8 steps",
+            "1 files"
+          ]
+        },
+        {
+          "factor_id": "external_input",
+          "label": "External input signal in collected flow",
+          "points": 12,
+          "evidence": [
+            "flask_request_form"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 4,
+      "merged_finding_id": "merged-e04a2bab203e496a24e6",
+      "title": "URL redirection from remote source",
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00151.py",
+        "start_line": 64,
+        "start_column": 25,
+        "end_line": null,
+        "end_column": 28,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-601"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 59,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "16 steps",
+            "1 files"
+          ]
+        },
+        {
+          "factor_id": "external_input",
+          "label": "External input signal in collected flow",
+          "points": 12,
+          "evidence": [
+            "flask_request_form"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 5,
+      "merged_finding_id": "merged-033aebac980099fb12a6",
+      "title": "Construction of a cookie using user-supplied input",
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00721.py",
+        "start_line": 57,
+        "start_column": 31,
+        "end_line": null,
+        "end_column": 36,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-20"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 59,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "10 steps",
+            "1 files"
+          ]
+        },
+        {
+          "factor_id": "external_input",
+          "label": "External input signal in collected flow",
+          "points": 12,
+          "evidence": [
+            "flask_request_args"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 6,
+      "merged_finding_id": "merged-c9aab428c22f431c75c6",
+      "title": "Construction of a cookie using user-supplied input",
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00808.py",
+        "start_line": 58,
+        "start_column": 31,
+        "end_line": null,
+        "end_column": 36,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-20"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 59,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "10 steps",
+            "1 files"
+          ]
+        },
+        {
+          "factor_id": "external_input",
+          "label": "External input signal in collected flow",
+          "points": 12,
+          "evidence": [
+            "flask_request_args"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 7,
+      "merged_finding_id": "merged-4d1ee3d289fcfcf5043e",
+      "title": "URL redirection from remote source",
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00068.py",
+        "start_line": 49,
+        "start_column": 25,
+        "end_line": null,
+        "end_column": 28,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "high",
+      "cwes": [
+        "CWE-601"
+      ],
+      "scanners": [
+        "codeql-cli"
+      ],
+      "risk_score": 47,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 12,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_data_flow",
+          "label": "Scanner-provided data flow",
+          "points": 10,
+          "evidence": [
+            "14 steps",
+            "1 files"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 8,
+      "merged_finding_id": "merged-8b5bb5b751bbeb3ccd89",
+      "title": "Eval Detected",
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00893.py",
+        "start_line": 54,
+        "start_column": 16,
+        "end_line": 56,
+        "end_column": 5,
+        "snippet": null
+      },
+      "scanner_severity": "high",
+      "scanner_confidence": "low",
+      "cwes": [
+        "CWE-95"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 42,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 40,
+          "evidence": [
+            "high"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 2,
+          "evidence": [
+            "low"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 9,
+      "merged_finding_id": "merged-a02132203a2601215740",
+      "title": "Insecure Deserialization",
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00349.py",
+        "start_line": 53,
+        "start_column": 16,
+        "end_line": 53,
+        "end_column": 59,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "low",
+      "cwes": [
+        "CWE-502"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 39,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 2,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 12,
+          "evidence": [
+            "CWE-502"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 10,
+      "merged_finding_id": "merged-5ef623b3093d5235915f",
+      "title": "Avoid Pickle",
+      "primary_location": {
+        "path": "testcode/BenchmarkTest01216.py",
+        "start_line": 46,
+        "start_column": 16,
+        "end_line": 46,
+        "end_column": 61,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "low",
+      "cwes": [
+        "CWE-502"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 39,
+      "priority_band": "medium",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 2,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 12,
+          "evidence": [
+            "CWE-502"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 11,
+      "merged_finding_id": "merged-1b85485232aeba51d3f6",
+      "title": "Subprocess Shell True",
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00736.py",
+        "start_line": 55,
+        "start_column": 40,
+        "end_line": 55,
+        "end_column": 44,
+        "snippet": null
+      },
+      "scanner_severity": "low",
+      "scanner_confidence": "medium",
+      "cwes": [
+        "CWE-78"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 33,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 10,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "cwe_impact",
+          "label": "Known impact class",
+          "points": 16,
+          "evidence": [
+            "CWE-78"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 12,
+      "merged_finding_id": "merged-64caf4864cd787fb73fd",
+      "title": "Use Defused Xml Parse",
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00290.py",
+        "start_line": 55,
+        "start_column": 11,
+        "end_line": 55,
+        "end_column": 61,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "medium",
+      "cwes": [
+        "CWE-611"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 32,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 13,
+      "merged_finding_id": "merged-42aa6797f66fce97d507",
+      "title": "Insecure Hash Algorithm Sha1",
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00714.py",
+        "start_line": 54,
+        "start_column": 10,
+        "end_line": 54,
+        "end_column": 24,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "medium",
+      "cwes": [
+        "CWE-327"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 32,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 7,
+          "evidence": [
+            "medium"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 14,
+      "merged_finding_id": "merged-5c56fa4a013be9eef7d0",
+      "title": "Use Defused Xml",
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00205.py",
+        "start_line": 45,
+        "start_column": 3,
+        "end_line": 45,
+        "end_column": 25,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "low",
+      "cwes": [
+        "CWE-611"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 2,
+          "evidence": [
+            "low"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 15,
+      "merged_finding_id": "merged-673090543bb62bba96b3",
+      "title": "Use Defused Xml",
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00205.py",
+        "start_line": 46,
+        "start_column": 3,
+        "end_line": 46,
+        "end_column": 25,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "low",
+      "cwes": [
+        "CWE-611"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 2,
+          "evidence": [
+            "low"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 16,
+      "merged_finding_id": "merged-3bd5982f3ee4227621fa",
+      "title": "Use Defused Xml",
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00290.py",
+        "start_line": 45,
+        "start_column": 3,
+        "end_line": 45,
+        "end_column": 37,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "low",
+      "cwes": [
+        "CWE-611"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 2,
+          "evidence": [
+            "low"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 17,
+      "merged_finding_id": "merged-064808129dd768f98f4c",
+      "title": "Use Defused Xml",
+      "primary_location": {
+        "path": "testcode/BenchmarkTest01122.py",
+        "start_line": 48,
+        "start_column": 3,
+        "end_line": 48,
+        "end_column": 25,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "low",
+      "cwes": [
+        "CWE-611"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 2,
+          "evidence": [
+            "low"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 18,
+      "merged_finding_id": "merged-bd5da2dd15c1f5da9566",
+      "title": "Use Defused Xml",
+      "primary_location": {
+        "path": "testcode/BenchmarkTest01122.py",
+        "start_line": 49,
+        "start_column": 3,
+        "end_line": 49,
+        "end_column": 25,
+        "snippet": null
+      },
+      "scanner_severity": "medium",
+      "scanner_confidence": "low",
+      "cwes": [
+        "CWE-611"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 27,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 25,
+          "evidence": [
+            "medium"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 2,
+          "evidence": [
+            "low"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 19,
+      "merged_finding_id": "merged-1d76b75e663e2ffb1829",
+      "title": "Secure Set Cookie",
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00012.py",
+        "start_line": 26,
+        "start_column": 3,
+        "end_line": 30,
+        "end_column": 23,
+        "snippet": null
+      },
+      "scanner_severity": "low",
+      "scanner_confidence": "low",
+      "cwes": [
+        "CWE-614"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 12,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 10,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 2,
+          "evidence": [
+            "low"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 20,
+      "merged_finding_id": "merged-415c7fa8c4565aaab144",
+      "title": "Secure Set Cookie",
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00068.py",
+        "start_line": 26,
+        "start_column": 3,
+        "end_line": 30,
+        "end_column": 23,
+        "snippet": null
+      },
+      "scanner_severity": "low",
+      "scanner_confidence": "low",
+      "cwes": [
+        "CWE-614"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 12,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 10,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 2,
+          "evidence": [
+            "low"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 21,
+      "merged_finding_id": "merged-150764bd1f8d7530fbfe",
+      "title": "Secure Set Cookie",
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00721.py",
+        "start_line": 57,
+        "start_column": 3,
+        "end_line": 60,
+        "end_column": 18,
+        "snippet": null
+      },
+      "scanner_severity": "low",
+      "scanner_confidence": "low",
+      "cwes": [
+        "CWE-614"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 12,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 10,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 2,
+          "evidence": [
+            "low"
+          ]
+        }
+      ]
+    },
+    {
+      "rank": 22,
+      "merged_finding_id": "merged-18779e73fbbe547b3aeb",
+      "title": "Secure Set Cookie",
+      "primary_location": {
+        "path": "testcode/BenchmarkTest00808.py",
+        "start_line": 58,
+        "start_column": 3,
+        "end_line": 61,
+        "end_column": 18,
+        "snippet": null
+      },
+      "scanner_severity": "low",
+      "scanner_confidence": "low",
+      "cwes": [
+        "CWE-614"
+      ],
+      "scanners": [
+        "semgrep-ce"
+      ],
+      "risk_score": 12,
+      "priority_band": "low",
+      "review_disposition": "standard_report",
+      "selected_for_deep_review": false,
+      "factors": [
+        {
+          "factor_id": "scanner_severity",
+          "label": "Scanner severity",
+          "points": 10,
+          "evidence": [
+            "low"
+          ]
+        },
+        {
+          "factor_id": "scanner_confidence",
+          "label": "Scanner confidence",
+          "points": 2,
+          "evidence": [
+            "low"
+          ]
+        }
+      ]
+    }
+  ],
+  "warnings": [],
+  "coverage_gaps": [],
+  "summary": {
+    "input_findings": 22,
+    "ranked_findings": 22,
+    "selected_for_deep_review": 3,
+    "queued_for_deep_review": 0,
+    "standard_report": 19,
+    "needs_verification": 0
+  }
+}
